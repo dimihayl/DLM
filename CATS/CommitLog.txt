@@ -1,0 +1,42 @@
+I have added the possibility to make a cut on the total momentum of the pairs. The cut can be applied after loading the data.
+
+27.06.2017, CATS 1.1
+-The potentials are now saved as an array of functions (ShortRangePotential). I have changed the "polarization" therminology with "channels". 
+-The user can now have multiple channels (e.g. related to the spin) and for each of them all partial-wave potentials need to be defined!
+-The potential itself should be defined as f(double* par)
+
+30.06.2017
+-I made the code much more robust against division by zero. This fixed a bug resulting in 'nan' states of C(k) in some rare cases.
+
+13.07.2017, CATS 1.2
+-there was a major flaw in the way the folding was performed under the assuption that the angle theta should be taken into account.
+ This issue has been now correctly implemented.
+-I have added some new Get-function in CATS (to access the info about the data-source)
+
+10.08.2017, CATS 1.4
+this is a huge commit, since there was the need to change the computing grid.
+There is an intermediate version 1.3 that was never commited due to some problems with it.
+In the end version 1.4 should be something as a beta-version to a planned version 2.0.
+The new computing grid in 1.4 works as follows:
+for each k,b bin one looks at the source functions and creates a source-grid. The source-grid 
+is practically a tree, which is divided into segments until the value of the source function 
+reaches some minimal value. This allows to create as few grid-bins as possible and save memory and computing time.
+HOWEVER: there is one big issue that needs to be taken care of in 2.0 :
+a single k,b bins has on average quite few entries, which leads to issues when subdividing the grid, 
+e.g. we never actually reach the desired low-limit and form a lot of zero-valued grid bins. In addition, if we have a lot of 
+b-bins computing time will be quite large. The idea for 2.0 is to to make the grid the same for all b-bins based on all particle 
+pairs regardless of their b-value. Then evaluate the wave-function for each grid-bin and save this value. Such a procedure will 
+make sure that we do not re-evaluate the wave-function for each b-bin!
+
+19.09.2017 CATS 2.0
+The first beta version. I have implemented most of the things described in CATS 1.4, however the commit was done in a 
+bit of a haste, as a result a proper documentation and description of all current features will follow in future commits.
+
+22.09.2017 CATS 2.0 (BugFix1)
+There was a small bug resulting in a false warning message. Analysis results are unaffected.
+
+04.10.2017 CATS 2.1
+Per user-request: added Get and Eval functions for the radial wave function
+
+16.10.2017 CATS 2.2
+Included some additional function (e.g. customize the output) without changing the functionality

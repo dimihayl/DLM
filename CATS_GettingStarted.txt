@@ -1,0 +1,41 @@
+------ CATS ------
+ *GETTING STARTED*
+-------------------
+This text gives a short intro to CATS, some real documentation will emerge in the future.
+The code is still in β version, bugs may pop out from time to time.
+
+----------------------------------------------------------------------------
+Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
+Current Version: 2.2 (16 October 2017)
+Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
+Support:         dimitar.mihaylov(at)mytum.de
+----------------------------------------------------------------------------
+
+1) What is CATS
+CATS is a femtoscopy analysis tool, capable of computing the correlation function C(k)
+given a source and a strong interaction potetnial. The wave-function is evaluated by
+solving the Schroedinger equation numerically. => the tool is non-relativistic and will
+only work for particles with masses of more then c.a. 500 MeV (light mesons are off-limits).
+
+2) How to download/compile
+You can download CATS from here: http://www.denseandstrange.ph.tum.de/index.php?id=78
+There are 3 folders included: CATS, DLM_CppTools and CATS_Example1. CATS contains the main source-code for CATS.
+DLM_CppTools contains some functions used by CATS, but developed previously by the developer. 
+You need to include and compile all *.cpp and *.h files from those folders in your own code.
+
+We do not offer any specific option for compilation or installation, except for the macro included in the CATS_Example folder.
+
+3) How to use it
+You can see some example code using CATS in the folders named CATS_Example#.
+With the help of the comments you should be capable of understanding how to run CATS.
+Nevertheless there a few thinks that we would like to bring your attention on:
+  * Both the potential and the analytic source should be defined as functions in your code and passed on to CATS
+  * The arrays used together with those potential are both memory-holders and a way to connect CATS to the "outer world"
+  * For the potential: The first 2 arguments sould be the variables "r" and "k". The array passed to CATS should have a minimum size of 2.
+  * For the source: The first 3 arguments sould be the variables "k","r","θ". The array passed to CATS should have a minimum size of 3.
+  * Any arguments beyond the default minimum can be used as a link between CATS and external functions, an example is available in the macro.
+  * The PdgId parameter is currently used to determine if the particles are identical or not and when sampling the source from a data file.
+  * The number of the interaction channel should have the same oddness as the spin. This is important for identical particles when symmetrizing the wave-function.
+  
+4) Prerequisites
+  * GSL - GNU Scientific Library (https://www.gnu.org/software/gsl/)
