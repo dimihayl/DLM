@@ -904,7 +904,6 @@ double CATS::EvalCorrFunErr(const double& Momentum){
         return kCorrFunErr[WhichMomBin];
     }
 
-
     if(InterpolRange[1]-InterpolRange[0]){
         return (CorrFunRange[1]*(Momentum-InterpolRange[0])-
                 CorrFunRange[0]*(Momentum-InterpolRange[1]))/
@@ -913,7 +912,6 @@ double CATS::EvalCorrFunErr(const double& Momentum){
     else{
         return 1e6;
     }
-
 
 }
 
@@ -1224,8 +1222,6 @@ void CATS::ComputeTheRadialWaveFunction(){
     ComputeWaveFunction();
 }
 
-
-
 void CATS::ComputeWaveFunction(){
     //Reserve memory for the output
     if(!SavedWaveFunBins){
@@ -1269,7 +1265,6 @@ void CATS::ComputeWaveFunction(){
         }
     }
     unsigned TotalNumberOfBins = NumMomBins*NumCh*MaxNumPW;
-
 
     unsigned uMomBin;
     unsigned short usCh;
@@ -1684,7 +1679,6 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                 cout << flush;
                 pTotalOld = pTotal;
             }
-
         }
     }
     if(Notifications>=nAll) printf("\r\033[K");
@@ -2268,7 +2262,6 @@ void CATS::SetUpSourceGrid(){
         //sorts the whole data according to the GridBoxId (all bins!)
         //this will setip the base grid
         SortAllData();
-//printf("1) NumPairs=%u\n",NumPairs);
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
                                         NULL, NULL, GridBoxId, NumPairs);
     }
@@ -2302,7 +2295,6 @@ void CATS::SetUpSourceGrid(){
             kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, AnalyticSource, AnaSourcePar, NULL, 0);
         }
         else if(LoadedPairsPerMomBin[uMomBin]){
-//printf("2) LoadedPairsPerMomBin[%u]=%u\n",uMomBin,LoadedPairsPerMomBin[uMomBin]);
             kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, NULL, NULL,
                                                 &GridBoxId[ArrayPosition], LoadedPairsPerMomBin[uMomBin]);
             ArrayPosition += LoadedPairsPerMomBin[uMomBin];

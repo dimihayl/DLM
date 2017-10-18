@@ -24,7 +24,6 @@ typedef double (*CatsPotential)(double*);
 //!for the radii: [fm]
 
 class CATS;
-class CATScontainerOLD;
 class CATSelder;
 class CATSnode;
 
@@ -130,8 +129,6 @@ public:
     //void SetMaxPairsToLoad(unsigned mpp);
     //unsigned GetMaxPairsToLoad();
 
-    //void SetEventMixing(const bool& mix);
-    //bool GetEventMixing();
     void SetMixingDepth(const unsigned short& mix);
     unsigned short GetMixingDepth();
 
@@ -156,9 +153,6 @@ public:
     unsigned GetRelativePosition(const unsigned& WhichParticle);
     unsigned GetRelativeCosTheta(const unsigned& WhichParticle);
     unsigned GetTotalPairMomentum(const unsigned& WhichParticle);
-
-//    void SetLogFileName(const char* fname);
-//    void GetLogFileName(char* fname);
 
     //returns the CorrFun evaluated for some MomBin
     double GetCorrFun(const unsigned& WhichMomBin);
@@ -211,7 +205,6 @@ public:
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW,
                            double (*pot)(double* Pars), double* Pars);
 
-
     void RemoveAnaSource();
     //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
     double* AnaSourcePar;
@@ -263,11 +256,8 @@ private:
     //This is sometimes a necessity in order to gain more statistics, however the implementation of event-mixing
     //assumes that 'b' and 'k' are not strongly correlated in the range if interest. In case of a small correlation the user
     //is advised to make further investigation of possible systematical errors.
-    //By default this option is switched off!
-    //bool EventMixing;
-
-    //in case of EventMixing, this variable specifies what is the max. number of particles pairs to mix.
-    //increasing this number will improve the error, but the computational cost goes up.
+    //By default this option is switched off, i.e. MixingDepth==1
+    //this variable specifies what is the max. number of events to mix
     unsigned short MixingDepth;
     bool TauCorrection;
     bool UseAnalyticSource;
@@ -332,7 +322,6 @@ private:
     double GridEpsilon;
 
     char* InputFileName;
-//    char* LogFileName;
     //total number of selected pairs
     unsigned NumPairs;
     //percentage of selected same event pairs with a specific impact parameter
@@ -361,9 +350,6 @@ private:
     double** WaveFunction2;
     //in bins of momentum/ImpactParameter
     CATSelder*** kbSourceGrid;
-
-    //CATScontainerOLD*** ParticleContainer1D;
-    //CATScontainerOLD*** ParticleContainer2D;
 
     bool LoadedData;//i.e. the data-file was read
     bool SourceGridReady;//i.e. the Particle container is set up properly
@@ -437,8 +423,6 @@ private:
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum,
                           const double&  xMin, const double&  xMax, const double& fValShift);
 
-    //void ResortData(double* input, DLM_MergeSort <int64_t, unsigned>& Sorter);
-    //void ResortData(unsigned* input, DLM_MergeSort <int64_t, unsigned>& Sorter);
     template <class Type> void ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter){
         unsigned NumOfEl = Sorter.GetNumOfEl();
         Type* Temp;
@@ -517,9 +501,6 @@ private:
     double* kCorrFun;
     double* kCorrFunErr;
 
-
 };
-
-
 
 #endif // CATS_H

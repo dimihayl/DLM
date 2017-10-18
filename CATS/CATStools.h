@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <stdint.h>
 
-//!Needed only for testing (contains usleep)
-//#include <unistd.h>
-
 class CatsParticle;
 
 class CatsLorentzVector{

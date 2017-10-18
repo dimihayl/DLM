@@ -40,3 +40,6 @@ Per user-request: added Get and Eval functions for the radial wave function
 
 16.10.2017 CATS 2.2
 Included some additional function (e.g. customize the output) without changing the functionality
+
+18.10.2017 CATS 2.2 (clean 1)
+some cleaning of the code was performed

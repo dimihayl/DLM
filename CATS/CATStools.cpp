@@ -5,6 +5,9 @@
 
 #include "DLM_CppTools.h"
 
+//!Needed only for testing (contains usleep)
+//#include <unistd.h>
+
 CatsLorentzVector::CatsLorentzVector(){
     FourSpace[0]=0;
     FourSpace[1]=0;
@@ -252,10 +255,6 @@ void CatsParticlePair::SetPair(const CatsParticle& particle1, const CatsParticle
             FirstParticle = &Particle2;
         }
 
-if(deltaT<0){
-printf("QA check failed!\n");
-}
-
         FirstParticle->FourSpace[0] += deltaT;
         FirstParticle->FourSpace[1] += FirstParticle->betaX*deltaT;
         FirstParticle->FourSpace[2] += FirstParticle->betaY*deltaT;
@@ -263,10 +262,6 @@ printf("QA check failed!\n");
 
         ParticleSum=Particle1+Particle2;
         CatsLorentzVector::operator = (Particle1-Particle2);
-
-if(FourSpace[0]){
-printf("QA check 2 failed!\n");
-}
 
     }
 }
@@ -332,7 +327,6 @@ void CatsEvent::AddParticle(const CatsParticle& Particle){
     }
 }
 void CatsEvent::ComputeParticlePairs(const bool& TauCorrection){
-//if(ParticleType1[0].GetPx()==-5.11819e-01) printf("NPART=%u\n",NumParticles1+NumParticles2);
     if(Pid1==Pid2){
         if(NumParticles2){
             printf("WARNING in CatsEvent::ComputeParticlePairs: Potential bug detected! Please contact the developers!\n");
@@ -344,19 +338,15 @@ void CatsEvent::ComputeParticlePairs(const bool& TauCorrection){
     }
     if(ParticlePair) {delete [] ParticlePair; ParticlePair=NULL;}
     if(!NumPairs) return;
-//if(ParticleType1[0].GetPx()==-5.11819e-01){
-//printf("Here I am 1!\n");
-//printf("NumPairs=%u\n",NumPairs);
-//printf("ParticlePair=%p\n",ParticlePair);
-//}
+
     ParticlePair = new CatsParticlePair [NumPairs];
-//if(ParticleType1[0].GetPx()==-5.11819e-01) printf("Here I am 2!\n");
+
     CatsParticle* PartType1 = ParticleType1;
     CatsParticle* PartType2 = Pid1==Pid2?ParticleType1:ParticleType2;
     unsigned& NumPart1 = NumParticles1;
     unsigned& NumPart2 = Pid1==Pid2?NumParticles1:NumParticles2;
     unsigned uPair=0;
-//if(NumPart1+NumPart2==6) printf("Here I am!\n");
+
     for(unsigned uPart1=0; uPart1<NumPart1; uPart1++){
         for(unsigned uPart2=(Pid1==Pid2?uPart1+1:0); uPart2<NumPart2; uPart2++){
             ParticlePair[uPair].SetPair(PartType1[uPart1],PartType2[uPart2],TauCorrection);
@@ -647,7 +637,6 @@ CATSelder::CATSelder(const short& dim, const short& mindep, const short& maxdep,
     Dim(dim),MinDepth(mindep),MaxDepth(maxdep),Epsilon(epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
 
     BaseConstructor(mean, len, AS, Pars, gbid, numel, NULL);
-
 }
 
 CATSelder::CATSelder(const CATSelder* TemplateElder,double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel):
