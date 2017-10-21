@@ -43,3 +43,10 @@ Included some additional function (e.g. customize the output) without changing t
 
 18.10.2017 CATS 2.2 (clean 1)
 some cleaning of the code was performed
+
+21.10.2017 CATS 2.3
+added functions to manage the parameters of the source and the potential in a easier way. 
+Now the parameters can be set by calling SetAnaSource and SetShortRangePotential.
+N.B. use those functions with care, as misusing might result in writing to unallocated memory!
+See the comments in CATS.h for further details.
+

@@ -18,7 +18,8 @@ CATS::CATS():
     Pi(3.141592653589793),
     AlphaFS(0.0072973525664),
     RevSqrt2(1./sqrt(2.)),
-    FmToNu(5.067731237e-3),NuToFm(197.3269602)
+    FmToNu(5.067731237e-3),NuToFm(197.3269602),
+    NumPotPars(2),NumSourcePars(3)
     {
     IdenticalParticles = false;
     Q1Q2 = 0;
@@ -1069,7 +1070,24 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW,
 
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
+}
 
+void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value){
+    if(usCh>=NumCh){
+        if(Notifications>=nError)
+            printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
+        return;
+    }
+    if(usPW>=NumPW[usCh]){
+        if(Notifications>=nError)
+            printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
+        return;
+    }
+    if(PotPar[usCh][usPW][NumPotPars+WhichPar]==Value) return;
+
+    PotPar[usCh][usPW][NumPotPars+WhichPar] = Value;
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;
 }
 
 void CATS::RemoveAnaSource(){
@@ -1082,6 +1100,12 @@ void CATS::SetAnaSource(double (*AS)(double*), double* Pars){
     if(AnalyticSource==AS && AnaSourcePar==Pars) return;
     AnalyticSource = AS;
     AnaSourcePar = Pars;
+    SourceGridReady = false;
+    ComputedCorrFunction = false;
+}
+void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value){
+    if(AnaSourcePar[NumSourcePars+WhichPar]==Value) return;
+    AnaSourcePar[NumSourcePars+WhichPar] = Value;
     SourceGridReady = false;
     ComputedCorrFunction = false;
 }

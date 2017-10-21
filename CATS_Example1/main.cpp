@@ -113,6 +113,9 @@ void Example1(){
     //in this example we use a Gauss source, which takes only 1 parameter as input (the size)
     double SourcePars[4] = {0,0,0,1.3};
     Kitty.SetAnaSource(GaussSource, SourcePars);
+    //!you can use a transport model for the source, by giving as an input an OSCAR1997A file:
+    //Kitty.SetUseAnalyticSource(false);
+    //Kitty.SetInputFileName(CHAR_FILENAME);
 
     //the number of different channels to be taken into account.
     Kitty.SetNumChannels(2);
@@ -167,6 +170,8 @@ void Example1(){
     Kitty.SetShortRangePotential(0,0,UsmaniPotential1S0,PotPars);
     //the 1,0 means that we set the 1th channel (S=1), the s-wave
     Kitty.SetShortRangePotential(1,0,UsmaniPotential3S1,PotPars);
+    //make sure that the p-wave potential (used for pp) is set to zero, else it will go into the calculation!
+    Kitty.SetShortRangePotential(1,1,NULL,NULL);
 
     //this is where the magic happens - we run CATS and all relevant parameters are computed
     Kitty.KillTheCat();

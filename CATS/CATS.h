@@ -1,5 +1,5 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.2 (16 October 2017)
+//! Current Version: 2.3 (21 October 2017)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
@@ -204,11 +204,20 @@ public:
     //!Pars should be an array with at least 2 elements
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW,
                            double (*pot)(double* Pars), double* Pars);
+    //set the value of the WhichPar-th parameter of the potential corresponding to the usCh,usPW
+    //N.B. WhichPar counts from zero, i.e. CATS sets the value of PotPar[usCh][usPW][3+WhichPar]. Since CATS
+    //has no information of the length of this array, it is the responsibility of the user to make source there is
+    //no segmentation violation!!!
+    void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value);
 
     void RemoveAnaSource();
     //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
     double* AnaSourcePar;
     void SetAnaSource(double (*AS)(double*), double* Pars);
+    //set the value of the WhichPar-th parameter of the source
+    //N.B. WhichPar counts from zero, i.e. CATS sets the value of AnaSourcePar[2+WhichPar].
+    //It is the responsibility of the user to respect the size of the array and avoid segmentation fault!
+    void SetAnaSource(const unsigned& WhichPar, const double& Value);
 
     //!------------------------------------------------
 
@@ -220,7 +229,6 @@ public:
     void KillTheCat(const int& Options=kNothingChanged);
     void ComputeTheRadialWaveFunction();
     //!------------------------------------------------
-
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
 
@@ -389,6 +397,9 @@ private:
     //convert fm into natural units (1/MeV)
     const double FmToNu;
     const double NuToFm;
+
+    const unsigned short NumPotPars;
+    const unsigned short NumSourcePars;
     //!------------------------------------------------
 
     //!Functions used internally by CATS
