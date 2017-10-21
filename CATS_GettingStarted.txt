@@ -26,7 +26,7 @@ You need to include and compile all *.cpp and *.h files from those folders in yo
 We do not offer any specific option for compilation or installation, except for the macro included in the CATS_Example folder.
 
 3) How to use it
-You can see some example code using CATS in the folders named CATS_Example#.
+You can see some example code of using CATS in the folder named CATS_Example1.
 With the help of the comments you should be capable of understanding how to run CATS.
 Nevertheless there a few thinks that we would like to bring your attention on:
   * Both the potential and the analytic source should be defined as functions in your code and passed on to CATS
