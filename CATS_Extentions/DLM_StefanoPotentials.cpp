@@ -1658,7 +1658,7 @@ double DLM_StefanoPotentials::Eval_PWprojector_pp(const double& Radius, const in
     const double lsp=-(TotMom+2);
 
     double RETURN_VAL=0;
-
+//printf("r=%.2f, s=%i, l=%i, j=%i, FLAG=%i\n",Radius,Spin,AngMom,TotMom,DlmFlag);
     if(Spin==1 && AngMom==TotMom) s12=2;
     else if(AngMom==(TotMom+1)) {s12=-2.*double(TotMom+2)/double(2*TotMom+1);}
     //this I made up to make it work... it is -0.6 (-3/5) for s=1, l=1, j=2
