@@ -1,8 +1,12 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.3 (21 October 2017)
+//! Current Version: 2.5.0 (8 November 2017)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
+
+//!Known issues
+//!It is confirmed that changing the number of channels or partial waves that are used
+// results in an undefined behavior. Please use different objects for different set ups until this issue is understood and fixed.
 
 #ifndef CATS_H
 #define CATS_H
@@ -46,9 +50,11 @@ public:
     void SetNumChannels(const unsigned short& numCh);
     unsigned short GetNumChannels();
 
-    //!N.B. here usCh plays the role of the spin quantum number
     void SetNumPW(const unsigned short& usCh, const unsigned short& numPW);
     unsigned short GetNumPW(const unsigned short& usCh);
+
+    void SetSpin(const unsigned short& usCh, const unsigned short& spin);
+    unsigned short GetSpin(const unsigned short& spin);
 
     void SetQ1Q2(const int& q1q2);
     int GetQ1Q2();
@@ -179,6 +185,8 @@ public:
     double GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin);
     double EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                   const bool& DevideByR=true);
+    double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
+
 
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin);
@@ -202,8 +210,7 @@ public:
     void RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW);
     //Pars[0] should be the radius, Pars[1] should be the momentum.
     //!Pars should be an array with at least 2 elements
-    void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW,
-                           double (*pot)(double* Pars), double* Pars);
+    void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars);
     //set the value of the WhichPar-th parameter of the potential corresponding to the usCh,usPW
     //N.B. WhichPar counts from zero, i.e. CATS sets the value of PotPar[usCh][usPW][3+WhichPar]. Since CATS
     //has no information of the length of this array, it is the responsibility of the user to make source there is
@@ -227,6 +234,8 @@ public:
     //have changed. By default it assumes that they have not.
     //!Thus run CATS with KillTheCat(KillOptions) if you have changed anything!
     void KillTheCat(const int& Options=kNothingChanged);
+    //true = C(k) is computed; false = C(k) needs to be reevaluated
+    bool CkStatus();
     void ComputeTheRadialWaveFunction();
     //!------------------------------------------------
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
@@ -242,6 +251,8 @@ private:
 
     //Number of channels
     unsigned short NumCh;
+    //total spin of each channel
+    unsigned short* Spin;
     //Number of partial waves for each polarization
     unsigned short* NumPW;
     bool IdenticalParticles;

@@ -131,15 +131,17 @@ void Example1(){
     //=> the ratio between them should be 1:3
     Kitty.SetChannelWeight(0, 0.25);//(#WhichChannel, #what weight)
     Kitty.SetChannelWeight(1, 0.75);
+    Kitty.SetSpin(0,0);//0th channel: S=0 channel
+    Kitty.SetSpin(1,1);//1th channel: S=1 channel
 
     //you can define any potential function you want and pass it any set of parameters you want.
     //the trick is to leave the first 2 parameters as placeholders (used internally by CATS)
     //in this example the potential function does not get any parameters.
     //N.B. the array you pass to CATS should always have a min. size of 2, else you might get memory issues.
     double PotPars[3];
-    //the 0,0 means that we set the 0th channel (S=0), the s-wave
+    //the 0,0 means that we set the 0th channel, l=0 (1S0)
     Kitty.SetShortRangePotential(0,0,ReidPotential1S0,PotPars);
-    //the 1,1 means that we set the 1st channel (S=1), the p-wave
+    //the 1,1 means that we set the 1st channel, l=1 (3PX)
     Kitty.SetShortRangePotential(1,1,ReidPotential3P,PotPars);
 
     //this is where the magic happens - we run CATS and all relevant parameters are computed
@@ -166,12 +168,12 @@ void Example1(){
     //Note that the for the Usmani potential we use the [2]nd parameter as the strength of its repulsive core
     //the default value of this parameter is 2137 MeV
     PotPars[2] = 2137;
-    //the 0,0 means that we set the 0th channel (S=0), the s-wave
+    //the 0,0 means that we set the 0th channel, l=0 (1S0)
     Kitty.SetShortRangePotential(0,0,UsmaniPotential1S0,PotPars);
-    //the 1,0 means that we set the 1th channel (S=1), the s-wave
+    //the 1,0 means that we set the 1st channel, l=0 (3S1)
     Kitty.SetShortRangePotential(1,0,UsmaniPotential3S1,PotPars);
     //make sure that the p-wave potential (used for pp) is set to zero, else it will go into the calculation!
-    Kitty.SetShortRangePotential(1,1,NULL,NULL);
+    Kitty.RemoveShortRangePotential(1,1);
 
     //this is where the magic happens - we run CATS and all relevant parameters are computed
     Kitty.KillTheCat();

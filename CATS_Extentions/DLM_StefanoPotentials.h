@@ -358,6 +358,7 @@ public:
     //for nn -> I==1; I3==-1
     double Eval(const double& Radius, const int& Spin, const int& Spin3, const int& IsoSpin, const int& IsoSpin3);
     double EvalCATS_v1_0(const double& Radius, const int& Spin);
+    double Eval_PWprojector_pp(const double& Radius, const int& Spin,const int& AngMom, const int& TotMom, const int& DlmFlag);
     void PotentialName(const int& WhichPot, char* Name);
 
 

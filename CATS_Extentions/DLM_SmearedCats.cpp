@@ -229,6 +229,11 @@ double DLM_SmearedCats::EvalCorrectedCkErr(const double& Momentum){
             (InterpolRange[1]-InterpolRange[0]);
 }
 
+CATS* DLM_SmearedCats::GetTheKitty(const unsigned& WhichOne){
+    if(WhichOne>=NumCk) return NULL;
+    return cat[WhichOne];
+}
+
 double DLM_SmearedCats::CkLednicky(const double& Momentum, const bool& SinOnly, const bool& QS, const bool& WithLambda){
     const std::complex<double> i(0,1);
     const double Pi(3.141592653589793);

@@ -30,6 +30,7 @@ public:
     double GetCorrectedCkErr(const unsigned& WhichBin);
     double EvalCorrectedCk(const double& Momentum);
     double EvalCorrectedCkErr(const double& Momentum);
+    CATS* GetTheKitty(const unsigned& WhichOne);
 
     void Correct(const bool& NewBinning);
 

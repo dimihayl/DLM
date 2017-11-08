@@ -50,3 +50,15 @@ Now the parameters can be set by calling SetAnaSource and SetShortRangePotential
 N.B. use those functions with care, as misusing might result in writing to unallocated memory!
 See the comments in CATS.h for further details.
 
+27.10.2017 CATS 2.4
+A bug resulting in a wrong determination of the wave-function at large r found and fixed. 
+It was noticed that the GNU functions used for the assymptotic solutions do show errors for high momenta (>150 MeV) and r<10 fm.
+Therefore be advised to care when using large sources (>2 fm), since the solution may become unstable for higher momenta!
+
+08.10.2017 CATS 2.5.0 (unstable)
+One design flaw was found and repaired. 
+Basically now one always needs to specify the Spin for each channel regardless of whether a potential is defined, using the function SetSpin(...).
+This results in reduction of the arguments for SetShortRangePotential (this Spin is not a required input any more).
+Further an issue has been reported, than when reusing the same CATS object by changing the set up (mostly the number of channels and potentials used) 
+there might be a problem with the memory management resulting in undefined behaviour. Do note that even without a crash one may simply get a wrong result. 
+Please until the reason has been found and fix refrain from reusing the same CATS object for different set ups.

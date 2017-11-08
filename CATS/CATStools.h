@@ -131,6 +131,8 @@ public:
     unsigned GetNumPairsMixedEvent() const;
     unsigned GetNumPairs() const;
     const CatsParticlePair* GetPair(const unsigned& WhichPair) const;
+    const CatsParticlePair* GetSePair(const unsigned& WhichPair) const;
+    const CatsParticlePair* GetMePair(const unsigned& WhichPair) const;
     void GoBabyGo(const bool& TauCorrection=false);
 private:
     const unsigned NumEvents;

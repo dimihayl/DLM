@@ -432,6 +432,14 @@ const CatsParticlePair* CatsDataBuffer::GetPair(const unsigned& WhichPair) const
     if(WhichPair>=TotalNumPairs) return NULL;
     return PointerToPair[WhichPair];
 }
+const CatsParticlePair* CatsDataBuffer::GetSePair(const unsigned& WhichPair) const{
+    if(WhichPair>=NumSePairs) return NULL;
+    return PointerToPair[WhichPair];
+}
+const CatsParticlePair* CatsDataBuffer::GetMePair(const unsigned& WhichPair) const{
+    if(WhichPair>=NumMePairs) return NULL;
+    return PointerToPair[NumSePairs+WhichPair];
+}
 void CatsDataBuffer::GoBabyGo(const bool& TauCorrection){
     NumSePairs=0;
     NumMePairs=0;
