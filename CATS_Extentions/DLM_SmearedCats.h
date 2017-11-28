@@ -39,6 +39,8 @@ public:
     //without extension, automatically the extension is set to .dlmsc
 //    void SaveAs(const char* FileName);
 
+    bool GetStatus();
+
 private:
     double* LambdaCoeff;
     double* CorrectedCk;
@@ -66,7 +68,7 @@ private:
     double aResidual;
     double LambdaLedni;
 
-
+    bool* LedniStatus;
 };
 
 

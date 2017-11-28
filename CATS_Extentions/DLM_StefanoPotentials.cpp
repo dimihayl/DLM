@@ -1634,6 +1634,8 @@ double DLM_StefanoPotentials::EvalCATS_v1_0(const double& Radius, const int& Spi
 
 //DlmFlag : 1 => modified s12 for l==j-1
 //DlmFlag : 2 => take the coupled channel, but compute only the first diagonal term
+//DlmFlag : 3 => take the coupled channel, but compute only the off-diagonal term
+//DlmFlag : 4 => take the coupled channel, but compute only the second diagonal term
 double DLM_StefanoPotentials::Eval_PWprojector_pp(const double& Radius, const int& Spin,
                                                const int& AngMom, const int& TotMom, const int& DlmFlag){
     pot(Radius, 0);
@@ -1663,15 +1665,17 @@ double DLM_StefanoPotentials::Eval_PWprojector_pp(const double& Radius, const in
     else if(AngMom==(TotMom+1)) {s12=-2.*double(TotMom+2)/double(2*TotMom+1);}
     //this I made up to make it work... it is -0.6 (-3/5) for s=1, l=1, j=2
     else if(AngMom==(TotMom-1) && DlmFlag==1) {s12=-1.*double(TotMom+1)/double(2*TotMom+1);}
-    else if(Spin==1 && AngMom==(TotMom-1) && DlmFlag==2){
+    else if(Spin==1 && AngMom==(TotMom-1) && (DlmFlag==2 || DlmFlag==3 || DlmFlag==4 || DlmFlag==5)){
         s12m=-2.*double(TotMom-1.)/double(2.*TotMom+1.);
         s12=sqrt(double(36.*TotMom*(TotMom+1)))/double(2.*TotMom+1.);
         s12p=-2.*double(TotMom+2.)/double(2.*TotMom+1.);
     }
 
     RETURN_VAL = vc+s12*vt+ls*vls+AngMom*(AngMom+1)*vl2+ls*ls*vls2;
-    if(Spin==1 && AngMom==(TotMom-1) && DlmFlag==2){
-        RETURN_VAL = vc+s12m*vt+lsm*vls+AngMom*(AngMom+1)*vl2+lsm*lsm*vls2;
+    if(Spin==1 && AngMom==(TotMom-1)){
+        if(DlmFlag==2) RETURN_VAL = vc+s12m*vt+lsm*vls+AngMom*(AngMom+1)*vl2+lsm*lsm*vls2;
+        else if(DlmFlag==3) RETURN_VAL = s12*vt;
+        else if(DlmFlag==4) RETURN_VAL = vc+s12p*vt+lsp*vls+(AngMom+2.)*(AngMom+3.)*vl2+lsp*lsp*vls2;
     }
 
     return RETURN_VAL;

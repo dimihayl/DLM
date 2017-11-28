@@ -224,7 +224,9 @@ public:
     //set the value of the WhichPar-th parameter of the source
     //N.B. WhichPar counts from zero, i.e. CATS sets the value of AnaSourcePar[2+WhichPar].
     //It is the responsibility of the user to respect the size of the array and avoid segmentation fault!
-    void SetAnaSource(const unsigned& WhichPar, const double& Value);
+    //if(SmallChange==true) => force CATS to reuse the computing grid
+    //This will  gain performance, might decrease the accuracy though, please use only when fine-tuning the source
+    void SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange=false);
 
     //!------------------------------------------------
 
@@ -306,6 +308,9 @@ private:
     unsigned NumIpBins;
     double* IpBin;
 
+    //this guy should only be modified in ComputeTotWaveFunction, else the WaveFunction2 memory management will fail
+    unsigned NumGridPts;
+
     //the very first radius to be computed. Related with the shape of the potential. As a rule of thumb,
     //this value should be at least an order of magnitude smaller than the smallest desirable resolution of the numerical method.
     //by default this is set to 0.005 fm. This parameter relates to the initial step size as well as the minimal step-size
@@ -366,12 +371,13 @@ private:
     CATSelder* BaseSourceGrid;
     //in bins of momentum only
     CATSelder** kSourceGrid;
-    double** WaveFunction2;
+//double** WaveFunction2;
     //in bins of momentum/ImpactParameter
     CATSelder*** kbSourceGrid;
 
     bool LoadedData;//i.e. the data-file was read
     bool SourceGridReady;//i.e. the Particle container is set up properly
+    bool SourceUpdated;
     bool ComputedWaveFunction;
     bool ComputedCorrFunction;
 
@@ -426,6 +432,7 @@ private:
     void FoldSourceAndWF();
     void SortAllData();
     void SetUpSourceGrid();
+    void UpdateSourceGrid();
 
     float ProgressCompute;
     float ProgressLoad;
@@ -488,6 +495,8 @@ private:
     void DelCh();
     //delete all variables that depend on the number of momentum bins, number of channels and number of partial waves
     void DelMomChPw();
+    //delete all variables that depend on the number of momentum bins and number of channels
+    void DelMomCh();
     //delete all variables that depend only on the number of momentum bins
     void DelMom();
     //delete all variables that depend only on the number of momentum and b-bins
@@ -514,6 +523,9 @@ private:
     double**** WaveFunRad;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     double**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     bool* MomBinConverged;//bins of mom, marked as true in case the num. comp. failed and this bin should not be used
+
+    //in bins of momentum, channel, GridPoints
+    double*** WaveFunction2;
 
     //in bins of momentum/ImpactParameter
     double** kbCorrFun;

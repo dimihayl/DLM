@@ -154,6 +154,7 @@ public:
     ~CATSnode();
     unsigned GetNumOfBoxes();
     unsigned GetNumOfEl();
+    void Update();
 protected:
     CATSelder* Elder;
     const short Depth;
@@ -163,8 +164,10 @@ protected:
     double SourceValue;
     double* MeanVal;
     double* IntLen;
+    double GridSize;
     CATSnode** child;
 
+    void Update(const bool& ThisNodeOnly);
     void StandardNodeInit(double* mean, double* len, const CATSnode* TemplateNode=NULL);
 };
 

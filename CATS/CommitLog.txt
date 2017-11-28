@@ -62,3 +62,13 @@ This results in reduction of the arguments for SetShortRangePotential (this Spin
 Further an issue has been reported, than when reusing the same CATS object by changing the set up (mostly the number of channels and potentials used) 
 there might be a problem with the memory management resulting in undefined behaviour. Do note that even without a crash one may simply get a wrong result. 
 Please until the reason has been found and fix refrain from reusing the same CATS object for different set ups.
+
+09.10.2017 CATS 2.5.1 (unstable)
+Yet another design flaw found. This one had to do with the way CATS handled the weights of the different channels.
+The issue has been repaired without changing any functionality.
+
+28.11.2017 CATS 2.6
+The instabilities reported regarding version 2.5 were found to be unraleted to CATS, but to a bug in the analysis framework with which CATS was tested.
+To improve performance when reevaluating C(k) the user now has the freedom to force CATS to use the same source-computing-grid when changing the source.
+While this option can be very useful for e.g. when fitting, please be aware that if there is a significant modification in the PDF of the source, than 
+the accuarcy of the computation might decrease, or in an extreme case CATS may crash! So use it with care and only when fine-tuning the source!

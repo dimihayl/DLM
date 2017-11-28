@@ -16,11 +16,13 @@ DLM_SmearedCats::DLM_SmearedCats(CATS** InCat, const unsigned& numCk):
     }
     CorrectedCk = NULL;
     CorrectedCkErr = NULL;
+    LedniStatus = new bool [numCk];
 }
 
 DLM_SmearedCats::~DLM_SmearedCats(){
     delete [] LambdaCoeff;
     delete [] hResidual;
+    delete [] LedniStatus;
     for(unsigned uCk=0; uCk<NumCk; uCk++){
         if(RespMatrix[uCk]){delete RespMatrix[uCk]; RespMatrix[uCk]=NULL;}
     }
@@ -45,15 +47,18 @@ void DLM_SmearedCats::SetUseLednicky(const unsigned& WhichNr, const int& val, co
                                      const double& ScattLen1, const double& EffRan1,
                                      const double& ScattLen3, const double& EffRan3,
                                      const double& ares, const double& arad, const double& lambda0){
-    EvalUsingEquation[WhichNr] = val;
-    GaussR = grad;
-    ScattLenSin = ScattLen1;
-    EffRangeSin = EffRan1;
-    ScattLenTri = ScattLen3;
-    EffRangeTri = EffRan3;
-    aResidual = ares;
-    ResidualR = arad;
-    LambdaLedni = lambda0;
+
+    LedniStatus[WhichNr] = true;
+    if(EvalUsingEquation[WhichNr]!=val) {EvalUsingEquation[WhichNr] = val; LedniStatus[WhichNr] = false;};
+    if(GaussR!=grad) {GaussR = grad; LedniStatus[WhichNr] = false;};
+    if(ScattLenSin!=ScattLen1) {ScattLenSin = ScattLen1; LedniStatus[WhichNr] = false;};
+    if(EffRangeSin!=EffRan1) {EffRangeSin = EffRan1; LedniStatus[WhichNr] = false;};
+    if(ScattLenTri!=ScattLen3) {ScattLenTri = ScattLen3; LedniStatus[WhichNr] = false;};
+    if(EffRangeTri!=EffRan3) {EffRangeTri = EffRan3; LedniStatus[WhichNr] = false;};
+    if(aResidual!=ares) {aResidual = ares; LedniStatus[WhichNr] = false;};
+    if(ResidualR!=arad) {ResidualR = arad; LedniStatus[WhichNr] = false;};
+    if(LambdaLedni!=lambda0) {LambdaLedni = lambda0; LedniStatus[WhichNr] = false;};
+
 }
 
 void DLM_SmearedCats::Correct(const bool& NewBinning){
@@ -104,15 +109,19 @@ void DLM_SmearedCats::Correct(const bool& NewBinning){
                                     break;
                         case 1 :    CkVal = CkLednicky(MomentumTrue, false, false);
                                     CkValErr = 0;
+                                    LedniStatus[uCk] = true;
                                     break;
                         case 2 :    CkVal = CkLednicky(MomentumTrue, false, true);
                                     CkValErr = 0;
+                                    LedniStatus[uCk] = true;
                                     break;
                         case 3 :    CkVal = CkLednicky(MomentumTrue, true, false);
                                     CkValErr = 0;
+                                    LedniStatus[uCk] = true;
                                     break;
                         case 4 :    CkVal = CkLednicky(MomentumTrue, true, true);
                                     CkValErr = 0;
+                                    LedniStatus[uCk] = true;
                                     break;
                         default:    CkVal = 0;
                                     CkValErr = 0;
@@ -140,6 +149,7 @@ if(CorrectedCkErr[uBinSmear]!=CorrectedCkErr[uBinSmear]){
             }
         }
     }
+
 }
 
 
@@ -272,4 +282,12 @@ double DLM_SmearedCats::CkLednicky(const double& Momentum, const bool& SinOnly, 
     return CkValue;
 }
 
-
+bool DLM_SmearedCats::GetStatus(){
+    bool Status = true;
+    for(unsigned uCk=0; uCk<NumCk; uCk++){
+        if(!cat[uCk]) continue;
+        else if(EvalUsingEquation[uCk]==0) Status *= cat[uCk]->CkStatus();
+        else Status *= LedniStatus[uCk];
+    }
+    return Status;
+}

@@ -1,9 +1,10 @@
 
-#include "DLM_Potentials_pp.h"
+#include "DLM_Potentials.h"
 #include "DLM_StefanoPotentials.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 int DlmPot=0;
 int DlmPotFlag=0;
@@ -183,6 +184,41 @@ double fV18potential(const int& V18Pot, const int& Spin, const int& AngMom, cons
     return ppV18pot[StefPotId]->Eval_PWprojector_pp(Radius[0],Spin,AngMom,TotMom,DlmPotFlag);
 }
 
+
+
+////////////////////////////////
+//! pLambda
+
+//(this is Oliver's version, not CRAB!)
+double UsmaniPotentialOli(const int& Spin, double* Radius)
+{
+
+  double r = Radius[0];
+  //Values for the potential
+  const double vbar = 6.2;
+
+  const double vsigma = 0.25;
+
+  const double wc = 2137;
+
+  double x=r*0.7;
+  double vc = wc/(1+exp((r-0.5)/0.2));
+  double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-2.*r*r),2.);
+
+  double v = 0.;
+
+  if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
+  else if (Spin == 1)  v = vc - (vbar - 0.25*vsigma)*tpi*tpi;//Usmani triplet
+  else printf ("wrong polarization\n");
+
+  return v;
+
+}
+
+
+////////////////////////////////////////////
+
+
 double fDlmPot(const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
     //printf("V=%f\n",fV18potential(9,Spin,AngMom,TotMom,Radius)) ;
     switch(DlmPot){
@@ -191,12 +227,19 @@ double fDlmPot(const int& Spin, const int& AngMom, const int& TotMom, double* Ra
         case pp_ReidSC : return fReidDlm(Radius[0],Spin,AngMom,TotMom);
         case pp_ReidOli : return ReidSoftCore(Spin,Radius);
         case pp_ReidCrab : return fReidMeVfm(Radius[0],Spin);
+        case pL_UsmaniOli : return UsmaniPotentialOli(Spin,Radius);
         default : return 0;
     }
+}
+double fDlmPot(double* Parameters){
+    return fDlmPot(round(Parameters[2]),round(Parameters[3]),round(Parameters[4]),Parameters);
 }
 
 double fDlmPot1S0(double* Radius){
     return fDlmPot(0,0,0,Radius);
+}
+double fDlmPot3S1(double* Radius){
+    return fDlmPot(1,0,1,Radius);
 }
 double fDlmPot3P0(double* Radius){
     return fDlmPot(1,1,0,Radius);
@@ -212,6 +255,8 @@ double fDlmPot3P(double* Radius){
 }
 
 void GetDlmPotName(const int& potid, const int& potflag, char* name){
+    double Radius=1;
+    fV18potential(1,0,0,0,&Radius);
     switch(potid){
         case pp_AV18 :
             ppV18pot[8]->PotentialName(9, name);

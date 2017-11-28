@@ -90,6 +90,5 @@ public:
     enum WhichPad { kMainPad=65535 };
 };
 
-
 #endif
 
