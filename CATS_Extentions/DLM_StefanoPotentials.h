@@ -10,6 +10,8 @@ class DLM_StefanoPotentials{
 
 private:
 
+    enum ParticleType { neutron=-1, proton=1 };
+
     const double m_pi;
     const double m_pi_not;
     const double m_pi_plus;
@@ -358,6 +360,8 @@ public:
     //for nn -> I==1; I3==-1
     double Eval(const double& Radius, const int& Spin, const int& Spin3, const int& IsoSpin, const int& IsoSpin3);
     double EvalCATS_v1_0(const double& Radius, const int& Spin);
+    double Eval_PWprojector(const double& Radius,const int& IsoSpin, const int& PartType1, const int& PartType2,
+                            const int& Spin, const int& AngMom, const int& TotMom, const int& DlmFlag);
     double Eval_PWprojector_pp(const double& Radius, const int& Spin,const int& AngMom, const int& TotMom, const int& DlmFlag);
     void PotentialName(const int& WhichPot, char* Name);
 

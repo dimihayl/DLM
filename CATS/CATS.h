@@ -1,5 +1,5 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.5.0 (8 November 2017)
+//! Current Version: 2.6 (28 November 2017)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
@@ -186,7 +186,6 @@ public:
     double EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                   const bool& DevideByR=true);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
-
 
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin);

@@ -55,7 +55,7 @@ A bug resulting in a wrong determination of the wave-function at large r found a
 It was noticed that the GNU functions used for the assymptotic solutions do show errors for high momenta (>150 MeV) and r<10 fm.
 Therefore be advised to care when using large sources (>2 fm), since the solution may become unstable for higher momenta!
 
-08.10.2017 CATS 2.5.0 (unstable)
+08.11.2017 CATS 2.5.0 (unstable)
 One design flaw was found and repaired. 
 Basically now one always needs to specify the Spin for each channel regardless of whether a potential is defined, using the function SetSpin(...).
 This results in reduction of the arguments for SetShortRangePotential (this Spin is not a required input any more).
@@ -63,7 +63,7 @@ Further an issue has been reported, than when reusing the same CATS object by ch
 there might be a problem with the memory management resulting in undefined behaviour. Do note that even without a crash one may simply get a wrong result. 
 Please until the reason has been found and fix refrain from reusing the same CATS object for different set ups.
 
-09.10.2017 CATS 2.5.1 (unstable)
+09.11.2017 CATS 2.5.1 (unstable)
 Yet another design flaw found. This one had to do with the way CATS handled the weights of the different channels.
 The issue has been repaired without changing any functionality.
 

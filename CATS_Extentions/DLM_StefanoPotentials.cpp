@@ -1632,6 +1632,56 @@ double DLM_StefanoPotentials::EvalCATS_v1_0(const double& Radius, const int& Spi
     return Eval(Radius, Spin, Spin, 1, 1);
 }
 
+//DlmFlag : 1 => modified s12 for l==j-1 (dlm magic)
+//DlmFlag : 2 => take the coupled channel, but compute only the first diagonal term
+//DlmFlag : 3 => take the coupled channel, but compute only the off-diagonal term
+//DlmFlag : 4 => take the coupled channel, but compute only the second diagonal term
+//IsoSpin is for the particle pair, PartType1/2 should be 1 for proton and -1 for neutron
+double DLM_StefanoPotentials::Eval_PWprojector(const double& Radius,
+                                               const int& IsoSpin, const int& PartType1, const int& PartType2,
+                                               const int& Spin, const int& AngMom, const int& TotMom, const int& DlmFlag){
+    pot(Radius, 0);
+
+    const int& t1z=PartType1;//isospin3 x 2 particle1
+    const int& t2z=PartType2;//isospin3 x 2 particle2
+    const int s1ds2=4*Spin-3;
+    const int t1dt2=4*IsoSpin-3;
+    const int t12=3*t1z*t2z-t1dt2;
+    double vc = vv[0]+t1dt2*vv[1]+s1ds2*vv[2]+s1ds2*t1dt2*vv[3]+t12*vv[14]+s1ds2*t12*vv[15]+(t1z+t2z)*vv[17];
+    double vt = vv[4]+t1dt2*vv[5]+t12*vv[16];
+    double vls = vv[6]+t1dt2*vv[7];
+    double vl2=vv[8]+t1dt2*vv[9]+s1ds2*vv[10]+s1ds2*t1dt2*vv[11];
+    double vls2=vv[12]+t1dt2*vv[13];
+
+    const int ls=(TotMom*(TotMom+1)-AngMom*(AngMom+1)-Spin*(Spin+1))/2;
+    double s12=0;
+    double s12m;
+    double s12p;
+    const double lsm=TotMom-1;
+    const double lsp=-(TotMom+2);
+
+    double RETURN_VAL=0;
+//printf("r=%.2f, s=%i, l=%i, j=%i, FLAG=%i\n",Radius,Spin,AngMom,TotMom,DlmFlag);
+    if(Spin==1 && AngMom==TotMom) s12=2;
+    else if(AngMom==(TotMom+1)) {s12=-2.*double(TotMom+2)/double(2*TotMom+1);}
+    //this I made up to make it work... it is -0.6 (-3/5) for s=1, l=1, j=2
+    else if(AngMom==(TotMom-1) && DlmFlag==1) {s12=-1.*double(TotMom+1)/double(2*TotMom+1);}
+    else if(Spin==1 && AngMom==(TotMom-1) && (DlmFlag==2 || DlmFlag==3 || DlmFlag==4 || DlmFlag==5)){
+        s12m=-2.*double(TotMom-1.)/double(2.*TotMom+1.);
+        s12=sqrt(double(36.*TotMom*(TotMom+1)))/double(2.*TotMom+1.);
+        s12p=-2.*double(TotMom+2.)/double(2.*TotMom+1.);
+    }
+
+    RETURN_VAL = vc+s12*vt+ls*vls+AngMom*(AngMom+1)*vl2+ls*ls*vls2;
+    if(Spin==1 && AngMom==(TotMom-1)){
+        if(DlmFlag==2) RETURN_VAL = vc+s12m*vt+lsm*vls+AngMom*(AngMom+1)*vl2+lsm*lsm*vls2;
+        else if(DlmFlag==3) RETURN_VAL = s12*vt;
+        else if(DlmFlag==4) RETURN_VAL = vc+s12p*vt+lsp*vls+(AngMom+2.)*(AngMom+3.)*vl2+lsp*lsp*vls2;
+    }
+
+    return RETURN_VAL;
+}
+
 //DlmFlag : 1 => modified s12 for l==j-1
 //DlmFlag : 2 => take the coupled channel, but compute only the first diagonal term
 //DlmFlag : 3 => take the coupled channel, but compute only the off-diagonal term

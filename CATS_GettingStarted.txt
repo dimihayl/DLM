@@ -6,7 +6,7 @@ The code is still in β version, bugs may pop out from time to time.
 
 ----------------------------------------------------------------------------
 Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-Current Version: 2.4 (27 October 2017)
+Current Version: 2.6 (28 November 2017)
 Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 Support:         dimitar.mihaylov(at)mytum.de
 ----------------------------------------------------------------------------

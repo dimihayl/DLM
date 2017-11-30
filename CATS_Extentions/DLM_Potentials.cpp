@@ -6,17 +6,17 @@
 #include <string.h>
 #include <math.h>
 
-int DlmPot=0;
-int DlmPotFlag=0;
-DLM_StefanoPotentials** ppV18pot=NULL;
+//int DlmPot=0;
+//int DlmPotFlag=0;
+DLM_StefanoPotentials** fV18pot=NULL;
 
 void CleanUpV18Pot(){
-    if(ppV18pot){
+    if(fV18pot){
         for(unsigned iPot=0; iPot<30; iPot++){
-            delete ppV18pot[iPot];
+            delete fV18pot[iPot];
         }
-        delete [] ppV18pot;
-        ppV18pot = NULL;
+        delete [] fV18pot;
+        fV18pot = NULL;
     }
 }
 
@@ -156,12 +156,14 @@ double fReidDlm3P(double* rad){
 }
 
 //N.B. the potentials are never deleted, i.e. they stay there until termination
-double fV18potential(const int& V18Pot, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
+double fV18potential(const int& V18Pot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
     if( (V18Pot<1||V18Pot>24) && (V18Pot<112||V18Pot>114) && (V18Pot<122||V18Pot>124) ){
         return 0;
     }
-    if(!ppV18pot){
-        ppV18pot = new DLM_StefanoPotentials* [30];
+    if(!fV18pot){
+        fV18pot = new DLM_StefanoPotentials* [30];
         for(unsigned uPot=0; uPot<30; uPot++){
             unsigned WhichPot = uPot+1;
             if(uPot==24) WhichPot=112;
@@ -170,7 +172,7 @@ double fV18potential(const int& V18Pot, const int& Spin, const int& AngMom, cons
             else if(uPot==24+3) WhichPot=122;
             else if(uPot==24+4) WhichPot=123;
             else if(uPot==24+5) WhichPot=124;
-            ppV18pot[uPot] = new DLM_StefanoPotentials(WhichPot);
+            fV18pot[uPot] = new DLM_StefanoPotentials(WhichPot);
         }
     }
     unsigned StefPotId = V18Pot-1;
@@ -180,8 +182,9 @@ double fV18potential(const int& V18Pot, const int& Spin, const int& AngMom, cons
     else if(V18Pot==122) StefPotId=27;
     else if(V18Pot==123) StefPotId=28;
     else if(V18Pot==124) StefPotId=29;
-//printf("StefPotId=%i --> V=%f\n",StefPotId,ppV18pot[StefPotId]->EvalCATS_v1_0(Radius[0],0));
-    return ppV18pot[StefPotId]->Eval_PWprojector_pp(Radius[0],Spin,AngMom,TotMom,DlmPotFlag);
+//printf("StefPotId=%i --> V=%f\n",StefPotId,fV18pot[StefPotId]->EvalCATS_v1_0(Radius[0],0));
+    //return fV18pot[StefPotId]->Eval_PWprojector_pp(Radius[0],Spin,AngMom,TotMom,DlmPotFlag);
+    return fV18pot[StefPotId]->Eval_PWprojector(Radius[0],IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,DlmPotFlag);
 }
 
 
@@ -219,11 +222,48 @@ double UsmaniPotentialOli(const int& Spin, double* Radius)
 ////////////////////////////////////////////
 
 
-double fDlmPot(const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
+double ppDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
+    return fDlmPot(DlmPot,DlmFlag,1,1,1,Spin,AngMom,TotMom,Radius);
+}
+
+//[2] = DlmPot, [3] = DlmFlag
+double ppDlmPot1S0(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],0,0,0,Pars);
+}
+double ppDlmPot3S1(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],1,0,1,Pars);
+}
+double ppDlmPot3P0(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],1,1,0,Pars);
+}
+double ppDlmPot3P1(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],1,1,1,Pars);
+}
+double ppDlmPot3P2(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],1,1,2,Pars);
+}
+double ppDlmPot3P(double* Pars){
+    return (ppDlmPot3P0(Pars)+ppDlmPot3P1(Pars)+ppDlmPot3P2(Pars))/3.;
+}
+
+double pLambdaDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
+    return fDlmPot(DlmPot,DlmFlag,0,0,0,Spin,AngMom,TotMom,Radius);
+}
+//[2] is Pot Type, 3 is [3] is PotFlag
+double pLambdaDlmPot1S0(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],0,0,0,Pars);
+}
+double pLambdaDlmPot3S1(double* Pars){
+    return ppDlmPot(Pars[2],Pars[3],1,0,1,Pars);
+}
+
+//t2p1 - 2xIsospin of particle 1, t2p2 same for particle 2
+double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
+               const int& IsoSpin, const int& t2p1, const int& t2p2, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
     //printf("V=%f\n",fV18potential(9,Spin,AngMom,TotMom,Radius)) ;
     switch(DlmPot){
-        case pp_AV18 : return fV18potential(9,Spin,AngMom,TotMom,Radius);
-        case pp_ReidV8 : return fV18potential(2,Spin,AngMom,TotMom,Radius);
+        case NN_AV18 : return fV18potential(9,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
+        case NN_ReidV8 : return fV18potential(2,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
         case pp_ReidSC : return fReidDlm(Radius[0],Spin,AngMom,TotMom);
         case pp_ReidOli : return ReidSoftCore(Spin,Radius);
         case pp_ReidCrab : return fReidMeVfm(Radius[0],Spin);
@@ -231,38 +271,27 @@ double fDlmPot(const int& Spin, const int& AngMom, const int& TotMom, double* Ra
         default : return 0;
     }
 }
+
+//[0] radius, [1] momentum
+//[2] PotentialType, [3] PotentialFlag,
+//[4] IsoSpin, [5] ParticleType1 (1 proton, -1 neutron), [6] ParticleType2
+//[7] Spin (s), [8] AngMom (l), [9] TotMom (j)
 double fDlmPot(double* Parameters){
-    return fDlmPot(round(Parameters[2]),round(Parameters[3]),round(Parameters[4]),Parameters);
+    return fDlmPot(round(Parameters[2]),round(Parameters[3]),round(Parameters[4]),round(Parameters[5]),
+                   round(Parameters[6]),round(Parameters[7]),round(Parameters[8]),round(Parameters[9]),Parameters);
 }
 
-double fDlmPot1S0(double* Radius){
-    return fDlmPot(0,0,0,Radius);
-}
-double fDlmPot3S1(double* Radius){
-    return fDlmPot(1,0,1,Radius);
-}
-double fDlmPot3P0(double* Radius){
-    return fDlmPot(1,1,0,Radius);
-}
-double fDlmPot3P1(double* Radius){
-    return fDlmPot(1,1,1,Radius);
-}
-double fDlmPot3P2(double* Radius){
-    return fDlmPot(1,1,2,Radius);
-}
-double fDlmPot3P(double* Radius){
-    return (fDlmPot3P0(Radius)+fDlmPot3P1(Radius)+fDlmPot3P2(Radius))/3.;
-}
 
 void GetDlmPotName(const int& potid, const int& potflag, char* name){
     double Radius=1;
-    fV18potential(1,0,0,0,&Radius);
+    //fV18potential(1,0,0,0,&Radius);
+    fV18potential(1,0,1,1,1,0,0,0,&Radius);
     switch(potid){
-        case pp_AV18 :
-            ppV18pot[8]->PotentialName(9, name);
+        case NN_AV18 :
+            fV18pot[8]->PotentialName(9, name);
             break;
-        case pp_ReidV8 :
-            ppV18pot[1]->PotentialName(2, name);
+        case NN_ReidV8 :
+            fV18pot[1]->PotentialName(2, name);
             break;
         case pp_ReidSC :
             strcpy(name,"Reid Soft-Core");
