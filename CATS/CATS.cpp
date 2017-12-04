@@ -70,6 +70,7 @@ CATS::CATS():
     ChannelWeight = NULL;
     SavedWaveFunBins = NULL;
     PhaseShift = NULL;
+    PhaseShiftF = NULL;
     WaveFunRad = NULL;
     WaveFunctionU = NULL;
     MomBinConverged = NULL;
@@ -98,6 +99,10 @@ CATS::CATS():
     kbCorrFunErr=NULL;
     PotPar = NULL;
     AnaSourcePar = NULL;
+
+    ExternalWF = NULL;
+    NumExtWfRadBins = NULL;
+    ExtWfRadBins = NULL;
 
     SetIpBins(1, -1000, 1000);
 }
@@ -155,29 +160,56 @@ void CATS::DelIp(){
 }
 
 void CATS::DelMomChPw(){
-    if(!SavedWaveFunBins) return;
-    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+    if(SavedWaveFunBins){
+        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            for(unsigned short usCh=0; usCh<NumCh; usCh++){
+                for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+                    if(WaveFunRad[uMomBin][usCh][usPW])
+                        delete [] WaveFunRad[uMomBin][usCh][usPW];
+                    if(WaveFunctionU[uMomBin][usCh][usPW])
+                        delete [] WaveFunctionU[uMomBin][usCh][usPW];
+                }
+                delete [] SavedWaveFunBins[uMomBin][usCh];
+                delete [] PhaseShift[uMomBin][usCh];
+                delete [] WaveFunRad[uMomBin][usCh];
+                delete [] WaveFunctionU[uMomBin][usCh];
+            }
+            delete [] SavedWaveFunBins[uMomBin];
+            delete [] PhaseShift[uMomBin];
+            delete [] WaveFunRad[uMomBin];
+            delete [] WaveFunctionU[uMomBin];
+        }
+
         for(unsigned short usCh=0; usCh<NumCh; usCh++){
             for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
-                if(WaveFunRad[uMomBin][usCh][usPW])
-                    delete [] WaveFunRad[uMomBin][usCh][usPW];
-                if(WaveFunctionU[uMomBin][usCh][usPW])
-                    delete [] WaveFunctionU[uMomBin][usCh][usPW];
+                delete [] PhaseShiftF[usCh][usPW];
             }
-            delete [] SavedWaveFunBins[uMomBin][usCh];
-            delete [] PhaseShift[uMomBin][usCh];
-            delete [] WaveFunRad[uMomBin][usCh];
-            delete [] WaveFunctionU[uMomBin][usCh];
+            delete [] PhaseShiftF[usCh];
         }
-        delete [] SavedWaveFunBins[uMomBin];
-        delete [] PhaseShift[uMomBin];
-        delete [] WaveFunRad[uMomBin];
-        delete [] WaveFunctionU[uMomBin];
+
+        delete [] SavedWaveFunBins; SavedWaveFunBins=NULL;
+        delete [] PhaseShift; PhaseShift=NULL;
+        delete [] PhaseShiftF; PhaseShiftF=NULL;
+        delete [] WaveFunRad; WaveFunRad=NULL;
+        delete [] WaveFunctionU; WaveFunctionU=NULL;
     }
-    delete [] SavedWaveFunBins; SavedWaveFunBins=NULL;
-    delete [] PhaseShift; PhaseShift=NULL;
-    delete [] WaveFunRad; WaveFunRad=NULL;
-    delete [] WaveFunctionU; WaveFunctionU=NULL;
+    if(ExternalWF){
+        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            for(unsigned short usCh=0; usCh<NumCh; usCh++){
+                delete [] ExternalWF[uMomBin][usCh];
+                delete [] NumExtWfRadBins[uMomBin][usCh];
+                delete [] ExtWfRadBins[uMomBin][usCh];
+            }
+            delete [] ExternalWF[uMomBin];
+            delete [] NumExtWfRadBins[uMomBin];
+            delete [] ExtWfRadBins[uMomBin];
+        }
+
+        delete [] ExternalWF; ExternalWF=NULL;
+        delete [] NumExtWfRadBins; NumExtWfRadBins=NULL;
+        delete [] ExtWfRadBins; ExtWfRadBins=NULL;
+    }
+
 }
 
 void CATS::DelMomCh(){
@@ -348,6 +380,52 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
 
     if(PotPar[usCh]) delete[]PotPar[usCh];
     PotPar[usCh] = new double* [numPW];
+
+    //Reserve memory for the output
+    SavedWaveFunBins = new unsigned** [NumMomBins];
+    PhaseShift = new double** [NumMomBins];
+    WaveFunRad = new double*** [NumMomBins];
+    WaveFunctionU = new double*** [NumMomBins];
+    ExternalWF = new const double*** [NumMomBins];
+    NumExtWfRadBins = new unsigned** [NumMomBins];
+    ExtWfRadBins = new const double*** [NumMomBins];
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        SavedWaveFunBins[uMomBin] = new unsigned* [NumCh];
+        PhaseShift[uMomBin] = new double* [NumCh];
+        WaveFunRad[uMomBin] = new double** [NumCh];
+        WaveFunctionU[uMomBin] = new double** [NumCh];
+        ExternalWF[uMomBin] = new const double** [NumCh];
+        NumExtWfRadBins[uMomBin] = new unsigned* [NumCh];
+        ExtWfRadBins[uMomBin] = new const double** [NumCh];
+        for(unsigned short usCh=0; usCh<NumCh; usCh++){
+            SavedWaveFunBins[uMomBin][usCh] = new unsigned [NumPW[usCh]];
+            PhaseShift[uMomBin][usCh] = new double [NumPW[usCh]];
+            WaveFunRad[uMomBin][usCh] = new double* [NumPW[usCh]];
+            WaveFunctionU[uMomBin][usCh] = new double* [NumPW[usCh]];
+            ExternalWF[uMomBin][usCh] = new const double* [NumPW[usCh]];
+            NumExtWfRadBins[uMomBin][usCh] = new unsigned [NumPW[usCh]];
+            ExtWfRadBins[uMomBin][usCh] = new const double* [NumPW[usCh]];
+            for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+                SavedWaveFunBins[uMomBin][usCh][usPW] = 0;
+                PhaseShift[uMomBin][usCh][usPW] = 0;
+                WaveFunRad[uMomBin][usCh][usPW] = NULL;
+                WaveFunctionU[uMomBin][usCh][usPW] = NULL;
+                ExternalWF[uMomBin][usCh][usPW] = NULL;
+                NumExtWfRadBins[uMomBin][usCh][usPW] = 0;
+                ExtWfRadBins[uMomBin][usCh][usPW] = NULL;
+            }
+        }
+    }
+    PhaseShiftF = new float** [NumCh];
+    for(unsigned short usCh=0; usCh<NumCh; usCh++){
+        PhaseShiftF[usCh] = new float* [NumPW[usCh]];
+        for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+            PhaseShiftF[usCh][usPW] = new float [NumMomBins];
+            for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+                PhaseShiftF[usCh][usPW][uMomBin] = 0;
+            }
+        }
+    }
 
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
@@ -890,87 +968,12 @@ double CATS::GetCorrFun(const unsigned& WhichMomBin, double& Momentum){
 //the two points below the value of Momentum
 double CATS::EvalCorrFun(const double& Momentum){
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins]) return 0;
-    if(NumMomBins==1) return kCorrFun[0];
-    unsigned WhichMomBin = GetMomBin(Momentum);
-//printf("MOMENTUM=%f; ",Momentum);
-//printf("WhichMomBin=%u\n",WhichMomBin);
-//printf("STATUS=%i\n", CkStatus());
-    double RelMom[3];
-    RelMom[0] = WhichMomBin?GetMomentum(WhichMomBin-1):-1;
-    RelMom[1] = GetMomentum(WhichMomBin);
-    RelMom[2] = WhichMomBin<(NumMomBins-1)?GetMomentum(WhichMomBin+1):-1;
-//printf(" %.3f   %.3f   %.3f\n", RelMom[0], RelMom[1], RelMom[2]);
-    double* InterpolRange;
-    double* CorrFunRange;
-
-    if(RelMom[0]==-1){
-        InterpolRange = &RelMom[1];
-        CorrFunRange = &kCorrFun[WhichMomBin];
-//printf(" CorrFunRange=%p\n",CorrFunRange);
-    }
-    else if(RelMom[2]==-1){
-        InterpolRange = &RelMom[0];
-        CorrFunRange = &kCorrFun[WhichMomBin-1];
-    }
-    else if(Momentum<RelMom[1]){
-        InterpolRange = &RelMom[0];
-        CorrFunRange = &kCorrFun[WhichMomBin-1];
-    }
-    else if(RelMom[1]<Momentum){
-        InterpolRange = &RelMom[1];
-        CorrFunRange = &kCorrFun[WhichMomBin];
-    }
-    else{//RelMom[1]==Momentum
-        return kCorrFun[WhichMomBin];
-    }
-//printf(" IR = %.3f - %.3f\n",InterpolRange[1],InterpolRange[0]);
-//printf(" CFR1 = %.3f; CFR0 = %.3f\n",CorrFunRange[1],CorrFunRange[0]);
-    return (CorrFunRange[1]*(Momentum-InterpolRange[0])-
-            CorrFunRange[0]*(Momentum-InterpolRange[1]))/
-            (InterpolRange[1]-InterpolRange[0]);
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, kCorrFun);
 }
 
 double CATS::EvalCorrFunErr(const double& Momentum){
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins]) return 0;
-    if(NumMomBins==1) return kCorrFunErr[0];
-    unsigned WhichMomBin = GetMomBin(Momentum);
-    double RelMom[3];
-    RelMom[0] = WhichMomBin?GetMomentum(WhichMomBin-1):-1;
-    RelMom[1] = GetMomentum(WhichMomBin);
-    RelMom[2] = WhichMomBin!=(NumMomBins-1)?GetMomentum(WhichMomBin+1):-1;
-
-    double* InterpolRange;
-    double* CorrFunRange;
-
-    if(RelMom[0]==-1){
-        InterpolRange = &RelMom[1];
-        CorrFunRange = &kCorrFunErr[WhichMomBin];
-    }
-    else if(RelMom[2]==-1){
-        InterpolRange = &RelMom[0];
-        CorrFunRange = &kCorrFunErr[WhichMomBin-1];
-    }
-    else if(Momentum<RelMom[1]){
-        InterpolRange = &RelMom[0];
-        CorrFunRange = &kCorrFunErr[WhichMomBin-1];
-    }
-    else if(RelMom[1]<Momentum){
-        InterpolRange = &RelMom[1];
-        CorrFunRange = &kCorrFunErr[WhichMomBin];
-    }
-    else{//RelMom[1]==Momentum
-        return kCorrFunErr[WhichMomBin];
-    }
-
-    if(InterpolRange[1]-InterpolRange[0]){
-        return (CorrFunRange[1]*(Momentum-InterpolRange[0])-
-                CorrFunRange[0]*(Momentum-InterpolRange[1]))/
-                (InterpolRange[1]-InterpolRange[0]);
-    }
-    else{
-        return 1e6;
-    }
-
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, kCorrFunErr);
 }
 
 double CATS::GetCorrFunErr(const unsigned& WhichMomBin){
@@ -1001,40 +1004,9 @@ double CATS::GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& us
     return PhaseShift[WhichMomBin][usCh][usPW];
 }
 
-double CATS::EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW){
+float CATS::EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW){
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins] || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
-    unsigned WhichMomBin = GetMomBin(Momentum);
-    double RelMom[3];
-    RelMom[0] = WhichMomBin?GetMomentum(WhichMomBin-1):-1;
-    RelMom[1] = GetMomentum(WhichMomBin);
-    RelMom[2] = WhichMomBin!=(NumMomBins-1)?GetMomentum(WhichMomBin+1):-1;
-
-    double* InterpolRange;
-    double*** PhaseShiftRange;
-
-    if(RelMom[0]==-1){
-        InterpolRange = &RelMom[1];
-        PhaseShiftRange = &PhaseShift[WhichMomBin];
-    }
-    else if(RelMom[2]==-1){
-        InterpolRange = &RelMom[0];
-        PhaseShiftRange = &PhaseShift[WhichMomBin-1];
-    }
-    else if(Momentum<RelMom[1]){
-        InterpolRange = &RelMom[0];
-        PhaseShiftRange = &PhaseShift[WhichMomBin-1];
-    }
-    else if(RelMom[1]<Momentum){
-        InterpolRange = &RelMom[1];
-        PhaseShiftRange = &PhaseShift[WhichMomBin];
-    }
-    else{//RelMom[1]==Momentum
-        return PhaseShift[WhichMomBin][usCh][usPW];
-    }
-
-    return (PhaseShiftRange[1][usCh][usPW]*(Momentum-InterpolRange[0])-
-            PhaseShiftRange[0][usCh][usPW]*(Momentum-InterpolRange[1]))/
-            (InterpolRange[1]-InterpolRange[0]);
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, PhaseShiftF[usCh][usPW]);
 }
 
 unsigned CATS::GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW){
@@ -1054,8 +1026,8 @@ double CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned 
 
 double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh){
     if(NumMomBins<=uMomBin || NumCh<=usCh) return 0;
-    //return EffectiveFunctionTheta(uMomBin,Radius,CosTheta,usCh);
-    return EffectiveFunction(uMomBin,Radius,usCh);
+    return EffectiveFunctionTheta(uMomBin,Radius,CosTheta,usCh);
+    //return EffectiveFunction(uMomBin,Radius,usCh);
 }
 
 double CATS::GetMomentum(const unsigned& WhichMomBin){
@@ -1176,6 +1148,31 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
         SourceUpdated = false;
         ComputedCorrFunction = false;
     }
+}
+
+void CATS::UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
+                                 const double* RadWF, const unsigned& NumRadBins, const double* RadBins, const double& PHASESHIFT){
+
+    if(NumMomBins<=uMomBin || NumCh<=usCh || NumPW[usCh]<=usPW){
+        if(Notifications>=nError)
+            printf("ERROR: Bad input in CATS::UseExternalWaveFunction(...)\n");
+        return;
+    }
+
+    if(!RadWF || NumRadBins==0 || !RadBins){
+        ExternalWF[uMomBin][usCh][usPW] = NULL;
+        NumExtWfRadBins[uMomBin][usCh][usPW] = 0;
+        ExtWfRadBins[uMomBin][usCh][usPW] = NULL;
+        return;
+    }
+
+    ExternalWF[uMomBin][usCh][usPW] = RadWF;
+    NumExtWfRadBins[uMomBin][usCh][usPW] = NumRadBins;
+    ExtWfRadBins[uMomBin][usCh][usPW] = RadBins;
+    PhaseShift[uMomBin][usCh][usPW] = PHASESHIFT;
+
+    ComputedCorrFunction = false;
+
 }
 
 //!Running the analysis
@@ -1319,31 +1316,6 @@ void CATS::ComputeTheRadialWaveFunction(){
 }
 
 void CATS::ComputeWaveFunction(){
-    //Reserve memory for the output
-    if(!SavedWaveFunBins){
-        SavedWaveFunBins = new unsigned** [NumMomBins];
-        PhaseShift = new double** [NumMomBins];
-        WaveFunRad = new double*** [NumMomBins];
-        WaveFunctionU = new double*** [NumMomBins];
-        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-            SavedWaveFunBins[uMomBin] = new unsigned* [NumCh];
-            PhaseShift[uMomBin] = new double* [NumCh];
-            WaveFunRad[uMomBin] = new double** [NumCh];
-            WaveFunctionU[uMomBin] = new double** [NumCh];
-            for(unsigned short usCh=0; usCh<NumCh; usCh++){
-                SavedWaveFunBins[uMomBin][usCh] = new unsigned [NumPW[usCh]];
-                PhaseShift[uMomBin][usCh] = new double [NumPW[usCh]];
-                WaveFunRad[uMomBin][usCh] = new double* [NumPW[usCh]];
-                WaveFunctionU[uMomBin][usCh] = new double* [NumPW[usCh]];
-                for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
-                    SavedWaveFunBins[uMomBin][usCh][usPW] = 0;
-                    PhaseShift[uMomBin][usCh][usPW] = 0;
-                    WaveFunRad[uMomBin][usCh][usPW] = NULL;
-                    WaveFunctionU[uMomBin][usCh][usPW] = NULL;
-                }
-            }
-        }
-    }
 
     if(!MomBinConverged){
         MomBinConverged = new bool [NumMomBins];
@@ -1694,6 +1666,7 @@ void CATS::ComputeWaveFunction(){
             double Norm = ReferencePartialWave(MaxConvRad+ShiftRad, Momentum, usPW)/MaxConvergedNumWF;
 
             PhaseShift[uMomBin][usCh][usPW] = ShiftRho;
+            PhaseShiftF[usCh][usPW][uMomBin] = ShiftRho;
 
             //we save all entries up to the point in which the normalization was performed. For higher values
             //we will later on use the asymptotic form. N.B. in principle one could save a bit of space and
@@ -1702,17 +1675,27 @@ void CATS::ComputeWaveFunction(){
             //btw. the step size is set to be the MaxDeltaRad
 
             SavedWaveFunBins[uMomBin][usCh][usPW] = StepOfMaxConvergedNumWF+1;
+            unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
 
             if(WaveFunRad[uMomBin][usCh][usPW]) delete [] WaveFunRad[uMomBin][usCh][usPW];
-            WaveFunRad[uMomBin][usCh][usPW] = new double [SavedWaveFunBins[uMomBin][usCh][usPW]];
+            WaveFunRad[uMomBin][usCh][usPW] = new double [SWFB+1];
 
             if(WaveFunctionU[uMomBin][usCh][usPW]) delete [] WaveFunctionU[uMomBin][usCh][usPW];
-            WaveFunctionU[uMomBin][usCh][usPW] = new double [SavedWaveFunBins[uMomBin][usCh][usPW]];
+            WaveFunctionU[uMomBin][usCh][usPW] = new double [SWFB];
 
-            for(unsigned uPoint=0; uPoint<SavedWaveFunBins[uMomBin][usCh][usPW]; uPoint++){
+            for(unsigned uPoint=0; uPoint<SWFB; uPoint++){
                 WaveFunRad[uMomBin][usCh][usPW][uPoint] = BufferRad[uPoint];
                 WaveFunctionU[uMomBin][usCh][usPW][uPoint] = Norm*BufferWaveFunction[uPoint];
             }
+
+            //we set up those as bin-range (i.e. the middle of the bin should be buffer rad)
+            //we start from r=0, than proceed by adding the limit between different bins as the mid-way to the next point
+            WaveFunRad[uMomBin][usCh][usPW][0] = 0;
+            for(unsigned uPoint=1; uPoint<SWFB; uPoint++){
+                WaveFunRad[uMomBin][usCh][usPW][uPoint] = (BufferRad[uPoint]+BufferRad[uPoint-1])*0.5;
+            }
+            //the very last point we simply set as the double distance between the last bin-limit and the last radius value
+            WaveFunRad[uMomBin][usCh][usPW][SWFB] = 2*BufferRad[SWFB-1]-WaveFunRad[uMomBin][usCh][usPW][SWFB-1];
 
         }//if(MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
 
@@ -2532,7 +2515,11 @@ double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, co
 }
 
 double CATS::ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW){
-    return Q1Q2 ? CoulombPartialWave(Radius,Momentum,usPW) : PlanePartialWave(Radius,Momentum,usPW);
+double RESULT = Q1Q2 ? CoulombPartialWave(Radius,Momentum,usPW) : PlanePartialWave(Radius,Momentum,usPW);
+//if(Momentum==60 && RESULT>0.01)
+//if(RESULT>0.01)
+//printf("k=%.2f; r=%.2f; usPW=%u; RPW=%.5f\n", Momentum, Radius*197., usPW, RESULT);
+    return RESULT;
 }
 
 double CATS::AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW){
@@ -2580,6 +2567,19 @@ double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&,
     if(Notifications>=nWarning)
         printf("WARNING: The NewtonRapson root-finder failed!\n");
     return xVal;
+}
+
+template <class Type> void CATS::ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter){
+    unsigned NumOfEl = Sorter.GetNumOfEl();
+    Type* Temp;
+    Temp = new Type[NumOfEl];
+    for(unsigned uEl=0; uEl<NumOfEl; uEl++){
+        Temp[uEl] = input[Sorter.GetKey()[uEl]];
+    }
+    for(unsigned uEl=0; uEl<NumOfEl; uEl++){
+        input[uEl] = Temp[uEl];
+    }
+    delete [] Temp;
 }
 
 //btw, if the range is outside the limits, the return value will be equal
@@ -2663,7 +2663,8 @@ unsigned CATS::GetBoxId(double* particle){
 
 double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
                                 const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR){
-    //unsigned uMomBin = GetMomBin(Momentum);
+
+    bool ExtWF = ExternalWF[uMomBin][usCh][usPW];
     double Momentum = GetMomentum(uMomBin);
     if(uMomBin>=NumMomBins){
         if(Notifications>=nError)
@@ -2671,26 +2672,26 @@ double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
         return 0;
     }
 
-    unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
-    //double& MaxSavedRad = WFR[SWFB-1];
-
-    unsigned RadBin = GetRadBin(Radius, uMomBin, usCh, usPW);
     double MultFactor = DivideByR?1./(Radius+1e-64):1;
-    //make a linear extrapolation
-    if(RadBin<SWFB-1){
-        double* WFU = WaveFunctionU[uMomBin][usCh][usPW];
-        double* WFR = WaveFunRad[uMomBin][usCh][usPW];
-        double DeltaWFR = WFR[RadBin+1]-WFR[RadBin];
-        if(!DeltaWFR){
-            DeltaWFR = 1-64;
-            if(Notifications>=nWarning)
-                printf("WARNING: DeltaWFR==0, which might point to a bug! Please contact the developers!\n");
-        }
-        return WFU[RadBin]*MultFactor+(WFU[RadBin+1]*MultFactor-WFU[RadBin]*MultFactor)*(Radius-WFR[RadBin])/DeltaWFR;
+
+    unsigned& SWFB = ExtWF?NumExtWfRadBins[uMomBin][usCh][usPW]:SavedWaveFunBins[uMomBin][usCh][usPW];
+
+    unsigned RadBin = ExtWF?GetBin(Radius*(ExtWF?NuToFm:1), ExtWfRadBins[uMomBin][usCh][usPW], NumExtWfRadBins[uMomBin][usCh][usPW]+1):
+                            GetRadBin(Radius, uMomBin, usCh, usPW);
+
+    if(RadBin<SWFB){
+        const double* WFU = ExtWF?ExternalWF[uMomBin][usCh][usPW]:WaveFunctionU[uMomBin][usCh][usPW];
+        const double* WFR = ExtWF?ExtWfRadBins[uMomBin][usCh][usPW]:WaveFunRad[uMomBin][usCh][usPW];
+        //the external WF is assumed to be given in fm
+        double Result = EvalBinnedFun(Radius*(ExtWF?NuToFm:1), SWFB, WFR, WFU)*(ExtWF?FmToNu:1);
+        if(Result==1e6 && Notifications>=nWarning)
+            printf("WARNING: DeltaRad==0, which might point to a bug! Please contact the developers!\n");
+        return Result*MultFactor;
     }
     else{
         return ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW)*MultFactor;
     }
+
 }
 
 double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh){
@@ -2703,12 +2704,12 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         //numerical solution, no computation result for zero potential
-        if(usPW<NumPW[usCh] && ShortRangePotential[usCh][usPW]){
+        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
             Result = EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             TotalResult += double(2*usPW+1)*Result*Result;
         }
         else{
-            Result = ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW)/(Radius+1e-64);
+            Result = ReferencePartialWave(Radius, Momentum, usPW)/(Radius+1e-64);
             Result = double(2*usPW+1)*Result*Result;
             TotalResult += Result;
             //convergence criteria
@@ -2716,7 +2717,6 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
             OldResult = Result;
         }
     }
-
     return TotalResult*(1+IdenticalParticles);
 }
 
@@ -2743,11 +2743,11 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
     for(unsigned short usPW=0; usPW<1000; usPW++){
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
-        if(usPW<NumPW[usCh] && ShortRangePotential[usCh][usPW]){
+        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
             Result1 = double(2*usPW+1)*EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true)*gsl_sf_legendre_Pl(usPW,CosTheta);
         }
         else{
-            Result1 = double(2*usPW+1)*ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW)/(Radius+1e-64)*gsl_sf_legendre_Pl(usPW,CosTheta);
+            Result1 = double(2*usPW+1)*ReferencePartialWave(Radius, Momentum, usPW)/(Radius+1e-64)*gsl_sf_legendre_Pl(usPW,CosTheta);
             if(usPW>=NumPW[usCh] && fabs(OldResult1)<3.16e-4 && fabs(Result1)<1e-4) break;
             OldResult1 = Result1;
         }
@@ -2756,11 +2756,11 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
         for(unsigned short usPW2=0; usPW2<1000; usPW2++){
             //wave function symmetrization
             if( IdenticalParticles && (usPW2+Spin[usCh])%2 ) continue;
-            if(usPW2<NumPW[usCh] && ShortRangePotential[usCh][usPW2]){
+            if(usPW2<NumPW[usCh] && (ShortRangePotential[usCh][usPW2] || ExternalWF[uMomBin][usCh][usPW])){
                 Result2 = double(2*usPW2+1)*EvalWaveFunctionU(uMomBin, Radius, usCh, usPW2, true)*gsl_sf_legendre_Pl(usPW2,CosTheta);
             }
             else{
-                Result2 = double(2*usPW2+1)*ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW2)/(Radius+1e-64)*gsl_sf_legendre_Pl(usPW2,CosTheta);
+                Result2 = double(2*usPW2+1)*ReferencePartialWave(Radius, Momentum, usPW2)/(Radius+1e-64)*gsl_sf_legendre_Pl(usPW2,CosTheta);
                 if(usPW2>=NumPW[usCh] && fabs(OldResult2)<3.16e-4 && fabs(Result2)<1e-4) break;
                 OldResult2 = Result2;
             }
@@ -2828,5 +2828,53 @@ unsigned CATS::GetIpBin(const double& bVal){
 }
 unsigned CATS::GetRadBin(const double& Radius, const unsigned& uMomBin,
                          const unsigned short& usCh, const unsigned short& usPW){
-    return GetBin(Radius, WaveFunRad[uMomBin][usCh][usPW], SavedWaveFunBins[uMomBin][usCh][usPW]);
+    return GetBin(Radius, WaveFunRad[uMomBin][usCh][usPW], SavedWaveFunBins[uMomBin][usCh][usPW]+1);
+}
+
+template <class Type> Type CATS::GetBinCenter(const Type* Bins, const unsigned& WhichBin){
+    return 0.5*(Bins[WhichBin]+Bins[WhichBin+1]);
+}
+
+template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const Type* Function){
+    if(xVal<Bins[0] || xVal>Bins[NumBins]) return 0;
+    if(NumBins==1) return Function[0];
+    unsigned WhichBin = GetBin(xVal,Bins,NumBins+1);
+
+    Type Value[3];
+    Value[0] = WhichBin?GetBinCenter(Bins,WhichBin-1):-1;
+    Value[1] = GetBinCenter(Bins,WhichBin);
+    Value[2] = WhichBin<(NumBins-1)?GetBinCenter(Bins,WhichBin+1):-1;
+
+    Type* InterpolRange;
+    const Type* FunRange;
+
+    if(Value[0]==-1){
+        InterpolRange = &Value[1];
+        FunRange = &Function[WhichBin];
+    }
+    else if(Value[2]==-1){
+        InterpolRange = &Value[0];
+        FunRange = &Function[WhichBin-1];
+    }
+    else if(xVal<Value[1]){
+        InterpolRange = &Value[0];
+        FunRange = &Function[WhichBin-1];
+    }
+    else if(Value[1]<xVal){
+        InterpolRange = &Value[1];
+        FunRange = &Function[WhichBin];
+    }
+    else{//Value[1]==xVal
+        return Function[WhichBin];
+    }
+
+    if(InterpolRange[1]-InterpolRange[0]){
+        return (FunRange[1]*(xVal-InterpolRange[0])-
+                FunRange[0]*(xVal-InterpolRange[1]))/
+                (InterpolRange[1]-InterpolRange[0]);
+    }
+    else{
+        printf("WTF!\n");
+        return 1e6;
+    }
 }

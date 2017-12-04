@@ -1645,7 +1645,8 @@ double DLM_StefanoPotentials::Eval_PWprojector(const double& Radius,
     const int& t1z=PartType1;//isospin3 x 2 particle1
     const int& t2z=PartType2;//isospin3 x 2 particle2
     const int s1ds2=4*Spin-3;
-    const int t1dt2=4*IsoSpin-3;
+    //this term should be zero in case one of the particles has IsoSpin 0
+    const int t1dt2=(PartType1*PartType2==0)?0:4*IsoSpin-3;
     const int t12=3*t1z*t2z-t1dt2;
     double vc = vv[0]+t1dt2*vv[1]+s1ds2*vv[2]+s1ds2*t1dt2*vv[3]+t12*vv[14]+s1ds2*t12*vv[15]+(t1z+t2z)*vv[17];
     double vt = vv[4]+t1dt2*vv[5]+t12*vv[16];

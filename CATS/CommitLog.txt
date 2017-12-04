@@ -72,3 +72,8 @@ The instabilities reported regarding version 2.5 were found to be unraleted to C
 To improve performance when reevaluating C(k) the user now has the freedom to force CATS to use the same source-computing-grid when changing the source.
 While this option can be very useful for e.g. when fitting, please be aware that if there is a significant modification in the PDF of the source, than 
 the accuarcy of the computation might decrease, or in an extreme case CATS may crash! So use it with care and only when fine-tuning the source!
+
+04.12.2017 CATS 2.7
+After an additional check it was found that there was indeed a bug related to the asymptotic solution, which under circumstances could have lead to an undefined memory access and false results in single k-bins. The bug has been fixed.
+A new option for the wave-function is added - namely using the function UseExternalWaveFunction one could now insert the wave-function into CATS, overriding the Schroedinger solever.
+Further optimization related to the linear interpolation algorithms in CATS were done.

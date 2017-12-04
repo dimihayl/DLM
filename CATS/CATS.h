@@ -1,12 +1,8 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.6 (28 November 2017)
+//! Current Version: 2.7 (4 December 2017)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
-
-//!Known issues
-//!It is confirmed that changing the number of channels or partial waves that are used
-// results in an undefined behavior. Please use different objects for different set ups until this issue is understood and fixed.
 
 #ifndef CATS_H
 #define CATS_H
@@ -179,7 +175,7 @@ public:
     double GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin, double& Momentum, double& ImpPar);
 
     double GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW);
-    double EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW);
+    float EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW);
 
     unsigned GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW);
     double GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin);
@@ -194,6 +190,11 @@ public:
 
     unsigned GetMomBin(const double& Momentum);
     unsigned GetIpBin(const double& bVal);
+    //computes the momentum bin corresponding to Momentum
+    unsigned GetBin(const double& Value, const double* Range, const unsigned& NumBins);
+    //computes the radius bin corresponding to Radius (for a certain l and S)
+    unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
+                       const unsigned short& usCh, const unsigned short& usPW);
 
     //convert fm to 1/MeV
     const double& FmNu();
@@ -226,6 +227,10 @@ public:
     //if(SmallChange==true) => force CATS to reuse the computing grid
     //This will  gain performance, might decrease the accuracy though, please use only when fine-tuning the source
     void SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange=false);
+
+    //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
+    void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
+                                 const double* RadWF, const unsigned& NumRadBins, const double* RadBins, const double& PHASESHIFT);
 
     //!------------------------------------------------
 
@@ -451,18 +456,7 @@ private:
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum,
                           const double&  xMin, const double&  xMax, const double& fValShift);
 
-    template <class Type> void ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter){
-        unsigned NumOfEl = Sorter.GetNumOfEl();
-        Type* Temp;
-        Temp = new Type[NumOfEl];
-        for(unsigned uEl=0; uEl<NumOfEl; uEl++){
-            Temp[uEl] = input[Sorter.GetKey()[uEl]];
-        }
-        for(unsigned uEl=0; uEl<NumOfEl; uEl++){
-            input[uEl] = Temp[uEl];
-        }
-        delete [] Temp;
-    }
+    template <class Type> void ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter);
     unsigned GetBoxId(double* particle);
 
     //evaluates the solution to the radial equation based on the numerical result and the computed phaseshift.
@@ -477,12 +471,10 @@ private:
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta);
 
-    //computes the momentum bin corresponding to Momentum
-    unsigned GetBin(const double& Value, const double* Range, const unsigned& NumBins);
-    //computes the radius bin corresponding to Radius (for a certain l and S)
-    unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
-                       const unsigned short& usCh, const unsigned short& usPW);
 
+
+    template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin);
+    template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const Type* Function);
 
     //double SourceFunction(const double* Pars, const double& GridSize);
 
@@ -519,6 +511,7 @@ private:
     unsigned*** SavedWaveFunBins;//in bins of mom/pol/pw
     //double*** RadStepWF;//in bins of mom/pol/pw
     double*** PhaseShift;//in bins of mom/pol/pw, saved only until the end of each k-iteration
+    float*** PhaseShiftF;//in bins of pol/pw/mom, saved only until the end of each k-iteration
     double**** WaveFunRad;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     double**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     bool* MomBinConverged;//bins of mom, marked as true in case the num. comp. failed and this bin should not be used
@@ -533,6 +526,12 @@ private:
     //in bins of momentum
     double* kCorrFun;
     double* kCorrFunErr;
+
+    //!further input variables
+    //bool*** UseExternalWF;//in bins of mom/pol/pw
+    const double**** ExternalWF;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user). If ExternalWF[x][y][z]=NULL => Do not use ext. wf.
+    unsigned*** NumExtWfRadBins;//in bins of mom/pol/pw
+    const double**** ExtWfRadBins;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user).
 
 };
 
