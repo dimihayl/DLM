@@ -4,6 +4,14 @@
 
 const double PI = 3.141592653589793;
 
+double GaussSourceTF1(double* x, double* Pars){
+    //double& Momentum = Pars[0];
+    double& Radius = *x;
+    //double& CosTheta = Pars[2];
+    double& Size = Pars[3];
+    return Pars[0]*4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+}
+
 double GaussSource(double* Pars){
     //double& Momentum = Pars[0];
     double& Radius = Pars[1];

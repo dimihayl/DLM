@@ -182,6 +182,7 @@ public:
     double EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                   const bool& DevideByR=true);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
+    double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
 
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin);
@@ -421,6 +422,9 @@ private:
 
     const unsigned short NumPotPars;
     const unsigned short NumSourcePars;
+
+    //the max. 'l' to be computed by CATS
+    const unsigned short MaxPw;
     //!------------------------------------------------
 
     //!Functions used internally by CATS
@@ -533,6 +537,11 @@ private:
     unsigned*** NumExtWfRadBins;//in bins of mom/pol/pw
     const double**** ExtWfRadBins;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user).
 
+    //these are used as buffers when it comes to computing the Reference Partial Waves and the Legendre Polynomials
+    //in particular, when we loop over all PWs twice, we actually evaluate the same functions multiple times => save them in an array to save CPU time
+    double* RefPartWave;
+    double* SolvedPartWave;
+    double* LegPol;
 };
 
 #endif // CATS_H

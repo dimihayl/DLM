@@ -19,7 +19,7 @@ CATS::CATS():
     AlphaFS(0.0072973525664),
     RevSqrt2(1./sqrt(2.)),
     FmToNu(5.067731237e-3),NuToFm(197.3269602),
-    NumPotPars(2),NumSourcePars(3)
+    NumPotPars(2),NumSourcePars(3),MaxPw(256)
     {
     IdenticalParticles = false;
     Q1Q2 = 0;
@@ -104,6 +104,10 @@ CATS::CATS():
     NumExtWfRadBins = NULL;
     ExtWfRadBins = NULL;
 
+    RefPartWave = NULL;
+    SolvedPartWave = NULL;
+    LegPol = NULL;
+
     SetIpBins(1, -1000, 1000);
 }
 
@@ -130,6 +134,15 @@ CATS::~CATS(){
     }
     if(BaseSourceGrid){
         delete BaseSourceGrid; BaseSourceGrid=NULL;
+    }
+    if(RefPartWave){
+        delete [] RefPartWave; RefPartWave=NULL;
+    }
+    if(SolvedPartWave){
+        delete [] SolvedPartWave; SolvedPartWave=NULL;
+    }
+    if(LegPol){
+        delete [] LegPol; LegPol=NULL;
     }
 }
 
@@ -819,6 +832,16 @@ void CATS::SetThetaDependentSource(const bool& val){
     SourceGridReady = false;
     SourceUpdated = false;
     ComputedCorrFunction = false;
+    if(ThetaDependentSource && !RefPartWave){
+        RefPartWave = new double [MaxPw];
+        SolvedPartWave = new double [MaxPw];
+        LegPol = new double [MaxPw];
+    }
+    if(!ThetaDependentSource && RefPartWave){
+        delete [] RefPartWave; RefPartWave=NULL;
+        delete [] SolvedPartWave; SolvedPartWave=NULL;
+        delete [] LegPol; LegPol=NULL;
+    }
 }
 bool CATS::GetThetaDependentSource(){
     return ThetaDependentSource;
@@ -1027,7 +1050,10 @@ double CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned 
 double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh){
     if(NumMomBins<=uMomBin || NumCh<=usCh) return 0;
     return EffectiveFunctionTheta(uMomBin,Radius,CosTheta,usCh);
-    //return EffectiveFunction(uMomBin,Radius,usCh);
+}
+double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh){
+    if(NumMomBins<=uMomBin || NumCh<=usCh) return 0;
+    return EffectiveFunction(uMomBin,Radius,usCh);
 }
 
 double CATS::GetMomentum(const unsigned& WhichMomBin){
@@ -2491,7 +2517,6 @@ double CATS::PlanePartialWave(const double& Radius, const double& Momentum, cons
     }
     //N.B. gsl_sf_bessel_jl are defined for Rho>0, but in principle the bessel functions are symmetric for even l
     //and anti-symmetric for odd l, this is implemented here.
-
     return Rho>0?(Radius)*gsl_sf_bessel_jl(usPW,Rho):pow(-1,usPW)*(Radius)*gsl_sf_bessel_jl(usPW,-Rho);
 }
 
@@ -2515,11 +2540,7 @@ double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, co
 }
 
 double CATS::ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW){
-double RESULT = Q1Q2 ? CoulombPartialWave(Radius,Momentum,usPW) : PlanePartialWave(Radius,Momentum,usPW);
-//if(Momentum==60 && RESULT>0.01)
-//if(RESULT>0.01)
-//printf("k=%.2f; r=%.2f; usPW=%u; RPW=%.5f\n", Momentum, Radius*197., usPW, RESULT);
-    return RESULT;
+    return Q1Q2 ? CoulombPartialWave(Radius,Momentum,usPW) : PlanePartialWave(Radius,Momentum,usPW);
 }
 
 double CATS::AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW){
@@ -2699,8 +2720,7 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
     double OldResult=100;
     double TotalResult=0;
     double Momentum = GetMomentum(uMomBin);
-
-    for(unsigned short usPW=0; usPW<1000; usPW++){
+    for(unsigned short usPW=0; usPW<MaxPw; usPW++){
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         //numerical solution, no computation result for zero potential
@@ -2740,27 +2760,48 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
 
     short oddness;
 
-    for(unsigned short usPW=0; usPW<1000; usPW++){
+    if(!RefPartWave){
+        RefPartWave = new double [MaxPw];
+        SolvedPartWave = new double [MaxPw];
+        LegPol = new double [MaxPw];
+    }
+
+    //we set an unrealistic default value to monitor which PW is computed and which not
+    for(unsigned short usPW=0; usPW<MaxPw; usPW++){
+        RefPartWave[usPW] = 1e6;
+        SolvedPartWave[usPW] = 1e6;
+        LegPol[usPW] = 1e6;
+    }
+
+    for(unsigned short usPW=0; usPW<MaxPw; usPW++){
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
-            Result1 = double(2*usPW+1)*EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true)*gsl_sf_legendre_Pl(usPW,CosTheta);
+            if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
+            if(SolvedPartWave[usPW]=1e6) SolvedPartWave[usPW]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
+            Result1 = double(2*usPW+1)*SolvedPartWave[usPW]*LegPol[usPW];
         }
         else{
-            Result1 = double(2*usPW+1)*ReferencePartialWave(Radius, Momentum, usPW)/(Radius+1e-64)*gsl_sf_legendre_Pl(usPW,CosTheta);
+            if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
+            if(RefPartWave[usPW]==1e6) RefPartWave[usPW] = ReferencePartialWave(Radius, Momentum, usPW);
+            Result1 = double(2*usPW+1)*RefPartWave[usPW]/(Radius+1e-64)*LegPol[usPW];
             if(usPW>=NumPW[usCh] && fabs(OldResult1)<3.16e-4 && fabs(Result1)<1e-4) break;
             OldResult1 = Result1;
         }
         //if the source is theta dep, than we cannot simply neglect the cross-terms in the PW expansion (coming from |ψ|^2).
         //thus we need to loop over all partial waves twice
-        for(unsigned short usPW2=0; usPW2<1000; usPW2++){
+        for(unsigned short usPW2=0; usPW2<MaxPw; usPW2++){
             //wave function symmetrization
             if( IdenticalParticles && (usPW2+Spin[usCh])%2 ) continue;
-            if(usPW2<NumPW[usCh] && (ShortRangePotential[usCh][usPW2] || ExternalWF[uMomBin][usCh][usPW])){
-                Result2 = double(2*usPW2+1)*EvalWaveFunctionU(uMomBin, Radius, usCh, usPW2, true)*gsl_sf_legendre_Pl(usPW2,CosTheta);
+            if(usPW2<NumPW[usCh] && (ShortRangePotential[usCh][usPW2] || ExternalWF[uMomBin][usCh][usPW2])){
+                if(LegPol[usPW2]==1e6) LegPol[usPW2]=gsl_sf_legendre_Pl(usPW2,CosTheta);
+                if(SolvedPartWave[usPW2]=1e6) SolvedPartWave[usPW2]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW2, true);
+                Result2 = double(2*usPW2+1)*SolvedPartWave[usPW2]*LegPol[usPW2];
             }
             else{
-                Result2 = double(2*usPW2+1)*ReferencePartialWave(Radius, Momentum, usPW2)/(Radius+1e-64)*gsl_sf_legendre_Pl(usPW2,CosTheta);
+                if(LegPol[usPW2]==1e6) LegPol[usPW2]=gsl_sf_legendre_Pl(usPW2,CosTheta);
+                if(RefPartWave[usPW2]==1e6) RefPartWave[usPW2] = ReferencePartialWave(Radius, Momentum, usPW2);
+                Result2 = double(2*usPW2+1)*RefPartWave[usPW2]/(Radius+1e-64)*LegPol[usPW2];
                 if(usPW2>=NumPW[usCh] && fabs(OldResult2)<3.16e-4 && fabs(Result2)<1e-4) break;
                 OldResult2 = Result2;
             }
