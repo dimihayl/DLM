@@ -26,6 +26,8 @@ public:
                                      const double& ScattLen1, const double& EffRan1,
                                      const double& ScattLen3, const double& EffRan3,
                                      const double& ares, const double& arad, const double& lambda0);
+    void UseCustomModel(const unsigned& WhichNr, double (*fModel)(const double&, const double*), double* Pars);
+    void UseCats(const unsigned& WhichNr);
     double GetCorrectedCk(const unsigned& WhichBin);
     double GetCorrectedCkErr(const unsigned& WhichBin);
     double EvalCorrectedCk(const double& Momentum);
@@ -57,6 +59,7 @@ private:
     //2=Lednicky(sin+tri) with QS -> may be wrong, check
     //3=Lednicky(sin only) without QS -> may be wrong, check
     //4=Lednicky(sin only) with QS
+    //-1=Custom Model
     int* EvalUsingEquation;
 
     double ScattLenSin;
@@ -69,6 +72,10 @@ private:
     double LambdaLedni;
 
     bool* LedniStatus;
+
+    //Momentum, Parameters
+    double (*ModelFunction)(const double&, const double*);
+    double* ModelParameter;
 };
 
 

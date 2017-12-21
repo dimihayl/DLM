@@ -884,6 +884,9 @@ void CATS::RemoveTotPairMomCut(){
 void CATS::SetNotifications(const short& notify){
     Notifications = notify;
 }
+short CATS::GetNotifications(){
+    return Notifications;
+}
 
 void CATS::SetInputFileName(const char* fname){
     unsigned StrLen = strlen(fname);
@@ -1070,6 +1073,14 @@ double CATS::GetMomBinUpEdge(const unsigned& WhichMomBin){
     if(NumMomBins<=WhichMomBin) return 0;
     return MomBin[WhichMomBin+1];
 }
+double* CATS::CopyMomBin(){
+    double* MomBinCopy = new double [NumMomBins+1];
+    for(unsigned uMomBin=0; uMomBin<=NumMomBins; uMomBin++){
+        MomBinCopy[uMomBin] = MomBin[uMomBin];
+    }
+
+    return MomBinCopy;
+}
 
 const double& CATS::FmNu(){
     return FmToNu;
@@ -1144,6 +1155,7 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, co
         return;
     }
     if(PotPar[usCh][usPW][NumPotPars+WhichPar]==Value) return;
+    if(!ShortRangePotential[usCh][usPW]) return;
 
     PotPar[usCh][usPW][NumPotPars+WhichPar] = Value;
     ComputedWaveFunction = false;
@@ -1174,6 +1186,10 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
         SourceUpdated = false;
         ComputedCorrFunction = false;
     }
+}
+double CATS::GetAnaSourcePar(const unsigned& WhichPar){
+    if(!UseAnalyticSource) return 0;
+    return AnaSourcePar[NumSourcePars+WhichPar];
 }
 
 void CATS::UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
@@ -1334,6 +1350,12 @@ void CATS::KillTheCat(const int& Options){
 }
 bool CATS::CkStatus(){
     return ComputedCorrFunction;
+}
+bool CATS::SourceStatus(){
+    return SourceUpdated;
+}
+bool CATS::PotentialStatus(){
+    return ComputedWaveFunction;
 }
 
 void CATS::ComputeTheRadialWaveFunction(){
@@ -2709,10 +2731,13 @@ double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
             printf("WARNING: DeltaRad==0, which might point to a bug! Please contact the developers!\n");
         return Result*MultFactor;
     }
+    //below the 1st bin ==> assume zero
+    else if(RadBin==SWFB+1){
+        return 0;
+    }
     else{
         return ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW)*MultFactor;
     }
-
 }
 
 double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh){
@@ -2778,7 +2803,7 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
             if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
-            if(SolvedPartWave[usPW]=1e6) SolvedPartWave[usPW]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
+            if(SolvedPartWave[usPW]==1e6) SolvedPartWave[usPW]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             Result1 = double(2*usPW+1)*SolvedPartWave[usPW]*LegPol[usPW];
         }
         else{
@@ -2795,7 +2820,7 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
             if( IdenticalParticles && (usPW2+Spin[usCh])%2 ) continue;
             if(usPW2<NumPW[usCh] && (ShortRangePotential[usCh][usPW2] || ExternalWF[uMomBin][usCh][usPW2])){
                 if(LegPol[usPW2]==1e6) LegPol[usPW2]=gsl_sf_legendre_Pl(usPW2,CosTheta);
-                if(SolvedPartWave[usPW2]=1e6) SolvedPartWave[usPW2]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW2, true);
+                if(SolvedPartWave[usPW2]==1e6) SolvedPartWave[usPW2]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW2, true);
                 Result2 = double(2*usPW2+1)*SolvedPartWave[usPW2]*LegPol[usPW2];
             }
             else{

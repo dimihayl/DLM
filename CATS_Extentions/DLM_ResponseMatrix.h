@@ -2,16 +2,19 @@
 #define DLM_ResponseMatrixH
 
 #include "CATS.h"
+#include "CATStools.h"
 
 #include "TH2F.h"
 
 class DLM_ResponseMatrix{
 
 public:
+    DLM_ResponseMatrix(CATShisto<double>& ch, TH2F* hs, TH2F* hr, const bool& ia=false);
     DLM_ResponseMatrix(CATS& ab, TH2F* hs, TH2F* hr, const bool& ia=false);
     ~DLM_ResponseMatrix();
 
-    CATS& Kitty;
+    CATShisto<double>* CatHisto;
+    bool CatHistoIsMyOwn;
     TH2F* hSigmaMatrix;
     TH2F* hResidualMatrix;
 
@@ -36,6 +39,8 @@ public:
     int** SparseResponse;
 
 private:
+
+    void DefaultConstructor();
 
     void AllocateMatrix(const int& WhichMatr);
     void DeleteMatrix(const int& WhichMatr);

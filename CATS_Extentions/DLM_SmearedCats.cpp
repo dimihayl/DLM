@@ -17,6 +17,8 @@ DLM_SmearedCats::DLM_SmearedCats(CATS** InCat, const unsigned& numCk):
     CorrectedCk = NULL;
     CorrectedCkErr = NULL;
     LedniStatus = new bool [numCk];
+    ModelFunction = NULL;
+    ModelParameter = NULL;
 }
 
 DLM_SmearedCats::~DLM_SmearedCats(){
@@ -36,10 +38,12 @@ void DLM_SmearedCats::SetResolutionMatrix(TH2F* resolution){
 }
 
 void DLM_SmearedCats::SetResidualMatrix(const unsigned& WhichNr, TH2F* residual){
+    if(WhichNr>=NumCk) return;
     hResidual[WhichNr] = residual;
 }
 
 void DLM_SmearedCats::SetLambda(const unsigned& WhichNr, const double& lam){
+    if(WhichNr>=NumCk) return;
     LambdaCoeff[WhichNr] = lam;
 }
 
@@ -47,7 +51,7 @@ void DLM_SmearedCats::SetUseLednicky(const unsigned& WhichNr, const int& val, co
                                      const double& ScattLen1, const double& EffRan1,
                                      const double& ScattLen3, const double& EffRan3,
                                      const double& ares, const double& arad, const double& lambda0){
-
+    if(WhichNr>=NumCk) return;
     LedniStatus[WhichNr] = true;
     if(EvalUsingEquation[WhichNr]!=val) {EvalUsingEquation[WhichNr] = val; LedniStatus[WhichNr] = false;};
     if(GaussR!=grad) {GaussR = grad; LedniStatus[WhichNr] = false;};
@@ -59,6 +63,19 @@ void DLM_SmearedCats::SetUseLednicky(const unsigned& WhichNr, const int& val, co
     if(ResidualR!=arad) {ResidualR = arad; LedniStatus[WhichNr] = false;};
     if(LambdaLedni!=lambda0) {LambdaLedni = lambda0; LedniStatus[WhichNr] = false;};
 
+}
+
+void DLM_SmearedCats::UseCustomModel(const unsigned& WhichNr, double (*fModel)(const double&, const double*), double* Pars){
+    if(WhichNr>=NumCk) return;
+    if(!fModel || !Pars) return;
+    EvalUsingEquation[WhichNr] = -1;
+    ModelFunction = fModel;
+    ModelParameter = Pars;
+}
+
+void DLM_SmearedCats::UseCats(const unsigned& WhichNr){
+    if(WhichNr>=NumCk) return;
+    EvalUsingEquation[WhichNr] = 0;
 }
 
 void DLM_SmearedCats::Correct(const bool& NewBinning){
@@ -104,6 +121,9 @@ void DLM_SmearedCats::Correct(const bool& NewBinning){
                 if(RespMatrix[uCk] && cat[uCk]){
 //printf("EvalUsingEquation[uCk]=%i\n", EvalUsingEquation[uCk]);
                     switch(EvalUsingEquation[uCk]){
+                        case -1 :   CkVal = ModelFunction(MomentumTrue, ModelParameter);
+                                    CkValErr = 0;
+                                    break;
                         case 0 :    CkVal = cat[uCk]->EvalCorrFun(MomentumTrue);
                                     CkValErr = cat[uCk]->EvalCorrFunErr(MomentumTrue);
                                     break;

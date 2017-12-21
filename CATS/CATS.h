@@ -121,6 +121,7 @@ public:
     void RemoveTotPairMomCut();
 
     void SetNotifications(const short& notify);
+    short GetNotifications();
 
     void SetMaxPairsPerBin(unsigned mpp);
     unsigned GetMaxPairsPerBin();
@@ -188,6 +189,9 @@ public:
     double GetMomentum(const unsigned& WhichMomBin);
     double GetMomBinLowEdge(const unsigned& WhichMomBin);
     double GetMomBinUpEdge(const unsigned& WhichMomBin);
+    //use with care, the memory allocation is not monitored by cats, i.e. the pointer you
+    //get from here should be deleted later in your code!
+    double* CopyMomBin();
 
     unsigned GetMomBin(const double& Momentum);
     unsigned GetIpBin(const double& bVal);
@@ -228,6 +232,7 @@ public:
     //if(SmallChange==true) => force CATS to reuse the computing grid
     //This will  gain performance, might decrease the accuracy though, please use only when fine-tuning the source
     void SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange=false);
+    double GetAnaSourcePar(const unsigned& WhichPar);
 
     //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
     void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
@@ -243,6 +248,8 @@ public:
     void KillTheCat(const int& Options=kNothingChanged);
     //true = C(k) is computed; false = C(k) needs to be reevaluated
     bool CkStatus();
+    bool PotentialStatus();
+    bool SourceStatus();
     void ComputeTheRadialWaveFunction();
     //!------------------------------------------------
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };

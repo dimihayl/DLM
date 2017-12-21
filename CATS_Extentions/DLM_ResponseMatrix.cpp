@@ -1,8 +1,6 @@
 #include "DLM_ResponseMatrix.h"
 
-
-DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, TH2F* hs, TH2F* hr, const bool& ia):
-    Kitty(ab),hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(Kitty.GetNumMomBins()){
+void DLM_ResponseMatrix::DefaultConstructor(){
 
     //in case we have a resolution matrix, we convert it to
     //the double** format and normalize it
@@ -71,6 +69,25 @@ DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, TH2F* hs, TH2F* hr, const bool&
 
 }
 
+DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, TH2F* hs, TH2F* hr, const bool& ia):
+    hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ab.GetNumMomBins()){
+    double* BINS = ab.CopyMomBin();
+    CatHisto = new CATShisto<double> (ab.GetNumMomBins(), BINS);
+    CatHistoIsMyOwn = true;
+    delete [] BINS;
+
+    DefaultConstructor();
+}
+
+DLM_ResponseMatrix::DLM_ResponseMatrix(CATShisto<double>& ch, TH2F* hs, TH2F* hr, const bool& ia):
+    hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ch.GetNbins()){
+
+    CatHisto = &ch;
+    CatHistoIsMyOwn = false;
+
+    DefaultConstructor();
+}
+
 DLM_ResponseMatrix::~DLM_ResponseMatrix(){
     if(hSigmaMatrix){
         DeleteMatrix(mSigma);
@@ -82,7 +99,10 @@ DLM_ResponseMatrix::~DLM_ResponseMatrix(){
     if( !(bool(hSigmaMatrix)^bool(hResidualMatrix)) ){
         DeleteMatrix(mResponse);
     }
-
+    if(CatHistoIsMyOwn){
+        delete CatHisto;
+        CatHisto = NULL;
+    }
 }
 
 //allocates both the matrix and the sparse
@@ -176,7 +196,6 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, TH2F* input, const 
     int** Sparse = GetSparse(WhichMatr);
     double** Matrix = GetMatrix(WhichMatr);
 
-
     double MomLowEdgeX;
     double MomUpEdgeX;
     double MomLowEdgeY;
@@ -202,11 +221,15 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, TH2F* input, const 
         Sparse[iBin][yAxisLast] = -2;
     }
 
+    //iterate over the Ck bins (X)
     for(int iBinX=0; iBinX<NumMomBins; iBinX++){
-        MomLowEdgeX = Kitty.GetMomBinLowEdge(iBinX);
-        MomUpEdgeX = Kitty.GetMomBinUpEdge(iBinX);
+        //the k values at the low/up bin edge
+        MomLowEdgeX = CatHisto->GetBinLowEdge(iBinX);
+        MomUpEdgeX = CatHisto->GetBinUpEdge(iBinX);
+        //the corresponding bin numbers in the smear histogram
         WhichBinAtLowEdgeX = Xaxis->FindBin(MomLowEdgeX);
         WhichBinAtUpEdgeX = Xaxis->FindBin(MomUpEdgeX);
+        //number of histogram bins that are enclosed in this interval
         NumOldBinsX = WhichBinAtUpEdgeX - WhichBinAtLowEdgeX + 1;
 //Printf("MomLowEdgeX=%f", MomLowEdgeX);
 //Printf("MomUpEdgeX=%f", MomUpEdgeX);
@@ -217,9 +240,10 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, TH2F* input, const 
         if(NumOldBinsX>MaxBufferSize){
             printf("ERROR: DLM_ResponseMatrix::ConvertMatrix hates you since NumOldBinsX>MaxBufferSize\nA CRASH SHOULD FOLLOW!\n");
         }
+        //iterate over the Ck bins (Y)
         for(int iBinY=0; iBinY<NumMomBins; iBinY++){
-            MomLowEdgeY = Kitty.GetMomBinLowEdge(iBinY);
-            MomUpEdgeY = Kitty.GetMomBinUpEdge(iBinY);
+            MomLowEdgeY = CatHisto->GetBinLowEdge(iBinY);
+            MomUpEdgeY = CatHisto->GetBinUpEdge(iBinY);
             WhichBinAtLowEdgeY = Xaxis->FindBin(MomLowEdgeY);
             WhichBinAtUpEdgeY = Xaxis->FindBin(MomUpEdgeY);
             NumOldBinsY = WhichBinAtUpEdgeY - WhichBinAtLowEdgeY + 1;
