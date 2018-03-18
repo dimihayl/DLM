@@ -1,5 +1,5 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.8 (18 March 2017)
+//! Current Version: 2.8 (18 March 2018)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet

@@ -77,3 +77,6 @@ the accuarcy of the computation might decrease, or in an extreme case CATS may c
 After an additional check it was found that there was indeed a bug related to the asymptotic solution, which under circumstances could have lead to an undefined memory access and false results in single k-bins. The bug has been fixed.
 A new option for the wave-function is added - namely using the function UseExternalWaveFunction one could now insert the wave-function into CATS, overriding the Schroedinger solever.
 Further optimization related to the linear interpolation algorithms in CATS were done.
+
+18.03.2018 CATS 2.8
+Added the option to renormalize the transport-model defined source a bit faster, using the function "SetPoorManRenorm".
