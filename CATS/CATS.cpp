@@ -56,6 +56,7 @@ CATS::CATS():
     UseAnalyticSource = false;
     ThetaDependentSource = false;
     TransportRenorm = 1;
+    PoorManRenorm = 1;
     MinTotPairMom = -1;
     MaxTotPairMom = 1e100;
     LoadedMinTotPairMom = -1;
@@ -848,10 +849,23 @@ bool CATS::GetThetaDependentSource(){
 }
 
 void CATS::SetTransportRenorm(const double& val){
+    if(TransportRenorm==fabs(val)) return;
     TransportRenorm = fabs(val);
+    SourceGridReady = false;
+    SourceUpdated = false;
+    ComputedCorrFunction = false;
 }
 double CATS::GetTransportRenorm(){
     return TransportRenorm;
+}
+
+void CATS::SetPoorManRenorm(const double& val){
+    if(PoorManRenorm==fabs(val)) return;
+    PoorManRenorm = fabs(val);
+    ComputedCorrFunction = false;
+}
+double CATS::GetPoorManRenorm(){
+    return PoorManRenorm;
 }
 
 void CATS::SetTotPairMomCut(const double& minval, const double& maxval){
@@ -1276,6 +1290,8 @@ void CATS::KillTheCat(const int& Options){
     }
 
     bool TotWaveFunEvaluated = SourceGridReady*ComputedWaveFunction;
+    //if the poor man renormalization is used, the wave function needs to be reevaluated each time
+    if(PoorManRenorm!=0 && UseAnalyticSource==false) TotWaveFunEvaluated*=ComputedCorrFunction;
     bool ReallocateTotWaveFun = !SourceGridReady;
 
     //in case we have a cut on the total momentum, but the array to save it is not present
@@ -1795,7 +1811,8 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         //Momentum = GetMomentum(uMomBin);
         for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
-            Radius = BaseSourceGrid->GetParValue(uGrid, 0)*FmToNu;
+            if(PoorManRenorm!=1 && UseAnalyticSource==false) Radius = BaseSourceGrid->GetParValue(uGrid, 0)*FmToNu*PoorManRenorm;
+            else Radius = BaseSourceGrid->GetParValue(uGrid, 0)*FmToNu;
             CosTheta = BaseSourceGrid->GetParValue(uGrid, 1);
             for(unsigned usCh=0; usCh<NumCh; usCh++){
                 WaveFunction2[uMomBin][uGrid][usCh] =   ThetaDependentSource?

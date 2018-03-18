@@ -1,17 +1,29 @@
 #include "DLM_Fitters.h"
 
+#include "TString.h"
+#include "TH1F.h"
+#include "TF1.h"
+#include "TGraph.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(9),NumRangePar(4){
+#include "DLM_CkDecomposition.h"
+
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(13),NumPotPar(4),NumRangePar(4){
     HistoOriginal = new TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
     SourceSystems = NULL;
+    PotentialSystems = NULL;
     ParentSource = NULL;
+    ParentPotential = NULL;
     NumSourceSystems = 0;
+    NumPotentialSystems = 0;
     FitRange = new double* [MaxNumSyst];
     NumSourceMapEntries = 0;
     SameSourceMap = NULL;
     NumSameSourcePar = NULL;
+    NumPotentialMapEntries = 0;
+    SamePotentialMap = NULL;
+    NumSamePotentialPar = NULL;
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         HistoOriginal[uSyst] = NULL;
         HistoToFit[uSyst] = NULL;
@@ -24,6 +36,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
     ParUpLimit = new double* [MaxNumSyst];
     FixPar = new bool* [MaxNumSyst];
     SeparateBaseLineFit = new bool [MaxNumSyst];
+    FitBL = new TF1* [MaxNumSyst];
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         ParValue[uSyst] = new double [NumPar];
         ParDownLimit[uSyst] = new double [NumPar];
@@ -31,16 +44,21 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         FixPar[uSyst] = new bool [NumPar];
         //fix the pot pars
         for(unsigned uPar=0; uPar<NumPar; uPar++){
-            if(uPar<5) FixPar[uSyst][uPar] = false;
+            if(uPar<NumPar-NumPotPar) FixPar[uSyst][uPar] = false;
             else FixPar[uSyst][uPar] = true;
         }
         SeparateBaseLineFit[uSyst] = true;
         ParValue[uSyst][p_a] = 1; ParDownLimit[uSyst][p_a] = 0.5; ParUpLimit[uSyst][p_a] = 2;
         ParValue[uSyst][p_b] = 1e-3; ParDownLimit[uSyst][p_b] = 1e-5; ParUpLimit[uSyst][p_b] = 1;
-        ParValue[uSyst][p_r] = 1.5; ParDownLimit[uSyst][p_r] = 1; ParUpLimit[uSyst][p_r] = 2.5;
+        ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
+        FixPar[uSyst][p_c] = true;
+        ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
+        FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true;
         ParValue[uSyst][p_Cl] = 1; ParDownLimit[uSyst][p_Cl] = 0.75; ParUpLimit[uSyst][p_Cl] = 1.25;
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
         ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0;
+        //FitBL[uSyst] = new TF1(TString::Format("FitBL%u",uSyst),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
+        FitBL[uSyst] = NULL;
     }
 
     HistoGlobal = NULL;
@@ -75,17 +93,27 @@ DLM_Fitter1::~DLM_Fitter1(){
     }
     if(NumSameSourcePar) {delete [] NumSameSourcePar; NumSameSourcePar=NULL;}
 
+    if(SamePotentialMap){
+        for(unsigned uEntry=0; uEntry<NumPotentialMapEntries; uEntry++){
+            delete [] SamePotentialMap[uEntry];
+        }
+        delete [] SamePotentialMap; SamePotentialMap=NULL;
+    }
+    if(NumSamePotentialPar) {delete [] NumSamePotentialPar; NumSamePotentialPar=NULL;}
+
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         delete [] ParValue[uSyst];
         delete [] ParDownLimit[uSyst];
         delete [] ParUpLimit[uSyst];
         delete [] FixPar[uSyst];
+        if(FitBL[uSyst]) {delete FitBL[uSyst]; FitBL[uSyst]=NULL;}
     }
     delete [] ParValue; ParValue=NULL;
     delete [] ParDownLimit; ParDownLimit=NULL;
     delete [] ParUpLimit; ParUpLimit=NULL;
     delete [] FixPar; FixPar=NULL;
     delete [] SeparateBaseLineFit; SeparateBaseLineFit=NULL;
+    delete FitBL; FitBL=NULL;
 
     if(HistoGlobal){delete HistoGlobal; HistoGlobal=NULL;}
     if(FitGlobal){delete FitGlobal; FitGlobal=NULL;}
@@ -95,6 +123,8 @@ DLM_Fitter1::~DLM_Fitter1(){
 //printf("~SourceSystems=%p\n",SourceSystems);
     if(SourceSystems) {delete[]SourceSystems; SourceSystems=NULL;}
     if(ParentSource) {delete[]ParentSource; ParentSource=NULL;}
+    if(PotentialSystems) {delete[]PotentialSystems; PotentialSystems=NULL;}
+    if(ParentPotential) {delete[]ParentPotential; ParentPotential=NULL;}
 }
 
 //void DLM_Fitter1::TEST1(const unsigned& WhichSyst, TH1F* histo, const double& FromMeV ,
@@ -113,6 +143,7 @@ void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, TH1F& histo, const double
     if(KMIN>KFEMTO || KMIN>KLINEAR || KMIN>KMAX ||
        KFEMTO>KLINEAR || KFEMTO>KMAX || KLINEAR>KMAX){
         printf("WARNING: SetSystem says that the input ranges make no sense!\n");
+printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,KMAX);
         return;
     }
     if(KMIN<histo.GetBinLowEdge(1)/FromMeV || KMAX>histo.GetXaxis()->GetBinUpEdge(histo.GetNbinsX())/FromMeV){
@@ -153,7 +184,7 @@ void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, TH1F& histo, const double
 //delete [] HistoToFit;
 //HistoToFit = new TH1F* [10];
 //TH1F* h1 = new TH1F(TString::Format("HistoToFit%u",WhichSyst),TString::Format("HistoToFit%u",WhichSyst),NumBins,Bins);
-    HistoToFit[WhichSyst] = new TH1F(TString::Format("HistoToFit%u",WhichSyst),TString::Format("HistoToFit%u",WhichSyst),NumBins,Bins);
+    HistoToFit[WhichSyst] = new TH1F(TString::Format("HistoToFit%u_%p",WhichSyst,this),TString::Format("HistoToFit%u_%p",WhichSyst,this),NumBins,Bins);
     //HistoToFit[WhichSyst] = new TH1F(TString::Format("HistoToFit%u",WhichSyst),TString::Format("HistoToFit%u",WhichSyst),10,0,1);
 
 //HistoToFit[WhichSyst] = h1;
@@ -161,8 +192,11 @@ void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, TH1F& histo, const double
     for(unsigned uBin=BinMin; uBin<=BinMax; uBin++){
         HistoToFit[WhichSyst]->SetBinContent(uBin-BinMin+1, histo.GetBinContent(uBin));
         HistoToFit[WhichSyst]->SetBinError(uBin-BinMin+1, histo.GetBinError(uBin));
+//if(WhichSyst==2){
+//printf("uBin=%u; val=%f\n",uBin,histo.GetBinContent(uBin));
+//}
     }
-
+//printf("\n");
     delete [] Bins;
 }
 
@@ -268,6 +302,109 @@ void DLM_Fitter1::RemoveSameSource(const TString& System){
     }
 }
 
+
+void DLM_Fitter1::AddSamePotential(const TString& System, const TString& EqualTo, const int& numpars){
+
+    bool ExistingSystem = false;
+    bool ExistingEqualTo = false;
+    char* buffer = new char [128];
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        if(SystemToFit[uSyst]){
+            ExistingSystem += bool(SystemToFit[uSyst]->GetContribution(System.Data()));
+            //we can only anchor stuff to main contributions! else it makes no sense
+            SystemToFit[uSyst]->GetName(buffer);
+            ExistingEqualTo += (strcmp(buffer, EqualTo)==0);
+            //ExistingEqualTo += bool(SystemToFit[uSyst]->GetContribution(EqualTo.Data()));
+        }
+    }
+    delete [] buffer;
+    if(!ExistingSystem){
+        printf("WARNING: AddSamePotential says that %s does not exist!\n",System.Data());
+        return;
+    }
+    if(!ExistingEqualTo){
+        printf("WARNING: AddSamePotential says that %s does not exist!\n",EqualTo.Data());
+        return;
+    }
+
+    //we do not allow that a single entry is both a template for some other entry, but is
+    //itself anchored to some other template entry.
+    bool Trouble = false;
+    for(unsigned uEntry=0; uEntry<NumPotentialMapEntries; uEntry++){
+        if(SamePotentialMap[uEntry][0]==EqualTo) {Trouble=true; break;}
+        //We also make sure that one system is not set equal to some other system more than once
+        if(SamePotentialMap[uEntry][0]==System) {Trouble=true; break;}
+        if(SamePotentialMap[uEntry][1]==System) {Trouble=true; break;}
+    }
+    if(Trouble){
+        printf("WARNING: AddSamePotential says that there is some Trouble!\n");
+        return;
+    }
+
+    TString** NewMap = NULL;
+    int* NewNumSamePotentialPar = NULL;
+    //if(SamePotentialMap){
+    NewMap = new TString*[NumPotentialMapEntries+1];
+    NewNumSamePotentialPar = new int [NumPotentialMapEntries+1];
+
+    //copy the old info
+    for(unsigned uEntry=0; uEntry<NumPotentialMapEntries; uEntry++){
+        NewMap[uEntry] = new TString [2];
+        NewMap[uEntry][0] = SamePotentialMap[uEntry][0];
+        NewMap[uEntry][1] = SamePotentialMap[uEntry][1];
+        NewNumSamePotentialPar[uEntry] = NumSamePotentialPar[uEntry];
+        delete [] SamePotentialMap[uEntry];
+    }
+    if(SamePotentialMap) {delete [] SamePotentialMap;}
+    if(NumSamePotentialPar) {delete [] NumSamePotentialPar;}
+    //}
+    NewMap[NumPotentialMapEntries] = new TString [2];
+
+    SamePotentialMap = NewMap;
+    NumSamePotentialPar = NewNumSamePotentialPar;
+
+    SamePotentialMap[NumPotentialMapEntries][0] = System;
+    SamePotentialMap[NumPotentialMapEntries][1] = EqualTo;
+    NumSamePotentialPar[NumPotentialMapEntries] = numpars;
+
+    NumPotentialMapEntries++;
+}
+
+void DLM_Fitter1::RemoveSamePotential(const TString& System){
+    unsigned WhichEntryToRemove = 4294967295;
+    for(unsigned uEntry=0; uEntry<NumPotentialMapEntries; uEntry++){
+        if(SamePotentialMap[uEntry][0]==System) WhichEntryToRemove = uEntry;
+    }
+    if(WhichEntryToRemove!=4294967295){
+        if(NumPotentialMapEntries==1){
+            delete [] SamePotentialMap[0];
+            delete [] SamePotentialMap;
+            SamePotentialMap = NULL;
+            delete [] NumSamePotentialPar;
+            NumSamePotentialPar = NULL;
+            NumPotentialMapEntries = 0;
+        }
+        else{
+            TString** NewMap = new TString*[NumPotentialMapEntries-1];
+            int* NewNumSamePotentialPar = new int [NumPotentialMapEntries-1];
+            unsigned uEntryNew=0;
+            for(unsigned uEntry=0; uEntry<NumPotentialMapEntries; uEntry++){
+                if(uEntry==WhichEntryToRemove) continue;
+                NewMap[uEntryNew][0] = SamePotentialMap[uEntry][0];
+                NewMap[uEntryNew][1] = SamePotentialMap[uEntry][1];
+                NewNumSamePotentialPar[uEntryNew] = NumSamePotentialPar[uEntry];
+                delete [] SamePotentialMap[uEntry];
+                uEntryNew++;
+            }
+            delete [] SamePotentialMap;
+            delete [] NumSamePotentialPar;
+            SamePotentialMap = NewMap;
+            NumSamePotentialPar = NewNumSamePotentialPar;
+            NumPotentialMapEntries--;
+        }
+    }
+}
+
 void DLM_Fitter1::SetParameter(const unsigned& WhichSyst, const unsigned& WhichPar, const double& Value, const double& ValueDown, const double& ValueUp){
     if(WhichSyst>=MaxNumSyst) return;
     if(WhichPar>=NumPar) return;
@@ -302,6 +439,7 @@ void DLM_Fitter1::FixParameter(const unsigned& WhichSyst, const unsigned& WhichP
     FixPar[WhichSyst][WhichPar] = true;
 }
 void DLM_Fitter1::FixParameter(const TString& WhichSyst, const unsigned& WhichPar, const double& Value){
+    if(WhichPar>=NumPar) return;
     char* buffer = new char[128];
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(SystemToFit[uSyst]){
@@ -313,7 +451,7 @@ void DLM_Fitter1::FixParameter(const TString& WhichSyst, const unsigned& WhichPa
             }
         }
     }
-    printf("WARNING: SetParameter says that the system '%s' does not exist!\n", WhichSyst.Data());
+    printf("WARNING: FixParameter says that the system '%s' does not exist!\n", WhichSyst.Data());
     delete [] buffer;
 }
 double DLM_Fitter1::GetParameter(const unsigned& WhichSyst, const unsigned& WhichPar){
@@ -324,7 +462,12 @@ double DLM_Fitter1::GetParameter(const unsigned& WhichSyst, const unsigned& Whic
 double DLM_Fitter1::GetParError(const unsigned& WhichSyst, const unsigned& WhichPar){
     if(WhichSyst>=MaxNumSyst) return 0;
     if(WhichPar>=NumPar) return 0;
-    return FitGlobal->GetParError(WhichSyst*NumPar+WhichPar);
+    if(SeparateBaseLineFit[WhichSyst] && HistoToFit[WhichSyst] && WhichPar<3){
+        return FitBL[WhichSyst]->GetParError(WhichPar);
+    }
+    else{
+        return FitGlobal->GetParError(WhichSyst*NumPar+WhichPar);
+    }
 }
 double DLM_Fitter1::GetChi2(){
     return FitGlobal->GetChisquare();
@@ -338,12 +481,27 @@ double DLM_Fitter1::GetChi2Ndf(){
 double DLM_Fitter1::GetPval(){
     return FitGlobal->GetProb();
 }
+/*
 double DLM_Fitter1::Eval(const unsigned& WhichSyst, const double& Momentum)(){
     if(WhichSyst>=MaxNumSyst) return 0;
-
-
-
-
+}
+*/
+void DLM_Fitter1::GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph){
+    if(WhichSyst>=MaxNumSyst) return;
+    OutGraph.Set(NumBinsSyst[WhichSyst]);
+    double Momentum;
+    double xGlobal;
+    unsigned GlobalBinShift=0;
+    for(unsigned uSyst=0; uSyst<WhichSyst; uSyst++){
+        GlobalBinShift += NumBinsSyst[uSyst];
+    }
+//printf("GlobalBinShift=%u\n",GlobalBinShift);
+    for(unsigned uBin=0; uBin<NumBinsSyst[WhichSyst]; uBin++){
+        Momentum = GlobalToMomentum[GlobalBinShift+uBin];
+        xGlobal = HistoGlobal->GetBinCenter(GlobalBinShift+uBin+1);
+//printf(" k=%.2f; xVal=%.2f\n",Momentum,xGlobal);
+        OutGraph.SetPoint(uBin,Momentum,FitGlobal->Eval(xGlobal));
+    }
 }
 
 double DLM_Fitter1::GetParameter(const TString& WhichSyst, const unsigned& WhichPar){
@@ -384,10 +542,13 @@ void DLM_Fitter1::SetSeparateBL(const unsigned& WhichSyst, const bool& yesno){
     if(WhichSyst>=MaxNumSyst) return;
     SeparateBaseLineFit[WhichSyst] = yesno;
 }
-
-
-
-
+TF1* DLM_Fitter1::GetFit(){
+    return FitGlobal;
+}
+TF1* DLM_Fitter1::GetBaselineFit(const unsigned& WhichSyst){
+    if(WhichSyst>=MaxNumSyst) return NULL;
+    return FitBL[WhichSyst];
+}
 
 void DLM_Fitter1::GoBabyGo(){
 
@@ -402,16 +563,38 @@ void DLM_Fitter1::GoBabyGo(){
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!SeparateBaseLineFit[uSyst] || !HistoToFit[uSyst]) continue;
         if(!HistoToFit[uSyst]) continue;
-        TF1* FitBL = new TF1(TString::Format("FitBL%u",uSyst),"[0]+[1]*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
-        if(FixPar[uSyst][p_a]) {FitBL->FixParameter(0, ParValue[uSyst][p_a]);}
-        else{FitBL->SetParameter(0, ParValue[uSyst][p_a]); FitBL->SetParLimits(0, ParDownLimit[uSyst][p_a], ParUpLimit[uSyst][p_a]);}
-        if(FixPar[uSyst][p_b]) {FitBL->FixParameter(1, ParValue[uSyst][p_b]);}
-        else{FitBL->SetParameter(1, ParValue[uSyst][p_b]); FitBL->SetParLimits(1, ParDownLimit[uSyst][p_b], ParUpLimit[uSyst][p_b]);}
-        HistoToFit[uSyst]->Fit(FitBL,"S, N, R, M");
-        FixParameter(uSyst,p_a,FitBL->GetParameter(0));
-        FixParameter(uSyst,p_b,FitBL->GetParameter(1));
+
+        if(FitBL[uSyst]) delete FitBL[uSyst];
+        FitBL[uSyst] = new TF1(TString::Format("FitBL%u_%p",uSyst,this),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
+        if(FixPar[uSyst][p_a]) {FitBL[uSyst]->FixParameter(0, ParValue[uSyst][p_a]);}
+        else{FitBL[uSyst]->SetParameter(0, ParValue[uSyst][p_a]); FitBL[uSyst]->SetParLimits(0, ParDownLimit[uSyst][p_a], ParUpLimit[uSyst][p_a]);}
+        if(FixPar[uSyst][p_b]) {FitBL[uSyst]->FixParameter(1, ParValue[uSyst][p_b]);}
+        else{FitBL[uSyst]->SetParameter(1, ParValue[uSyst][p_b]); FitBL[uSyst]->SetParLimits(1, ParDownLimit[uSyst][p_b], ParUpLimit[uSyst][p_b]);}
+        if(FixPar[uSyst][p_c]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_c]);}
+        else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_c]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_c], ParUpLimit[uSyst][p_c]);}
+        //HistoToFit[uSyst]->Fit(FitBL[uSyst],"S, N, R, M");
+        HistoToFit[uSyst]->Fit(FitBL[uSyst],"Q, S, N, R, M");
+        FixParameter(uSyst,p_a,FitBL[uSyst]->GetParameter(0));
+        FixParameter(uSyst,p_b,FitBL[uSyst]->GetParameter(1));
+        FixParameter(uSyst,p_c,FitBL[uSyst]->GetParameter(2));
         FixParameter(uSyst,p_kc,0);
-        delete FitBL;
+
+        /*
+        TF1* FitBLold = new TF1(TString::Format("FitBLold%u",uSyst),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
+        if(FixPar[uSyst][p_a]) {FitBLold->FixParameter(0, ParValue[uSyst][p_a]);}
+        else{FitBLold->SetParameter(0, ParValue[uSyst][p_a]); FitBLold->SetParLimits(0, ParDownLimit[uSyst][p_a], ParUpLimit[uSyst][p_a]);}
+        if(FixPar[uSyst][p_b]) {FitBLold->FixParameter(1, ParValue[uSyst][p_b]);}
+        else{FitBLold->SetParameter(1, ParValue[uSyst][p_b]); FitBLold->SetParLimits(1, ParDownLimit[uSyst][p_b], ParUpLimit[uSyst][p_b]);}
+        if(FixPar[uSyst][p_c]) {FitBLold->FixParameter(2, ParValue[uSyst][p_c]);}
+        else{FitBLold->SetParameter(2, ParValue[uSyst][p_c]); FitBLold->SetParLimits(2, ParDownLimit[uSyst][p_c], ParUpLimit[uSyst][p_c]);}
+        HistoToFit[uSyst]->Fit(FitBLold,"S, N, R, M");
+        //HistoToFit[uSyst]->Fit(FitBLold,"Q, S, N, R, M");
+        FixParameter(uSyst,p_a,FitBLold->GetParameter(0));
+        FixParameter(uSyst,p_b,FitBLold->GetParameter(1));
+        FixParameter(uSyst,p_c,FitBLold->GetParameter(2));
+        FixParameter(uSyst,p_kc,0);
+        delete FitBLold;
+        */
     }
 
 
@@ -424,12 +607,16 @@ void DLM_Fitter1::GoBabyGo(){
     //for the time being this is not the case
     unsigned ActualNumSyst = 0;
 
+
+
+    char* buffer = new char[128];
+    char* buffer2 = new char[128];
+//----- NEXT WE HANDLE THE POSSIBILITY TO SHARE SOURCES BETWEEN SYSTEMS -----
+    //next we count how many unique source we have within our systems
     NumSourceSystems=0;
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         NumSourceSystems += bool(SystemToFit[uSyst]);
     }
-    char* buffer = new char[128];
-    char* buffer2 = new char[128];
     for(unsigned uSourceMap=0; uSourceMap<NumSourceMapEntries; uSourceMap++){
         bool IsNotCkToFit=true;
         for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
@@ -442,12 +629,14 @@ void DLM_Fitter1::GoBabyGo(){
         NumSourceSystems += IsNotCkToFit;
     }
 
-printf("NumSourceSystems=%u\n",NumSourceSystems);
+//printf("NumSourceSystems=%u\n",NumSourceSystems);
+    //we reset all memory regarding the fit
     if(SourceSystems){delete[]SourceSystems;SourceSystems=NULL;}
     if(NumSourceSystems) SourceSystems = new DLM_CkDecomposition*[NumSourceSystems];
     if(ParentSource){delete[]ParentSource;ParentSource=NULL;}
     if(NumSourceSystems) ParentSource = new int [NumSourceSystems];
-printf("SourceSystems=%p\n",SourceSystems);
+//printf("SourceSystems=%p\n",SourceSystems);
+
     unsigned uActualSource=0;
     //set the addresses of the main Ck functions to the SourceSystems
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
@@ -457,7 +646,6 @@ printf("SourceSystems=%p\n",SourceSystems);
         ParentSource[uActualSource]=uSyst;
         SystemToFit[uSyst]->GetName(buffer);
 
-        //find the parent
         /*
         for(unsigned uSyst2=0; uSyst2<MaxNumSyst; uSyst2++){
             if(!SystemToFit[uSyst2]) continue;
@@ -467,6 +655,7 @@ printf("SourceSystems=%p\n",SourceSystems);
             if(strcmp(buffer,buffer2)==0) ParentSource[uActualSource]=uSyst2;
         }
         */
+        //find the source-parent if there is any
         for(unsigned uSyst2=0; uSyst2<MaxNumSyst; uSyst2++){
             if(!SystemToFit[uSyst2]) continue;
             SystemToFit[uSyst2]->GetName(buffer2);
@@ -477,7 +666,6 @@ printf("SourceSystems=%p\n",SourceSystems);
             }
         }
 
-
 //SourceSystems[uActualSource]->GetName(buffer);
 //printf("SourceSystems[%u] name: %s\n",uActualSource,buffer);
 //SystemToFit[ParentSource[uActualSource]]->GetName(buffer);
@@ -485,6 +673,7 @@ printf("SourceSystems=%p\n",SourceSystems);
 
         uActualSource++;
     }
+
     //set the addresses of the secondary Ck functions to the SourceSystems
     for(unsigned uSourceMap=0; uSourceMap<NumSourceMapEntries; uSourceMap++){
         bool IsNotCkToFit=true;
@@ -521,9 +710,119 @@ printf("SourceSystems=%p\n",SourceSystems);
 
         uActualSource++;
     }
+
+//printf("QA: %u=%u ?\n",NumSourceSystems,uActualSource);
+
+
+//----- NEXT WE HANDLE THE POSSIBILITY TO SHARE POTENTIALS BETWEEN SYSTEMS -----
+    //next we count how many unique source we have within our systems
+    NumPotentialSystems=0;
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        NumPotentialSystems += bool(SystemToFit[uSyst]);
+    }
+    for(unsigned uPotentialMap=0; uPotentialMap<NumPotentialMapEntries; uPotentialMap++){
+        bool IsNotCkToFit=true;
+        for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+            if(!SystemToFit[uSyst]) continue;
+            SystemToFit[uSyst]->GetName(buffer);
+            if(strcmp(buffer,SamePotentialMap[uPotentialMap][0].Data())==0) IsNotCkToFit=false;
+        }
+        //we add to the counter all entries with a parent source, that are not main contributions.
+        //the reason is that the main contributions are already included above.
+        NumPotentialSystems += IsNotCkToFit;
+    }
+
+//printf("NumPotentialSystems=%u\n",NumPotentialSystems);
+    //we reset all memory regarding the fit
+    if(PotentialSystems){delete[]PotentialSystems;PotentialSystems=NULL;}
+    if(NumPotentialSystems) PotentialSystems = new DLM_CkDecomposition*[NumPotentialSystems];
+    if(ParentPotential){delete[]ParentPotential;ParentPotential=NULL;}
+    if(NumPotentialSystems) ParentPotential = new int [NumPotentialSystems];
+//printf("PotentialSystems=%p\n",PotentialSystems);
+
+    unsigned uActualPotential=0;
+    //set the addresses of the main Ck functions to the PotentialSystems
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        if(!SystemToFit[uSyst]) continue;
+        PotentialSystems[uActualPotential] = SystemToFit[uSyst];
+        //by default the parent of the system is the system itself
+        ParentPotential[uActualPotential]=uSyst;
+        SystemToFit[uSyst]->GetName(buffer);
+
+        /*
+        for(unsigned uSyst2=0; uSyst2<MaxNumSyst; uSyst2++){
+            if(!SystemToFit[uSyst2]) continue;
+            SystemToFit[uSyst2]->GetName(buffer2);
+            //if(strcmp(buffer,SamePotentialMap[uActualPotential][0].Data())==0) ParentPotential[uActualPotential]=uSyst2;
+            //if(strcmp(buffer,SamePotentialMap[uActualPotential][1].Data())==0) ParentPotential[uActualPotential]=uSyst2;
+            if(strcmp(buffer,buffer2)==0) ParentPotential[uActualPotential]=uSyst2;
+        }
+        */
+        //find the source-parent if there is any
+        for(unsigned uSyst2=0; uSyst2<MaxNumSyst; uSyst2++){
+            if(!SystemToFit[uSyst2]) continue;
+            SystemToFit[uSyst2]->GetName(buffer2);
+            //in case we find in the map a relation between uSyst and uSyst2 -> we set this
+            for(unsigned uPotentialMap=0; uPotentialMap<NumPotentialMapEntries; uPotentialMap++){
+                if(strcmp(buffer,SamePotentialMap[uPotentialMap][0].Data())==0 &&
+                   strcmp(buffer2,SamePotentialMap[uPotentialMap][1].Data())==0) ParentPotential[uActualPotential]=uSyst2;
+            }
+        }
+
+//PotentialSystems[uActualPotential]->GetName(buffer);
+//printf("PotentialSystems[%u] name: %s\n",uActualPotential,buffer);
+//SystemToFit[ParentPotential[uActualPotential]]->GetName(buffer);
+//printf("     Parent name: %s\n",buffer);
+
+        uActualPotential++;
+    }
+
+    //set the addresses of the secondary Ck functions to the PotentialSystems
+    for(unsigned uPotentialMap=0; uPotentialMap<NumPotentialMapEntries; uPotentialMap++){
+        bool IsNotCkToFit=true;
+        DLM_CkDecomposition* SystAddress=NULL;
+        for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+            if(!SystemToFit[uSyst]) continue;
+            SystemToFit[uSyst]->GetName(buffer);
+            if(strcmp(buffer,SamePotentialMap[uPotentialMap][0].Data())==0) IsNotCkToFit=false;
+            SystAddress = SystemToFit[uSyst]->GetContribution(SamePotentialMap[uPotentialMap][0].Data());
+            //make sure this entry is not yet saved
+            for(unsigned uAS=0; uAS<uActualPotential; uAS++){
+                if(PotentialSystems[uAS]==SystAddress){
+                    SystAddress=NULL;
+                    break;
+                }
+            }
+            if(SystAddress) break;
+        }
+        //this guy lets only contributions from the map which are not main Ck to pass through
+        if(!IsNotCkToFit) continue;
+        PotentialSystems[uActualPotential] = SystAddress;
+
+        //find the parent
+        for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+            if(!SystemToFit[uSyst]) continue;
+            SystemToFit[uSyst]->GetName(buffer);
+            if(strcmp(buffer,SamePotentialMap[uPotentialMap][1].Data())==0) ParentPotential[uActualPotential]=uSyst;
+        }
+
+//SystAddress->GetName(buffer);
+//printf("SystAddress name: %s\n",buffer);
+//SystemToFit[ParentPotential[uActualPotential]]->GetName(buffer);
+//printf("     Parent name: %s\n",buffer);
+
+        uActualPotential++;
+    }
+
+
     delete [] buffer;
     delete [] buffer2;
-printf("QA: %u=%u ?\n",NumSourceSystems,uActualSource);
+
+
+
+
+
+
 
     unsigned NumBinsGlobal = 0;
     if(NumBinsSyst) delete [] NumBinsSyst;
@@ -559,9 +858,9 @@ printf("QA: %u=%u ?\n",NumSourceSystems,uActualSource);
 
 
     if(HistoGlobal) delete HistoGlobal;
-    HistoGlobal = new TH1F("HistoGlobal", "HistoGlobal", NumBinsGlobal, 0, 1);
+    HistoGlobal = new TH1F(TString::Format("HistoGlobal%p",this), TString::Format("HistoGlobal%p",this), NumBinsGlobal, 0, 1);
     if(FitGlobal) delete FitGlobal;
-    FitGlobal = new TF1("FitGlobal", this, &DLM_Fitter1::EvalGlobal,0,1,ActualNumSyst*NumPar,"DLM_Fitter1","EvalGlobal");
+    FitGlobal = new TF1(TString::Format("FitGlobal%p",this), this, &DLM_Fitter1::EvalGlobal,0,1,ActualNumSyst*NumPar,"DLM_Fitter1","EvalGlobal");
 
     unsigned uBinGlob=0;
     //unsigned uActSyst=0;
@@ -604,9 +903,20 @@ printf("QA: %u=%u ?\n",NumSourceSystems,uActualSource);
             }
 
             //if the radius should be taken from a parent -> fix the source to a dummy value
-            if(int(uPar)==p_r && ParentSource[uSyst]!=int(uSyst)){
+            if(int(uPar)==p_sor0 && ParentSource[uSyst]!=int(uSyst)){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_sor1, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_sor2, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
             }
+            //if the potential should be taken from a parent -> fix the potential pars to dummy values
+            if(int(uPar)==p_pot0 && ParentPotential[uSyst]!=int(uSyst)){
+                FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_pot1, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_pot2, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_pot3, -1e6);
+            }
+
             //if kf==kl, than there is an active boundary condition for the linear part of C(k)
             //thus Cl will be determined by the fitter, here we set a dummy value
             if(int(uPar)==p_Cl && FitRange[uSyst][kl]==FitRange[uSyst][kf]){
@@ -625,45 +935,13 @@ printf("QA: %u=%u ?\n",NumSourceSystems,uActualSource);
             FitGlobal->FixParameter(uSyst*NumPar+p_Cl, -1e6);
             FitGlobal->FixParameter(uSyst*NumPar+p_kc, -1e6);
         }
-
         //uActSyst++;
     }
 
+    //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
+    HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
 
 
-
-printf("BEFORE FIT!\n");
-    HistoGlobal->Fit(FitGlobal,"S, N, R, M");
-
-//!TEMP///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-    TFile* TEMPFILE = new TFile(TString::Format("%sTEMPFILE.root",OutputDirName.Data()), "recreate");
-    HistoGlobal->Write();
-    FitGlobal->Write();
-
-    TCanvas* TEMPCAN = new TCanvas("TEMPCAN","TEMPCAN",1);
-    TEMPCAN->cd(0);
-    HistoGlobal->Draw();
-    FitGlobal->SetNpx(3*NumBinsGlobal);
-    FitGlobal->Draw("same");
-    TEMPCAN->Write();
-    printf("Chi2/NDF = %.2f/%i\n",FitGlobal->GetChisquare(),FitGlobal->GetNDF());
-    printf(" pval=%.4f\n",FitGlobal->GetProb());
-    for(unsigned uBin=0; uBin<NumBinsGlobal; uBin++){
-        //printf("GH = %f <-> FIT = %f\n",HistoGlobal->GetBinContent(uBin+1),FitGlobal->Eval(HistoGlobal->GetBinCenter(uBin+1)));
-    }
-*/
-//!TEMPEND////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-//!TEMP///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    //delete TEMPCAN;
-    //delete TEMPFILE;
-//!TEMPEND////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 
 double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
@@ -671,6 +949,8 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     unsigned GlobalBin = HistoGlobal->FindBin(*xVal)-1;
     double Momentum = GlobalToMomentum[GlobalBin];
     unsigned WhichSyst;
+//printf("Pars0[p_sor0/1/2] = %.2f/%.2f/%.2f\n",Pars[p_sor0],Pars[p_sor1],Pars[p_sor2]);
+//printf("Pars1[p_sor0/1/2] = %.2f/%.2f/%.2f\n",Pars[NumPar+p_sor0],Pars[NumPar+p_sor1],Pars[NumPar+p_sor2]);
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!HistoToFit[uSyst]) continue;
@@ -682,27 +962,35 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 
     //determine if we are in the femto region. If false => we are in the linear or flat region
     bool FemtoRegion = (Momentum<=FitRange[WhichSyst][kf]);
-//printf("xVal=%f (k=%.1f); WhichSyst=%u; --> FEMTO=%i\n",*xVal,Momentum,WhichSyst,int(FemtoRegion));
     //loop over all systems that may need to have their source size adjusted
     //adjust the source of their corresponding "source-parent"
     for(unsigned uSource=0; uSource<NumSourceSystems; uSource++){
-//printf(" set source par [%u]\n",uSource);
-//printf(" SourceSystems[uSource]=%p\n",SourceSystems[uSource]);
-//char buffer[32];
-//SourceSystems[uSource]->GetName(buffer);
-//printf(" Name=%s\n",buffer);
-//printf(" Adjust the source of %p\n",SourceSystems[uSource]->GetCk());
-        SourceSystems[uSource]->GetCk()->SetSourcePar(0, Pars[ParentSource[uSource]*NumPar+p_r]);
-//printf(" set source par [%u] done\n",uSource);
+        for(unsigned uPar=0; uPar<SourceSystems[uSource]->GetCk()->GetNumSourcePar(); uPar++){
+            SourceSystems[uSource]->GetCk()->SetSourcePar(uPar, Pars[ParentSource[uSource]*NumPar+p_sor0+uPar]);
+        }
+        //GetNumSourcePar
+
+        //SourceSystems[uSource]->GetCk()->SetSourcePar(0, Pars[ParentSource[uSource]*NumPar+p_sor0]);
+//this is quite badly implemented! The idea is to check if there are more than 1 source parameters, however at the moment
+//I only check the main system, but there is no check if all systems are defined equivalently!
+        //if(!FixPar[0][p_sor1])
+            //SourceSystems[uSource]->GetCk()->SetSourcePar(1, Pars[ParentSource[uSource]*NumPar+p_sor1]);
+        //if(!FixPar[0][p_sor2])
+            //SourceSystems[uSource]->GetCk()->SetSourcePar(2, Pars[ParentSource[uSource]*NumPar+p_sor2]);
+        //if(!FixPar[0][p_sor3])
+            //SourceSystems[uSource]->GetCk()->SetSourcePar(3, Pars[ParentSource[uSource]*NumPar+p_sor3]);
     }
 
+    for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
+        for(unsigned uPar=0; uPar<PotentialSystems[uPotential]->GetCk()->GetNumPotPar(); uPar++){
+            PotentialSystems[uPotential]->GetCk()->SetPotPar(uPar, Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
+        }
+    }
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!SystemToFit[uSyst]) continue;
         for(unsigned uPot=0; uPot<NumPar; uPot++){
             if(uPot>=SystemToFit[uSyst]->GetCk()->GetNumPotPar()) break;
-//printf("uSyst*NumPar+p_pot0+uPot=%u\n",uSyst*NumPar+p_pot0+uPot);
-//printf("   VAL=%f\n",Pars[uSyst*NumPar+p_pot0+uPot]);
             SystemToFit[uSyst]->GetCk()->SetPotPar(uPot, Pars[uSyst*NumPar+p_pot0+uPot]);
         }
     }
@@ -710,42 +998,19 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     //update all systems. It is better to do this here than in the loop before,
     //in order to make sure that ALL systems have their sources adjusted before the update
     for(unsigned uSource=0; uSource<NumSourceSystems; uSource++){
-//printf("uSource=%u; r=%f\n",uSource,Pars[ParentSource[uSource]*NumPar+p_r]);
         SourceSystems[uSource]->Update();
+    }
+    for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
+        PotentialSystems[uPotential]->Update();
     }
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         SystemToFit[uSyst]->Update();
     }
 
-/*
-    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
-        if(!SystemToFit[uSyst]) continue;
-
-        //at the moment I can have only the radius size
-        //if( SystemToFit[uSyst]->GetCk()->GetNumSourcePar() ){
-
-
-            SystemToFit[uSyst]->GetCk()->SetSourcePar(0, Pars[uSyst*NumPar+p_r]);
-        //}
-    }
-
-    if( SystemToFit[WhichSyst]->GetCk()->GetNumSourcePar() ){
-
-
-        double& Radius = Pars[WhichSyst*NumPar+p_r];
-
-    }
-*/
-
-//SystemToFit[WhichSyst]->GetCk()->SetSourcePar(0, )
-//SetSourcePar
-
     double CkVal;
-    double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum;
+    double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum;
 
     double Clin;
-    //double Cconv;
-//printf("SeparateBaseLineFit=%i\n",int(SeparateBaseLineFit));
     //Oli's way
     if(SeparateBaseLineFit[WhichSyst]){
         if(FemtoRegion){
@@ -766,10 +1031,8 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             else{
                 Clin = fabs(Pars[WhichSyst*NumPar+p_Cl]);
             }
-//printf("I am at %u\n",WhichSyst*NumPar+p_kc);
             if(Pars[WhichSyst*NumPar+p_kc]==-1e6){
                 CkVal = Clin;
-//printf("CkVal=%f\n");
             }
             else if(Pars[WhichSyst*NumPar+p_kc]==FitRange[WhichSyst][kl]){
                 CkVal = 1e6;
@@ -781,9 +1044,7 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             }
             if(Clin<1 && CkVal>1) CkVal=1;
             if(Clin>1 && CkVal<1) CkVal=1;
-//printf(" CkVal=%f\n");
         }
     }
-
     return BlVal*CkVal;
 }

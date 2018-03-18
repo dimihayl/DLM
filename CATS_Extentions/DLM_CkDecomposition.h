@@ -25,7 +25,7 @@ public:
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
     bool Status();
-    void Update();
+    void Update(const bool& FORCE=false);
 
 private:
     const unsigned NumSourcePar;
@@ -59,6 +59,10 @@ public:
                          TH2F* hResidualMatrix=NULL, const bool& InvertedAxis=false);
 
     double EvalCk(const double& Momentum);
+    double EvalMain(const double& Momentum);
+    double EvalSmearedMain(const double& Momentum);
+    double EvalMainFeed(const double& Momentum);
+    double EvalSmearedMainFeed(const double& Momentum);
     //if(Renorm) -> spit out the C(k) normalized to 1
 /*
     //Only the main correlation
@@ -76,6 +80,8 @@ public:
     unsigned GetNumChildren();
     DLM_CkDecomposition* GetChild(const unsigned& WhichChild);
     DLM_CkDecomposition* GetContribution(const char* name);
+    CATShisto<double>* GetChildContribution(const unsigned& WhichChild);
+    CATShisto<double>* GetChildContribution(const char* name);
     DLM_Ck* GetCk();
 
     void GetName(char* name);
@@ -98,7 +104,7 @@ private:
     //the main C(k)
     DLM_Ck* CkMain;
     //the smeared main C(k)
-    //CATShisto<double>* CkMainSmeared;
+    CATShisto<double>* CkMainSmeared;
     //the C(k) containing the main and feed-down contributions
     CATShisto<double>* CkMainFeed;
     //the smeared Main+FeedDown C(k)

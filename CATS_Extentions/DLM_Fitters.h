@@ -1,39 +1,33 @@
 #ifndef DLM_FITTERS_H
 #define DLM_FITTERS_H
 
-#include "CATS.h"
-#include "DLM_SmearedCats.h"
+//#include "CATS.h"
+//#include "DLM_SmearedCats.h"
 
 #include "TString.h"
-//#include "TRandom3.h"
-//#include "TFile.h"
-//#include "TH2F.h"
-#include "TH1F.h"
-#include "TF1.h"
-//#include "TCanvas.h"
-//#include "TGraph.h"
-//#include "TLorentzVector.h"
 
-#include "DLM_CkDecomposition.h"
-//#include "DLM_Potentials.h"
-//#include "DLM_Source.h"
+//#include "DLM_CkDecomposition.h"
 
 //this typedef it used to save the potentials for the
 //different channels as an array of function pointers.
 //typedef double (*CatsAnaSource)(double*);
 
+class DLM_CkDecomposition;
+class TGraph;
+class TH1F;
+class TF1;
+
 
 //!FOR TEST!
-#include "TCanvas.h"
-#include "TFile.h"
-
+//#include "TCanvas.h"
+//#include "TFile.h"
 
 
 class DLM_Fitter1{
 
 public:
-
-    enum fFitPar { p_a, p_b, p_Cl, p_kc, p_r, p_pot0, p_pot1, p_pot2, p_pot3  };
+    //(a+b*x+c*x*x)*C(k)
+    enum fFitPar { p_a, p_b, p_c, p_Cl, p_kc, p_sor0, p_sor1, p_sor2, p_sor3, p_pot0, p_pot1, p_pot2, p_pot3  };
     enum fFitRange { kmin, kf, kl, kmax };
 
     DLM_Fitter1(const unsigned& maxnumsyst=16);
@@ -45,6 +39,8 @@ public:
     //in case there are multiple systems sharing a source this should be set here
     void AddSameSource(const TString& System, const TString& EqualTo, const int& numpars);
     void RemoveSameSource(const TString& System);
+    void AddSamePotential(const TString& System, const TString& EqualTo, const int& numpars);
+    void RemoveSamePotential(const TString& System);
 
     //
     //void SetSameSourceChildren(const TString& WhichSyst, const TString& EqualTo, const int& NumPars);
@@ -62,9 +58,15 @@ public:
     double GetChi2Ndf();
     double GetPval();
     double Eval(const unsigned& WhichSyst, const double& Momentum);
+    void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph);
 
     void SetOutputDir(const TString& outdirname);
     void SetSeparateBL(const unsigned& WhichSyst, const bool& yesno);
+
+    const unsigned GetNumParPerSyst(){return NumPar;}
+
+    TF1* GetFit();
+    TF1* GetBaselineFit(const unsigned& WhichSyst);
 
     //set up the global histogram and perform the fit
     void GoBabyGo();
@@ -78,6 +80,7 @@ public:
 private:
     const unsigned MaxNumSyst;
     const unsigned NumPar;
+    const unsigned NumPotPar;
     const unsigned NumRangePar;
 
     TString OutputDirName;
@@ -93,6 +96,12 @@ private:
     //the ID in the main array of the Ck to which the source of a system is fixed
     int* ParentSource;
 
+    unsigned NumPotentialSystems;
+    //an array containing all main Ck's + all secondaries that have their source fixed to one of the mains
+    DLM_CkDecomposition** PotentialSystems;
+    //the ID in the main array of the Ck to which the source of a system is fixed
+    int* ParentPotential;
+
     //[WhichSyst][0-3] 0-3: kMin,kFetmo,kLinear,kMax
     double** FitRange;
 
@@ -100,6 +109,10 @@ private:
     TString** SameSourceMap;
     int* NumSameSourcePar;
     unsigned NumSourceMapEntries;
+
+    TString** SamePotentialMap;
+    int* NumSamePotentialPar;
+    unsigned NumPotentialMapEntries;
 
     //for the future. Might be useful for UrFAT
     //TString** SameInterMap;
@@ -113,6 +126,7 @@ private:
 
     TH1F* HistoGlobal;
     TF1* FitGlobal;
+    TF1** FitBL;
 
     double* GlobalToMomentum;
     unsigned* NumBinsSyst;

@@ -61,6 +61,11 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
 }
 
 //e.g. ΛΛ
+//SourcePar[0] = Radius
+//PotPar[0] = a0 for 1S0
+//PotPar[1] = Reff for 1S0
+//PotPar[2] = a0 for 3S1
+//PotPar[3] = Reff for 3S1
 double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,true);
 }

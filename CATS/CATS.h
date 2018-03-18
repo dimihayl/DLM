@@ -1,8 +1,11 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.7 (4 December 2017)
+//! Current Version: 2.8 (18 March 2017)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
+
+//! In case you use CATS for your analysis please cite:
+//! D. L. Mihaylov, V. M. Sarti, O. W. Arnold, L. Fabbietti, B. Hohlweger and A. M. Mathis, arXiv:1802.08481 [hep-ph]
 
 #ifndef CATS_H
 #define CATS_H
@@ -111,6 +114,9 @@ public:
 
     void SetTransportRenorm(const double& val);
     double GetTransportRenorm();
+
+    void SetPoorManRenorm(const double& val);
+    double GetPoorManRenorm();
 
     //the input values should be non-negative
     //please set this condition BEFORE you load the source, else CATS will not save the TotalMomentum at all
@@ -236,7 +242,7 @@ public:
 
     //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
     void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
-                                 const double* RadWF, const unsigned& NumRadBins, const double* RadBins, const double& PHASESHIFT);
+                                 const double* RadWF=NULL, const unsigned& NumRadBins=0, const double* RadBins=NULL, const double& PHASESHIFT=0);
 
     //!------------------------------------------------
 
@@ -297,6 +303,10 @@ private:
     bool ThetaDependentSource;
     //multiply the source of the transport model by some coefficient
     double TransportRenorm;
+    //an additional renormalization done not when loading the source, but applied simply to the 'r' in CM frame.
+    //the advantage of using this option is computational performance when fitting.
+    //This condition is only applied to sources from transport models
+    double PoorManRenorm;
 
     double MinTotPairMom;
     double MaxTotPairMom;

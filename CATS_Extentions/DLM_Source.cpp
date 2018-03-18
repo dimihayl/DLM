@@ -4,6 +4,10 @@
 
 const double PI = 3.141592653589793;
 
+//!TEST
+//#include <fstream>
+//#include <stdio.h>
+
 double GaussSourceTF1(double* x, double* Pars){
     //double& Momentum = Pars[0];
     double& Radius = *x;
@@ -37,4 +41,21 @@ double CauchySource(double* Pars){
 
 double CauchySourceTheta(double* Pars){
     return 0.5*CauchySource(Pars);
+}
+
+double DoubleGaussSource(double* Pars){
+    //double& Momentum = Pars[0];
+    double& Radius = Pars[1];
+    //double& CosTheta = Pars[2];
+
+    double& Size1 = Pars[3];
+    double& Size2 = Pars[4];
+    double& Weight1 = Pars[5];
+
+//printf(" G1=%.1f x %e\n",Weight1, 4.*PI*Radius*Radius*pow(4.*PI*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1)));
+//printf(" G2=%.1f x %e\n",1.-Weight1, 4.*PI*Radius*Radius*pow(4.*PI*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2)));
+
+    return      Weight1 *4.*PI*Radius*Radius*pow(4.*PI*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1))+
+            (1.-Weight1)*4.*PI*Radius*Radius*pow(4.*PI*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2));
+
 }

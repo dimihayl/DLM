@@ -8,4 +8,6 @@ double GaussSourceTheta(double* Pars);
 double CauchySource(double* Pars);
 double CauchySourceTheta(double* Pars);
 
+double DoubleGaussSource(double* Pars);
+
 #endif

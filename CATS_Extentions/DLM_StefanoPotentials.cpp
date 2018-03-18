@@ -1641,6 +1641,8 @@ double DLM_StefanoPotentials::Eval_PWprojector(const double& Radius,
                                                const int& IsoSpin, const int& PartType1, const int& PartType2,
                                                const int& Spin, const int& AngMom, const int& TotMom, const int& DlmFlag){
     pot(Radius, 0);
+    //pot(Radius>0.7?Radius+0.6:0.1, 0);
+    //pot(Radius+0.4);
 
     const int& t1z=PartType1;//isospin3 x 2 particle1
     const int& t2z=PartType2;//isospin3 x 2 particle2
@@ -1653,7 +1655,6 @@ double DLM_StefanoPotentials::Eval_PWprojector(const double& Radius,
     double vls = vv[6]+t1dt2*vv[7];
     double vl2=vv[8]+t1dt2*vv[9]+s1ds2*vv[10]+s1ds2*t1dt2*vv[11];
     double vls2=vv[12]+t1dt2*vv[13];
-
     const int ls=(TotMom*(TotMom+1)-AngMom*(AngMom+1)-Spin*(Spin+1))/2;
     double s12=0;
     double s12m;
@@ -1671,14 +1672,26 @@ double DLM_StefanoPotentials::Eval_PWprojector(const double& Radius,
         s12m=-2.*double(TotMom-1.)/double(2.*TotMom+1.);
         s12=sqrt(double(36.*TotMom*(TotMom+1)))/double(2.*TotMom+1.);
         s12p=-2.*double(TotMom+2.)/double(2.*TotMom+1.);
+
+//s12m=0;
+//s12=0;
+//s12p=0;
+
     }
 
+
+//vt=0;
+//vls=0;
     RETURN_VAL = vc+s12*vt+ls*vls+AngMom*(AngMom+1)*vl2+ls*ls*vls2;
     if(Spin==1 && AngMom==(TotMom-1)){
         if(DlmFlag==2) RETURN_VAL = vc+s12m*vt+lsm*vls+AngMom*(AngMom+1)*vl2+lsm*lsm*vls2;
         else if(DlmFlag==3) RETURN_VAL = s12*vt;
         else if(DlmFlag==4) RETURN_VAL = vc+s12p*vt+lsp*vls+(AngMom+2.)*(AngMom+3.)*vl2+lsp*lsp*vls2;
     }
+
+
+//if(Spin==1 && TotMom==2) RETURN_VAL = vc;
+//RETURN_VAL = vc;
 
     return RETURN_VAL;
 }
@@ -1728,7 +1741,8 @@ double DLM_StefanoPotentials::Eval_PWprojector_pp(const double& Radius, const in
         else if(DlmFlag==3) RETURN_VAL = s12*vt;
         else if(DlmFlag==4) RETURN_VAL = vc+s12p*vt+lsp*vls+(AngMom+2.)*(AngMom+3.)*vl2+lsp*lsp*vls2;
     }
-
+//if(Spin==1 && TotMom==2 && lpot==2) RETURN_VAL = vc;
+//if(Spin==1 && TotMom==2 && lpot==9) RETURN_VAL = vc;
     return RETURN_VAL;
 }
 

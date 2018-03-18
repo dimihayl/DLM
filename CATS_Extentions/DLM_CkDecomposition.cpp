@@ -68,6 +68,12 @@ void DLM_Ck::SetSourcePar(const unsigned& WhichPar, const double& Value){
         SourceUpToDate = false;
 //printf(" Kitty SOURCE CHANGED %p!\n",this);
     }
+    else if(Kitty && !Kitty->GetUseAnalyticSource()){
+        if(Kitty->GetTransportRenorm()==Value) return;
+        //Kitty->SetTransportRenorm(Value);
+        Kitty->SetPoorManRenorm(Value);
+        SourceUpToDate = false;
+    }
     else{
         return;
 //printf(" NO CHANGE :( wtf!!!\n");
@@ -122,10 +128,11 @@ bool DLM_Ck::Status(){
     return (SourceUpToDate && PotUpToDate);
 }
 
-void DLM_Ck::Update(){
-
+//maybe a bug, if I change Transport to Ana -> no update unless I force it
+void DLM_Ck::Update(const bool& FORCE){
+//PotUpToDate=true;
 //printf("%p: SourceUpToDate=%i; PotUpToDate=%i\n",this,int(SourceUpToDate),int(PotUpToDate));
-    if(SourceUpToDate && PotUpToDate) return;
+    if(SourceUpToDate && PotUpToDate && !FORCE) return;
     if(CkFunction){
         for(unsigned uBin=0; uBin<NumBins; uBin++){
             BinValue[uBin] = CkFunction(GetBinCenter(uBin), SourcePar, PotPar);
@@ -162,7 +169,7 @@ DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numch
     CurrentStatus = false;
     DecompositionStatus = false;
     CurrentStatusChild = NULL;
-    //CkMainSmeared = NULL;
+    CkMainSmeared = NULL;
     CkMainFeed = NULL;
     CkSmearedMainFeed = NULL;
 
@@ -220,6 +227,7 @@ return;
     }
     if(Name) {delete [] Name; Name=NULL;}
     if(RM_MomResolution) {delete RM_MomResolution; RM_MomResolution=NULL;}
+    if(CkMainSmeared) {delete CkMainSmeared; CkMainSmeared=NULL;}
     if(CkMainFeed) {delete CkMainFeed; CkMainFeed=NULL;}
     if(CkSmearedMainFeed) {delete CkSmearedMainFeed; CkSmearedMainFeed=NULL;}
 }
@@ -327,6 +335,23 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
     return RESULT;
 }
 
+double DLM_CkDecomposition::EvalMain(const double& Momentum){
+    return CkMain->Eval(Momentum);
+}
+double DLM_CkDecomposition::EvalSmearedMain(const double& Momentum){
+    if(!CkMainSmeared){
+        CkMainSmeared = new CATShisto<double>(*CkMain);
+        Smear(CkMain,RM_MomResolution,CkMainSmeared);
+    }
+    return CkMainSmeared->Eval(Momentum);
+}
+double DLM_CkDecomposition::EvalMainFeed(const double& Momentum){
+    return CkMainFeed->Eval(Momentum);
+}
+double DLM_CkDecomposition::EvalSmearedMainFeed(const double& Momentum){
+    return CkSmearedMainFeed->Eval(Momentum);
+}
+
 unsigned DLM_CkDecomposition::GetNumChildren(){
     return NumChildren;
 }
@@ -344,6 +369,21 @@ DLM_CkDecomposition* DLM_CkDecomposition::GetContribution(const char* name){
         if(RESULT) break;
     }
     return RESULT;
+}
+CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const unsigned& WhichChild){
+    if(WhichChild>=NumChildren) return NULL;
+    CATShisto<double>* Histo = new CATShisto<double> (*CkChildMainFeed[WhichChild]);
+    Smear(CkChildMainFeed[WhichChild], RM_MomResolution, Histo);
+    return Histo;
+}
+CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const char* name){
+    for(unsigned uChild=0; uChild<NumChildren; uChild++){
+        if(!Child[uChild]) continue;
+        if(strcmp(name,Child[uChild]->Name)==0){
+            return GetChildContribution(uChild);
+        }
+    }
+    return NULL;
 }
 DLM_Ck* DLM_CkDecomposition::GetCk(){
     return CkMain;
