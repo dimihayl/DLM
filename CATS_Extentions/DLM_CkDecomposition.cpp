@@ -1,5 +1,10 @@
 
 #include "DLM_CkDecomposition.h"
+
+
+#include "DLM_CkModels.h"
+
+
 /*
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):
     NumSourcePar(nSourcePar),NumPotPar(nPotPar),MomBinCopy(cat.CopyMomBin()),Kitty(&cat),
@@ -136,6 +141,14 @@ void DLM_Ck::Update(const bool& FORCE){
     if(CkFunction){
         for(unsigned uBin=0; uBin<NumBins; uBin++){
             BinValue[uBin] = CkFunction(GetBinCenter(uBin), SourcePar, PotPar);
+/*
+if(BinValue[uBin]<0) {
+printf("BinValue[%.2f]=%.2f\n",GetBinCenter(uBin),BinValue[uBin]);
+printf("R=%.2f\n",SourcePar[0]);
+printf("PotPar=%.2f and %.2f\n",PotPar[0],PotPar[1]);
+printf("%.2f\n",Lednicky_Identical_Singlet(GetBinCenter(uBin), SourcePar, PotPar));
+}
+*/
         }
         SourceUpToDate = true;
         PotUpToDate = true;
@@ -160,7 +173,7 @@ void DLM_Ck::Update(const bool& FORCE){
 //the main contribution does not count as a child, i.e. 1 child implies one contribution additionally to the main one!
 DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, TH2F* hSigmaMatrix, const bool& InvertAxis):
     ERROR_STATE(!name),NumChildren(numchildren),CkMain(&ckfunction){
-
+DEBUGFLAG=0;
     Child = NULL;
     LambdaPar = NULL;
     Type = NULL;
@@ -452,7 +465,11 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
 
     //2)
     if(!CurrentStatus || FORCE_FULL_UPDATE){
-        CkMain->Update();
+        CkMain->Update(FORCE_FULL_UPDATE);
+//if(FORCE_FULL_UPDATE && DEBUGFLAG==1){
+    //printf("CkMain(10)=%.2f\n",CkMain->Eval(10));
+//}
+
     }
 
     for(unsigned uChild=0; uChild<NumChildren; uChild++){

@@ -69,6 +69,14 @@ void CatsLorentzVector::Set(const double& tCrd, const double& xCrd, const double
     FourMomentum[3]=zMom;
     ComputeBetaGamma();
 }
+void CatsLorentzVector::RotateMomPhi(const double& angle){
+    double XNEW = FourMomentum[1]*cos(angle)-FourMomentum[2]*sin(angle);
+    double YNEW = FourMomentum[2]*cos(angle)+FourMomentum[1]*sin(angle);
+    FourMomentum[1] =  XNEW;
+    FourMomentum[2] =  YNEW;
+    ComputeBetaGamma();
+}
+
 void CatsLorentzVector::RenormSpacialCoordinates(const double& Renorm){
     FourSpace[0]*=Renorm;
     FourSpace[1]*=Renorm;
@@ -184,11 +192,26 @@ double CatsLorentzVector::GetP() const{
 double CatsLorentzVector::GetP2() const{
     return TotMom2;
 }
+double CatsLorentzVector::GetPt() const{
+    return sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]);
+}
 double CatsLorentzVector::Mag() const{
     return Magnitude;
 }
 double CatsLorentzVector::Mag2() const{
     return Magnitude2;
+}
+double CatsLorentzVector::GetPseudoRap() const{
+    return 0.5*log((TotMom+FourMomentum[3])/(TotMom-FourMomentum[3]));
+}
+double CatsLorentzVector::GetRapidity() const{
+    return 0.5*log((FourMomentum[0]+FourMomentum[3])/(FourMomentum[0]-FourMomentum[3]));
+}
+double CatsLorentzVector::GetScatAngle() const{
+    return acos(GetCosScatAngle());
+}
+double CatsLorentzVector::GetCosScatAngle() const{
+    return (FourSpace[1]*FourMomentum[1]+FourSpace[2]*FourMomentum[2]+FourSpace[3]*FourMomentum[3])/(GetR()*GetP());
 }
 
 CatsParticle::CatsParticle(){
@@ -233,15 +256,17 @@ CatsParticlePair::~CatsParticlePair(){
 
 }
 
-void CatsParticlePair::SetPair(const CatsParticle& particle1, const CatsParticle& particle2, const bool& TauCorrection){
+void CatsParticlePair::SetPair(const CatsParticle& particle1, const CatsParticle& particle2, const bool& TauCorrection, const bool& BOOST){
     Particle1=particle1;
     Particle2=particle2;
     ParticleSum=Particle1+Particle2;
     CatsLorentzVector::operator = (Particle1-Particle2);
 
-    Particle1.Boost(ParticleSum);
-    Particle2.Boost(ParticleSum);
-    Boost(ParticleSum);
+    if(BOOST){
+        Particle1.Boost(ParticleSum);
+        Particle2.Boost(ParticleSum);
+        Boost(ParticleSum);
+    }
 
     if(TauCorrection){
         CatsParticle* FirstParticle;
@@ -326,7 +351,7 @@ void CatsEvent::AddParticle(const CatsParticle& Particle){
         return;
     }
 }
-void CatsEvent::ComputeParticlePairs(const bool& TauCorrection){
+void CatsEvent::ComputeParticlePairs(const bool& TauCorrection, const bool& BOOST){
     if(Pid1==Pid2){
         if(NumParticles2){
             printf("WARNING in CatsEvent::ComputeParticlePairs: Potential bug detected! Please contact the developers!\n");
@@ -349,7 +374,7 @@ void CatsEvent::ComputeParticlePairs(const bool& TauCorrection){
 
     for(unsigned uPart1=0; uPart1<NumPart1; uPart1++){
         for(unsigned uPart2=(Pid1==Pid2?uPart1+1:0); uPart2<NumPart2; uPart2++){
-            ParticlePair[uPair].SetPair(PartType1[uPart1],PartType2[uPart2],TauCorrection);
+            ParticlePair[uPair].SetPair(PartType1[uPart1],PartType2[uPart2],TauCorrection,BOOST);
             uPair++;
         }
     }
@@ -428,6 +453,13 @@ unsigned CatsDataBuffer::GetNumPairsMixedEvent() const{
 unsigned CatsDataBuffer::GetNumPairs() const{
     return TotalNumPairs;
 }
+double CatsDataBuffer::GetAvgNumPairs() const{
+    double Average = 0;
+    for(unsigned uEve=0; uEve<NumEvents; uEve++){
+        Average += DataEvent[uEve]->GetNumPairs();
+    }
+    return Average/double(NumEvents);
+}
 const CatsParticlePair* CatsDataBuffer::GetPair(const unsigned& WhichPair) const{
     if(WhichPair>=TotalNumPairs) return NULL;
     return PointerToPair[WhichPair];
@@ -440,7 +472,7 @@ const CatsParticlePair* CatsDataBuffer::GetMePair(const unsigned& WhichPair) con
     if(WhichPair>=NumMePairs) return NULL;
     return PointerToPair[NumSePairs+WhichPair];
 }
-void CatsDataBuffer::GoBabyGo(const bool& TauCorrection){
+void CatsDataBuffer::GoBabyGo(const bool& TauCorrection, const bool& BOOST){
     NumSePairs=0;
     NumMePairs=0;
     TotalNumPairs=0;
@@ -488,7 +520,7 @@ void CatsDataBuffer::GoBabyGo(const bool& TauCorrection){
                     MixedParticlePair[uMePair].SetPair(
                             DataEvent[uEve1]->GetParticleType1(uPair1),
                             DataEvent[uEve2]->GetParticleType2(uPair2),
-                                                       TauCorrection);
+                                                       TauCorrection,BOOST);
                     PointerToPair[TotalNumPairs] = &MixedParticlePair[uMePair];
                     uMePair++;
                     TotalNumPairs++;
@@ -502,7 +534,7 @@ void CatsDataBuffer::GoBabyGo(const bool& TauCorrection){
                     MixedParticlePair[uMePair].SetPair(
                             DataEvent[uEve2]->GetParticleType1(uPair1),
                             DataEvent[uEve1]->GetParticleType2(uPair2),
-                                                       TauCorrection);
+                                                       TauCorrection,BOOST);
                     PointerToPair[TotalNumPairs] = &MixedParticlePair[uMePair];
                     uMePair++;
                     TotalNumPairs++;

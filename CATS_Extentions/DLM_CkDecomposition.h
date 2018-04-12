@@ -24,6 +24,7 @@ public:
     void SetPotPar(const unsigned& WhichPar, const double& Value);
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
+
     bool Status();
     void Update(const bool& FORCE=false);
 
@@ -89,6 +90,8 @@ public:
     bool Status();
     //run with flag true before fitting (i.e. after you finish the full set up)
     void Update(const bool& FORCE_FULL_UPDATE=true);
+
+int DEBUGFLAG;
 
 private:
 

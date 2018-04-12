@@ -15,6 +15,31 @@ double Flat_Residual(const double& Momentum, const double* SourcePar, const doub
 }
 
 
+double LednickyAsInStar(const double& Momentum, const double& GaussR, const double& ScattLenSin, const double& EffRangeSin,
+                        const double& Norm, const double& lambda, const double& ares, const double& RadRes){
+
+    const double FmToNu=5.067731237e-3;
+    const std::complex<double> i(0,1);
+    const double Pi(3.141592653589793);
+
+    const double Radius = GaussR*FmToNu;
+    const double sLen1 = ScattLenSin*FmToNu;
+    const double eRan1 = EffRangeSin*FmToNu;
+
+    double QMOM = 2*Momentum;
+
+    double F1 = gsl_sf_dawson(QMOM*Radius)/(QMOM*Radius);
+    double F2 = (1.-exp(-QMOM*QMOM*Radius*Radius))/(QMOM*Radius);
+
+    complex<double> ScattAmplSin = pow(1./sLen1+0.5*eRan1*Momentum*Momentum-i*Momentum,-1.);
+
+    return Norm*(1.+lambda*(-0.5*exp(-Radius*Radius*QMOM*QMOM)+0.25*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius))+
+                     real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius/2.)
+          +ares*exp(-RadRes*RadRes*QMOM*QMOM)
+          );
+
+}
+
 
 double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,

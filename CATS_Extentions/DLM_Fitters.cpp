@@ -5,6 +5,9 @@
 #include "TF1.h"
 #include "TGraph.h"
 
+//for test only
+#include "TFile.h"
+
 #include "DLM_CkDecomposition.h"
 
 DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(13),NumPotPar(4),NumRangePar(4){
@@ -136,6 +139,9 @@ DLM_Fitter1::~DLM_Fitter1(){
 void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, TH1F& histo, const double& FromMeV ,
                    DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX){
 
+
+//printf("&decomp = %p\n",&decomp);
+
     if(WhichSyst>=MaxNumSyst){
         printf("WARNING: SetSystem says WhichSyst>=MaxNumSyst\n");
         return;
@@ -147,8 +153,8 @@ printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,K
         return;
     }
     if(KMIN<histo.GetBinLowEdge(1)/FromMeV || KMAX>histo.GetXaxis()->GetBinUpEdge(histo.GetNbinsX())/FromMeV){
-//printf("KMIN=%f --> %f",KMIN,GetBinLowEdge(1)/FromMeV);
-//printf(" KMAX=%f --> %f",KMIN,GetBinLowEdge(1)/FromMeV);
+//printf("KMIN=%f --> %f\n",KMIN,histo.GetBinLowEdge(1)/FromMeV);
+//printf(" KMAX=%f --> %f\n",KMAX,histo.GetXaxis()->GetBinUpEdge(histo.GetNbinsX())/FromMeV);
         printf("WARNING: SetSystem says that the desired fitting region is outside of the histo range!\n");
         return;
     }
@@ -198,6 +204,23 @@ printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,K
     }
 //printf("\n");
     delete [] Bins;
+}
+
+bool DLM_Fitter1::ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomposition& decomp){
+    if(WhichSyst>=MaxNumSyst){
+        printf("WARNING: ChangeCkModel says WhichSyst>=MaxNumSyst\n");
+        return false;
+    }
+    char nameNEW[64];
+    decomp.GetName(nameNEW);
+    char nameOLD[64];
+    SystemToFit[WhichSyst]->GetName(nameOLD);
+    if(strcmp(nameNEW,nameOLD)!=0){
+        printf("WARNING: ChangeCkModel can only do its job for systems with the same name\n");
+        return false;
+    }
+    SystemToFit[WhichSyst] = &decomp;
+    return true;
 }
 
 void DLM_Fitter1::AddSameSource(const TString& System, const TString& EqualTo, const int& numpars){
@@ -454,6 +477,15 @@ void DLM_Fitter1::FixParameter(const TString& WhichSyst, const unsigned& WhichPa
     printf("WARNING: FixParameter says that the system '%s' does not exist!\n", WhichSyst.Data());
     delete [] buffer;
 }
+
+
+void DLM_Fitter1::FixParameter(const unsigned& WhichSyst, const unsigned& WhichPar){
+    FixParameter(WhichSyst,WhichPar,ParValue[WhichSyst][WhichPar]);
+}
+void DLM_Fitter1::FixParameter(const TString& WhichSyst, const unsigned& WhichPar){
+    FixParameter(WhichSyst,WhichPar,GetParameter(WhichSyst,WhichPar));
+}
+
 double DLM_Fitter1::GetParameter(const unsigned& WhichSyst, const unsigned& WhichPar){
     if(WhichSyst>=MaxNumSyst) return 0;
     if(WhichPar>=NumPar) return 0;
@@ -484,10 +516,17 @@ double DLM_Fitter1::GetPval(){
 /*
 double DLM_Fitter1::Eval(const unsigned& WhichSyst, const double& Momentum)(){
     if(WhichSyst>=MaxNumSyst) return 0;
+
+
+    HistoOriginal[WhichSyst]->FindBin(Momentum);
+
+    return FitGlobal->Eval();
 }
 */
 void DLM_Fitter1::GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph){
+//printf(" HEY -> GetFitGraph!\n");
     if(WhichSyst>=MaxNumSyst) return;
+//printf(" HEY2 -> GetFitGraph!\n");
     OutGraph.Set(NumBinsSyst[WhichSyst]);
     double Momentum;
     double xGlobal;
@@ -941,6 +980,56 @@ void DLM_Fitter1::GoBabyGo(){
     //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
     HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
 
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        for(unsigned uPar=0; uPar<NumPar; uPar++){
+            ParValue[uSyst][uPar] = FitGlobal->GetParameter(uSyst*NumPar+uPar);
+        }
+    }
+
+/*
+if(MaxNumSyst==1){
+for(unsigned uBin=1; uBin<=5; uBin++){
+printf("HG[%u] = %.2f --> Fit = %.2f --> CkDec(%p) = %.2f\n",
+       uBin,
+       FitGlobal->Eval(HistoOriginal[0]->GetBinCenter(uBin)),
+       &SystemToFit[0][0],
+       SystemToFit[0]->EvalCk(HistoOriginal[0]->GetBinCenter(uBin)));
+printf("XX(%.2f): CkDec(%p) = %.2f\n",
+       HistoOriginal[0]->GetBinCenter(uBin),
+       &SystemToFit[0][0],
+       SystemToFit[0]->EvalCk(HistoOriginal[0]->GetBinCenter(uBin)));
+printf("\n");
+}
+}
+if(MaxNumSyst==4){
+for(unsigned uBin=1; uBin<=5; uBin++){
+printf("pp(%.2f): CkDec(%p) = %.2f\n",
+       HistoOriginal[0]->GetBinCenter(uBin),
+       &SystemToFit[0][0],
+       SystemToFit[0]->EvalCk(HistoOriginal[0]->GetBinCenter(uBin)));
+printf("pΛ(%.2f): CkDec(%p) = %.2f\n",
+       HistoOriginal[1]->GetBinCenter(uBin),
+       &SystemToFit[1][0],
+       SystemToFit[1]->EvalCk(HistoOriginal[1]->GetBinCenter(uBin)));
+printf("ΛΛ(%.2f): CkDec(%p) = %.2f\n",
+       HistoOriginal[2]->GetBinCenter(uBin),
+       &SystemToFit[2][0],
+       SystemToFit[2]->EvalCk(HistoOriginal[2]->GetBinCenter(uBin)));
+printf("pΞ(%.2f): CkDec(%p) = %.2f\n",
+       HistoOriginal[3]->GetBinCenter(uBin),
+       &SystemToFit[3][0],
+       SystemToFit[3]->EvalCk(HistoOriginal[3]->GetBinCenter(uBin)));
+printf("\n");
+}
+}
+*/
+
+
+
+    TFile* tmpFile = new TFile(TString::Format("%stmpFile.root",OutputDirName.Data()),"recreate");
+    HistoGlobal->Write();
+    FitGlobal->Write();
+    delete tmpFile;
 
 }
 
@@ -998,13 +1087,13 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     //update all systems. It is better to do this here than in the loop before,
     //in order to make sure that ALL systems have their sources adjusted before the update
     for(unsigned uSource=0; uSource<NumSourceSystems; uSource++){
-        SourceSystems[uSource]->Update();
+        SourceSystems[uSource]->Update(false);
     }
     for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
-        PotentialSystems[uPotential]->Update();
+        PotentialSystems[uPotential]->Update(false);
     }
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
-        SystemToFit[uSyst]->Update();
+        SystemToFit[uSyst]->Update(false);
     }
 
     double CkVal;

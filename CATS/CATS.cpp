@@ -2420,7 +2420,7 @@ void CATS::SetUpSourceGrid(){
     }
     else if(NumPairs){
         //sorts the whole data according to the GridBoxId (all bins!)
-        //this will setip the base grid
+        //this will setup the base grid
         SortAllData();
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
                                         NULL, NULL, GridBoxId, NumPairs);

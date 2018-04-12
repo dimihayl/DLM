@@ -36,6 +36,7 @@ public:
     //sets up a certain system that we want to fit
     void SetSystem(const unsigned& WhichSyst, TH1F& histo, const double& FromMeV ,
                    DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
+    bool ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomposition& decomp);
     //in case there are multiple systems sharing a source this should be set here
     void AddSameSource(const TString& System, const TString& EqualTo, const int& numpars);
     void RemoveSameSource(const TString& System);
@@ -49,6 +50,9 @@ public:
     void SetParameter(const TString& WhichSyst, const unsigned& WhichPar, const double& Value, const double& ValueDown=-1e64, const double& ValueUp=1e64);
     void FixParameter(const unsigned& WhichSyst, const unsigned& WhichPar, const double& Value);
     void FixParameter(const TString& WhichSyst, const unsigned& WhichPar, const double& Value);
+    //fix the parameter to the current value
+    void FixParameter(const unsigned& WhichSyst, const unsigned& WhichPar);
+    void FixParameter(const TString& WhichSyst, const unsigned& WhichPar);
     double GetParameter(const unsigned& WhichSyst, const unsigned& WhichPar);
     double GetParError(const unsigned& WhichSyst, const unsigned& WhichPar);
     double GetParameter(const TString& WhichSyst, const unsigned& WhichPar);
@@ -57,7 +61,7 @@ public:
     int GetNdf();
     double GetChi2Ndf();
     double GetPval();
-    double Eval(const unsigned& WhichSyst, const double& Momentum);
+    //double Eval(const unsigned& WhichSyst, const double& Momentum);
     void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph);
 
     void SetOutputDir(const TString& outdirname);
@@ -102,7 +106,7 @@ private:
     //the ID in the main array of the Ck to which the source of a system is fixed
     int* ParentPotential;
 
-    //[WhichSyst][0-3] 0-3: kMin,kFetmo,kLinear,kMax
+    //[WhichSyst][0-3] 0-3: kMin,kFemto,kLinear,kMax
     double** FitRange;
 
     //[Entry][WhichSystem/TemplateSystem]

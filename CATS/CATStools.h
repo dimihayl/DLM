@@ -21,9 +21,16 @@ public:
 
     double GetP() const;
     double GetP2() const;
+    double GetPt() const;
 
     double Mag() const;
     double Mag2() const;
+
+    double GetPseudoRap() const;
+    double GetRapidity() const;
+    //returns the angle between the spacial and momentum vector
+    double GetScatAngle() const;
+    double GetCosScatAngle() const;
 
     double GetT() const;
     double GetX() const;
@@ -35,6 +42,8 @@ public:
     double GetPz() const;
     void Set(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd,
              const double& engy, const double& xMom, const double& yMom, const double& zMom);
+    //rotates the Momentum vector in Phi
+    void RotateMomPhi(const double& angle);
     void RenormSpacialCoordinates(const double& Renorm);
     CatsLorentzVector const operator+(const CatsLorentzVector& other);
     CatsLorentzVector const operator-(const CatsLorentzVector& other);
@@ -82,7 +91,7 @@ public:
     CatsParticlePair();
     ~CatsParticlePair();
 
-    void SetPair(const CatsParticle& particle1, const CatsParticle& particle2, const bool& TauCorrection=false);
+    void SetPair(const CatsParticle& particle1, const CatsParticle& particle2, const bool& TauCorrection=false, const bool& BOOST=true);
     const CatsParticle& GetParticle(const int& WhichParticle) const;
     const CatsLorentzVector& GetSum() const;
 protected:
@@ -97,7 +106,7 @@ public:
     ~CatsEvent();
     void Reset();
     void AddParticle(const CatsParticle& Particle);
-    void ComputeParticlePairs(const bool& TauCorrection=false);
+    void ComputeParticlePairs(const bool& TauCorrection=false, const bool& BOOST=true);
     unsigned GetNumPairs() const;
     CatsParticlePair& GetParticlePair(const unsigned& WhichPair) const;
     unsigned GetNumParticles1() const;
@@ -130,10 +139,11 @@ public:
     unsigned GetNumPairsSameEvent() const;
     unsigned GetNumPairsMixedEvent() const;
     unsigned GetNumPairs() const;
+    double GetAvgNumPairs() const;
     const CatsParticlePair* GetPair(const unsigned& WhichPair) const;
     const CatsParticlePair* GetSePair(const unsigned& WhichPair) const;
     const CatsParticlePair* GetMePair(const unsigned& WhichPair) const;
-    void GoBabyGo(const bool& TauCorrection=false);
+    void GoBabyGo(const bool& TauCorrection=false, const bool& BOOST=true);
 private:
     const unsigned NumEvents;
     unsigned NumSePairs;
