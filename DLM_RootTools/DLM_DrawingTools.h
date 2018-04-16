@@ -1,11 +1,6 @@
 
-
-
 #ifndef DLM_DrawingToolsH
 #define DLM_DrawingToolsH
-
-#include "TColor.h"
-
 
 class DLM_DtColor{
 
