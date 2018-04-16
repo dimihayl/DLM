@@ -1,5 +1,4 @@
 #include "DLM_DrawingTools.h"
-
 #include "TColor.h"
 
 DLM_DtColor::DLM_DtColor():NumColors(18){
