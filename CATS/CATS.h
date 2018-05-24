@@ -187,9 +187,13 @@ public:
     unsigned GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW);
     double GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin);
     double EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
-                                  const bool& DevideByR=true);
+                                  const bool& DivideByR=true);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
+
+    double EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
+                                  const bool& DivideByR=true);
+    double EvalReferenceRadialWF(const unsigned& WhichMomBin,const unsigned short& usPW, const double& Radius, const bool& DivideByR=true);
 
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin);
@@ -485,7 +489,7 @@ private:
     //the computed range we use the shifted reference wave. If DivideByR==true, computed is R = u/r.
     //N.B. The result would differ from EvalWaveFunctionU/Radius due to the extrapolation done.
     double EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
-                             const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR);
+                             const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic=false);
     double EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
     double EffectiveFunction(const unsigned& uMomBin, const double& Radius);
 

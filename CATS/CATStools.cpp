@@ -84,7 +84,6 @@ void CatsLorentzVector::RenormSpacialCoordinates(const double& Renorm){
     FourSpace[3]*=Renorm;
 }
 
-
 CatsLorentzVector const CatsLorentzVector::operator+(const CatsLorentzVector& other){
     CatsLorentzVector RESULT;
     RESULT.FourSpace[0]=FourSpace[0]+other.FourSpace[0];
@@ -681,103 +680,7 @@ void CATSnode::StandardNodeInit(double* mean, double* len, const CATSnode* Templ
     else{
         Elder->AddEndNode(this);
     }
-
 }
-
-/*
-void CATSnode::StandardNodeInit(double* mean, double* len, const CATSnode* TemplateNode){
-    SourceValue = 0;
-    MeanVal = new double [Elder->Dim];
-    IntLen = new double [Elder->Dim];
-    double GridSize=1;
-    for(short sDim=0; sDim<Elder->Dim; sDim++){
-        MeanVal[sDim] = mean[sDim];
-        IntLen[sDim] = len[sDim];
-        GridSize *= IntLen[sDim];
-    }
-
-    if(Elder->SourceFunction){
-        for(short sDim=0; sDim<Elder->Dim; sDim++){
-            Elder->SourcePars[1+sDim] = MeanVal[sDim];
-        }
-        SourceValue = Elder->SourceFunction(Elder->SourcePars)*GridSize;
-    }
-    else if(Elder->GridBoxId){
-        unsigned first, last;
-        first = Elder->FindFirstParticleWithID(FirstID);
-        last = Elder->FindLastParticleWithID(LastID);
-
-        //the normal situation
-        if(first<Elder->NumOfEl && last<Elder->NumOfEl){
-            SourceValue = double(last-first+1)/double(Elder->NumOfEl);
-        }
-        //the case where we should include all particles
-        //(both boxes are outside the range, first on the low side and last on the upper side)
-        else if(first==Elder->NumOfEl && last==first+1){
-            SourceValue = 1;
-        }
-        //the case where the first box is outside range on the low side
-        else if(first==Elder->NumOfEl && last<Elder->NumOfEl){
-            SourceValue = double(last+1)/double(Elder->NumOfEl);
-        }
-        //the case where the last box is outside range on the up side
-        else if(first<Elder->NumOfEl && last>Elder->NumOfEl){
-            SourceValue = double(Elder->NumOfEl-first)/double(Elder->NumOfEl);
-        }
-        else{
-            SourceValue = 0;
-        }
-    }
-    else{
-       SourceValue = 0;
-    }
-
-    child = NULL;
-    bool HasChildren;
-
-    //if we use a template node, we just look if that one has children
-    if(TemplateNode){
-        HasChildren = TemplateNode->child;
-    }
-    //this is the standard condition
-    else{
-        HasChildren = (Depth<Elder->MinDepth || (Depth<Elder->MaxDepth && SourceValue>Elder->Epsilon &&
-                                                 GetNumOfEl()>=Elder->MinEntries));
-    }
-
-    if( HasChildren ){
-        child = new CATSnode* [Elder->NumSubNodes];
-        //we want to divide our total interval in two for each parameter on the grid.
-        //in order to keep track in which "quadrant" we are, we introduce a very simple counter WhichPart for each
-        //of the parameters, that can only take values 0 or 1. Each time WhichPart[x] is increased to 2, than it is set to zero
-        //and WhichPart[x+1] is increased, i.e. we continue to iterate over the next parameter.
-        char WhichPart[Elder->Dim];
-        double ChildMean[Elder->Dim];
-        double ChildLen[Elder->Dim];
-        unsigned ChildNumBoxes = (LastID-FirstID+1)/Elder->NumSubNodes;
-        unsigned ChildFirstID = FirstID;
-        for(short sDim=0; sDim<Elder->Dim; sDim++){
-            WhichPart[sDim] = 0;
-            ChildMean[sDim] = MeanVal[sDim]-IntLen[sDim]*0.25;
-            ChildLen[sDim] = IntLen[sDim]*0.5;
-        }
-        for(unsigned uSub=0; uSub<Elder->NumSubNodes; uSub++){
-            child[uSub] = new CATSnode(Elder,Depth+1,ChildFirstID,ChildFirstID+ChildNumBoxes-1,ChildMean,ChildLen,
-                                       TemplateNode?TemplateNode->child[uSub]:NULL);
-            ChildFirstID += ChildNumBoxes;
-            for(short sDim=0; sDim<Elder->Dim; sDim++){
-                WhichPart[sDim] = (WhichPart[sDim]+1)%2;
-                ChildMean[sDim] = MeanVal[sDim]-IntLen[sDim]*0.25+0.5*IntLen[sDim]*WhichPart[sDim];
-                if(WhichPart[sDim]) break;
-            }
-        }
-    }
-    else{
-        Elder->AddEndNode(this);
-    }
-
-}
-*/
 
 //! see what happens if epsilon==0
 CATSelder::CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon, double* mean, double* len,

@@ -9,6 +9,40 @@
 
 using namespace std;
 
+const double FmToNu(5.067731237e-3);
+const double Pi(3.141592653589793);
+const double FSC(0.0072973525664);
+const std::complex<double> i(0,1);
+const double EulerConst = 0.57721566490153;
+
+double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2){
+    if(!Momentum) return 0;
+    return 0.5*FSC*RedMass*Q1Q2/Momentum;
+}
+
+//h function, as defined in Lednicky 1981 paper (Yad.Fiz. 35 (1981) 1316-1330)
+//the x^2 is replaced with 1/eta^2
+double CoulombEuler(const double& eta){
+    if(!eta) return 0;
+    double RESULT = 0;
+    double ADD;
+    const double eta2 = eta*eta;
+    for(double dIter=1; dIter<=11; dIter++){
+        ADD = 1./(dIter*(dIter*dIter+eta2));
+        RESULT += ADD;
+        if(fabs(ADD/RESULT)<1e-7) break;
+    }
+    RESULT *= eta2;
+    RESULT -= log(eta2)+EulerConst;
+    return RESULT;
+}
+
+//Momentum = k (the Ac function)
+double CoulombPenetrationFactor(const double& eta){
+    //if Q1Q2 is zero, than we have no correction.
+    return eta?2.*Pi*eta/(exp(2.*Pi*eta)-1.):1;
+}
+
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar){
 //printf("FR at %f\n", Momentum);
     return 1;
@@ -18,9 +52,9 @@ double Flat_Residual(const double& Momentum, const double* SourcePar, const doub
 double LednickyAsInStar(const double& Momentum, const double& GaussR, const double& ScattLenSin, const double& EffRangeSin,
                         const double& Norm, const double& lambda, const double& ares, const double& RadRes){
 
-    const double FmToNu=5.067731237e-3;
-    const std::complex<double> i(0,1);
-    const double Pi(3.141592653589793);
+    //const double FmToNu=5.067731237e-3;
+
+    //const double Pi(3.141592653589793);
 
     const double Radius = GaussR*FmToNu;
     const double sLen1 = ScattLenSin*FmToNu;
@@ -45,9 +79,9 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
                        const double& ScattLenTri, const double& EffRangeTri,
                        const bool& SinOnly, const bool& QS){
-    const double FmToNu=5.067731237e-3;
-    const std::complex<double> i(0,1);
-    const double Pi(3.141592653589793);
+    //const double FmToNu=5.067731237e-3;
+    //const std::complex<double> i(0,1);
+    //const double Pi(3.141592653589793);
 
     const double Radius = GaussR*FmToNu;
     const double sLen1 = ScattLenSin*FmToNu;
@@ -72,6 +106,7 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
         CkValue +=  3*(
                     0.5*pow(abs(ScattAmplTri)/Radius,2)*(1-(eRan3)/(2*sqrt(Pi)*Radius))+
                     2*real(ScattAmplTri)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplTri)*F2/Radius);
+//printf("CkValue3 = %.3f\n");
         CkValue *= 0.25;
     }
     //if we have to include QS we need to add a correction factor and normalize by factor of 1/2
@@ -85,6 +120,55 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     return CkValue;
 }
 
+
+double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
+                       const double& ScattLenSin, const double& EffRangeSin,
+                       const bool& QS, const double& RedMass, const double& Q1Q2){
+    //const double FmToNu=5.067731237e-3;
+    //const std::complex<double> i(0,1);
+    //const double Pi(3.141592653589793);
+
+    const double Momentum2 = Momentum*Momentum;
+    const double Radius = GaussR*FmToNu;
+    //const double Radius2 = Radius*Radius;
+    const double Rho = Radius*Momentum;
+    const double Rho2 = Rho*Rho;
+    const double sLen1 = ScattLenSin*FmToNu;
+    const double eRan1 = EffRangeSin*FmToNu;
+
+    //double Dawson = gsl_sf_dawson(2.*Rho);
+    //double D_2 = (1.-exp(-4.*Rho2));
+    double eta = CoulombEta(Momentum,RedMass,Q1Q2);
+    double A_c = CoulombPenetrationFactor(eta);
+
+    complex<double> ScattAmplSin=pow(1./sLen1+0.5*eRan1*Momentum2-i*Momentum*A_c-2.*Momentum*eta*CoulombEuler(eta),-1.);
+
+    double CkValue =    0.25*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius)+0.5*pow(A_c-1.,2)*(1.-exp(-4.*Rho2)))
+                        +Momentum*real(ScattAmplSin)*gsl_sf_dawson(2.*Rho)/(2.*sqrt(Pi)*Rho2)
+                        -Momentum*imag(ScattAmplSin)*(0.25*(1.-exp(-4.*Rho2))/Rho2+(A_c-1.)*cos(Rho)*exp(-Rho2));
+    //double CkValue =    0.25*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius))
+    //                    +Momentum*real(ScattAmplSin)*gsl_sf_dawson(2.*Rho)/(2.*sqrt(Pi)*Rho2)
+    //                    -Momentum*imag(ScattAmplSin)*(0.25*(1.-exp(-4.*Rho2))/Rho2);
+
+    if(QS){
+        CkValue -= 0.5*exp(-4.*Rho2);
+    }
+    else{
+        CkValue *= 2.;
+        //CkValue += 0.5*exp(-4.*Rho2);
+    }
+
+    return A_c*(CkValue+1.);
+}
+double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
+                       const double& ScattLenSin, const double& EffRangeSin,
+                       const double& ScattLenTri, const double& EffRangeTri,
+                       const bool& QS, const double& RedMass, const double& Q1Q2){
+    return   0.25*GeneralCoulombLednicky(Momentum,GaussR,ScattLenSin,EffRangeSin,QS,RedMass,Q1Q2)
+            +0.75*GeneralCoulombLednicky(Momentum,GaussR,ScattLenTri,EffRangeTri,QS,RedMass,Q1Q2);
+}
+
+
 //e.g. ΛΛ
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
@@ -94,6 +178,53 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
 double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,true);
 }
+
+double Lednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false);
+}
+double Lednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,true);
+}
+
+double Lednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,false);
+}
+
+
+//SourcePar[0] = Radius
+//PotPar[0] = a0 for 1S0
+//PotPar[1] = Reff for 1S0
+//PotPar[2] = RedMass
+//PotPar[3] = Q1Q2
+double LednickyCoulomb_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    //return CoulombPenetrationFactor(Momentum,PotPar[2],PotPar[3])*Lednicky_Singlet(Momentum,SourcePar,PotPar);
+    return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],false,PotPar[2],PotPar[3]);
+}
+
+double LednickyCoulomb_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    //return CoulombPenetrationFactor(Momentum,PotPar[2],PotPar[3])*Lednicky_Identical_Singlet(Momentum,SourcePar,PotPar);
+    //return Lednicky_Identical_Singlet(Momentum,SourcePar,PotPar);
+    return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],true,PotPar[2],PotPar[3]);
+}
+
+//SourcePar[0] = Radius
+//PotPar[0] = a0 for 1S0
+//PotPar[1] = Reff for 1S0
+//PotPar[2] = a0 for 3S1
+//PotPar[3] = Reff for 3S1
+//PotPar[4] = RedMass
+//PotPar[5] = Q1Q2
+double LednickyCoulomb_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    //return CoulombPenetrationFactor(Momentum,PotPar[4],PotPar[5])*Lednicky_Triplet(Momentum,SourcePar,PotPar);
+    return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,PotPar[4],PotPar[5]);
+}
+
+double LednickyCoulomb_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+//return CoulombPenetrationFactor(Momentum,PotPar[4],PotPar[5]);
+    //return CoulombPenetrationFactor(Momentum,PotPar[4],PotPar[5])*Lednicky_Identical_Triplet(Momentum,SourcePar,PotPar);
+    return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],true,PotPar[4],PotPar[5]);
+}
+
 
 //e.g. pΛ
 //SourcePar[0] = Radius

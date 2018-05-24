@@ -147,7 +147,6 @@ CATS::~CATS(){
     }
 }
 
-
 //N.B. While those guy seemingly do not depend in NumIpBins directly,
 //actually the length of the array we reserve for all those guys depends on it, thus
 //we will need to reinitialize all of them!
@@ -223,7 +222,6 @@ void CATS::DelMomChPw(){
         delete [] NumExtWfRadBins; NumExtWfRadBins=NULL;
         delete [] ExtWfRadBins; ExtWfRadBins=NULL;
     }
-
 }
 
 void CATS::DelMomCh(){
@@ -748,7 +746,7 @@ double CATS::GetGridEpsilon(){
 void CATS::SetMaxPairsPerBin(unsigned mpp){
     if(!mpp){
         if(Notifications>=nWarning)
-            printf("WARNING: MaxPairsPerBin cannot be zero, setting MaxPairsPerBin=1\n");
+            printf("\033[1;33mWARNING:\033[0m MaxPairsPerBin cannot be zero, setting MaxPairsPerBin=1\n");
         mpp=1;
     }
     if(MaxPairsPerBin==mpp) return;
@@ -766,7 +764,7 @@ unsigned CATS::GetMaxPairsPerBin(){
 void CATS::SetMaxPairsToRead(unsigned mpp){
     if(!mpp){
         if(Notifications>=nWarning)
-            printf("WARNING: MaxPairsToRead cannot be zero, setting MaxPairsToRead=1\n");
+            printf("\033[1;33mWARNING:\033[0m MaxPairsToRead cannot be zero, setting MaxPairsToRead=1\n");
         mpp=1;
     }
     if(MaxPairsToRead==mpp) return;
@@ -1059,18 +1057,31 @@ double CATS::GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned s
 }
 
 double CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
-                                    const bool& DevideByR){
+                                    const bool& DivideByR){
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
-    return EvalWaveFunctionU(WhichMomBin, Radius, usCh, usPW, DevideByR);
+    return EvalWaveFunctionU(WhichMomBin, Radius*FmToNu, usCh, usPW, DivideByR);
 }
 
 double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh){
     if(NumMomBins<=uMomBin || NumCh<=usCh) return 0;
-    return EffectiveFunctionTheta(uMomBin,Radius,CosTheta,usCh);
+    return EffectiveFunctionTheta(uMomBin,Radius*FmToNu,CosTheta,usCh);
 }
 double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh){
     if(NumMomBins<=uMomBin || NumCh<=usCh) return 0;
-    return EffectiveFunction(uMomBin,Radius,usCh);
+    return EffectiveFunction(uMomBin,Radius*FmToNu,usCh);
+}
+
+double CATS::EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
+                                    const bool& DivideByR){
+    if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
+    return EvalWaveFunctionU(WhichMomBin, Radius*FmToNu, usCh, usPW, DivideByR, true);
+}
+
+double CATS::EvalReferenceRadialWF(const unsigned& WhichMomBin, const unsigned short& usPW, const double& Radius,
+                                    const bool& DivideByR){
+    if(NumMomBins<=WhichMomBin) return 0;
+    double MultFactor = DivideByR?1./(Radius*FmToNu+1e-64):1;
+    return ReferencePartialWave(Radius*FmToNu, GetMomentum(WhichMomBin), usPW)*MultFactor;
 }
 
 double CATS::GetMomentum(const unsigned& WhichMomBin){
@@ -1656,7 +1667,7 @@ void CATS::ComputeWaveFunction(){
         //if the maximum wave-function is zero the computation will fail!
         //By design this should not really happen.
         if(!MaxConvergedNumWF && Notifications>=nWarning){
-            printf("WARNING: MaxConvergedNumWF is zero, which is not allowed and points to a bug in the code!\n");
+            printf("\033[1;33mWARNING:\033[0m MaxConvergedNumWF is zero, which is not allowed and points to a bug in the code!\n");
             printf("         Please contact the developers and do not trust your current results!\n");
         }
 
@@ -1671,7 +1682,7 @@ void CATS::ComputeWaveFunction(){
             double DownShift=0;
             double UpShift=ShiftRadStepLen;
             if((!BufferWaveFunction[StepOfMaxConvergedNumWF] || !BufferWaveFunction[StepOfMaxConvergedNumWF+1])&&Notifications>=nWarning){
-                printf("WARNING: BufferWaveFunction is zero, which is not allowed and points to a bug in the code!\n");
+                printf("\033[1;33mWARNING:\033[0m BufferWaveFunction is zero, which is not allowed and points to a bug in the code!\n");
                 printf("         Please contact the developers and do not trust your current results!\n");
             }
             double NumRatio = BufferWaveFunction[StepOfMaxConvergedNumWF+1]/BufferWaveFunction[StepOfMaxConvergedNumWF];
@@ -2019,7 +2030,7 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
 
             if(KittyParticle.GetE()==0){
                 if(Notifications>=nWarning)
-                    printf("WARNING! Possible bad input-file, there are particles with zero energy!\n");
+                    printf("\033[1;33mWARNING!\033[0m Possible bad input-file, there are particles with zero energy!\n");
                 continue;
             }
 
@@ -2603,7 +2614,7 @@ double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&,
         if(!DeltaF){
             DeltaX=1;
             if(Notifications>=nWarning)
-                printf("WARNING: Something is fishy with the NewtonRapson solver! Might be a bug! Please contact the developers!\n");
+                printf("\033[1;33mWARNING:\033[0m Something is fishy with the NewtonRapson solver! Might be a bug! Please contact the developers!\n");
         }
         else DeltaX = -fVal*EpsilonX/DeltaF;
         xVal += DeltaX;
@@ -2618,14 +2629,14 @@ double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&,
         }
         if(counter==16 && fabs(fValNew)>fabs(fVal)){
             if(Notifications>=nWarning)
-                printf("WARNING: The backtracking of the NewtonRapson root-finder failed!\n");
+                printf("\033[1;33mWARNING:\033[0m The backtracking of the NewtonRapson root-finder failed!\n");
         }
         if(fabs(fValNew)<fabs(DeltaF)){
             return xVal;
         }
     }
     if(Notifications>=nWarning)
-        printf("WARNING: The NewtonRapson root-finder failed!\n");
+        printf("\033[1;33mWARNING:\033[0m The NewtonRapson root-finder failed!\n");
     return xVal;
 }
 
@@ -2722,7 +2733,7 @@ unsigned CATS::GetBoxId(double* particle){
 }
 
 double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
-                                const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR){
+                                const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic){
 
     bool ExtWF = ExternalWF[uMomBin][usCh][usPW];
     double Momentum = GetMomentum(uMomBin);
@@ -2739,13 +2750,13 @@ double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
     unsigned RadBin = ExtWF?GetBin(Radius*(ExtWF?NuToFm:1), ExtWfRadBins[uMomBin][usCh][usPW], NumExtWfRadBins[uMomBin][usCh][usPW]+1):
                             GetRadBin(Radius, uMomBin, usCh, usPW);
 
-    if(RadBin<SWFB){
+    if(RadBin<SWFB && !Asymptotic){
         const double* WFU = ExtWF?ExternalWF[uMomBin][usCh][usPW]:WaveFunctionU[uMomBin][usCh][usPW];
         const double* WFR = ExtWF?ExtWfRadBins[uMomBin][usCh][usPW]:WaveFunRad[uMomBin][usCh][usPW];
         //the external WF is assumed to be given in fm
         double Result = EvalBinnedFun(Radius*(ExtWF?NuToFm:1), SWFB, WFR, WFU)*(ExtWF?FmToNu:1);
         if(Result==1e6 && Notifications>=nWarning)
-            printf("WARNING: DeltaRad==0, which might point to a bug! Please contact the developers!\n");
+            printf("\033[1;33mWARNING:\033[0m DeltaRad==0, which might point to a bug! Please contact the developers!\n");
         return Result*MultFactor;
     }
     //below the 1st bin ==> assume zero
@@ -2857,7 +2868,7 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
                 case 2 : TotalResultRe -= (Result2*Result1); break;
                 case 3 : TotalResultIm -= (Result2*Result1); break;
                 default :   if(Notifications>=nWarning){
-                            printf("WARNING: oddness gets a default switch. This should not happen => bug\n");
+                            printf("\033[1;33mWARNING:\033[0m oddness gets a default switch. This should not happen => bug\n");
                             printf("         Please contact the developers!\n");
                             }
                             break;
@@ -2957,7 +2968,8 @@ template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigne
                 (InterpolRange[1]-InterpolRange[0]);
     }
     else{
-        printf("WTF!\n");
+        printf("\033[1;33mWARNING:\033[0m EvalBinnedFun could not properly extrapolate! The output of the Eval functions might be wrong!\n");
+        printf("         Please use Get functions to cross-check your output and contact the developers!\n");
         return 1e6;
     }
 }

@@ -276,6 +276,36 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
     return Result;
 }
 
+double LatticePots_pXi_Avg(const int& WhichPot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
+
+    double Result=0;
+
+    Result += 1./8.*LatticePots_pXi(WhichPot,DlmPotFlag,0,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
+    Result += 3./8.*LatticePots_pXi(WhichPot,DlmPotFlag,0,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
+    Result += 1./8.*LatticePots_pXi(WhichPot,DlmPotFlag,1,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
+    Result += 3./8.*LatticePots_pXi(WhichPot,DlmPotFlag,1,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
+
+    return Result;
+
+}
+
+double LatticePots_pXi_SqrtAvg(const int& WhichPot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
+
+    double Result=0;
+
+    Result += sqrt(1./8.)*LatticePots_pXi(WhichPot,DlmPotFlag,0,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
+    Result += sqrt(3./8.)*LatticePots_pXi(WhichPot,DlmPotFlag,0,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
+    Result += sqrt(1./8.)*LatticePots_pXi(WhichPot,DlmPotFlag,1,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
+    Result += sqrt(3./8.)*LatticePots_pXi(WhichPot,DlmPotFlag,1,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
+
+    return Result;
+
+}
+
 //flag 0 = p
 //flag 1 = n
 //flag 2 = p+avgIsospinPotential (i.e. for only a single channel and V=0.5*(VI0+VI1))
@@ -669,6 +699,8 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
         case pp_ReidVale : return fReidVale(Radius[0],Spin,AngMom,TotMom);
         case pL_UsmaniOli : return UsmaniPotentialOli(Spin,Radius);
         case pXim_Lattice : return LatticePots_pXi(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
+        case pXim_LatticeAvg : return LatticePots_pXi_Avg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
+        case pXim_LatticeSqrtAvg : return LatticePots_pXi_SqrtAvg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pKm_Tetsuo : return Tetsuo_pKm(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
         default : return 0;
     }
