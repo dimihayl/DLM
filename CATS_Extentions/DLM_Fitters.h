@@ -22,7 +22,6 @@ class TF1;
 //#include "TCanvas.h"
 //#include "TFile.h"
 
-
 class DLM_Fitter1{
 
 public:

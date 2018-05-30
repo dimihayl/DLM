@@ -26,6 +26,7 @@ CATS::CATS():
     RedMass = 0;
     pdgID[0] = 0;
     pdgID[1] = 0;
+    QuantumStatistics = -1;
     NumCh = 0;
     NumMomBins = 0;
     NumIpBins = 0;
@@ -310,15 +311,35 @@ void CATS::SetPdgId(const int& id1, const int& id2){
     if(pdgID[0]==id1 && pdgID[1]==id2) return;
     pdgID[0] = id1;
     pdgID[1] = id2;
+    //if the QS is set manually, then the IdenticalParticles does not depend on the pdgID
+    if(QuantumStatistics==0||QuantumStatistics==1) return;
     if(id1==id2) IdenticalParticles=true;
     else IdenticalParticles=false;
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-
 void CATS::GetPdgId(int& id1, int& id2){
     id1 = pdgID[0];
     id2 = pdgID[1];
+}
+
+void CATS::SetQuantumStatistics(short qs){
+    if(qs!=0 && qs!=1) qs=-1;
+    if(qs==QuantumStatistics) return;
+    QuantumStatistics = qs;
+    bool Identical;
+    switch(QuantumStatistics){
+        case 0 : Identical=false; break;
+        case 1 : Identical=true; break;
+        default : Identical=(pdgID[0]==pdgID[1]); break;
+    }
+    if(Identical==IdenticalParticles) return;
+    IdenticalParticles = Identical;
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;
+}
+short CATS::GetQuantumStatistics(){
+    return QuantumStatistics;
 }
 
 //If the number of channels is changed, all previous input about the
@@ -1256,7 +1277,7 @@ void CATS::KillTheCat(const int& Options){
             printf("\033[1;31mERROR!\033[0m The analytic source function is not set!\n\n");
         return;
     }
-    if(!pdgID[0] || !pdgID[1]){
+    if( (!pdgID[0] || !pdgID[1]) && (!UseAnalyticSource || QuantumStatistics==-1) ){
         if(Notifications>=nError)
             printf("\033[1;31mERROR!\033[0m The PDG IDs of the particles are not set!\n\n");
         return;

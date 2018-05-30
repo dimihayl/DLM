@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 int ipow(int base, unsigned char exp){
     int result = 1;
     while (exp){

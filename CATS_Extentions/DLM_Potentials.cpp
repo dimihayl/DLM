@@ -276,16 +276,18 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
     return Result;
 }
 
+//! The flags are such that the first two digits are the flags to be used for the I0, the second two for I1
+//e.g. flags I0 = 12 and I=1 = 6 would be 1206
 double LatticePots_pXi_Avg(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
 
     double Result=0;
-
-    Result += 1./8.*LatticePots_pXi(WhichPot,DlmPotFlag,0,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
-    Result += 3./8.*LatticePots_pXi(WhichPot,DlmPotFlag,0,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
-    Result += 1./8.*LatticePots_pXi(WhichPot,DlmPotFlag,1,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
-    Result += 3./8.*LatticePots_pXi(WhichPot,DlmPotFlag,1,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
+//LatticePots_pXi(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
+    Result += 1./8.*LatticePots_pXi(WhichPot,DlmPotFlag/100,0,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
+    Result += 3./8.*LatticePots_pXi(WhichPot,DlmPotFlag/100,0,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
+    Result += 1./8.*LatticePots_pXi(WhichPot,DlmPotFlag%100,1,t2p1,t2p2,0,AngMom,TotMom,Radius,OtherPars);
+    Result += 3./8.*LatticePots_pXi(WhichPot,DlmPotFlag%100,1,t2p1,t2p2,1,AngMom,TotMom,Radius,OtherPars);
 
     return Result;
 
@@ -748,5 +750,8 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name){
     sprintf(Buffer, "%i", potflag);
     if(potflag!=0 && strcmp(name,"Unknown potential")){strcat(name, "^{(");strcat(name,Buffer);strcat(name,")}");}
 }
+
+
+
 
 

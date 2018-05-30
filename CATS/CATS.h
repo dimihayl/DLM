@@ -44,6 +44,10 @@ public:
     void SetPdgId(const int& id1, const int& id2);
     void GetPdgId(int& id1, int& id2);
 
+    //0 = turned off; 1 = turned on; else = automatically set based on the PdgID
+    void SetQuantumStatistics(short qs);
+    short GetQuantumStatistics();
+
     //If the number of polarizations is changed, all previous input about the
     //polarization themselves is lost (i.e. NumPW is reset!)
     void SetNumChannels(const unsigned short& numCh);
@@ -272,6 +276,7 @@ private:
     //!Variables needed as an input for the physics calculation
     double RedMass;
     int pdgID[2];
+    short QuantumStatistics;
 
     //Number of channels
     unsigned short NumCh;

@@ -84,3 +84,4 @@ Added the option to renormalize the transport-model defined source a bit faster,
 CATS 2.9
 Added the option to evaluate the asymptotic solution
 Some Eval functions taking the radius as an argument were assuming the input to be in natural units. This has been now changed to fm.
+Added the option to switch the quantum statistics on/off independently from the particle ID
