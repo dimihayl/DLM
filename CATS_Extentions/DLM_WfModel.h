@@ -41,6 +41,7 @@ private:
 
 void InitHaidenbauerNLO(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
 void InitHaidenbauerKaonMinus(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
+void InitHaidenbauerKaonMinus_ver2(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
 void InitHaidenbauerKaonPlus(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
 void InitTetsuoKaonMinus(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE);
 void CleanHaidenbauer(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins);

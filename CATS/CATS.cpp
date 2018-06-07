@@ -525,12 +525,21 @@ void CATS::SetMomBins(const unsigned& nummombins, const double* mombins){
             printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
         return;
     }
+    //check if the momentum bins set are the same as before. If yes, change nothing
+    if(nummombins==NumMomBins){
+        bool SameBinning = true;
+        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            SameBinning *= (mombins[uMomBin]==MomBin[uMomBin]);
+        }
+        if(SameBinning) return;
+    }
     if(nummombins!=NumMomBins || !MomBin){
         if(MomBin) {delete[]MomBin; MomBin=NULL;}
         MomBin = new double [nummombins+1];
         DelAllMom();
         NumMomBins = nummombins;
     }
+
     LoadedData = false;
     SourceGridReady = false;
     SourceUpdated = false;
@@ -564,6 +573,9 @@ void CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const do
             printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
         return;
     }
+    //check if the momentum bins set are the same as before. If yes, change nothing
+    double BinWidth = (MaxMom-MinMom)/double(nummombins);
+    if(nummombins==NumMomBins && MomBin[0]==MinMom && MomBin[nummombins]==MinMom+double(nummombins)*BinWidth) return;
     if(nummombins!=NumMomBins || !MomBin){
         if(MomBin) {delete[]MomBin; MomBin=NULL;}
         MomBin = new double [nummombins+1];
@@ -576,9 +588,8 @@ void CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const do
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 
-    double BinWidth = (MaxMom-MinMom)/double(NumMomBins);
     for(unsigned uBin=0; uBin<=NumMomBins; uBin++){
-        MomBin[uBin] = MinMom+uBin*BinWidth;
+        MomBin[uBin] = MinMom+double(uBin)*BinWidth;
     }
 }
 

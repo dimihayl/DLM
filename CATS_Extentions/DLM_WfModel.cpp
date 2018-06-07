@@ -423,6 +423,166 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 //printf("hhhhhhhhhhhh\n");
 }
 
+//see email in may 2018, this is isospin averaged
+//basically we have two channels: s1+p1 and s1+p3
+void InitHaidenbauerKaonMinus_ver2(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
+
+    unsigned NumMomBins=Kitty.GetNumMomBins();
+    //double kMin = Kitty.GetMomBinLowEdge(0);
+    //double kMax = Kitty.GetMomBinUpEdge(NumMomBins-1);
+
+    const unsigned short NumChannels = 4;
+    const unsigned short NumPwPerCh = 2;
+    const unsigned short NumFiles = 3;
+    enum HaideFiles {fS1, fP1, fP3};
+
+    char** InputFileName = new char* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char[256];
+    }
+
+    strcpy(InputFileName[fS1], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ver2/ws1.dat");
+    strcpy(InputFileName[fP1], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ver2/wp1.dat");
+    strcpy(InputFileName[fP3], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ver2/wp3.dat");
+
+    const unsigned NumBlankTransitionLines = 1;
+    const double MinRad = 0.1;
+    const double RadStep = 0.1;
+    const double MaxRad = 10.0;
+    NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
+    bool* RadBinLoaded = new bool [NumRadBins+1];
+
+    WaveFunctionU[0] = new double*** [NumMomBins];
+    PhaseShifts[0] = new double** [NumMomBins];
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        WaveFunctionU[0][uMomBin] = new double** [NumChannels];
+        PhaseShifts[0][uMomBin] = new double* [NumChannels];
+        for(unsigned usCh=0; usCh<NumChannels; usCh++){
+            WaveFunctionU[0][uMomBin][usCh] = new double* [NumPwPerCh];
+            PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
+            for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new double [NumRadBins];
+                PhaseShifts[0][uMomBin][usCh][usPw] = 0;
+            }
+        }
+    }
+
+    RadBins[0] = new double [NumRadBins+1];
+    for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+        RadBins[0][uRad] = MinRad-RadStep*0.5 + RadStep*double(uRad);
+        RadBinLoaded[uRad] = false;
+    }
+//printf("Hey!\n");
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        FILE *InFile;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            return;
+        }
+//printf("uFile=%u\n",uFile);
+        fseek ( InFile , 0 , SEEK_END );
+        //long EndPos;
+        //EndPos = ftell (InFile);
+        fseek ( InFile , 0 , SEEK_SET );
+        //long CurPos;
+
+        char* cdummy = new char [256];
+
+        //Read the header lines
+        for(unsigned short us=0; us<NumBlankTransitionLines; us++){
+            fgets(cdummy, 255, InFile);
+        }
+
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return;
+        }
+
+        float fRadius;
+        float fMomentum;
+        float fReWf;
+        float fImWf;
+        float fReAsWf;
+        float fImAsWf;
+        float fCatsReWf;
+        float fCatsImWf;
+        float fCatsWf;
+        float fPhaseShift;
+
+        unsigned RadBin;
+        unsigned LastRadBin;
+        unsigned MomBin;
+        //!---Iteration over all events---
+        while(!feof(InFile)){
+            fgets(cdummy, 255, InFile);
+//printf("I am here - %i!\n", strlen(cdummy));
+            if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
+            sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
+                   &fRadius,&fMomentum,&fReWf,&fImWf,&fReAsWf,&fImAsWf,&fCatsReWf,&fCatsImWf,&fPhaseShift);
+            //sscanf(cdummy, " %f %f %f %f",
+            //       &fRadius,&fMomentum,&fCatsReWf,&fCatsImWf);
+            fCatsWf = sqrt(fCatsReWf*fCatsReWf+fCatsImWf*fCatsImWf);
+            //if(fCatsReWf<0) fCatsWf=-fCatsWf;
+            //fCatsWf = fReWf;
+            LastRadBin = RadBin;
+            RadBin = Kitty.GetBin(fRadius,RadBins[0],NumRadBins+1);
+            //we filled up all rad bins
+            if(RadBin<=LastRadBin){
+                for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+                    RadBinLoaded[uRad]=false;
+                }
+
+            }
+            if(RadBin>=NumRadBins) continue;
+            if(RadBinLoaded[RadBin]){
+                printf("\033[1;33mWARNING:\033[0m Trying to load RadBin #%u twice!\n", RadBin);
+                continue;
+            }
+            MomBin = Kitty.GetMomBin(fMomentum);
+            if(MomBin>=NumMomBins) continue;
+
+            //skip momentum bins that we do not have in the CATS object
+            if(fabs(fMomentum-Kitty.GetMomentum(MomBin))>0.1){
+printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomentum(MomBin));
+
+                continue;
+            }
+//printf("!!!!\n");
+            switch(uFile){
+            case fS1://Spin 0, Isospin 0, s-wave
+                WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
+                WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+                PhaseShifts[0][MomBin][1][0] = fPhaseShift*3.14159/180.;
+                break;
+            case fP1:
+                WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                PhaseShifts[0][MomBin][0][1] = fPhaseShift*3.14159/180.;
+                break;
+            case fP3:
+                WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                PhaseShifts[0][MomBin][1][1] = fPhaseShift*3.14159/180.;
+                break;
+            default:
+                printf("\033[1;31mERROR:\033[0m SWITCH CHANNELS AND PWS\n");
+                break;
+            }
+            RadBinLoaded[RadBin] = true;
+        }
+        delete [] cdummy;
+        fclose(InFile);
+    }//uFile
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] InputFileName[uFile];
+    }
+    delete [] InputFileName;
+
+    delete [] RadBinLoaded;
+//printf("hhhhhhhhhhhh\n");
+}
+
 
 void InitHaidenbauerKaonPlus(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
 
