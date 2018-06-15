@@ -1,3 +1,5 @@
+//#define DIMITAR 1
+
 #include <iostream>
 #include "stdio.h"
 #include <string.h>
@@ -5,9 +7,9 @@
 
 #include "DLM_WfModel.h"
 #include "CATS.h"
-#ifdef COMPUTER_ID
+#ifdef DIMITAR
     #include "main.h"
-#endif // COMPUTER_ID
+#endif // DIMITAR
 
 
 using namespace std;
