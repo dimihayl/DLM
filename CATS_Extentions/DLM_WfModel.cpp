@@ -248,7 +248,7 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, double***** 
     strcat(InputFileName[fS01], "ws01.dat");
     strcat(InputFileName[fS11], "ws11.dat");
     strcat(InputFileName[fP01], "wp01.dat");
-    strcat(InputFileName[fP03], "wp03.daa");
+    strcat(InputFileName[fP03], "wp03.dat");
     strcat(InputFileName[fP11], "wp11.dat");
     strcat(InputFileName[fP13], "wp13.dat");
 

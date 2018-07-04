@@ -90,3 +90,5 @@ CATS 2.10
 Addet an option to introduce a cut-off of the source.
 For the extentions: some changes in the input regarding the external wave functions.
                     a minor bug fix related to the smearing matrix
+Added a CMake example how to compile CATS, or a project that uses CATS
+Note that this is a very basic example and can be certainly improved a lot by the user!
