@@ -235,7 +235,143 @@ double LednickyCoulomb_Identical_Triplet(const double& Momentum, const double* S
 double Lednicky_SingletTriplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,false);
 }
+/*
+//this code is copy-pasted from Oliver's analysis for his thesis
+//the only parameter I use is par[0] = Source Size
+//The input should be in MeV and fm
+ double Lednicky_gauss_Sigma0(const double &Momentum, const double* SourcePar, const double* PotPar){
+    //This model tries to calculate the Sigma0 correlation function, one can simply say trying because nothing is known about
+    //this kind of interaction
 
+    //Parameter definitions:
+    //-----------------------------------------
+    //-----------------------------------------
+    //             isospin 1/2 (==0)
+    //________________________________________
+    const complex<double> scatt_length_1s0_0(-1.1,0.);
+    const complex<double> scatt_length_3s1_0(-1.1,4.3);
+    const complex<double> effrange_1s0_0(-1.5,0.);
+    const complex<double> effrange_3s1_0(-2.2,-2.4);
+
+    const double hbarc = 0.197326971844;
+    //Oli's original code was in GeV and fm though, so we must convert the Momentum to GeV!
+    const double MomentumGeV = Momentum/1000.;
+
+    //
+    //             isospin 3/2 (==1)
+    //________________________________________
+    const complex<double> scatt_length_1s0_1(2.51,0.);
+    const complex<double> scatt_length_3s1_1(-0.73,0.);
+    const complex<double> effrange_1s0_1(4.92,0.);
+    const complex<double> effrange_3s1_1(-1.22,0.);
+
+    const double mass_proton = 0.938272;
+    const double mass_neutron = 0.939565;
+    const double mass_sigmaplus = 1.189377;
+    const double mass_sigma0 = 1.192642;
+
+
+    double mu1 = mass_proton*mass_sigma0/(mass_proton+mass_sigma0);
+    double mu2 = mass_neutron*mass_sigmaplus/(mass_neutron+mass_sigmaplus);
+    //-----------------------------------------
+    //-----------------------------------------
+
+    double k1 = MomentumGeV/hbarc;//momentum in the elastic channel
+    double k2 = sqrt(2*mu2*(MomentumGeV*MomentumGeV/(2*mu1) + mass_proton + mass_sigma0 - mass_neutron - mass_sigmaplus));
+    //sqrt(2*mu2*(MomentumGeV*MomentumGeV/(2*mu1) + mass_proton + mass_sigma0 - mass_neutron - mass_sigmaplus));
+    k2 /=hbarc; //momentum in the inelastic channel
+    //(k2>k1)
+
+    double RG = SourcePar[0]; //Gaussian radius
+
+    //Define inverse K-matrices for different spin configurations in isopin basis:
+
+
+    //spin singlet:
+    const complex<double> Kmin_1s0_0 = 1./scatt_length_1s0_0 + 0.5 * effrange_1s0_0 * k1*k1;
+    const complex<double> Kmin_1s0_1 = 1./scatt_length_1s0_1 + 0.5 * effrange_1s0_1 * k1*k1;
+    //spin triplet:
+    const complex<double> Kmin_3s1_0 = 1./scatt_length_3s1_0 + 0.5 * effrange_3s1_0 * k1*k1;
+    const complex<double> Kmin_3s1_1 = 1./scatt_length_3s1_1 + 0.5 * effrange_3s1_1 * k1*k1;
+
+
+    //transform to transition basis with help of Clebsch-Gordan coefficients:
+    const complex<double> Kmin_11_1s0 = 2./3. * Kmin_1s0_1 + 1./3. * Kmin_1s0_0;
+    const complex<double> Kmin_11_3s1 = 2./3. * Kmin_3s1_1 + 1./3. * Kmin_3s1_0;
+
+    const complex<double> Kmin_22_1s0 = 1./3. * Kmin_1s0_1 + 2./3. * Kmin_1s0_0;
+    const complex<double> Kmin_22_3s1 = 1./3. * Kmin_3s1_1 + 2./3. * Kmin_3s1_0;
+
+    const complex<double> Kmin_12_1s0 = sqrt(2.)/3. * (Kmin_1s0_1 - Kmin_1s0_0);
+    const complex<double> Kmin_12_3s1 = sqrt(2.)/3. * (Kmin_3s1_1 - Kmin_3s1_0);
+
+
+    //Determinant of scattering amplitude matrix:
+    //is this correct, or should we have abs(Kmin_12_1s0)^2 ???
+    complex<double> D_1s0 = (Kmin_11_1s0 + complex<double>(0.,-k1))*(Kmin_22_1s0 + complex<double>(0.,-k2)) - Kmin_12_1s0*Kmin_12_1s0;
+    complex<double> D_3s1 = (Kmin_11_3s1 + complex<double>(0.,-k1))*(Kmin_22_3s1 + complex<double>(0.,-k2)) - Kmin_12_1s0*Kmin_12_1s0;
+
+
+    //What is really needed are the scattering amplitudes:
+
+    complex<double> f11_1s0 = (Kmin_22_1s0 + complex<double>(0.,-k2))/D_1s0;
+    complex<double> f11_3s1 = (Kmin_22_3s1 + complex<double>(0.,-k2))/D_3s1;
+
+    complex<double> f12_1s0 = -(Kmin_12_1s0)/D_1s0;
+    complex<double> f12_3s1 = -(Kmin_12_3s1)/D_3s1;
+
+    double fF1 = gsl_sf_dawson(2*k1*RG)/(2*k1*RG);
+    double fF2 = (1.-exp(-pow(2*k1*RG,2)))/(2*k1*RG);
+
+  //elastic part of the correlation function(1 -> 1):
+  //-----------------------------------------
+    double corr_1s0 = 0.5*pow(abs(f11_1s0),2.)/(RG*RG)* + 2.*real(f11_1s0)/(sqrt(Pi)*RG)*fF1 - imag(f11_1s0)/RG * fF2;
+    corr_1s0 *= 0.25;
+
+
+    double corr_3s1 = 0.5*pow(abs(f11_3s1),2.)/(RG*RG)* + 2.*real(f11_3s1)/(sqrt(Pi)*RG)*fF1 - imag(f11_3s1)/RG * fF2;
+    corr_3s1 *= 0.75;
+    //-----------------------------------------
+
+    //inelastic part of the correlation function(2 -> 1):
+    //-----------------------------------------
+    double corr_1s0_inel = 0.5*mu2/mu1*fabs(pow(abs(f12_1s0),2.)/(RG*RG));
+    corr_1s0_inel *= 0.25;
+
+    double corr_3s1_inel = 0.5*mu2/mu1*fabs(pow(abs(f12_3s1),2.)/(RG*RG));
+    corr_3s1_inel *= 0.75;
+
+    //-----------------------------------------
+
+
+    //correction term to non spheric distortions on the short range scale
+    //Define matrices d_ij = 2Re d(K_ij)/dk²
+
+    complex<double> dKmin_11_1s0_dk = 2./3. * 0.5 * effrange_1s0_1 + 1./3. * 0.5 * effrange_1s0_0;
+    complex<double> dKmin_11_3s1_dk = 2./3. * 0.5 * effrange_3s1_1 + 1./3. * 0.5 * effrange_3s1_0;
+
+    complex<double> dKmin_22_1s0_dk = 1./3. * 0.5 * effrange_1s0_1 + 2./3. * 0.5 * effrange_1s0_0;
+    complex<double> dKmin_22_3s1_dk = 1./3. * 0.5 * effrange_3s1_1 + 2./3. * 0.5 * effrange_3s1_0;
+
+    complex<double> dKmin_12_1s0_dk = sqrt(2.)/3. * 0.5 * (effrange_1s0_1 - effrange_1s0_0);
+    complex<double> dKmin_12_3s1_dk = sqrt(2.)/3. * 0.5 * (effrange_3s1_1 - effrange_3s1_0);
+
+    complex<double> factor1_1s0 = f11_1s0 * conj(f12_1s0);
+    complex<double> factor1_3s1 = f11_3s1 * conj(f12_3s1);
+
+    double corr_1s0_distort = pow(abs(f11_1s0),2.)* 2.*real(dKmin_11_1s0_dk) + pow(abs(f12_1s0),2.)* 2.*real(dKmin_22_1s0_dk) + 2.*real(factor1_1s0) * 2.*real(dKmin_12_1s0_dk);
+    corr_1s0_distort *= -0.25/(4*sqrt(Pi)*pow(RG,3.));
+
+    double corr_3s1_distort = pow(abs(f11_3s1),2.)* 2.*real(dKmin_11_3s1_dk) + pow(abs(f12_3s1),2.)* 2.*real(dKmin_22_3s1_dk) + 2.* real(factor1_3s1) * 2.*real(dKmin_12_3s1_dk);
+    corr_3s1_distort *= -0.75/(4*sqrt(Pi)*pow(RG,3.));
+
+    double corr_fin = 1. + corr_1s0 + corr_3s1 + corr_1s0_inel + corr_3s1_inel + corr_1s0_distort + corr_3s1_distort;
+
+    return corr_fin;
+    //if(par[1] == 0.) return 1. + par[2]*(par[3]*corr_fin -1.); //this is with baseline
+    //else return par[2]*(par[3]*corr_fin -1.);//this is baseline subtracted
+}
+*/
 //this code is copy-pasted from Oliver's analysis for his thesis
 //the only parameter I use is par[0] = Source Size
 //The input should be in MeV and fm
@@ -381,6 +517,6 @@ double pXi_pheno(const double &Momentum, const double* SourcePar, const double* 
     const double& RG = SourcePar[0];
 
     //very easy definition for a CF that peaks for k->0
-    return 1. + TMath::Exp(-MomentumGeV*RG/hbarc)/(MomentumGeV*RG/hbarc);
+    return 1. + exp(-MomentumGeV*RG/hbarc)/(MomentumGeV*RG/hbarc);
 
 }

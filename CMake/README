@@ -1,0 +1,7 @@
+
+TO INSTALL CATS:
+
+1) Open CMakeLists.txt and change all highlighed paths.
+2) run in terminal: source configure.sh
+3) unless there are errors, run in terminal: make
+                                             make install

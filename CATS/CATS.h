@@ -122,6 +122,11 @@ public:
     void SetPoorManRenorm(const double& val);
     double GetPoorManRenorm();
 
+    void SetSourceMinRange(const double& val);
+    void SetSourceMaxRange(const double& val);
+    double GetSourceMinRange();
+    double GetSourceMaxRange();
+
     //the input values should be non-negative
     //please set this condition BEFORE you load the source, else CATS will not save the TotalMomentum at all
     //The values should be in MeV
@@ -316,6 +321,10 @@ private:
     //the advantage of using this option is computational performance when fitting.
     //This condition is only applied to sources from transport models
     double PoorManRenorm;
+    //minimum/maximum allowed radius of the source
+    //the result is being renormalized such that the integral of the source is unchanged
+    double SourceMinRad;
+    double SourceMaxRad;
 
     double MinTotPairMom;
     double MaxTotPairMom;

@@ -28,7 +28,7 @@ void DLM_ResponseMatrix::DefaultConstructor(){
         SparseResponse = SparseResidual;
     }
     //similar in the case of sigma matrix only
-    else if(!ResidualMatrix){
+    else if(!hResidualMatrix){
         ResponseMatrix = SigmaMatrix;
         SparseResponse = SparseSigma;
     }

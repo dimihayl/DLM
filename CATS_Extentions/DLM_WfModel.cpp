@@ -1,5 +1,3 @@
-//#define DIMITAR 1
-
 #include <iostream>
 #include "stdio.h"
 #include <string.h>
@@ -7,10 +5,6 @@
 
 #include "DLM_WfModel.h"
 #include "CATS.h"
-#ifdef DIMITAR
-    #include "main.h"
-#endif // DIMITAR
-
 
 using namespace std;
 
@@ -49,7 +43,7 @@ void DLM_WfModels::Init(const CATS& Kitty, const char* inFileName){
 
 }
 
-void InitHaidenbauerNLO(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
+void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -65,34 +59,19 @@ void InitHaidenbauerNLO(CATS& Kitty, double***** WaveFunctionU, double**** Phase
         InputFileName[uFile] = new char[256];
     }
 
-    #ifdef COMPUTER_ID
-    strcpy(InputFileName[f1S0], COMPUTER_ID==cLaptop?"/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/pLambdaNLO/N1s0.data":
-                                COMPUTER_ID==cNX1?"./InputFiles/Haidenbauer/pLambdaNLO/N1s0.data":
-                                "");
-    strcpy(InputFileName[f1P1], COMPUTER_ID==cLaptop?"/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/pLambdaNLO/N1p1.data":
-                                COMPUTER_ID==cNX1?"./InputFiles/Haidenbauer/pLambdaNLO/N1p1.data":
-                                "");
-    strcpy(InputFileName[f3S1], COMPUTER_ID==cLaptop?"/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/pLambdaNLO/N3s1.data":
-                                COMPUTER_ID==cNX1?"./InputFiles/Haidenbauer/pLambdaNLO/N3s1.data":
-                                "");
-    strcpy(InputFileName[f3P0], COMPUTER_ID==cLaptop?"/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/pLambdaNLO/N3p0.data":
-                                COMPUTER_ID==cNX1?"./InputFiles/Haidenbauer/pLambdaNLO/N3p0.data":
-                                "");
-    strcpy(InputFileName[f3P1], COMPUTER_ID==cLaptop?"/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/pLambdaNLO/N3p1.data":
-                                COMPUTER_ID==cNX1?"./InputFiles/Haidenbauer/pLambdaNLO/N3p1.data":
-                                "");
-    strcpy(InputFileName[f3P2], COMPUTER_ID==cLaptop? "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/pLambdaNLO/N3p2.data":
-                                COMPUTER_ID==cNX1?"./InputFiles/Haidenbauer/pLambdaNLO/N3p2.data":
-                                "");
-    int a;
-    #else
-    strcpy(InputFileName[f1S0], "");//put your file name here
-    strcpy(InputFileName[f1P1], "");//put your file name here
-    strcpy(InputFileName[f3S1], "");//put your file name here
-    strcpy(InputFileName[f3P0], "");//put your file name here
-    strcpy(InputFileName[f3P1], "");//put your file name here
-    strcpy(InputFileName[f3P2], "");//put your file name here
-    #endif // COMPUTER_ID
+    strcpy(InputFileName[f1S0],InputFolder);
+    strcpy(InputFileName[f1P1],InputFolder);
+    strcpy(InputFileName[f3S1],InputFolder);
+    strcpy(InputFileName[f3P0],InputFolder);
+    strcpy(InputFileName[f3P1],InputFolder);
+    strcpy(InputFileName[f3P2],InputFolder);
+
+    strcat(InputFileName[f1S0], "N1s0.data");
+    strcat(InputFileName[f1P1], "N1p1.data");
+    strcat(InputFileName[f3S1], "N3s1.data");
+    strcat(InputFileName[f3P0], "N3p0.data");
+    strcat(InputFileName[f3P1], "N3p1.data");
+    strcat(InputFileName[f3P2], "N3p2.data");
 
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.2;
@@ -258,21 +237,21 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, double***** 
     }
 //KaonMinus_SIonly
 //KaonMinus10MeV
-    strcpy(InputFileName[fS01], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ws01.dat");
-    strcpy(InputFileName[fS11], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ws11.dat");
-    strcpy(InputFileName[fP01], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/wp01.dat");
-    strcpy(InputFileName[fP03], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/wp03.dat");
-    strcpy(InputFileName[fP11], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/wp11.dat");
-    strcpy(InputFileName[fP13], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/wp13.dat");
 
-/*
-    strcpy(InputFileName[fS01], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_strong.dat");
-    strcpy(InputFileName[fS11], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_strong.dat");
-    strcpy(InputFileName[fP01], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_strong.dat");
-    strcpy(InputFileName[fP03], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_strong.dat");
-    strcpy(InputFileName[fP11], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_strong.dat");
-    strcpy(InputFileName[fP13], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_strong.dat");
-*/
+    strcpy(InputFileName[fS01],InputFolder);
+    strcpy(InputFileName[fS11],InputFolder);
+    strcpy(InputFileName[fP01],InputFolder);
+    strcpy(InputFileName[fP03],InputFolder);
+    strcpy(InputFileName[fP11],InputFolder);
+    strcpy(InputFileName[fP13],InputFolder);
+
+    strcat(InputFileName[fS01], "ws01.dat");
+    strcat(InputFileName[fS11], "ws11.dat");
+    strcat(InputFileName[fP01], "wp01.dat");
+    strcat(InputFileName[fP03], "wp03.daa");
+    strcat(InputFileName[fP11], "wp11.dat");
+    strcat(InputFileName[fP13], "wp13.dat");
+
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.1;
     const double RadStep = 0.1;
@@ -443,9 +422,13 @@ void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, double*
         InputFileName[uFile] = new char[256];
     }
 
-    strcpy(InputFileName[fS1], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ver2/ws1.dat");
-    strcpy(InputFileName[fP1], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ver2/wp1.dat");
-    strcpy(InputFileName[fP3], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonMinus10MeV/ver2/wp3.dat");
+    strcpy(InputFileName[fS1],InputFolder);
+    strcpy(InputFileName[fP1],InputFolder);
+    strcpy(InputFileName[fP3],InputFolder);
+
+    strcat(InputFileName[fS1], "ws1.dat");
+    strcat(InputFileName[fP1], "wp1.dat");
+    strcat(InputFileName[fP3], "wp3.dat");
 
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.1;
@@ -602,9 +585,13 @@ void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, double***** W
         InputFileName[uFile] = new char[256];
     }
 
-    strcpy(InputFileName[fS11], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonPlus10MeV/ws11p.dat");
-    strcpy(InputFileName[fP11], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonPlus10MeV/wp11p.dat");
-    strcpy(InputFileName[fP13], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Haidenbauer/KaonPlus10MeV/wp13p.dat");
+    strcpy(InputFileName[fS11],InputFolder);
+    strcpy(InputFileName[fP11],InputFolder);
+    strcpy(InputFileName[fP13],InputFolder);
+
+    strcat(InputFileName[fS11], "ws11p.dat");
+    strcat(InputFileName[fP11], "wp11p.dat");
+    strcat(InputFileName[fP13], "wp13p.dat");
 
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.1;
@@ -760,7 +747,10 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveF
     }
 //wf_full
 //wf_strong
-    strcpy(InputFileName[0], "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Tetsuo/KminusProton/wf_full.dat");
+
+    strcpy(InputFileName[0],InputFolder);
+
+    strcat(InputFileName[0], "wf_full.dat");
 
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.1;
