@@ -326,6 +326,32 @@ void DLM_ResponseMatrix::NormalizeMatrix(const int& WhichMatr){
         }
     }
 
+/*
+    for(int iBinX=0; iBinX<NumMomBins; iBinX++){
+        for(int iBinY=Sparse[iBinX][yAxisFirst]; iBinY<=Sparse[iBinX][yAxisLast]; iBinY++){
+            Norm[iBinX] += Matrix[iBinY][iBinX];
+        }
+    }
+
+    for(int iBinY=0; iBinY<NumMomBins; iBinY++){
+        for(int iBinX=Sparse[iBinY][xAxisFirst]; iBinX<=Sparse[iBinY][xAxisLast]; iBinX++){
+            if(Norm[iBinX]) Matrix[iBinY][iBinX] /= Norm[iBinX];
+            else Matrix[iBinY][iBinX]=0;
+        }
+    }
+
+
+double SUMX=0;
+double SUMY=0;
+for(int iBinX=0; iBinX<NumMomBins; iBinX++){
+    SUMX+=Matrix[4][iBinX];
+}
+for(int iBinY=0; iBinY<NumMomBins; iBinY++){
+    SUMY+=Matrix[iBinY][4];
+}
+printf("SUMX = %f\n",SUMX);
+printf("SUMY = %f\n",SUMY);
+*/
     delete [] Norm;
 
 }

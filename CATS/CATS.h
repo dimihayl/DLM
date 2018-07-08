@@ -11,9 +11,12 @@
 #define CATS_H
 
 #include <stdint.h>
+#include <complex>
 
 #include "DLM_MergeSort.h"
 #include "CATStools.h"
+
+using namespace std;
 
 //this typedef it used to save the potentials for the
 //different channels as an array of function pointers.
@@ -194,13 +197,13 @@ public:
     float EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW);
 
     unsigned GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW);
-    double GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin);
-    double EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
+    complex<double> GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin);
+    complex<double> EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                   const bool& DivideByR=true);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
 
-    double EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
+    complex<double> EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                   const bool& DivideByR=true);
     double EvalReferenceRadialWF(const unsigned& WhichMomBin,const unsigned short& usPW, const double& Radius, const bool& DivideByR=true);
 
@@ -255,7 +258,7 @@ public:
 
     //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
     void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
-                                 const double* RadWF=NULL, const unsigned& NumRadBins=0, const double* RadBins=NULL, const double& PHASESHIFT=0);
+                                 const complex<double>* RadWF=NULL, const unsigned& NumRadBins=0, const double* RadBins=NULL, const double& PHASESHIFT=0);
 
     //!------------------------------------------------
 
@@ -448,6 +451,7 @@ private:
 
     //!Constants
     const double Pi;
+    const std::complex<double> i;
     //fine-structure constant (==e^2 in Gaussian units)
     const double AlphaFS;
     const double RevSqrt2;
@@ -502,7 +506,7 @@ private:
     //I.e. if Radius is within the computed range, we extrapolate based on the result. If Radius is outside
     //the computed range we use the shifted reference wave. If DivideByR==true, computed is R = u/r.
     //N.B. The result would differ from EvalWaveFunctionU/Radius due to the extrapolation done.
-    double EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
+    complex<double> EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
                              const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic=false);
     double EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
     double EffectiveFunction(const unsigned& uMomBin, const double& Radius);
@@ -552,7 +556,7 @@ private:
     double*** PhaseShift;//in bins of mom/pol/pw, saved only until the end of each k-iteration
     float*** PhaseShiftF;//in bins of pol/pw/mom, saved only until the end of each k-iteration
     double**** WaveFunRad;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
-    double**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
+    complex<double>**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     bool* MomBinConverged;//bins of mom, marked as true in case the num. comp. failed and this bin should not be used
 
     //in bins of momentum, channel, GridPoints
@@ -568,14 +572,14 @@ private:
 
     //!further input variables
     //bool*** UseExternalWF;//in bins of mom/pol/pw
-    const double**** ExternalWF;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user). If ExternalWF[x][y][z]=NULL => Do not use ext. wf.
+    const complex<double>**** ExternalWF;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user). If ExternalWF[x][y][z]=NULL => Do not use ext. wf.
     unsigned*** NumExtWfRadBins;//in bins of mom/pol/pw
     const double**** ExtWfRadBins;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user).
 
     //these are used as buffers when it comes to computing the Reference Partial Waves and the Legendre Polynomials
     //in particular, when we loop over all PWs twice, we actually evaluate the same functions multiple times => save them in an array to save CPU time
     double* RefPartWave;
-    double* SolvedPartWave;
+    complex<double>* SolvedPartWave;
     double* LegPol;
 };
 

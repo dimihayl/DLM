@@ -1,6 +1,10 @@
 #ifndef DLM_WFMODEL_H
 #define DLM_WFMODEL_H
 
+#include <complex>
+
+using namespace std;
+
 class CATS;
 
 class DLM_WfModels{
@@ -14,7 +18,7 @@ public:
 
     void Init(const CATS& Kitty, const char* inFileName);
 
-    double**** WaveFunctionU;
+    complex<double>**** WaveFunctionU;
     double*** PhaseShifts;
     double* RadBins;
 
@@ -39,12 +43,12 @@ private:
 
 
 
-void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
-void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
-void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
-void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins);
-void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE);
-void CleanHaidenbauer(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins);
+void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2, const int& CUTOFF=600);
+void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
+void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
+void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
+void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
+void CleanHaidenbauer(CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins);
 
 
 

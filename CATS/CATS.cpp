@@ -16,6 +16,7 @@ using namespace std;
 
 CATS::CATS():
     Pi(3.141592653589793),
+    i(0,1),
     AlphaFS(0.0072973525664),
     RevSqrt2(1./sqrt(2.)),
     FmToNu(5.067731237e-3),NuToFm(197.3269602),
@@ -420,24 +421,24 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     SavedWaveFunBins = new unsigned** [NumMomBins];
     PhaseShift = new double** [NumMomBins];
     WaveFunRad = new double*** [NumMomBins];
-    WaveFunctionU = new double*** [NumMomBins];
-    ExternalWF = new const double*** [NumMomBins];
+    WaveFunctionU = new complex<double>*** [NumMomBins];
+    ExternalWF = new const complex<double>*** [NumMomBins];
     NumExtWfRadBins = new unsigned** [NumMomBins];
     ExtWfRadBins = new const double*** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         SavedWaveFunBins[uMomBin] = new unsigned* [NumCh];
         PhaseShift[uMomBin] = new double* [NumCh];
         WaveFunRad[uMomBin] = new double** [NumCh];
-        WaveFunctionU[uMomBin] = new double** [NumCh];
-        ExternalWF[uMomBin] = new const double** [NumCh];
+        WaveFunctionU[uMomBin] = new complex<double>** [NumCh];
+        ExternalWF[uMomBin] = new const complex<double>** [NumCh];
         NumExtWfRadBins[uMomBin] = new unsigned* [NumCh];
         ExtWfRadBins[uMomBin] = new const double** [NumCh];
         for(unsigned short usCh=0; usCh<NumCh; usCh++){
             SavedWaveFunBins[uMomBin][usCh] = new unsigned [NumPW[usCh]];
             PhaseShift[uMomBin][usCh] = new double [NumPW[usCh]];
             WaveFunRad[uMomBin][usCh] = new double* [NumPW[usCh]];
-            WaveFunctionU[uMomBin][usCh] = new double* [NumPW[usCh]];
-            ExternalWF[uMomBin][usCh] = new const double* [NumPW[usCh]];
+            WaveFunctionU[uMomBin][usCh] = new complex<double>* [NumPW[usCh]];
+            ExternalWF[uMomBin][usCh] = new const complex<double>* [NumPW[usCh]];
             NumExtWfRadBins[uMomBin][usCh] = new unsigned [NumPW[usCh]];
             ExtWfRadBins[uMomBin][usCh] = new const double* [NumPW[usCh]];
             for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
@@ -867,7 +868,7 @@ void CATS::SetThetaDependentSource(const bool& val){
     ComputedCorrFunction = false;
     if(ThetaDependentSource && !RefPartWave){
         RefPartWave = new double [MaxPw];
-        SolvedPartWave = new double [MaxPw];
+        SolvedPartWave = new complex<double> [MaxPw];
         LegPol = new double [MaxPw];
     }
     if(!ThetaDependentSource && RefPartWave){
@@ -1102,12 +1103,12 @@ unsigned CATS::GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned sho
     return SavedWaveFunBins[WhichMomBin][usCh][usPW];
 }
 
-double CATS::GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin){
+complex<double> CATS::GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin){
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW || SavedWaveFunBins[WhichMomBin][usCh][usPW]<=WhichRadBin) return 0;
     return WaveFunctionU[WhichMomBin][usCh][usPW][WhichRadBin];
 }
 
-double CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
+complex<double> CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                     const bool& DivideByR){
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
     return EvalWaveFunctionU(WhichMomBin, Radius*FmToNu, usCh, usPW, DivideByR);
@@ -1122,7 +1123,7 @@ double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const u
     return EffectiveFunction(uMomBin,Radius*FmToNu,usCh);
 }
 
-double CATS::EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
+complex<double> CATS::EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                     const bool& DivideByR){
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
     return EvalWaveFunctionU(WhichMomBin, Radius*FmToNu, usCh, usPW, DivideByR, true);
@@ -1269,7 +1270,7 @@ double CATS::GetAnaSourcePar(const unsigned& WhichPar){
 }
 
 void CATS::UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
-                                 const double* RadWF, const unsigned& NumRadBins, const double* RadBins, const double& PHASESHIFT){
+                                 const complex<double>* RadWF, const unsigned& NumRadBins, const double* RadBins, const double& PHASESHIFT){
 
     if(NumMomBins<=uMomBin || NumCh<=usCh || NumPW[usCh]<=usPW){
         if(Notifications>=nError)
@@ -1807,7 +1808,7 @@ void CATS::ComputeWaveFunction(){
             WaveFunRad[uMomBin][usCh][usPW] = new double [SWFB+1];
 
             if(WaveFunctionU[uMomBin][usCh][usPW]) delete [] WaveFunctionU[uMomBin][usCh][usPW];
-            WaveFunctionU[uMomBin][usCh][usPW] = new double [SWFB];
+            WaveFunctionU[uMomBin][usCh][usPW] = new complex<double> [SWFB];
 
             for(unsigned uPoint=0; uPoint<SWFB; uPoint++){
                 WaveFunRad[uMomBin][usCh][usPW][uPoint] = BufferRad[uPoint];
@@ -2797,7 +2798,7 @@ unsigned CATS::GetBoxId(double* particle){
     return ChildFirstID;
 }
 
-double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
+complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
                                 const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic){
 
     bool ExtWF = ExternalWF[uMomBin][usCh][usPW];
@@ -2816,10 +2817,10 @@ double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
                             GetRadBin(Radius, uMomBin, usCh, usPW);
 
     if(RadBin<SWFB && !Asymptotic){
-        const double* WFU = ExtWF?ExternalWF[uMomBin][usCh][usPW]:WaveFunctionU[uMomBin][usCh][usPW];
+        const complex<double>* WFU = ExtWF?ExternalWF[uMomBin][usCh][usPW]:WaveFunctionU[uMomBin][usCh][usPW];
         const double* WFR = ExtWF?ExtWfRadBins[uMomBin][usCh][usPW]:WaveFunRad[uMomBin][usCh][usPW];
         //the external WF is assumed to be given in fm
-        double Result = EvalBinnedFun(Radius*(ExtWF?NuToFm:1), SWFB, WFR, WFU)*(ExtWF?FmToNu:1);
+        complex<double> Result = EvalBinnedFun(Radius*(ExtWF?NuToFm:1), SWFB, WFR, WFU)*(ExtWF?FmToNu:1);
         if(Result==1e6 && Notifications>=nWarning)
             printf("\033[1;33mWARNING:\033[0m DeltaRad==0, which might point to a bug! Please contact the developers!\n");
         return Result*MultFactor;
@@ -2834,8 +2835,8 @@ double CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
 }
 
 double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh){
-    double Result;
-    double OldResult=100;
+    complex<double> Result;
+    complex<double> OldResult=100;
     double TotalResult=0;
     double Momentum = GetMomentum(uMomBin);
     for(unsigned short usPW=0; usPW<MaxPw; usPW++){
@@ -2844,14 +2845,18 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
         //numerical solution, no computation result for zero potential
         if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
             Result = EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
-            TotalResult += double(2*usPW+1)*Result*Result;
+            //Check this!!! Should it be squared?
+            //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
+            TotalResult += double(2*usPW+1)*pow(abs(Result),2);
         }
         else{
             Result = ReferencePartialWave(Radius, Momentum, usPW)/(Radius+1e-64);
-            Result = double(2*usPW+1)*Result*Result;
-            TotalResult += Result;
+            //Check this!!! Should it be squared?
+            //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
+            Result = double(2*usPW+1)*pow(abs(Result),2);
+            TotalResult += abs(Result);
             //convergence criteria
-            if(usPW>=NumPW[usCh] && fabs(OldResult)<1e-7 && fabs(Result)<1e-8) break;
+            if(usPW>=NumPW[usCh] && abs(OldResult)<1e-7 && abs(Result)<1e-8) break;
             OldResult = Result;
         }
     }
@@ -2867,20 +2872,14 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius){
 }
 
 double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh){
-    double Result1;
-    double Result2;
-    double OldResult1=100;
-    double OldResult2=100;
-    double TotalResultRe=0;
-    double TotalResultIm=0;
-    double TotalResult=0;
+    complex<double> Result;
+    complex<double> OldResult=100;
+    complex<double> TotalResult=0;
     double Momentum = GetMomentum(uMomBin);
-
-    short oddness;
 
     if(!RefPartWave){
         RefPartWave = new double [MaxPw];
-        SolvedPartWave = new double [MaxPw];
+        SolvedPartWave = new complex<double> [MaxPw];
         LegPol = new double [MaxPw];
     }
 
@@ -2897,51 +2896,19 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
         if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
             if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
             if(SolvedPartWave[usPW]==1e6) SolvedPartWave[usPW]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
-            Result1 = double(2*usPW+1)*SolvedPartWave[usPW]*LegPol[usPW];
+            Result = double(2*usPW+1)*SolvedPartWave[usPW]*LegPol[usPW];
         }
         else{
             if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
             if(RefPartWave[usPW]==1e6) RefPartWave[usPW] = ReferencePartialWave(Radius, Momentum, usPW);
-            Result1 = double(2*usPW+1)*RefPartWave[usPW]/(Radius+1e-64)*LegPol[usPW];
-            if(usPW>=NumPW[usCh] && fabs(OldResult1)<3.16e-4 && fabs(Result1)<1e-4) break;
-            OldResult1 = Result1;
+            //please check if a sqrt is needed for 2*l+1. I think not, because above, when we integrate Pl, the integration of Pl itself results in 1/(2l+1)
+            Result = pow(i,usPW)*double(2*usPW+1)*RefPartWave[usPW]/(Radius+1e-64)*LegPol[usPW];
+            if(usPW>=NumPW[usCh] && abs(OldResult)<3.16e-4 && abs(Result)<1e-4) break;
+            OldResult = Result;
         }
-        //if the source is theta dep, than we cannot simply neglect the cross-terms in the PW expansion (coming from |ψ|^2).
-        //thus we need to loop over all partial waves twice
-        for(unsigned short usPW2=0; usPW2<MaxPw; usPW2++){
-            //wave function symmetrization
-            if( IdenticalParticles && (usPW2+Spin[usCh])%2 ) continue;
-            if(usPW2<NumPW[usCh] && (ShortRangePotential[usCh][usPW2] || ExternalWF[uMomBin][usCh][usPW2])){
-                if(LegPol[usPW2]==1e6) LegPol[usPW2]=gsl_sf_legendre_Pl(usPW2,CosTheta);
-                if(SolvedPartWave[usPW2]==1e6) SolvedPartWave[usPW2]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW2, true);
-                Result2 = double(2*usPW2+1)*SolvedPartWave[usPW2]*LegPol[usPW2];
-            }
-            else{
-                if(LegPol[usPW2]==1e6) LegPol[usPW2]=gsl_sf_legendre_Pl(usPW2,CosTheta);
-                if(RefPartWave[usPW2]==1e6) RefPartWave[usPW2] = ReferencePartialWave(Radius, Momentum, usPW2);
-                Result2 = double(2*usPW2+1)*RefPartWave[usPW2]/(Radius+1e-64)*LegPol[usPW2];
-                if(usPW2>=NumPW[usCh] && fabs(OldResult2)<3.16e-4 && fabs(Result2)<1e-4) break;
-                OldResult2 = Result2;
-            }
-            //this is related to the i^l coefficient in the PW expansion. If we multiply two partial waves, say l and m* (complex conj.),
-            //than we have -(i)^(l+3*m), which is either +-1 or +-i depending on l+m. => we sum up the real and imaginary part
-            //separately and then compute the total result at the end.
-            oddness = (usPW+3*usPW2)%4;
-            switch(oddness){
-                case 0 : TotalResultRe += (Result2*Result1); break;
-                case 1 : TotalResultIm += (Result2*Result1); break;
-                case 2 : TotalResultRe -= (Result2*Result1); break;
-                case 3 : TotalResultIm -= (Result2*Result1); break;
-                default :   if(Notifications>=nWarning){
-                            printf("\033[1;33mWARNING:\033[0m oddness gets a default switch. This should not happen => bug\n");
-                            printf("         Please contact the developers!\n");
-                            }
-                            break;
-            }
-        }
+        TotalResult += Result;
     }
-    TotalResult = sqrt(TotalResultRe*TotalResultRe+TotalResultIm*TotalResultIm);
-    return TotalResult*(1+IdenticalParticles);
+    return pow(abs(TotalResult),2);
 }
 
 double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta){
@@ -2999,12 +2966,12 @@ template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigne
     if(NumBins==1) return Function[0];
     unsigned WhichBin = GetBin(xVal,Bins,NumBins+1);
 
-    Type Value[3];
+    double Value[3];
     Value[0] = WhichBin?GetBinCenter(Bins,WhichBin-1):-1;
     Value[1] = GetBinCenter(Bins,WhichBin);
     Value[2] = WhichBin<(NumBins-1)?GetBinCenter(Bins,WhichBin+1):-1;
 
-    Type* InterpolRange;
+    double* InterpolRange;
     const Type* FunRange;
 
     if(Value[0]==-1){

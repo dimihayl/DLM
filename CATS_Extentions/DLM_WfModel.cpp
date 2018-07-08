@@ -8,6 +8,8 @@
 
 using namespace std;
 
+const complex<float>i(0,1);
+
 DLM_WfModels::DLM_WfModels(WfModel Model):MODEL(Model),
     NumChannels(Model==ProtonLambdaHaideNLO?4:Model==KminProtonHaide?4:Model==KplusProtonHaide?2:1){
     //NumChannels(Model==ProtonLambdaHaideNLO?4:Model==KminProtonHaide?4:Model==KplusProtonFiles?2:1){
@@ -43,7 +45,11 @@ void DLM_WfModels::Init(const CATS& Kitty, const char* inFileName){
 
 }
 
-void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
+//_0 = rotated WF onto the real axis (as done originally)
+//_1 = using the complex WF
+//0_ = NLO
+//1_ = LO
+void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE, const int& CUTOFF){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -66,12 +72,26 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFu
     strcpy(InputFileName[f3P1],InputFolder);
     strcpy(InputFileName[f3P2],InputFolder);
 
-    strcat(InputFileName[f1S0], "N1s0.data");
-    strcat(InputFileName[f1P1], "N1p1.data");
-    strcat(InputFileName[f3S1], "N3s1.data");
-    strcat(InputFileName[f3P0], "N3p0.data");
-    strcat(InputFileName[f3P1], "N3p1.data");
-    strcat(InputFileName[f3P2], "N3p2.data");
+    if(TYPE%10==0 && CUTOFF==500){
+        strcat(InputFileName[f1S0], "N1s0.data");
+        strcat(InputFileName[f1P1], "N1p1.data");
+        strcat(InputFileName[f3S1], "N3s1.data");
+        strcat(InputFileName[f3P0], "N3p0.data");
+        strcat(InputFileName[f3P1], "N3p1.data");
+        strcat(InputFileName[f3P2], "N3p2.data");
+    }
+    else if(TYPE%10==0 && CUTOFF==600){
+        strcat(InputFileName[f1S0], "Y1s05.data");
+        strcat(InputFileName[f3S1], "Y3s15.data");
+    }
+    else if(TYPE%10==1 && CUTOFF==600){
+        strcat(InputFileName[f1S0], "W1s06.data");
+        strcat(InputFileName[f3S1], "W3s16.data");
+    }
+    else{
+        printf("YOU BROKE SOMETHING in InitHaidenbauerNLO\n");
+    }
+
 
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.2;
@@ -80,16 +100,16 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFu
     NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
     bool* RadBinLoaded = new bool [NumRadBins+1];
 
-    WaveFunctionU[0] = new double*** [NumMomBins];
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
     PhaseShifts[0] = new double** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-        WaveFunctionU[0][uMomBin] = new double** [NumChannels];
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
         PhaseShifts[0][uMomBin] = new double* [NumChannels];
         for(unsigned usCh=0; usCh<NumChannels; usCh++){
-            WaveFunctionU[0][uMomBin][usCh] = new double* [NumPwPerCh];
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
             PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
             for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
-                WaveFunctionU[0][uMomBin][usCh][usPw] = new double [NumRadBins];
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
                 PhaseShifts[0][uMomBin][usCh][usPw] = 0;
             }
         }
@@ -108,6 +128,8 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFu
             printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
             return;
         }
+        //we have the p-waves only for NLO with cutoff of 600 MeV
+        if(uFile!=f1S0 && uFile!=f3S1 && (TYPE/10!=0 || CUTOFF!=600)) continue;
 
         fseek ( InFile , 0 , SEEK_END );
         //long EndPos;
@@ -173,7 +195,8 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFu
 //printf("!!!!\n");
             switch(uFile){
             case f1S0:
-                WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][0][0][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
 //printf("MomBin=%u; RadBin=%u; WaveFunctionU[0][MomBin][0][0][RadBin]=%f\n",MomBin,RadBin,WaveFunctionU[0][MomBin][0][0][RadBin]);
                 break;
@@ -182,23 +205,33 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFu
                 PhaseShifts[0][MomBin][0][1] = fPhaseShift*3.14159/180.;
                 break;
             case f3S1:
-                WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
-                WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
-                WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE/10==0){
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
+                }
+                else{
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][2][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][3][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                }
                 PhaseShifts[0][MomBin][1][0] = fPhaseShift*3.14159/180.;
                 PhaseShifts[0][MomBin][2][0] = fPhaseShift*3.14159/180.;
                 PhaseShifts[0][MomBin][3][0] = fPhaseShift*3.14159/180.;
                 break;
             case f3P0:
-                WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][1][1] = fPhaseShift*3.14159/180.;
                 break;
             case f3P1:
-                WaveFunctionU[0][MomBin][2][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][2][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][2][1] = fPhaseShift*3.14159/180.;
                 break;
             case f3P2:
-                WaveFunctionU[0][MomBin][3][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][3][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][3][1] = fPhaseShift*3.14159/180.;
                 break;
             default:
@@ -220,7 +253,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, double***** WaveFu
 //printf("hhhhhhhhhhhh\n");
 }
 
-void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
+void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -259,16 +292,16 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, double***** 
     NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
     bool* RadBinLoaded = new bool [NumRadBins+1];
 
-    WaveFunctionU[0] = new double*** [NumMomBins];
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
     PhaseShifts[0] = new double** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-        WaveFunctionU[0][uMomBin] = new double** [NumChannels];
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
         PhaseShifts[0][uMomBin] = new double* [NumChannels];
         for(unsigned usCh=0; usCh<NumChannels; usCh++){
-            WaveFunctionU[0][uMomBin][usCh] = new double* [NumPwPerCh];
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
             PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
             for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
-                WaveFunctionU[0][uMomBin][usCh][usPw] = new double [NumRadBins];
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
                 PhaseShifts[0][uMomBin][usCh][usPw] = 0;
             }
         }
@@ -327,6 +360,7 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, double***** 
             if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
                    &fRadius,&fMomentum,&fReWf,&fImWf,&fReAsWf,&fImAsWf,&fCatsReWf,&fCatsImWf,&fPhaseShift);
+            //printf("WF = %f + i*%f\n",fReWf,fImWf);
             //sscanf(cdummy, " %f %f %f %f",
             //       &fRadius,&fMomentum,&fCatsReWf,&fCatsImWf);
             fCatsWf = sqrt(fCatsReWf*fCatsReWf+fCatsImWf*fCatsImWf);
@@ -356,33 +390,50 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
                 continue;
             }
 //printf("!!!!\n");
+
             switch(uFile){
             case fS01://Spin 0, Isospin 0, s-wave
-                WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0){
+                    WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+                }
+                else{
+                    WaveFunctionU[0][MomBin][0][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                }
                 PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
-                WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
                 PhaseShifts[0][MomBin][1][0] = fPhaseShift*3.14159/180.;
                 break;
             case fS11:
-                WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0){
+                    WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
+                }
+                else{
+                    WaveFunctionU[0][MomBin][2][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][3][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                }
                 PhaseShifts[0][MomBin][2][0] = fPhaseShift*3.14159/180.;
-                WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
                 PhaseShifts[0][MomBin][3][0] = fPhaseShift*3.14159/180.;
                 break;
             case fP01:
-                WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][0][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][0][1] = fPhaseShift*3.14159/180.;
                 break;
             case fP03:
-                WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][1][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][1][1] = fPhaseShift*3.14159/180.;
                 break;
             case fP11:
-                WaveFunctionU[0][MomBin][2][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][2][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][2][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][2][1] = fPhaseShift*3.14159/180.;
                 break;
             case fP13:
-                WaveFunctionU[0][MomBin][3][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][3][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][3][1] = fPhaseShift*3.14159/180.;
                 break;
             default:
@@ -406,7 +457,7 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 
 //see email in may 2018, this is isospin averaged
 //basically we have two channels: s1+p1 and s1+p3
-void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
+void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -437,16 +488,16 @@ void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, double*
     NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
     bool* RadBinLoaded = new bool [NumRadBins+1];
 
-    WaveFunctionU[0] = new double*** [NumMomBins];
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
     PhaseShifts[0] = new double** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-        WaveFunctionU[0][uMomBin] = new double** [NumChannels];
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
         PhaseShifts[0][uMomBin] = new double* [NumChannels];
         for(unsigned usCh=0; usCh<NumChannels; usCh++){
-            WaveFunctionU[0][uMomBin][usCh] = new double* [NumPwPerCh];
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
             PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
             for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
-                WaveFunctionU[0][uMomBin][usCh][usPw] = new double [NumRadBins];
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
                 PhaseShifts[0][uMomBin][usCh][usPw] = 0;
             }
         }
@@ -536,17 +587,25 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 //printf("!!!!\n");
             switch(uFile){
             case fS1://Spin 0, Isospin 0, s-wave
-                WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0){
+                    WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+                }
+                else{
+                    WaveFunctionU[0][MomBin][0][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                }
                 PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
-                WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
                 PhaseShifts[0][MomBin][1][0] = fPhaseShift*3.14159/180.;
                 break;
             case fP1:
-                WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][0][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][0][1] = fPhaseShift*3.14159/180.;
                 break;
             case fP3:
-                WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][1][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][1][1] = fPhaseShift*3.14159/180.;
                 break;
             default:
@@ -569,7 +628,7 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 }
 
 
-void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins){
+void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -600,16 +659,16 @@ void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, double***** W
     NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
     bool* RadBinLoaded = new bool [NumRadBins+1];
 
-    WaveFunctionU[0] = new double*** [NumMomBins];
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
     PhaseShifts[0] = new double** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-        WaveFunctionU[0][uMomBin] = new double** [NumChannels];
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
         PhaseShifts[0][uMomBin] = new double* [NumChannels];
         for(unsigned usCh=0; usCh<NumChannels; usCh++){
-            WaveFunctionU[0][uMomBin][usCh] = new double* [NumPwPerCh];
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
             PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
             for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
-                WaveFunctionU[0][uMomBin][usCh][usPw] = new double [NumRadBins];
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
                 PhaseShifts[0][uMomBin][usCh][usPw] = 0;
             }
         }
@@ -695,17 +754,25 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 //printf("!!!!\n");
             switch(uFile){
             case fS11:
-                WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0){
+                    WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+                }
+                else{
+                    WaveFunctionU[0][MomBin][0][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                }
                 PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
-                WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
                 PhaseShifts[0][MomBin][1][0] = fPhaseShift*3.14159/180.;
                 break;
             case fP11:
-                WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][0][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][0][1] = fPhaseShift*3.14159/180.;
                 break;
             case fP13:
-                WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0) WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][1][1][RadBin] = (fReWf+i*fImWf)*fRadius;
                 PhaseShifts[0][MomBin][1][1] = fPhaseShift*3.14159/180.;
                 break;
             default:
@@ -731,7 +798,8 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 //[0][MomBin][uCh][uPw]
 //TYPE = 0 => take the psi^2
 //TYPE = 1 => the dirty trick with flipping the sign based on the sign of the real part
-void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
+//TYPE = 2 = Real + Imag
+void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -759,16 +827,16 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveF
     NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
     bool* RadBinLoaded = new bool [NumRadBins+1];
 
-    WaveFunctionU[0] = new double*** [NumMomBins];
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
     PhaseShifts[0] = new double** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-        WaveFunctionU[0][uMomBin] = new double** [NumChannels];
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
         PhaseShifts[0][uMomBin] = new double* [NumChannels];
         for(unsigned usCh=0; usCh<NumChannels; usCh++){
-            WaveFunctionU[0][uMomBin][usCh] = new double* [NumPwPerCh];
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
             PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
             for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
-                WaveFunctionU[0][uMomBin][usCh][usPw] = new double [NumRadBins];
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
                 PhaseShifts[0][uMomBin][usCh][usPw] = 0;
             }
         }
@@ -846,7 +914,8 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveF
             }
             switch(uFile){
             case 0://Spin 0, Isospin 0, s-wave
-                WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                if(TYPE==0 || TYPE==1) WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][0][0][RadBin] = (fCatsReWf+i*fCatsImWf)*fRadius;
                 PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
                 break;
             default:
@@ -868,7 +937,7 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, double***** WaveF
 //printf("hhhhhhhhhhhh\n");
 }
 
-void CleanHaidenbauer(CATS& Kitty, double***** WaveFunctionU, double**** PhaseShifts, double** RadBins){
+void CleanHaidenbauer(CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins){
     unsigned NumMomBins = Kitty.GetNumMomBins();
     const unsigned short NumChannels = 4;
     const unsigned short NumPwPerCh = 2;
