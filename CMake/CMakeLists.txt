@@ -7,16 +7,17 @@ SET(ROOT_INCLUDE "/home/dmihaylov/root/include")#where are all ROOT related .h f
 SET(ROOT_LIB "/home/dmihaylov/root/lib")#where are the ROOT related .a and .so files
 SET(GSL_INCLUDE "/usr/include/gsl")#where are all GSL related .h files
 SET(GSL_LIB "/usr/lib")#where are the GSL .a and .so files
-SET(CATS_FOLDER "/home/dmihaylov/Dudek_Ubuntu/DLM_GitHub")#where is the CATS main folder located
+SET(CATS_FOLDER "/home/dmihaylov/Temp/CATS_CODE")#where is the CATS main folder located
 # DO NOT CHANGE THE REST #
 
 SET(VERSION_MAJOR 2)
-SET(VERSION_MINOR 10)
+SET(VERSION_MINOR 12)
 SET(VERSION_PATCH 0)
 SET(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CATS_DESTINATION})
+SET(CMAKE_MODULE_PATH ${CATS_DESTINATION})
 
 include_directories(${CATS_FOLDER}/CATS)
+include_directories(${CATS_FOLDER}/DLM_RootTools)
 include_directories(${CATS_FOLDER}/DLM_CppTools)
 include_directories(${GSL_INCLUDE})
 include_directories(${ROOT_INCLUDE})
@@ -24,7 +25,8 @@ include_directories(${ROOT_INCLUDE})
 add_library(CATSbasic STATIC 		${CATS_FOLDER}/CATS/CATS.cpp 
 					${CATS_FOLDER}/CATS/CATStools.cpp 
 					${CATS_FOLDER}/DLM_CppTools/DLM_CppTools.cpp)
-add_library(CATSextended STATIC 	${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.cpp 
+add_library(CATSextended STATIC 	${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.cpp
+					${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.cpp 
 					${CATS_FOLDER}/CATS_Extentions/DLM_Potentials.cpp 
 					${CATS_FOLDER}/CATS_Extentions/DLM_Source.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_StefanoPotentials.cpp)
@@ -41,6 +43,7 @@ install (TARGETS CATSdev DESTINATION ${CATS_DESTINATION}/lib)
 
 install (FILES ${CATS_FOLDER}/CATS/CATS.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS/CATStools.h DESTINATION ${CATS_DESTINATION}/include)
+install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_Fitters.h DESTINATION ${CATS_DESTINATION}/include)

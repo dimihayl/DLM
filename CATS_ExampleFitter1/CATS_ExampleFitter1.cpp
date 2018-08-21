@@ -163,7 +163,7 @@ void ChargedPionPionFitter(TH1F* hData){
     }
 
     //TEST
-    TFile* f1 = new TFile("./OutputFilesCATS2.0/PionPionExample1/f1.root","recreate");
+    TFile* f1 = new TFile("./f1.root","recreate");
     hData->Write();
     Fitter->Write();
     delete f1;
@@ -176,7 +176,6 @@ void PionPionExample1(){
 
     TH1F* hDummyData = new TH1F("hDummyData", "hDummyData", 25, 0, 500);
 
-//PiPi 10-18 Mult, below 0.4 GeV
     hDummyData->SetBinContent(1, 1.4);
     hDummyData->SetBinContent(2, 1.3);
     hDummyData->SetBinContent(3, 1.2);

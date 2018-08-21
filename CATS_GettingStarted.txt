@@ -6,12 +6,35 @@ The code is provided "as is" and the authors will take no responsibility in case
 related to the interpretation of results analyzed with the help of this framework.
 Nevertheless in case of suspected problems with the code we would gladly provide feedback and support.
 
+TO DOWNLOAD VISIT:
+http://www.denseandstrange.ph.tum.de/index.php?id=78
+
 ----------------------------------------------------------------------------
 Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-Current Version: 2.8 (18 March 2018)
+Current Version: 2.12 (21th August 2018)
 Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 Support:         dimitar.mihaylov(at)mytum.de
-Reference:       D. L. Mihaylov, V. M. Sarti, O. W. Arnold, L. Fabbietti, B. Hohlweger and A. M. Mathis, arXiv:1802.08481 [hep-ph]
+Documentation:   a full documentation is not available yet
+
+In case you use CATS for your analysis please cite:
+D. L. Mihaylov, V. M. Sarti, O. W. Arnold, L. Fabbietti, B. Hohlweger and A. M. Mathis, Eur.Phys.J. C78 (2018) no.5, 394
+BibTeX:
+@article{Mihaylov:2018rva,
+      author         = "Mihaylov, D. L. and Mantovani Sarti, V. and Arnold, O. W.
+                        and Fabbietti, L. and Hohlweger, B. and Mathis, A. M.",
+      title          = "{A femtoscopic Correlation Analysis Tool using the
+                        Schr\"odinger equation (CATS)}",
+      journal        = "Eur. Phys. J.",
+      volume         = "C78",
+      year           = "2018",
+      number         = "5",
+      pages          = "394",
+      doi            = "10.1140/epjc/s10052-018-5859-0",
+      eprint         = "1802.08481",
+      archivePrefix  = "arXiv",
+      primaryClass   = "hep-ph",
+      SLACcitation   = "%%CITATION = ARXIV:1802.08481;%%"
+}
 ----------------------------------------------------------------------------
 
 1) What is CATS
@@ -21,14 +44,21 @@ solving the Schroedinger equation numerically. => the tool is non-relativistic a
 only work for particles with masses of more then c.a. 500 MeV (light mesons are off-limits).
 
 2) How to download/compile
-You can download CATS from here: http://www.denseandstrange.ph.tum.de/index.php?id=78
+You can download CATS from here.
+
+--Option 1--
 There are 3 folders included: CATS, DLM_CppTools and CATS_Example1. CATS contains the main source-code for CATS.
 DLM_CppTools contains some functions used by CATS, developed by the authors for previous projects.
 You need to include and compile all *.cpp and *.h files from those folders in your own code.
 
-We do not offer any specific option for compilation or installation, except for the macro included in the CATS_Example folder.
+By default we do not offer any specific option for compilation or installation, except for the macro included in the CATS_Example folder.
+
+--Option 2 - From version 2.12 onwards--
+We offer the user the opportunity to use extended functions that were developed for our analysis, as well as our own compilation scripts using CMake.
+These were never extensively tested and hence bug prone, please use and modify at your own risk!
 
 3) How to use it
+--Option 1--
 You can see some example code of using CATS in the folder named CATS_Example1.
 With the help of the comments you should be capable of understanding how to run CATS.
 Nevertheless there a few things that we would like to bring your attention to:
@@ -38,6 +68,17 @@ Nevertheless there a few things that we would like to bring your attention to:
   * For the source: The first 3 arguments sould be the variables "k","r","θ". The array passed to CATS should have a minimum size of 3.
   * Any arguments beyond the default minimum can be used as a link between CATS and external functions, an example is available in the macro.
   * The PdgId parameter is currently used to determine if the particles are identical or not and when sampling the source from a data file.
-  
+
+--Option 2 - From version 2.12 onwards--
+The extended version includes two scripts for compilation using CMake.
+The first is in ./CMake and can be used to compile CATS itself at a custom location.
+The second one is in ./CATS_ExampleFitter1. This folders contains an example of how CATS can be used together with ROOT to fit data. 
+The CMake example can be used as a template to compile your own code.
+
 4) Prerequisites
+  --Required--
   * GSL - GNU Scientific Library (https://www.gnu.org/software/gsl/)
+  
+  --Optional--
+  In case you would like to use our CMake examples, please make sure you have CMake installed
+  To check out the ./CATS_ExampleFitter1 you will also need to install ROOT
