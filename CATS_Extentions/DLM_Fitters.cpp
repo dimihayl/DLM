@@ -10,7 +10,7 @@
 
 #include "DLM_CkDecomposition.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(13),NumPotPar(4),NumRangePar(4){
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(15),NumPotPar(6),NumRangePar(4){
     HistoOriginal = new TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -56,7 +56,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
         FixPar[uSyst][p_c] = true;
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
-        FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true;
+        FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
         ParValue[uSyst][p_Cl] = 1; ParDownLimit[uSyst][p_Cl] = 0.75; ParUpLimit[uSyst][p_Cl] = 1.25;
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
         ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0;
@@ -947,6 +947,8 @@ void DLM_Fitter1::GoBabyGo(){
                 FitGlobal->FixParameter(uSyst*NumPar+p_sor1, -1e6);
                 FitGlobal->FixParameter(uSyst*NumPar+p_sor2, -1e6);
                 FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_sor4, -1e6);
+                FitGlobal->FixParameter(uSyst*NumPar+p_sor5, -1e6);
             }
             //if the potential should be taken from a parent -> fix the potential pars to dummy values
             if(int(uPar)==p_pot0 && ParentPotential[uSyst]!=int(uSyst)){
@@ -1125,7 +1127,6 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             }
             else if(Pars[WhichSyst*NumPar+p_kc]==FitRange[WhichSyst][kl]){
                 CkVal = 1e6;
-
             }
             else{
                 CkVal = ((Momentum-FitRange[WhichSyst][kl])-Clin*(Momentum-Pars[WhichSyst*NumPar+p_kc]))/

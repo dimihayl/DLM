@@ -1,11 +1,29 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.8 (18 March 2018)
+//! Current Version: 2.12 (21th August 2018)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
 
 //! In case you use CATS for your analysis please cite:
-//! D. L. Mihaylov, V. M. Sarti, O. W. Arnold, L. Fabbietti, B. Hohlweger and A. M. Mathis, arXiv:1802.08481 [hep-ph]
+//! D. L. Mihaylov, V. M. Sarti, O. W. Arnold, L. Fabbietti, B. Hohlweger and A. M. Mathis, Eur.Phys.J. C78 (2018) no.5, 394
+/*BibTeX:
+@article{Mihaylov:2018rva,
+      author         = "Mihaylov, D. L. and Mantovani Sarti, V. and Arnold, O. W.
+                        and Fabbietti, L. and Hohlweger, B. and Mathis, A. M.",
+      title          = "{A femtoscopic Correlation Analysis Tool using the
+                        Schr\"odinger equation (CATS)}",
+      journal        = "Eur. Phys. J.",
+      volume         = "C78",
+      year           = "2018",
+      number         = "5",
+      pages          = "394",
+      doi            = "10.1140/epjc/s10052-018-5859-0",
+      eprint         = "1802.08481",
+      archivePrefix  = "arXiv",
+      primaryClass   = "hep-ph",
+      SLACcitation   = "%%CITATION = ARXIV:1802.08481;%%"
+}
+*/
 
 #ifndef CATS_H
 #define CATS_H

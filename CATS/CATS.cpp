@@ -2027,12 +2027,12 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
     //the amount of pairs that is accepted per second, i.e. when the bins with high-statistics are full
 //    float pMaxPairsToLoad;
     //this should also give a realistic ETA, if we define it based on the bin with fewest entries
-    //float pMaxPairsPerBin;
+    float pMaxPairsPerBin;
+    float pTemp;
 
     short pTotal;
     short pTotalOld;
 
-    bool bAllBinsAreFull;
     bool SkipThisEvent;
     bool NewInterestingEvent;
 
@@ -2046,12 +2046,7 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
         SkipThisEvent = false;
         if(NumPairs>=MaxTotPairs) break;
         if(NumTotalPairs>=MaxPairsToRead) break;
-        bAllBinsAreFull = true;
-        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-            for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
-                bAllBinsAreFull *= LoadedPairsPerBin[uMomBin][uIpBin]>=MaxPairsPerBin;
-            }
-        }
+
         fscanf(InFile,"%i %i %lf %lf",&EventNumber,&NumPartInEvent,&ImpPar,&fDummy);
         NewInterestingEvent = false;
 
@@ -2125,17 +2120,17 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
         pFile = double(CurPos)/double(EndPos);//what fraction of the file has been read
         ProgressLoad = pMaxPairsToRead>pFile?pMaxPairsToRead:pFile;
 //        ProgressLoad = pMaxPairsToLoad>ProgressLoad?pMaxPairsToLoad:ProgressLoad;
-        /*
-        pMaxPairsPerBin = 0;
+
+        pMaxPairsPerBin = 1;
         for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 //select the smallest possible pMaxPairsPerBin
-                pTemp = double(LoadedPairsPerBin[uMomBin][uIpBin])/double(MaxPairsPerBin);
-                pMaxPairsPerBin = pMaxPairsPerBin>pTemp?pTemp:pMaxPairsPerBin;
+                pTemp = float(LoadedPairsPerBin[uMomBin][uIpBin])/float(MaxPairsPerBin);
+                if(pTemp<pMaxPairsPerBin) pMaxPairsPerBin=pTemp;
             }
         }
         ProgressLoad = pMaxPairsPerBin>ProgressLoad?pMaxPairsPerBin:ProgressLoad;
-        */
+
         pTotal = int(ProgressLoad*100);
         if(pTotal!=pTotalOld){
             Time = double(dlmTimer.Stop())/1000000.;

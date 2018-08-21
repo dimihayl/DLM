@@ -72,7 +72,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
     strcpy(InputFileName[f3P1],InputFolder);
     strcpy(InputFileName[f3P2],InputFolder);
 
-    if(TYPE%10==0 && CUTOFF==500){
+    if(TYPE%10==0 && CUTOFF==600){
         strcat(InputFileName[f1S0], "N1s0.data");
         strcat(InputFileName[f1P1], "N1p1.data");
         strcat(InputFileName[f3S1], "N3s1.data");
@@ -80,7 +80,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
         strcat(InputFileName[f3P1], "N3p1.data");
         strcat(InputFileName[f3P2], "N3p2.data");
     }
-    else if(TYPE%10==0 && CUTOFF==600){
+    else if(TYPE%10==0 && CUTOFF==500){
         strcat(InputFileName[f1S0], "Y1s05.data");
         strcat(InputFileName[f3S1], "Y3s15.data");
     }
