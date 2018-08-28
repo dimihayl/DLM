@@ -138,7 +138,7 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
         }
         Result = parA*exp(-parB*rad2)+parF*exp(-parG*rad2)+parC*(1.-exp(-parD*rad2))*pow(exp(-parE*rad)/rad,2.);
     }
-    //I=1; 1S0
+    //I=1; 1S0 (1-6 is 9-14t)
     else if(IsoSpin==1&&Spin==0&&AngMom==0){
         double ShiftedRad;
         switch(DlmPotFlag){

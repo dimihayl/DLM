@@ -240,11 +240,13 @@ public:
     CATShisto(const unsigned& numbin, const Type* bins):NumBins(numbin){
         BinRange = NULL;
         BinValue = NULL;
+        BinCenter = NULL;
         if(!NumBins){
             return;
         }
         BinRange = new Type [NumBins+1];
         BinValue = new Type [NumBins];
+        BinCenter = new Type [NumBins];
         for(unsigned uBin=0; uBin<=NumBins; uBin++){
             BinRange[uBin] = bins[uBin];
         }
@@ -255,20 +257,24 @@ public:
     CATShisto(const unsigned& numbin, const Type& xmin, const Type& xmax):NumBins(numbin){
         BinRange = NULL;
         BinValue = NULL;
+        BinCenter = NULL;
         if(!NumBins){
             return;
         }
         BinRange = new Type [NumBins+1];
         BinValue = new Type [NumBins];
+        BinCenter = new Type [NumBins];
         if(NumBins==1){
             BinRange[0] = xmin; BinRange[1] = xmax;
             //BinValue[0] = (xmin+xmax)*0.5;
+            BinCenter[0] = 1.331e128;
         }
         else{
             Type BinWidth = (xmax-xmin)/Type(NumBins);
 //printf("NumBins=%u; BinWidth=%f;\n",NumBins,BinWidth);
             for(unsigned uBin=0; uBin<=NumBins; uBin++){
                 BinRange[uBin] = xmin + Type(uBin)*BinWidth;
+                if(uBin!=NumBins) BinCenter[uBin] = 1.331e128;
 //printf(" uBin=%u -> BR=%f\n",uBin, BinRange[uBin]);
             }
             //for(unsigned uBin=0; uBin<NumBins; uBin++){
@@ -280,21 +286,28 @@ public:
     CATShisto(const CATShisto& other):NumBins(other.NumBins){
         BinRange = NULL;
         BinValue = NULL;
+        BinCenter = NULL;
         if(!NumBins){
             return;
         }
         BinRange = new Type [NumBins+1];
         BinValue = new Type [NumBins];
+        BinCenter = new Type [NumBins];
         operator=(other);
     }
     ~CATShisto(){
         if(BinRange) {delete [] BinRange; BinRange=NULL;}
         if(BinValue) {delete [] BinValue; BinValue=NULL;}
+        if(BinCenter) {delete [] BinCenter; BinCenter=NULL;}
     }
 
     void SetBinContent(const unsigned& WhichBin, const double& Val){
         if(WhichBin>=NumBins) return;
         BinValue[WhichBin]=Val;
+    }
+    void SetBinCenter(const unsigned& WhichBin, const double& Val){
+        if(WhichBin>=NumBins) return;
+        BinCenter[WhichBin]=Val;
     }
     void Add(const unsigned& WhichBin, const double& Val){
         if(WhichBin>=NumBins) return;
@@ -337,6 +350,7 @@ public:
     }
     Type GetBinCenter(const unsigned& WhichBin) const{
         if(WhichBin>=NumBins) return 0;
+        if(BinCenter[WhichBin]!=1.331e128) return BinCenter[WhichBin];
         return 0.5*(BinRange[WhichBin]+BinRange[WhichBin+1]);
     }
     Type GetBinContent(const unsigned& WhichBin) const{
@@ -404,6 +418,7 @@ public:
         for(unsigned uBin=0; uBin<NumBins; uBin++){
             BinRange[uBin] = other.BinRange[uBin];
             BinValue[uBin] = other.BinValue[uBin]*Scale;
+            BinCenter[uBin] = other.BinCenter[uBin];
         }
         BinRange[NumBins] = other.BinRange[NumBins];
 /*
@@ -448,7 +463,7 @@ protected:
     const unsigned NumBins;
     Type* BinRange;
     Type* BinValue;
-
+    Type* BinCenter;
 };
 
 #endif // CATSTOOLS_H

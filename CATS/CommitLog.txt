@@ -99,3 +99,7 @@ Complex wave functions
 CATS 2.12
 Improved ETA when loading the source
 A new example (CATS_ExampleFitter1), showing how one can use CATS to fit, and also how to use CMake to compile everything
+
+29.08.2018 CATS 2.13
+Some new wave-functions in the extentions, related the Kp analysis (original Juelich model).
+Might need a revision soon

@@ -20,6 +20,7 @@ DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):
     for(unsigned uBin=0; uBin<NumBins; uBin++){
         BinRange[uBin] = cat.GetMomBinLowEdge(uBin);
         BinValue[uBin] = cat.GetCorrFun(uBin);
+        BinCenter[uBin] = cat.GetMomentum(uBin);
     }
     BinRange[NumBins] = cat.GetMomBinUpEdge(NumBins-1);
 

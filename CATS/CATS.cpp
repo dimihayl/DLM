@@ -71,6 +71,7 @@ CATS::CATS():
     Spin = NULL;
     NumPW = NULL;
     MomBin = NULL;
+    MomBinCenter = NULL;
     IpBin = NULL;
     ChannelWeight = NULL;
     SavedWaveFunBins = NULL;
@@ -121,6 +122,7 @@ CATS::~CATS(){
     if(Spin) {delete[]Spin; Spin=NULL;}
     if(NumPW) {delete[]NumPW; NumPW=NULL;}
     if(MomBin) {delete[]MomBin; MomBin=NULL;}
+    if(MomBinCenter) {delete[]MomBinCenter; MomBinCenter=NULL;}
     if(IpBin) {delete[]IpBin; IpBin=NULL;}
     if(ChannelWeight) {delete[]ChannelWeight; ChannelWeight=NULL;}
     if(InputFileName) {delete[]InputFileName; InputFileName=NULL;}
@@ -517,7 +519,7 @@ unsigned CATS::GetNumPairs(){
     return NumPairs;
 }
 
-void CATS::SetMomBins(const unsigned& nummombins, const double* mombins){
+void CATS::SetMomBins(const unsigned& nummombins, const double* mombins, const double* bincenter){
     if(!nummombins){
         if(Notifications>=nError)
             printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
@@ -538,7 +540,9 @@ void CATS::SetMomBins(const unsigned& nummombins, const double* mombins){
     }
     if(nummombins!=NumMomBins || !MomBin){
         if(MomBin) {delete[]MomBin; MomBin=NULL;}
+        if(MomBinCenter) {delete[]MomBinCenter; MomBinCenter=NULL;}
         MomBin = new double [nummombins+1];
+        MomBinCenter = new double [nummombins];
         DelAllMom();
         NumMomBins = nummombins;
     }
@@ -551,6 +555,11 @@ void CATS::SetMomBins(const unsigned& nummombins, const double* mombins){
 
     for(unsigned uBin=0; uBin<=NumMomBins; uBin++){
         MomBin[uBin] = mombins[uBin];
+        if(uBin){
+            if(bincenter) MomBinCenter[uBin-1]=bincenter[uBin-1];
+            else MomBinCenter[uBin-1] = 0.5*(mombins[uBin-1]+mombins[uBin]);
+        }
+
         if(MomBin[uBin]<0){
             if(Notifications>=nError){
                 printf("ERROR: CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
@@ -581,7 +590,9 @@ void CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const do
     if(nummombins==NumMomBins && MomBin[0]==MinMom && MomBin[nummombins]==MinMom+double(nummombins)*BinWidth) return;
     if(nummombins!=NumMomBins || !MomBin){
         if(MomBin) {delete[]MomBin; MomBin=NULL;}
+        if(MomBinCenter) {delete[]MomBinCenter; MomBinCenter=NULL;}
         MomBin = new double [nummombins+1];
+        MomBinCenter = new double [nummombins];
         DelAllMom();
         NumMomBins = nummombins;
     }
@@ -593,6 +604,7 @@ void CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const do
 
     for(unsigned uBin=0; uBin<=NumMomBins; uBin++){
         MomBin[uBin] = MinMom+double(uBin)*BinWidth;
+        if(uBin!=NumMomBins) MomBinCenter[uBin] = MinMom+double(uBin)*BinWidth+0.5*BinWidth;
     }
 }
 
@@ -1048,7 +1060,8 @@ double CATS::GetCorrFun(const unsigned& WhichMomBin){
 }
 double CATS::GetCorrFun(const unsigned& WhichMomBin, double& Momentum){
     if(WhichMomBin>=NumMomBins || !kCorrFun) return 0;
-    Momentum = WhichMomBin<NumMomBins?(MomBin[WhichMomBin]+MomBin[WhichMomBin+1])*0.5:0;
+    Momentum = WhichMomBin<NumMomBins?MomBinCenter[WhichMomBin]:0;
+    //Momentum = WhichMomBin<NumMomBins?GetMomentum(WhichMomBin):0;
     return GetCorrFun(WhichMomBin);
 }
 
@@ -1058,12 +1071,14 @@ double CATS::GetCorrFun(const unsigned& WhichMomBin, double& Momentum){
 //the two points below the value of Momentum
 double CATS::EvalCorrFun(const double& Momentum){
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins]) return 0;
-    return EvalBinnedFun(Momentum, NumMomBins, MomBin, kCorrFun);
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, kCorrFun);
+    //return EvalBinnedFun(Momentum, NumMomBins, MomBin, NULL, kCorrFun);
 }
 
 double CATS::EvalCorrFunErr(const double& Momentum){
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins]) return 0;
-    return EvalBinnedFun(Momentum, NumMomBins, MomBin, kCorrFunErr);
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, kCorrFunErr);
+    //return EvalBinnedFun(Momentum, NumMomBins, MomBin, NULL, kCorrFunErr);
 }
 
 double CATS::GetCorrFunErr(const unsigned& WhichMomBin){
@@ -1084,7 +1099,8 @@ double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBi
 
 double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin, double& Momentum, double& ImpPar){
     if(NumMomBins<=WhichMomBin || NumIpBins<=WhichIpBin || !kCorrFun) return 0;
-    Momentum = WhichMomBin<NumMomBins?(MomBin[WhichMomBin]+MomBin[WhichMomBin+1])*0.5:0;
+    Momentum = WhichMomBin<NumMomBins?MomBinCenter[WhichMomBin]:0;
+    //Momentum = WhichMomBin<NumMomBins?GetMomentum(WhichMomBin):0;
     ImpPar = WhichIpBin<NumIpBins?(IpBin[WhichIpBin]+IpBin[WhichIpBin+1])*0.5:0;
     return GetCorrFunIp(WhichMomBin, WhichIpBin);
 }
@@ -1096,7 +1112,8 @@ double CATS::GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& us
 
 float CATS::EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW){
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins] || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
-    return EvalBinnedFun(Momentum, NumMomBins, MomBin, PhaseShiftF[usCh][usPW]);
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, PhaseShiftF[usCh][usPW]);
+    //return EvalBinnedFun(Momentum, NumMomBins, MomBin, NULL, PhaseShiftF[usCh][usPW]);
 }
 
 unsigned CATS::GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW){
@@ -1138,7 +1155,8 @@ double CATS::EvalReferenceRadialWF(const unsigned& WhichMomBin, const unsigned s
 
 double CATS::GetMomentum(const unsigned& WhichMomBin){
     if(NumMomBins<=WhichMomBin) return 0;
-    return 0.5*(MomBin[WhichMomBin]+MomBin[WhichMomBin+1]);
+    return MomBinCenter[WhichMomBin];
+    //return 0.5*(MomBin[WhichMomBin]+MomBin[WhichMomBin+1]);
 }
 
 double CATS::GetMomBinLowEdge(const unsigned& WhichMomBin){
@@ -1150,12 +1168,12 @@ double CATS::GetMomBinUpEdge(const unsigned& WhichMomBin){
     if(NumMomBins<=WhichMomBin) return 0;
     return MomBin[WhichMomBin+1];
 }
+
 double* CATS::CopyMomBin(){
     double* MomBinCopy = new double [NumMomBins+1];
     for(unsigned uMomBin=0; uMomBin<=NumMomBins; uMomBin++){
         MomBinCopy[uMomBin] = MomBin[uMomBin];
     }
-
     return MomBinCopy;
 }
 
@@ -1231,12 +1249,14 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, co
             printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
+
     if(PotPar[usCh][usPW][NumPotPars+WhichPar]==Value) return;
     if(!ShortRangePotential[usCh][usPW]) return;
 
     PotPar[usCh][usPW][NumPotPars+WhichPar] = Value;
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
+
 }
 
 void CATS::RemoveAnaSource(){
@@ -1487,7 +1507,8 @@ void CATS::ComputeWaveFunction(){
 
         double Momentum;
         //the momentum is taken from the center of the bin
-        Momentum = 0.5*(MomBin[uMomBin]+MomBin[uMomBin+1]);
+        Momentum = GetMomentum(uMomBin);
+        //Momentum = 0.5*(MomBin[uMomBin]+MomBin[uMomBin+1]);
 
         double* BufferWaveFunction;
         double* BufferRad;
@@ -2815,7 +2836,7 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
         const complex<double>* WFU = ExtWF?ExternalWF[uMomBin][usCh][usPW]:WaveFunctionU[uMomBin][usCh][usPW];
         const double* WFR = ExtWF?ExtWfRadBins[uMomBin][usCh][usPW]:WaveFunRad[uMomBin][usCh][usPW];
         //the external WF is assumed to be given in fm
-        complex<double> Result = EvalBinnedFun(Radius*(ExtWF?NuToFm:1), SWFB, WFR, WFU)*(ExtWF?FmToNu:1);
+        complex<double> Result = EvalBinnedFun(Radius*(ExtWF?NuToFm:1), SWFB, WFR, NULL, WFU)*(ExtWF?FmToNu:1);
         if(Result==1e6 && Notifications>=nWarning)
             printf("\033[1;33mWARNING:\033[0m DeltaRad==0, which might point to a bug! Please contact the developers!\n");
         return Result*MultFactor;
@@ -2956,15 +2977,22 @@ template <class Type> Type CATS::GetBinCenter(const Type* Bins, const unsigned& 
     return 0.5*(Bins[WhichBin]+Bins[WhichBin+1]);
 }
 
-template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const Type* Function){
+template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function){
     if(xVal<Bins[0] || xVal>Bins[NumBins]) return 0;
     if(NumBins==1) return Function[0];
     unsigned WhichBin = GetBin(xVal,Bins,NumBins+1);
 
     double Value[3];
-    Value[0] = WhichBin?GetBinCenter(Bins,WhichBin-1):-1;
-    Value[1] = GetBinCenter(Bins,WhichBin);
-    Value[2] = WhichBin<(NumBins-1)?GetBinCenter(Bins,WhichBin+1):-1;
+    if(BinCent){
+        Value[0] = WhichBin?BinCent[WhichBin-1]:-1;
+        Value[1] = BinCent[WhichBin];
+        Value[2] = WhichBin<(NumBins-1)?BinCent[WhichBin+1]:-1;
+    }
+    else{
+        Value[0] = WhichBin?GetBinCenter(Bins,WhichBin-1):-1;
+        Value[1] = GetBinCenter(Bins,WhichBin);
+        Value[2] = WhichBin<(NumBins-1)?GetBinCenter(Bins,WhichBin+1):-1;
+    }
 
     double* InterpolRange;
     const Type* FunRange;

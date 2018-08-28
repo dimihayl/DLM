@@ -89,7 +89,7 @@ public:
 
     //N.B. the size of mombins should be NumMomBins+1, where each element represents the low-edge of
     //the corresponding bin, and the one extra element is the upper edge of the last bin.
-    void SetMomBins(const unsigned& nummombins, const double* mombins);
+    void SetMomBins(const unsigned& nummombins, const double* mombins, const double* bincenter=NULL);
     void SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom);
 
     void SetIpBins(const unsigned& numBbins, const double* imppar);
@@ -364,6 +364,7 @@ private:
     //the corresponding bin, and the one extra element is the upper edge of the last bin.
     unsigned NumMomBins;
     double* MomBin;
+    double* MomBinCenter;
     double* ChannelWeight;
 
     unsigned NumIpBins;
@@ -532,10 +533,8 @@ private:
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta);
 
-
-
     template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin);
-    template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const Type* Function);
+    template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function);
 
     //double SourceFunction(const double* Pars, const double& GridSize);
 

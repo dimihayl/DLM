@@ -48,6 +48,10 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<doub
 void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
 void InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
 void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=2);
+//TYPE 0 = p k-; //TYPE 1 = n k0
+//TYPE 2 = La pi0; //TYPE 3 = Si+ pi-
+//TYPE 4 = Si0 pi0; //TYPE 5 = Si- pi+
+void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE=0);
 void CleanHaidenbauer(CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins);
 
 
