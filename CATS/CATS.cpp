@@ -2879,6 +2879,7 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
     return TotalResult*(1+IdenticalParticles);
 }
 
+
 double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius){
     double TotWF=0;
     for(unsigned short usCh=0; usCh<NumCh; usCh++){

@@ -103,3 +103,6 @@ A new example (CATS_ExampleFitter1), showing how one can use CATS to fit, and al
 29.08.2018 CATS 2.13
 Some new wave-functions in the extentions, related the Kp analysis (original Juelich model).
 Might need a revision soon
+
+31.08.2018 CATS 2.14
+as expected the hot-fix 2.13 had some bugs in it, now taken care of

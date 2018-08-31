@@ -453,11 +453,13 @@ protected:
     CATShisto(const unsigned& numbin):NumBins(numbin){
         BinRange = NULL;
         BinValue = NULL;
+        BinCenter = NULL;
         if(!NumBins){
             return;
         }
         BinRange = new Type [NumBins+1];
         BinValue = new Type [NumBins];
+        BinCenter = new Type [NumBins];
     }
 
     const unsigned NumBins;

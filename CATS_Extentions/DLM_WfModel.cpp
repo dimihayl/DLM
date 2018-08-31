@@ -457,6 +457,7 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 
 //see email in may 2018, this is isospin averaged
 //basically we have two channels: s1+p1 and s1+p3
+//I am pretty sure this already includes the p n mass splitting
 void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
@@ -970,18 +971,21 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
     //}
 
     const double Mass_p = 938.272;
-    const double Mass_n = 939.565;
+    //const double Mass_n = 939.565;
     const double Mass_Km = 493.677;
-    const double Mass_K0 = 497.648;
-    const double Mass_L = 1115.683;
-    const double Mass_Pi0 = 134.9766;
-    const double Mass_PiCh = 139.57018;
-    const double Mass_Sig0 = 1192.642;
-    const double Mass_SigPos = 1189.37;
-    const double Mass_SigNeg = 1197.449;
+    //const double Mass_K0 = 497.648;
+    //const double Mass_L = 1115.683;
+    //const double Mass_Pi0 = 134.9766;
+    //const double Mass_PiCh = 139.57018;
+    //const double Mass_Sig0 = 1192.642;
+    //const double Mass_SigPos = 1189.37;
+    //const double Mass_SigNeg = 1197.449;
 
     const unsigned NumChannels = 1;
     const unsigned NumPwPerCh = 1;
+
+    const unsigned NumChannelsMem = 4;
+    const unsigned NumPwPerChMem = 2;
 
     if(TYPE==0){
         Kitty.SetNumChannels(NumChannels);
@@ -999,9 +1003,9 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
         Kitty.SetNumPW(0,1);
         Kitty.SetSpin(0,1);
 
-        Kitty.SetQ1Q2(0);
-        Kitty.SetPdgId(2112, 311);//check the pdg id of the kaon
-        Kitty.SetRedMass( (Mass_n*Mass_K0)/(Mass_n+Mass_K0) );
+        Kitty.SetQ1Q2(-1);
+        Kitty.SetPdgId(2212, -321);//check the pdg id of the kaon
+        Kitty.SetRedMass( (Mass_p*Mass_Km)/(Mass_p+Mass_Km) );
     }
     else if(TYPE==2){
         Kitty.SetNumChannels(NumChannels);
@@ -1009,9 +1013,9 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
         Kitty.SetNumPW(0,1);
         Kitty.SetSpin(0,1);
 
-        Kitty.SetQ1Q2(0);
-        Kitty.SetPdgId(3122, 111);
-        Kitty.SetRedMass( (Mass_L*Mass_Pi0)/(Mass_L+Mass_Pi0) );
+        Kitty.SetQ1Q2(-1);
+        Kitty.SetPdgId(2212, -321);
+        Kitty.SetRedMass( (Mass_p*Mass_Km)/(Mass_p+Mass_Km) );
     }
     else if(TYPE==3){
         Kitty.SetNumChannels(NumChannels);
@@ -1019,9 +1023,9 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
         Kitty.SetNumPW(0,1);
         Kitty.SetSpin(0,1);
 
-        Kitty.SetQ1Q2(1);
-        Kitty.SetPdgId(3122, 211);
-        Kitty.SetRedMass( (Mass_SigPos*Mass_PiCh)/(Mass_SigPos+Mass_PiCh) );
+        Kitty.SetQ1Q2(-1);
+        Kitty.SetPdgId(2212, -321);
+        Kitty.SetRedMass( (Mass_p*Mass_Km)/(Mass_p+Mass_Km) );
     }
     else if(TYPE==4){
         Kitty.SetNumChannels(NumChannels);
@@ -1029,9 +1033,9 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
         Kitty.SetNumPW(0,1);
         Kitty.SetSpin(0,1);
 
-        Kitty.SetQ1Q2(0);
-        Kitty.SetPdgId(3212, 111);
-        Kitty.SetRedMass( (Mass_Sig0*Mass_Pi0)/(Mass_Sig0+Mass_Pi0) );
+        Kitty.SetQ1Q2(-1);
+        Kitty.SetPdgId(2212, -321);
+        Kitty.SetRedMass( (Mass_p*Mass_Km)/(Mass_p+Mass_Km) );
     }
     else if(TYPE==5){
         Kitty.SetNumChannels(NumChannels);
@@ -1039,9 +1043,9 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
         Kitty.SetNumPW(0,1);
         Kitty.SetSpin(0,1);
 
-        Kitty.SetQ1Q2(0);
-        Kitty.SetPdgId(3112, 211);
-        Kitty.SetRedMass( (Mass_SigNeg*Mass_Pi0)/(Mass_SigNeg+Mass_Pi0) );
+        Kitty.SetQ1Q2(-1);
+        Kitty.SetPdgId(2212, -321);
+        Kitty.SetRedMass( (Mass_p*Mass_Km)/(Mass_p+Mass_Km) );
     }
     else{
         printf("Problem with the Haidenbauer functions!\n");
@@ -1063,12 +1067,12 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
     PhaseShifts[0] = new double** [NumMomBins];
 
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
-        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
-        PhaseShifts[0][uMomBin] = new double* [NumChannels];
-        for(unsigned usCh=0; usCh<NumChannels; usCh++){
-            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
-            PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
-            for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannelsMem];
+        PhaseShifts[0][uMomBin] = new double* [NumChannelsMem];
+        for(unsigned usCh=0; usCh<NumChannelsMem; usCh++){
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerChMem];
+            PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerChMem];
+            for(unsigned usPw=0; usPw<NumPwPerChMem; usPw++){
                 WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
                 PhaseShifts[0][uMomBin][usCh][usPw] = 0;
             }
