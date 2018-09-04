@@ -3,10 +3,15 @@
 #include <iostream>
 #include <math.h>
 
+#include "gsl_sf_gamma.h"
+
 #include "DLM_CppTools.h"
+#include "CATSconstants.h"
 
 //!Needed only for testing (contains usleep)
 //#include <unistd.h>
+
+using namespace std;
 
 CatsLorentzVector::CatsLorentzVector(){
     FourSpace[0]=0;
@@ -937,3 +942,43 @@ void CATSelder::AddEndNode(CATSnode* node){
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2){
+    if(!Momentum) return 0;
+    //return 0.5*AlphaFS*RedMass*Q1Q2/Momentum;//I think that one is wrong, verify again
+    return AlphaFS*RedMass*Q1Q2/Momentum;
+}
+
+//h function, as defined in Lednicky 1981 paper (Yad.Fiz. 35 (1981) 1316-1330)
+//the x^2 is replaced with 1/eta^2
+double CoulombEuler(const double& eta){
+    if(!eta) return 0;
+    double RESULT = 0;
+    double ADD;
+    const double eta2 = eta*eta;
+    for(double dIter=1; dIter<=11; dIter++){
+        ADD = 1./(dIter*(dIter*dIter+eta2));
+        RESULT += ADD;
+        if(fabs(ADD/RESULT)<1e-7) break;
+    }
+    RESULT *= eta2;
+    RESULT -= log(eta2)+EulerConst;
+    return RESULT;
+}
+
+//Momentum = k (the Ac function)
+double CoulombPenetrationFactor(const double& eta){
+    //if Q1Q2 is zero, than we have no correction.
+    return eta?2.*Pi*eta/(exp(2.*Pi*eta)-1.):1;
+}
+
+complex<double> GamowCorrection(const double& Momentum, const double& RedMass, const double& Q1Q2){
+    //if Q1Q2 is zero, than we have no correction.
+    double eta = CoulombEta(Momentum,RedMass,Q1Q2);
+    gsl_sf_result lnr;
+    gsl_sf_result arg;
+    //this functions returns in lnr the ln(abs(Gamma)), while arg is the arg(Gamma)
+    //this is so, as numerically ln(Gamma) is evaluated, and ln(Gamma) = lnr+i*arg
+    gsl_sf_lngamma_complex_e(1.,eta,&lnr,&arg);
+    return eta?exp(i*arg.val)*sqrt(CoulombPenetrationFactor(eta)):1;
+}

@@ -2,8 +2,7 @@
 #ifndef DLM_CKMODELS_H
 #define DLM_CKMODELS_H
 
-double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2);
-double CoulombPenetrationFactor(const double& eta);
+
 
 double LednickyAsInStar(const double& Momentum, const double& GaussR, const double& ScattLenSin, const double& EffRangeSin,
                         const double& Norm, const double& lambda, const double& ares, const double& RadRes);

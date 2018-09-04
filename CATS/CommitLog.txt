@@ -106,3 +106,9 @@ Might need a revision soon
 
 31.08.2018 CATS 2.14
 as expected the hot-fix 2.13 had some bugs in it, now taken care of
+
+04.09.2018 CATS 2.15
+The structure of the external wave function is significantly changed.
+Added an option to include a Gamow correction
+All constants used by the code are now stored in a separate file: CATSconstants.h
+AN POSSIBLY UNSTABLE RELEASE, AS IT WAS NOT TESTED MUCH!

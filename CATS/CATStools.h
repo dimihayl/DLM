@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <complex>
 
 class CatsParticle;
 
@@ -467,5 +468,10 @@ protected:
     Type* BinValue;
     Type* BinCenter;
 };
+
+double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2);
+double CoulombEuler(const double& eta);
+double CoulombPenetrationFactor(const double& eta);
+std::complex<double> GamowCorrection(const double& Momentum, const double& RedMass, const double& Q1Q2);
 
 #endif // CATSTOOLS_H

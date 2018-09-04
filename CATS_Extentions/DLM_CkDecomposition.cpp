@@ -17,11 +17,9 @@ printf("Hell yeah!\n");
 */
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):
                 CATShisto<double>::CATShisto(cat.GetNumMomBins()),NumSourcePar(nSourcePar),NumPotPar(nPotPar){
-printf("FUCK!!!!\n");
     for(unsigned uBin=0; uBin<NumBins; uBin++){
         BinRange[uBin] = cat.GetMomBinLowEdge(uBin);
         BinValue[uBin] = cat.GetCorrFun(uBin);
-printf(" uBin=%u (%u); BinCenter=%p;\n",uBin,GetNbins(),BinCenter);
         BinCenter[uBin] = cat.GetMomentum(uBin);
     }
     BinRange[NumBins] = cat.GetMomBinUpEdge(NumBins-1);

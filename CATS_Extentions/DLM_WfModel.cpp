@@ -982,7 +982,6 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
     //const double Mass_SigNeg = 1197.449;
 
     const unsigned NumChannels = 1;
-    const unsigned NumPwPerCh = 1;
 
     const unsigned NumChannelsMem = 4;
     const unsigned NumPwPerChMem = 2;

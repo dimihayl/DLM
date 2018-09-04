@@ -1,5 +1,5 @@
 //! Product:         Correlation Analysis Tools using the Schrödinger equation (CATS)
-//! Current Version: 2.14 (31th August 2018)
+//! Current Version: 2.15 (4th September 2018)
 //! Copyright:       Dimitar Lubomirov Mihaylov (Technical University of Munich)
 //! Support:         dimitar.mihaylov(at)mytum.de
 //! Documentation:   a full documentation is not available yet
@@ -82,6 +82,8 @@ public:
 
     void SetQ1Q2(const int& q1q2);
     int GetQ1Q2();
+    void SetGamow(const bool& gamow);
+    bool GetGamow();
 
     unsigned GetNumMomBins();
     unsigned GetNumIpBins();
@@ -223,7 +225,7 @@ public:
 
     complex<double> EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                   const bool& DivideByR=true);
-    double EvalReferenceRadialWF(const unsigned& WhichMomBin,const unsigned short& usPW, const double& Radius, const bool& DivideByR=true);
+    complex<double> EvalReferenceRadialWF(const unsigned& WhichMomBin,const unsigned short& usPW, const double& Radius, const bool& DivideByR=true);
 
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin);
@@ -315,6 +317,8 @@ private:
     //!or in case there is a Coulomb-like potential (Q1Q2/r). This parameter declares which case is valid for the current calculation.
     //charge x charge of the two particles, for the Coulomb potential it should be != 0
     int Q1Q2;
+    //if true it applies a Gamow correction based on Q1Q2
+    bool Gamow;
     //!------------------------------------------------
 
     //!Variables needed as settings
@@ -442,6 +446,7 @@ private:
     bool SourceUpdated;
     bool ComputedWaveFunction;
     bool ComputedCorrFunction;
+    bool GamowCorrected;
 
     //!INFO ABOUT THE ABOVE 3 VARIABLES
     //one should be mindful that at large relative momenta (k above 200 MeV) the solution converges at higher rho values.
@@ -469,15 +474,6 @@ private:
     //!------------------------------------------------
 
     //!Constants
-    const double Pi;
-    const std::complex<double> i;
-    //fine-structure constant (==e^2 in Gaussian units)
-    const double AlphaFS;
-    const double RevSqrt2;
-    //convert fm into natural units (1/MeV)
-    const double FmToNu;
-    const double NuToFm;
-
     const unsigned short NumPotPars;
     const unsigned short NumSourcePars;
 
@@ -507,15 +503,15 @@ private:
     //plane partial wave as a solution from the gsl libraries
     double PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW);
     //coulomb partial wave as a solution from the gsl libraries
-    double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW);
+    double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2);
     //radial/coulomb partial wave as a solution from the gsl libraries
-    double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW);
+    double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2);
 
-    double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW);
+    double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2);
 
     //a numerical root-finder. Very fast and accurate for well-behaved (near to linear) functions
-    double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&),
-                        const double& EpsilonX, const unsigned short& usPW, const double& Momentum,
+    double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&),
+                        const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
                           const double&  xMin, const double&  xMax, const double& fValShift);
 
     template <class Type> void ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter);
@@ -537,6 +533,7 @@ private:
     template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function);
 
     //double SourceFunction(const double* Pars, const double& GridSize);
+    void UpdateCPF();
 
     //delete all variables that depend only on the number of momentum bins, b-bins and MaxPairs
     void DelMomIpMp();
@@ -595,9 +592,11 @@ private:
 
     //these are used as buffers when it comes to computing the Reference Partial Waves and the Legendre Polynomials
     //in particular, when we loop over all PWs twice, we actually evaluate the same functions multiple times => save them in an array to save CPU time
-    double* RefPartWave;
+    complex<double>* RefPartWave;
     complex<double>* SolvedPartWave;
     double* LegPol;
+    //the gamow correction factors (Coulomb penetration factor) pre-computed for all momentum bins
+    complex<double>* CPF;
 };
 
 #endif // CATS_H

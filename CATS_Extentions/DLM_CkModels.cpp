@@ -7,41 +7,11 @@
 
 #include <complex>
 
+#include "CATSconstants.h"
+#include "CATStools.h"
+
 using namespace std;
 
-const double FmToNu(5.067731237e-3);
-const double Pi(3.141592653589793);
-const double FSC(0.0072973525664);
-const std::complex<double> i(0,1);
-const double EulerConst = 0.57721566490153;
-
-double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2){
-    if(!Momentum) return 0;
-    return 0.5*FSC*RedMass*Q1Q2/Momentum;
-}
-
-//h function, as defined in Lednicky 1981 paper (Yad.Fiz. 35 (1981) 1316-1330)
-//the x^2 is replaced with 1/eta^2
-double CoulombEuler(const double& eta){
-    if(!eta) return 0;
-    double RESULT = 0;
-    double ADD;
-    const double eta2 = eta*eta;
-    for(double dIter=1; dIter<=11; dIter++){
-        ADD = 1./(dIter*(dIter*dIter+eta2));
-        RESULT += ADD;
-        if(fabs(ADD/RESULT)<1e-7) break;
-    }
-    RESULT *= eta2;
-    RESULT -= log(eta2)+EulerConst;
-    return RESULT;
-}
-
-//Momentum = k (the Ac function)
-double CoulombPenetrationFactor(const double& eta){
-    //if Q1Q2 is zero, than we have no correction.
-    return eta?2.*Pi*eta/(exp(2.*Pi*eta)-1.):1;
-}
 
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar){
 //printf("FR at %f\n", Momentum);
