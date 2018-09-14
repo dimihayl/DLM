@@ -253,6 +253,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
 //printf("hhhhhhhhhhhh\n");
 }
 
+//TYPE==1 take the complex wf
 void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();
@@ -458,6 +459,7 @@ printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomen
 //see email in may 2018, this is isospin averaged
 //basically we have two channels: s1+p1 and s1+p3
 //I am pretty sure this already includes the p n mass splitting
+//TYPE==1 take the complex wf
 void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
 
     unsigned NumMomBins=Kitty.GetNumMomBins();

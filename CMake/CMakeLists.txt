@@ -18,6 +18,7 @@ SET(CMAKE_MODULE_PATH ${CATS_DESTINATION})
 
 include_directories(${CATS_FOLDER}/CATS)
 include_directories(${CATS_FOLDER}/DLM_RootTools)
+include_directories(${CATS_FOLDER}/DLM_MathTools)
 include_directories(${CATS_FOLDER}/DLM_CppTools)
 include_directories(${GSL_INCLUDE})
 include_directories(${ROOT_INCLUDE})
@@ -26,6 +27,7 @@ add_library(CATSbasic STATIC 		${CATS_FOLDER}/CATS/CATS.cpp
 					${CATS_FOLDER}/CATS/CATStools.cpp 
 					${CATS_FOLDER}/DLM_CppTools/DLM_CppTools.cpp)
 add_library(CATSextended STATIC 	${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.cpp
+					${CATS_FOLDER}/DLM_MathTools/DLM_Integration.cpp)
 					${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.cpp 
 					${CATS_FOLDER}/CATS_Extentions/DLM_Potentials.cpp 
 					${CATS_FOLDER}/CATS_Extentions/DLM_Source.cpp
@@ -45,6 +47,7 @@ install (FILES ${CATS_FOLDER}/CATS/CATS.h DESTINATION ${CATS_DESTINATION}/includ
 install (FILES ${CATS_FOLDER}/CATS/CATStools.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS/CATSconstants.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.h DESTINATION ${CATS_DESTINATION}/include)
+install (FILES ${CATS_FOLDER}/DLM_MathTools/DLM_Integration.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_Fitters.h DESTINATION ${CATS_DESTINATION}/include)

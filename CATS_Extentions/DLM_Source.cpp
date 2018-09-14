@@ -1,5 +1,6 @@
 #include "DLM_Source.h"
 #include "DLM_CRAB_PM.h"
+#include "DLM_Integration.h"
 
 #include "math.h"
 
@@ -160,5 +161,266 @@ if(rLong>0.5){
 }
 
     return PM1->GetIntegratedSource(0)->GetBinContent(PM1->GetIntegratedSource(0)->FindBin(Radius));
+
+}
+
+//the Ansatz is: single particle are emitted according to a Gaussian source with R1 and R2
+//after they are emitted, they decay following an exponential law. The momentum is assumed to be unchanged
+//the convolution can be analytically derived with, e.g. Mathematica, but the solution is literally two pages long
+//and unsurprisingly numerically unstable. I have found a workaround in which I just start with an ordinary Gaussian,
+//I shift it by some amount (t*k/m), this shift is dynamically modified to grow with r (starting from zero) by introducing some atan dependence,
+//and finally the power law of r is changed depending on the radius and tau, we start off with r^2 and transition to ln^2(r+1)
+//N.B. This function will most likely fail completely if t*k/m is comparable to the size of the system!
+double Gauss_Exp_Approx(double* Pars){
+    double& MOM = Pars[0];
+    double& RAD = Pars[1];
+    double& SIG1 = Pars[3];//size
+    double& SIG2 = Pars[4];//size
+    double SIG = sqrt(0.5*(SIG1*SIG1+SIG2*SIG2));
+    double& TAU1 = Pars[5];
+    double& MASS1 = Pars[6];
+    double& TAU2 = Pars[7];
+    double& MASS2 = Pars[8];
+    double MASS = 0.5*(MASS1+MASS2);
+    double TKM1 = MASS1?TAU1*MOM/MASS1:0;
+    double TKM2 = MASS2?TAU2*MOM/MASS2:0;
+    double TKM = TKM1+TKM2;
+    //double rMOM1 = sqrt(pow(MMass,4.)-2.*pow(MMass*Mass[0],2.)+pow(Mass[0],4.)-2.*pow(MMass*Mass[1],2.)-2.*pow(Mass[0]*Mass[1],2.)+pow(Mass[1],4.))/(2.*Mass[0]);
+    double OldRad = RAD;
+    static double oldMOM = 0;
+    static double oldSIG = 0;
+    static double oldTKM = 0;
+    static double oldMASS = 0;
+    static double NORM = 1;
+    //this function is not normalized by default. This is done here. However we save information about the last time a normalization
+    //was performed, if nothing has changed, this means NORM already has the correct value and we skip this rather expensive step
+    if( (oldMOM!=MOM || oldSIG!=SIG || oldTKM!=TKM || oldMASS!=MASS) && NORM!=1.23456789 ){
+        //this value is just a flag, which basically tells Gauss_Exp_Approx that we are currently computing NORM, hence
+        //we are interested in the true value of the integral, without normalization. Thus later on the Result is not normalized
+        NORM = 1.23456789;
+        DLM_INT_SetFunction(Gauss_Exp_Approx,Pars,1);
+        NORM = DLM_INT_SimpsonWiki(0,SIG*8.+TKM*8.,256);
+        RAD = OldRad;
+        oldMOM = MOM;
+        oldSIG = SIG;
+        oldTKM = TKM;
+        oldMASS = MASS;
+    }
+    RAD = TKM?log(RAD*TKM/80.+1.)*80./TKM-TKM*atan(1.5*RAD/TKM)*2./PI:RAD;
+    if(RAD<0) RAD=0;
+    if(MASS<=0) {printf("\033[1;33mWARNING:\033[0m Gauss_Exp_Approx got MASS=0\n"); return 0;}
+    double Result = NORM!=1.23456789?GaussSource(Pars)/NORM:GaussSource(Pars);
+    RAD = OldRad;
+    return Result;
+}
+
+//the exact solution of the same thing obtained with Mathematica. Stable only if Sigma and Tau are very similar (up to factor 2)
+double Gauss_Exp_Exact(double* Pars){
+    double& MOM = Pars[0];
+    double& RAD = Pars[1];
+    double& SIG1 = Pars[3];//size
+    double& SIG2 = Pars[4];//size
+    double SIG = sqrt(0.5*(SIG1*SIG1+SIG2*SIG2));
+    double& TAU1 = Pars[5];
+    double& MASS1 = Pars[6];
+    double& TAU2 = Pars[7];
+    double& MASS2 = Pars[8];
+    double TKM1 = MASS1?TAU1*MOM/MASS1:0;
+    double TKM2 = MASS2?TAU2*MOM/MASS2:0;
+    const double E = exp(1);
+    if(TKM1==0 && TKM2==0){
+        return GaussSource(Pars);
+    }
+    else if(TKM1==0){
+        return (pow(E,-pow(RAD,2)/(4.*pow(SIG,2)) - RAD/TKM2)*(4*pow(E,RAD/TKM2)*SIG*TKM2*(pow(SIG,2) + pow(TKM2,2)) -
+               2*pow(E,pow(RAD,2)/(4.*pow(SIG,2)))*SIG*TKM2*(2*pow(SIG,2) + TKM2*(-RAD + 2*TKM2)) +
+               pow(E,pow(RAD,2)/(4.*pow(SIG,2)) + pow(SIG,2)/pow(TKM2,2))*sqrt(PI)*(-4*pow(SIG,4) + 2*pow(SIG,2)*(RAD - 3*TKM2)*TKM2 + RAD*pow(TKM2,3))*
+                (erf(RAD/(2.*SIG) - SIG/TKM2) + erf(SIG/TKM2))))/(sqrt(PI)*pow(TKM2,5));
+    }
+    else if(TKM2==0){
+        return (pow(E,-pow(RAD,2)/(4.*pow(SIG,2)) - RAD/TKM1)*(4*pow(E,RAD/TKM1)*SIG*TKM1*(pow(SIG,2) + pow(TKM1,2)) -
+               2*pow(E,pow(RAD,2)/(4.*pow(SIG,2)))*SIG*TKM1*(2*pow(SIG,2) + TKM1*(-RAD + 2*TKM1)) +
+               pow(E,pow(RAD,2)/(4.*pow(SIG,2)) + pow(SIG,2)/pow(TKM1,2))*sqrt(PI)*(-4*pow(SIG,4) + 2*pow(SIG,2)*(RAD - 3*TKM1)*TKM1 + RAD*pow(TKM1,3))*
+                (erf(RAD/(2.*SIG) - SIG/TKM1) + erf(SIG/TKM1))))/(sqrt(PI)*pow(TKM1,5));
+    }
+//!shouldn't I take TKM=TKM1+TKM2 for the computation, verify!
+    else if(TKM1==TKM2){
+static bool WARNING = true;
+if(WARNING) printf("WARNING: shouldn't I take TKM=TKM1+TKM2 for the computation, verify!\n");
+WARNING=false;
+        return (pow(E,(pow(SIG,2) - RAD*TKM1)/pow(TKM1,2))*((-2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM1,2))*TKM1) + (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM1,2)))*pow(SIG,3))/TKM1 -
+               (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2))))*pow(SIG,3))/TKM1 + sqrt(PI)*pow(SIG,2)*erf(SIG/TKM1) +
+               (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM1))/pow(TKM1,2) - (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM1)*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1)))/
+                (pow(TKM1,3)*abs(-RAD/(2.*SIG) + SIG/TKM1)) - (pow(2*pow(SIG,2) - RAD*TKM1,3)*
+                  (-abs(-2*pow(SIG,2) + RAD*TKM1) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*sqrt(PI)*SIG*TKM1*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1))))/
+                (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*pow(SIG,2)*pow(TKM1,4)*pow(abs(-RAD/(2.*SIG) + SIG/TKM1),3))))/(sqrt(PI)*pow(SIG,2)*TKM1);
+    }
+    else{
+        return (pow(E,(pow(SIG,2) - RAD*TKM1)/pow(TKM1,2))*((-2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM1,2))*TKM1) + (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM1,2)))*pow(SIG,3))/TKM1 -
+        (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2))))*pow(SIG,3))/TKM1 + sqrt(PI)*pow(SIG,2)*erf(SIG/TKM1) +
+        (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM1))/pow(TKM1,2) - (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM1)*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1)))/
+         (pow(TKM1,3)*abs(RAD/(2.*SIG) - SIG/TKM1)) - (pow(2*pow(SIG,2) - RAD*TKM1,3)*
+           (-abs(-2*pow(SIG,2) + RAD*TKM1) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*sqrt(PI)*SIG*TKM1*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1))))/
+         (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*pow(SIG,2)*pow(TKM1,4)*pow(abs(RAD/(2.*SIG) - SIG/TKM1),3))) +
+     pow(E,(pow(SIG,2) - RAD*TKM2)/pow(TKM2,2))*((2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM2,2))*TKM2) - (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM2,2)))*pow(SIG,3))/TKM2 +
+        (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2))))*pow(SIG,3))/TKM2 - sqrt(PI)*pow(SIG,2)*erf(SIG/TKM2) -
+        (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM2))/pow(TKM2,2) + (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM2)*erf(abs(-2*pow(SIG,2) + RAD*TKM2)/(2.*SIG*TKM2)))/
+         (pow(TKM2,3)*abs(RAD/(2.*SIG) - SIG/TKM2)) + (pow(2*pow(SIG,2) - RAD*TKM2,3)*
+           (-abs(-2*pow(SIG,2) + RAD*TKM2) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2)))*sqrt(PI)*SIG*TKM2*erf(abs(-2*pow(SIG,2) + RAD*TKM2)/(2.*SIG*TKM2))))/
+         (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2)))*pow(SIG,2)*pow(TKM2,4)*pow(abs(RAD/(2.*SIG) - SIG/TKM2),3))))/(sqrt(PI)*pow(SIG,2)*(TKM1 - TKM2));
+    }
+}
+
+double Gauss_Exp(double* Pars){
+    double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    double& SIG1 = Pars[3];//size
+    double& SIG2 = Pars[4];//size
+    double SIG = sqrt(0.5*(SIG1*SIG1+SIG2*SIG2));
+    double& TAU1 = Pars[5];
+    double& MASS1 = Pars[6];
+    double& TAU2 = Pars[7];
+    double& MASS2 = Pars[8];
+    double TKM1 = MASS1?TAU1*MOM/MASS1:0;
+    double TKM2 = MASS2?TAU2*MOM/MASS2:0;
+    if(SIG/TKM1>3 || SIG/TKM2>3){
+        return Gauss_Exp_Approx(Pars);
+    }
+    else{
+        return Gauss_Exp_Exact(Pars);
+    }
+}
+
+
+double GaussExpSimple_Approx(double* Pars){
+    double& MOM = Pars[0];
+    double& RAD = Pars[1];
+    double& SIG = Pars[3];//size
+    double& TKM = Pars[4];
+    //double rMOM1 = sqrt(pow(MMass,4.)-2.*pow(MMass*Mass[0],2.)+pow(Mass[0],4.)-2.*pow(MMass*Mass[1],2.)-2.*pow(Mass[0]*Mass[1],2.)+pow(Mass[1],4.))/(2.*Mass[0]);
+    double OldRad = RAD;
+    static double oldMOM = 0;
+    static double oldSIG = 0;
+    static double oldTKM = 0;
+    static double NORM = 1;
+    //this function is not normalized by default. This is done here. However we save information about the last time a normalization
+    //was performed, if nothing has changed, this means NORM already has the correct value and we skip this rather expensive step
+    if( (oldMOM!=MOM || oldSIG!=SIG || oldTKM!=TKM ) && NORM!=1.23456789 ){
+        //this value is just a flag, which basically tells Gauss_Exp_Approx that we are currently computing NORM, hence
+        //we are interested in the true value of the integral, without normalization. Thus later on the Result is not normalized
+        NORM = 1.23456789;
+        DLM_INT_SetFunction(GaussExpSimple_Approx,Pars,1);
+        NORM = DLM_INT_SimpsonWiki(0,SIG*8.+TKM*8.,256);
+        RAD = OldRad;
+        oldMOM = MOM;
+        oldSIG = SIG;
+        oldTKM = TKM;
+//printf("NORMALIZING! NORM=%.2e\n",NORM);
+    }
+    RAD = TKM?log(RAD*TKM/80.+1.)*80./TKM-TKM*atan(1.5*RAD/TKM)*2./PI:RAD;
+    if(RAD<0) RAD=0;
+    double Result = NORM!=1.23456789?GaussSource(Pars)/NORM:GaussSource(Pars);
+    RAD = OldRad;
+//printf(" RES=%.2e\n",Result);
+    return Result;
+}
+double GaussExpSimple_Exact(double* Pars){
+    //double& MOM = Pars[0];
+    double& RAD = Pars[1];
+    double& SIG = Pars[3];//size
+    double& TKM = Pars[4];
+    const double E = exp(1);
+    if(TKM==0){
+        return GaussSource(Pars);
+    }
+    else{
+        return (pow(E,(pow(SIG,2) - RAD*TKM)/pow(TKM,2))*((-2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM,2))*TKM) + (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM,2)))*pow(SIG,3))/TKM -
+               (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2))))*pow(SIG,3))/TKM + sqrt(PI)*pow(SIG,2)*erf(SIG/TKM) +
+               (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM))/pow(TKM,2) - (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM)*erf(abs(-2*pow(SIG,2) + RAD*TKM)/(2.*SIG*TKM)))/
+                (pow(TKM,3)*abs(-RAD/(2.*SIG) + SIG/TKM)) - (pow(2*pow(SIG,2) - RAD*TKM,3)*
+                  (-abs(-2*pow(SIG,2) + RAD*TKM) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2)))*sqrt(PI)*SIG*TKM*erf(abs(-2*pow(SIG,2) + RAD*TKM)/(2.*SIG*TKM))))/
+                (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2)))*pow(SIG,2)*pow(TKM,4)*pow(abs(-RAD/(2.*SIG) + SIG/TKM),3))))/(sqrt(PI)*pow(SIG,2)*TKM);
+    }
+}
+double GaussExpSimple(double* Pars){
+    //double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    double& SIG = Pars[3];//size
+    double& TKM = Pars[4];
+    if(TKM==0){
+        return GaussSource(Pars);
+    }
+    else if(SIG/TKM>3){
+        return GaussExpSimple_Approx(Pars);
+    }
+    else{
+        return GaussExpSimple_Exact(Pars);
+    }
+}
+//the particles can have different TKM and different weights
+//total of 8 parameters
+double GaussExpTotSimple(double* Pars){
+    //double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    //double& SIG = Pars[3];//size
+    double& TKMA = Pars[4];//t*p/m of particle A
+    double& TKMB = Pars[5];//t*p/m of particle B
+    //double TKM=TKMA+TKMB;
+    const double oldTKMA = TKMA;
+    const double oldTKMB = TKMB;
+    //fraction of primaries for A, should be between 0 and 1
+    if(Pars[6]<0) Pars[6]=0; if(Pars[6]>1) Pars[6]=1;
+    const double& primA = Pars[6];
+    //fraction of primaries for B, should be between 0 and 1
+    if(Pars[6]<0) Pars[7]=0; if(Pars[7]>1) Pars[7]=1;
+    const double& primB = Pars[7];
+    double Result=0;
+    TKMA=0;                 Result += primA*primB*GaussExpSimple(Pars);//both primary
+    TKMA=oldTKMB;           Result += primA*(1.-primB)*GaussExpSimple(Pars);//B comes from resonance
+    TKMA=oldTKMA;           Result += (1.-primA)*primB*GaussExpSimple(Pars);//A comes from resonance
+    TKMA=oldTKMA+oldTKMB;   Result += (1.-primA)*(1.-primB)*GaussExpSimple(Pars);//both come from resonance
+
+    TKMA = oldTKMA;
+    TKMB = oldTKMB;
+
+    return Result;
+}
+//same as GaussExpTotSimple but for identical particles
+//total of 6 parameters
+double GaussExpTotIdenticalSimple(double* Pars){
+    //double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    //double& SIG = Pars[3];//size
+    double& TKM = Pars[4];
+    //double TKM=TKMA+TKMB;
+    const double oldTKM = TKM;
+    //fraction of primaries
+    const double& prim = Pars[5];
+    double Result=0;
+    TKM=0;          Result += prim*prim*GaussExpSimple(Pars);//both primary
+//printf("Result = %.2e; GES=%.2e*%.2e\n",Result,prim*prim,GaussExpSimple(Pars));
+    TKM=oldTKM;     Result += 2*prim*(1.-prim)*GaussExpSimple(Pars);//1 comes from resonance
+//printf(" Result = %.2e; GES=%.2e*%.2e\n",Result,2*prim*(1.-prim),GaussExpSimple(Pars));
+    TKM=2*oldTKM; Result += (1.-prim)*(1.-prim)*GaussExpSimple(Pars);//both come from resonance
+//printf("  Result = %.2e; GES=%.2e*%.2e\n",Result,(1.-prim)*(1.-prim),GaussExpSimple(Pars));
+//printf("  Result = %.2e; GES=%.2e*%.2e\n",Result,(1.-prim)*(1.-prim),GaussExpSimple(Pars));
+//printf("  Result = %.2e; GES=%.2e*%.2e\n",Result,(1.-prim)*(1.-prim),GaussExpSimple(Pars));
+//printf("  Should: %.2e\n",(1.-prim)*(1.-prim)*GaussExpSimple(Pars));
+    TKM = oldTKM;
+
+    return Result;
+}
+
+//Gauss including kT dependence, convoluted further with an exponential. The latter can be used to model resonances. In case we have
+//two resonances, a nice approximation is just to add their tau/mass
+//the parameters are the following:
+//[3] = Number of kT bins NkT
+//[4] = Number of resonances related to particle 1
+//[5] = Number of resonances related to particle 2
+
+//[4 : 3+NkT] = the radii of the different kT bins
+//[3+NkT : 3+2*NkT] = the weights of each kT bin
+//
+double Gauss_kT_Exp(double* Pars){
 
 }

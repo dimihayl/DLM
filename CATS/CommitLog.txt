@@ -112,3 +112,7 @@ The structure of the external wave function is significantly changed.
 Added an option to include a Gamow correction
 All constants used by the code are now stored in a separate file: CATSconstants.h
 AN POSSIBLY UNSTABLE RELEASE, AS IT WAS NOT TESTED MUCH!
+
+14.09.2018 CATS 2.16
+Updates to the extentions. In particular there are now options to use sources which should model resonances in a naive approach.
+The Gamow correction is still not extensively tested, use with care.
