@@ -27,7 +27,7 @@ add_library(CATSbasic STATIC 		${CATS_FOLDER}/CATS/CATS.cpp
 					${CATS_FOLDER}/CATS/CATStools.cpp 
 					${CATS_FOLDER}/DLM_CppTools/DLM_CppTools.cpp)
 add_library(CATSextended STATIC 	${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.cpp
-					${CATS_FOLDER}/DLM_MathTools/DLM_Integration.cpp)
+					${CATS_FOLDER}/DLM_MathTools/DLM_Integration.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.cpp 
 					${CATS_FOLDER}/CATS_Extentions/DLM_Potentials.cpp 
 					${CATS_FOLDER}/CATS_Extentions/DLM_Source.cpp
