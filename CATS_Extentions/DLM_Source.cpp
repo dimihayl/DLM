@@ -411,6 +411,24 @@ double GaussExpTotIdenticalSimple(double* Pars){
     return Result;
 }
 
+//introducing the momentum dependence. Pars[4] is now just t/m
+//the momentum is taken assuming two body decay of a resonance to primary+pion
+double GaussExpTotIdenticalSimple_2body(double* Pars){
+    //double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    //double& SIG = Pars[3];//size
+    double& rTAU = Pars[4];
+    double& rMASS = Pars[6];
+    double& p1MASS = Pars[7];
+    double& p2MASS = Pars[8];
+    double oldrTAU = rTAU;
+    rTAU = rTAU*sqrt(pow(rMASS,4.)-2.*pow(rMASS*p1MASS,2.)+pow(p1MASS,4.)-2.*pow(rMASS*p2MASS,2.)-2.*pow(p1MASS*p2MASS,2.)+pow(p2MASS,4.))/(2.*p1MASS)/rMASS;
+//printf("rTAU = %.2f\n",rTAU);
+    double Result = GaussExpTotIdenticalSimple(Pars);
+    rTAU = oldrTAU;
+    return Result;
+}
+
 //Gauss including kT dependence, convoluted further with an exponential. The latter can be used to model resonances. In case we have
 //two resonances, a nice approximation is just to add their tau/mass
 //the parameters are the following:

@@ -19,4 +19,5 @@ double Gauss_Exp(double* Pars);
 double GaussExpSimple(double* Pars);
 double GaussExpTotSimple(double* Pars);
 double GaussExpTotIdenticalSimple(double* Pars);
+double GaussExpTotIdenticalSimple_2body(double* Pars);
 #endif

@@ -35,12 +35,19 @@ public:
     //sets up a certain system that we want to fit
     void SetSystem(const unsigned& WhichSyst, TH1F& histo, const double& FromMeV ,
                    DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
+    int GetSystem(const TString& System);
+    TString GetSystem(const unsigned& WhichSyst);
     bool ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomposition& decomp);
     //in case there are multiple systems sharing a source this should be set here
     void AddSameSource(const TString& System, const TString& EqualTo, const int& numpars);
     void RemoveSameSource(const TString& System);
     void AddSamePotential(const TString& System, const TString& EqualTo, const int& numpars);
     void RemoveSamePotential(const TString& System);
+    void AddSameParameter(const TString& System, const unsigned& WhichPar, const TString& ParentSystem, const unsigned& ParentPar);
+    void RemoveSameParameter(const TString& System, const unsigned& WhichPar);
+    //returns not just the parent, but parent of the parent of the .....
+    bool GetBaseParameter(const TString& System, const unsigned& WhichPar);
+    bool GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar);
 
     //
     //void SetSameSourceChildren(const TString& WhichSyst, const TString& EqualTo, const int& NumPars);
@@ -98,6 +105,7 @@ private:
     DLM_CkDecomposition** SourceSystems;
     //the ID in the main array of the Ck to which the source of a system is fixed
     int* ParentSource;
+    int* ParentParameter;
 
     unsigned NumPotentialSystems;
     //an array containing all main Ck's + all secondaries that have their source fixed to one of the mains
@@ -138,6 +146,7 @@ private:
     //unsigned SourceAnchoredTo(const);
 
     double EvalGlobal(double* xVal, double* Pars);
+    bool GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar, const TString& StartSystem, const unsigned& StartPar);
 
 };
 

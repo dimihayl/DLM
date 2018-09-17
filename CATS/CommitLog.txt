@@ -116,3 +116,6 @@ AN POSSIBLY UNSTABLE RELEASE, AS IT WAS NOT TESTED MUCH!
 14.09.2018 CATS 2.16
 Updates to the extentions. In particular there are now options to use sources which should model resonances in a naive approach.
 The Gamow correction is still not extensively tested, use with care.
+
+17.09.2018 CATS 2.16.1
+More source functions

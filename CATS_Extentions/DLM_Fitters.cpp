@@ -17,6 +17,8 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
     SourceSystems = NULL;
     PotentialSystems = NULL;
     ParentSource = NULL;
+    ParentParameter = new int [MaxNumSyst*NumPar];
+    for(unsigned uPar=0; uPar<MaxNumSyst*NumPar; uPar++) ParentParameter[uPar] = -1;
     ParentPotential = NULL;
     NumSourceSystems = 0;
     NumPotentialSystems = 0;
@@ -126,6 +128,7 @@ DLM_Fitter1::~DLM_Fitter1(){
 //printf("~SourceSystems=%p\n",SourceSystems);
     if(SourceSystems) {delete[]SourceSystems; SourceSystems=NULL;}
     if(ParentSource) {delete[]ParentSource; ParentSource=NULL;}
+    if(ParentParameter) {delete[]ParentParameter; ParentParameter=NULL;}
     if(PotentialSystems) {delete[]PotentialSystems; PotentialSystems=NULL;}
     if(ParentPotential) {delete[]ParentPotential; ParentPotential=NULL;}
 }
@@ -204,6 +207,32 @@ printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,K
     }
 //printf("\n");
     delete [] Bins;
+}
+int DLM_Fitter1::GetSystem(const TString& System){
+    char* buffer = new char [128];
+    int SYSTID=-1;
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        SystemToFit[uSyst]->GetName(buffer);
+        if(strcmp(System.Data(),buffer)==0){
+            SYSTID=uSyst;
+        }
+    }
+    if(SYSTID==-1){
+        printf("\033[1;33mWARNING:\033[0m Non-existing system %s\n", buffer);
+    }
+    return SYSTID;
+    delete [] buffer;
+}
+TString DLM_Fitter1::GetSystem(const unsigned& WhichSyst){
+    if(WhichSyst>=MaxNumSyst || !SystemToFit[WhichSyst]){
+        printf("\033[1;33mWARNING:\033[0m Non-existing system %u\n", WhichSyst);
+        return "";
+    }
+    char* buffer = new char [128];
+    SystemToFit[WhichSyst]->GetName(buffer);
+    TString Result = buffer;
+    delete [] buffer;
+    return Result;
 }
 
 bool DLM_Fitter1::ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomposition& decomp){
@@ -425,6 +454,68 @@ void DLM_Fitter1::RemoveSamePotential(const TString& System){
             NumSamePotentialPar = NewNumSamePotentialPar;
             NumPotentialMapEntries--;
         }
+    }
+}
+
+void DLM_Fitter1::AddSameParameter(const TString& System, const unsigned& WhichPar, const TString& ParentSystem, const unsigned& ParentPar){
+    int WhichSyst = GetSystem(System);
+    int WhichParent = GetSystem(ParentSystem);
+    if(WhichSyst<0 || WhichParent<0){
+        return;
+    }
+    if(WhichPar>=NumPar){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
+        return;
+    }
+    if(ParentPar>=NumPar){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", ParentPar);
+        return;
+    }
+    ParentParameter[WhichSyst*NumPar+WhichPar] = WhichParent*NumPar+ParentPar;
+
+    if(!GetBaseParameter(System,WhichPar)){
+        printf("\033[1;33mWARNING:\033[0m You are making a closed circle without a base parameter for %s par%u\n", System.Data(), WhichPar);
+        ParentParameter[WhichSyst*NumPar+WhichPar] = -1;
+    }
+}
+void DLM_Fitter1::RemoveSameParameter(const TString& System, const unsigned& WhichPar){
+    int WhichSyst = GetSystem(System);
+    if(WhichSyst<0){
+        return;
+    }
+    if(WhichPar>=NumPar){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
+        return;
+    }
+    ParentParameter[WhichSyst*NumPar+WhichPar] = -1;
+}
+bool DLM_Fitter1::GetBaseParameter(const TString& System, const unsigned& WhichPar){
+    TString sDUMMY;
+    unsigned uDUMMY;
+    return GetBaseParameter(System,WhichPar,sDUMMY,uDUMMY);
+}
+bool DLM_Fitter1::GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar){
+    return GetBaseParameter(System,WhichPar,ParentSystem,ParentPar,System,WhichPar);
+}
+bool DLM_Fitter1::GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar, const TString& StartSystem, const unsigned& StartPar){
+    int WhichSyst = GetSystem(System);
+    if(WhichSyst<0){
+        return false;
+    }
+    if(WhichPar>=NumPar){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
+        return false;
+    }
+    if(ParentParameter[WhichSyst*NumPar+WhichPar]==-1){
+        ParentSystem = System;
+        ParentPar = WhichPar;
+        return true;
+    }
+    else{
+        unsigned NextSystem = (WhichSyst*NumPar+WhichPar)/WhichSyst;
+        unsigned NextPar = (WhichSyst*NumPar+WhichPar)%(WhichSyst*NumPar);
+        if(NextSystem==StartSystem && NextPar==StartPar) return false;
+        return GetBaseParameter(GetSystem((WhichSyst*NumPar+WhichPar)/WhichSyst),(WhichSyst*NumPar+WhichPar)%(WhichSyst*NumPar),ParentSystem,ParentPar,StartSystem,StartPar);
     }
 }
 
