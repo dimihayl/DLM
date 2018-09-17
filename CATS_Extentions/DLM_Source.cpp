@@ -418,6 +418,7 @@ double GaussExpTotIdenticalSimple_2body(double* Pars){
     //double& RAD = Pars[1];
     //double& SIG = Pars[3];//size
     double& rTAU = Pars[4];
+    //5 = weight of the primaries
     double& rMASS = Pars[6];
     double& p1MASS = Pars[7];
     double& p2MASS = Pars[8];
@@ -427,6 +428,33 @@ double GaussExpTotIdenticalSimple_2body(double* Pars){
     double Result = GaussExpTotIdenticalSimple(Pars);
     rTAU = oldrTAU;
     return Result;
+}
+
+//introducing the momentum dependence. Pars[4] is now just t/m
+//the momentum is taken assuming two body decay of a resonance to primary+pion
+double GaussExpTotSimple_2body(double* Pars){
+    //double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    //double& SIG = Pars[3];//size
+    double& rTAU = Pars[4];
+    double& prim = Pars[5];//fraction of primaries
+    double& rMASS = Pars[6];
+    double& p1MASS = Pars[7];
+    double& p2MASS = Pars[8];
+    double& rTAU_2 = Pars[9];
+    double& prim_2 = Pars[10];
+    double& rMASS_2 = Pars[11];
+    double& p1MASS_2 = Pars[12];
+    double& p2MASS_2 = Pars[13];
+
+    double PARS[8];
+    double& TKMA = PARS[4];
+    double& TKMB = PARS[5];
+    TKMA = rTAU*sqrt(pow(rMASS,4.)-2.*pow(rMASS*p1MASS,2.)+pow(p1MASS,4.)-2.*pow(rMASS*p2MASS,2.)-2.*pow(p1MASS*p2MASS,2.)+pow(p2MASS,4.))/(2.*p1MASS)/rMASS;
+    TKMB = rTAU_2*sqrt(pow(rMASS_2,4.)-2.*pow(rMASS_2*p1MASS_2,2.)+pow(p1MASS_2,4.)-2.*pow(rMASS_2*p2MASS_2,2.)-2.*pow(p1MASS_2*p2MASS_2,2.)+pow(p2MASS_2,4.))/(2.*p1MASS_2)/rMASS_2;
+    PARS[0] = Pars[0]; PARS[1] = Pars[1]; PARS[2] = Pars[2]; PARS[3] = Pars[3];
+    PARS[4] = TKMA; PARS[5] = TKMB; PARS[6] = prim; PARS[7] = prim_2;
+    return GaussExpTotSimple(PARS);
 }
 
 //Gauss including kT dependence, convoluted further with an exponential. The latter can be used to model resonances. In case we have
