@@ -7,6 +7,7 @@
 
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
+#include "CATS.h"
 
 //!Needed only for testing (contains usleep)
 //#include <unistd.h>
@@ -576,7 +577,7 @@ unsigned CATSnode::GetNumOfBoxes(){
     return LastID-FirstID+1;
 }
 unsigned CATSnode::GetNumOfEl(){
-    if(Elder->SourceFunction) return 0;
+    if(Elder->SourceContext) return 0;
     if(Elder==this) return Elder->NumOfEl;
     return round(SourceValue*double(Elder->NumOfEl));
 }
@@ -587,12 +588,12 @@ void CATSnode::Update(){
 
 void CATSnode::Update(const bool& ThisNodeOnly){
 //if(!ThisNodeOnly) printf("SourceValue = %.3f -->",SourceValue*100);
-    if(Elder->SourceFunction){
+    if(Elder->SourceContext){
         for(short sDim=0; sDim<Elder->Dim; sDim++){
             Elder->SourcePars[1+sDim] = MeanVal[sDim];
         }
 //if(!ThisNodeOnly) printf(" ESF(%f)=%f --> GridSize=%f -->",Elder->SourcePars[1],Elder->SourceFunction(Elder->SourcePars),GridSize);
-        SourceValue = Elder->SourceFunction(Elder->SourcePars)*GridSize;
+        SourceValue = Elder->SourceFunction(Elder->SourceContext)*GridSize;
     }
     else if(Elder->GridBoxId){
         unsigned first, last;
@@ -689,23 +690,23 @@ void CATSnode::StandardNodeInit(double* mean, double* len, const CATSnode* Templ
 
 //! see what happens if epsilon==0
 CATSelder::CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon, double* mean, double* len,
-                     double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel):
+                     void* context, double* Pars, int64_t* gbid, const unsigned& numel):
     CATSnode(this, 0, 0, uipow(2,dim*maxdep)-1, mean, len),
     Dim(dim),MinDepth(mindep),MaxDepth(maxdep),Epsilon(epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
 
-    BaseConstructor(mean, len, AS, Pars, gbid, numel, NULL);
+    BaseConstructor(mean, len, context, Pars, gbid, numel, NULL);
 }
 
-CATSelder::CATSelder(const CATSelder* TemplateElder,double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel):
+CATSelder::CATSelder(const CATSelder* TemplateElder, void* context, double* Pars, int64_t* gbid, const unsigned& numel):
     CATSnode(this, 0, 0, uipow(2,TemplateElder->Dim*TemplateElder->MaxDepth)-1, TemplateElder->MeanVal, TemplateElder->IntLen),
     Dim(TemplateElder->Dim),MinDepth(TemplateElder->MinDepth),MaxDepth(TemplateElder->MaxDepth),
     Epsilon(TemplateElder->Epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
 
-    BaseConstructor(TemplateElder->MeanVal, TemplateElder->IntLen, AS, Pars, gbid, numel, TemplateElder);
+    BaseConstructor(TemplateElder->MeanVal, TemplateElder->IntLen, context, Pars, gbid, numel, TemplateElder);
 
 }
 
-void CATSelder::BaseConstructor(double* mean, double* len, double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel,
+void CATSelder::BaseConstructor(double* mean, double* len, void* context, double* Pars, int64_t* gbid, const unsigned& numel,
                                 const CATSelder* TemplateElder){
 
     if(TemplateElder){
@@ -720,17 +721,17 @@ void CATSelder::BaseConstructor(double* mean, double* len, double (*AS)(double*)
     SourceRenormError = 0;
     EndNode = new CATSnode* [MaxNumEndNodes];
 
-    SourceFunction = AS;
+    SourceContext = context;
     SourcePars = Pars;
     GridBoxId = gbid;
 
-    if( (!SourceFunction && !SourcePars && !GridBoxId) ||
-        (SourceFunction && SourcePars && GridBoxId) ||
-        (!SourceFunction && SourcePars) || (SourceFunction && !SourcePars) ||
+    if( (!SourceContext && !SourcePars && !GridBoxId) ||
+        (SourceContext && SourcePars && GridBoxId) ||
+        (!SourceContext && SourcePars) || (SourceContext && !SourcePars) ||
         (!GridBoxId && NumOfEl) || (GridBoxId && !NumOfEl)
        ){
         printf("WARNING! CATSelder say that the input to the constructor makes no sense!\n");
-        SourceFunction = NULL;
+        SourceContext = NULL;
         SourcePars = NULL;
         GridBoxId = NULL;
     }
@@ -798,7 +799,7 @@ double CATSelder::GetGridValue(const unsigned& WhichNode){
 
 double CATSelder::GetGridError(const unsigned& WhichNode){
     if(WhichNode>=NumEndNodes) return 0;
-    if(SourceFunction) return SourceRenormError;
+    if(SourceContext) return SourceRenormError;
     else return pow(double(EndNode[WhichNode]->GetNumOfEl()),-0.5);
 }
 //btw, if the range is outside the limits, the return value will be equal
@@ -937,6 +938,10 @@ void CATSelder::AddEndNode(CATSnode* node){
     }
     EndNode[NumEndNodes] = node;
     NumEndNodes++;
+}
+
+double CATSelder::SourceFunction(void* context){
+    return static_cast<CATS*>(context)->EvaluateTheSource(SourcePars);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////

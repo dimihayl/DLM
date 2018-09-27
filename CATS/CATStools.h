@@ -195,10 +195,10 @@ friend class CATSnode;
 public:
     CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon,
               //double* mean, double* len, double (CATS::*sfun)(const double*, const double&));
-              double* mean, double* len, double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel);
+              double* mean, double* len, void* context, double* Pars, int64_t* gbid, const unsigned& numel);
     CATSelder(const CATSelder* TemplateElder,
-              double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel);
-    void BaseConstructor(double* mean, double* len, double (*AS)(double*), double* Pars, int64_t* gbid, const unsigned& numel,
+              void* context, double* Pars, int64_t* gbid, const unsigned& numel);
+    void BaseConstructor(double* mean, double* len, void* context, double* Pars, int64_t* gbid, const unsigned& numel,
                          const CATSelder* TemplateElder);
     ~CATSelder();
 
@@ -229,10 +229,13 @@ protected:
     CATSnode** EndNode;
 
     //pars and grid-size
-    double (*SourceFunction)(double*);
+    void* SourceContext;
     double* SourcePars;
     int64_t* GridBoxId;
     const unsigned NumOfEl;
+
+    double SourceFunction(void* context);
+
     //CATS* Kitty;
 };
 

@@ -96,6 +96,7 @@ CATS::CATS():
     ShortRangePotential = NULL;
 
     AnalyticSource = NULL;
+    ForwardedSource = NULL;
 
     kCorrFun=NULL;
     kCorrFunErr=NULL;
@@ -347,7 +348,7 @@ void CATS::SetNumChannels(const unsigned short& numCh){
     if(NumCh == numCh) return;
     if(!numCh){
         if(Notifications>=nError){
-            printf("ERROR: Bad input in CATS::SetNumChannels(unsigned short numCh)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetNumChannels(unsigned short numCh)\n");
             printf("         NumCh cannot be zero!\n");
         }
         return;
@@ -397,7 +398,7 @@ unsigned short CATS::GetNumChannels(){
 void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetNumPW(unsigned short usCh, unsigned short numPW)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetNumPW(unsigned short usCh, unsigned short numPW)\n");
         return;
     }
     if(NumPW[usCh]==numPW) return;
@@ -465,7 +466,7 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
 unsigned short CATS::GetNumPW(const unsigned short& usCh){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::GetNumPW(unsigned short usCh)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetNumPW(unsigned short usCh)\n");
         return 0;
     }
     return NumPW[usCh];
@@ -474,7 +475,7 @@ unsigned short CATS::GetNumPW(const unsigned short& usCh){
 void CATS::SetSpin(const unsigned short& usCh, const unsigned short& spin){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetSpin(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetSpin(...)\n");
         return;
     }
     if(spin==Spin[usCh]) return;
@@ -485,7 +486,7 @@ void CATS::SetSpin(const unsigned short& usCh, const unsigned short& spin){
 unsigned short CATS::GetSpin(const unsigned short& usCh){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::GetSpin(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetSpin(...)\n");
         return 0;
     }
     return Spin[usCh];
@@ -527,12 +528,12 @@ unsigned CATS::GetNumPairs(){
 void CATS::SetMomBins(const unsigned& nummombins, const double* mombins, const double* bincenter){
     if(!nummombins){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
         return;
     }
     if(!mombins){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
         return;
     }
     //check if the momentum bins set are the same as before. If yes, change nothing
@@ -568,7 +569,7 @@ void CATS::SetMomBins(const unsigned& nummombins, const double* mombins, const d
 
         if(MomBin[uBin]<0){
             if(Notifications>=nError){
-                printf("ERROR: CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
+                printf("\033[1;31mERROR:\033[0m CATS::SetMomBins(const unsigned& nummombins, const double* mombins)\n");
                 printf("         The momentum should be positive!\n");
             }
             return;
@@ -578,17 +579,17 @@ void CATS::SetMomBins(const unsigned& nummombins, const double* mombins, const d
 void CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom){
     if(!nummombins){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
         return;
     }
     if(MinMom>MaxMom){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
         return;
     }
     if(MinMom==MaxMom && nummombins!=1){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const double& MaxMom)\n");
         return;
     }
     //check if the momentum bins set are the same as before. If yes, change nothing
@@ -618,12 +619,12 @@ void CATS::SetMomBins(const unsigned& nummombins, const double& MinMom, const do
 void CATS::SetIpBins(const unsigned& numBbins, const double* imppar){
     if(!numBbins){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetIpBins(const unsigned& numBbins, const double* imppar)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetIpBins(const unsigned& numBbins, const double* imppar)\n");
         return;
     }
     if(!imppar){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetIpBins(const unsigned& numBbins, const double* imppar)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetIpBins(const unsigned& numBbins, const double* imppar)\n");
         return;
     }
     if(numBbins!=NumIpBins || !IpBin){
@@ -645,17 +646,17 @@ void CATS::SetIpBins(const unsigned& numBbins, const double* imppar){
 void CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar){
     if(!numBbins){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar)\n");
         return;
     }
     if(MinImpPar>MaxImpPar){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar)\n");
         return;
     }
     if(MinImpPar==MaxImpPar && numBbins!=1){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar)\n");
         return;
     }
     if(numBbins!=NumIpBins || !IpBin){
@@ -679,7 +680,7 @@ void CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const do
 void CATS::SetChannelWeight(const unsigned short& usCh, const double& weight){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetSpinWeight(const unsigned short& usCh, const double& weight)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetSpinWeight(const unsigned short& usCh, const double& weight)\n");
         return;
     }
     if(ChannelWeight[usCh]==weight) return;
@@ -690,7 +691,7 @@ void CATS::SetChannelWeight(const unsigned short& usCh, const double& weight){
 double CATS::GetChannelWeight(const unsigned short& usCh){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::GetSpinWeight(const unsigned short& usCh)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetSpinWeight(const unsigned short& usCh)\n");
         return 0;
     }
     return ChannelWeight[usCh];
@@ -940,7 +941,7 @@ double CATS::GetSourceMaxRange(){
 void CATS::SetTotPairMomCut(const double& minval, const double& maxval){
     if(minval<0 || maxval<minval){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in void CATS::SetTotPairMomCut(const double& minval, const double& maxval)");
+            printf("\033[1;31mERROR:\033[0m Bad input in void CATS::SetTotPairMomCut(const double& minval, const double& maxval)");
         return;
     }
     if(minval==MinTotPairMom && maxval==MaxTotPairMom){
@@ -975,7 +976,7 @@ void CATS::SetInputFileName(const char* fname){
     unsigned StrLen = strlen(fname);
     if(!StrLen){
         if(Notifications>=nError)
-            printf("ERROR: The input file name is empty!\n");
+            printf("\033[1;31mERROR:\033[0m The input file name is empty!\n");
         return;
     }
     if(InputFileName){
@@ -1207,12 +1208,12 @@ void CATS::RemoveShortRangePotential(){
 void CATS::RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::RemoveShortRangePotential(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::RemoveShortRangePotential(...)\n");
         return;
     }
     if(usPW>=NumPW[usCh]){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::RemoveShortRangePotential(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::RemoveShortRangePotential(...)\n");
         return;
     }
     if(!ShortRangePotential) return;
@@ -1226,12 +1227,12 @@ void CATS::RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW)
 void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
     if(NumPW[usCh] && usPW>=NumPW[usCh]){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
     if(ShortRangePotential[usCh][usPW]==pot && PotPar[usCh][usPW]==Pars){
@@ -1248,12 +1249,12 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
 void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
     if(usPW>=NumPW[usCh]){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::SetShortRangePotential(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
 
@@ -1269,20 +1270,49 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, co
 void CATS::RemoveAnaSource(){
     if(!AnaSourcePar) return;
     AnalyticSource = NULL;
+    ForwardedSource = NULL;
     SourceGridReady = false;
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
 void CATS::SetAnaSource(double (*AS)(double*), double* Pars){
     if(AnalyticSource==AS && AnaSourcePar==Pars) return;
+    if(!Pars){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source parameters!\n");
+        return;
+    }
     AnalyticSource = AS;
+    ForwardedSource = NULL;
     AnaSourcePar = Pars;
+    SourceGridReady = false;
+    SourceUpdated = false;
+    ComputedCorrFunction = false;
+}
+void CATS::SetAnaSource(double (*FS)(void*, double*), void* context){
+    if(ForwardedSource==FS) return;
+    if(!FS){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source function!\n");
+        return;
+    }
+    if(!context){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source context!\n");
+        return;
+    }
+    AnalyticSource = NULL;
+    ForwardedSource = FS;
+    AnaSourcePar = ForwardedSourcePar;
+    SourceContext = context;
     SourceGridReady = false;
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
 void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange){
     if(!AnaSourcePar) return;
+    //if we use a member function, we assume that there are no parameters to be changed here
+    if(ForwardedSource){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to set any parameters!\n");
+        return;
+    }
     if(AnaSourcePar[NumSourcePars+WhichPar]==Value) return;
     AnaSourcePar[NumSourcePars+WhichPar] = Value;
     if(UseAnalyticSource){
@@ -1293,6 +1323,10 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
 }
 double CATS::GetAnaSourcePar(const unsigned& WhichPar){
     if(!UseAnalyticSource) return 0;
+    if(ForwardedSource){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to get any parameters!\n");
+        return 0;
+    }
     return AnaSourcePar[NumSourcePars+WhichPar];
 }
 
@@ -1301,7 +1335,7 @@ void CATS::UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh
 
     if(NumMomBins<=uMomBin || NumCh<=usCh || NumPW[usCh]<=usPW){
         if(Notifications>=nError)
-            printf("ERROR: Bad input in CATS::UseExternalWaveFunction(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::UseExternalWaveFunction(...)\n");
         return;
     }
 
@@ -1331,7 +1365,7 @@ void CATS::KillTheCat(const int& Options){
         return;
     }
     //if(UseAnalyticSource && !AnalyticSourceRad && !AnalyticSourceRadCosTh){
-    if(UseAnalyticSource && !AnalyticSource){
+    if(UseAnalyticSource && !AnalyticSource && !ForwardedSource){
         if(Notifications>=nError)
             printf("\033[1;31mERROR!\033[0m The analytic source function is not set!\n\n");
         return;
@@ -1469,7 +1503,7 @@ bool CATS::PotentialStatus(){
 }
 
 void CATS::ComputeTheRadialWaveFunction(){
-    if(!NumMomBins) {if(Notifications>=nError)printf("ERROR: The momentum bins are not defined!\n"); return;}
+    if(!NumMomBins) {if(Notifications>=nError)printf("\033[1;31mERROR:\033[0m The momentum bins are not defined!\n"); return;}
     ComputeWaveFunction();
 }
 
@@ -2541,7 +2575,7 @@ void CATS::SetUpSourceGrid(){
         //for setting up the grid we take the "mean" value of k
         AnaSourcePar[0] = (MomBin[0]+MomBin[NumMomBins])*0.5;
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
-                        AnalyticSource, AnaSourcePar, NULL, 0);
+                         this, AnaSourcePar, NULL, 0);
     }
     else if(NumPairs){
         //sorts the whole data according to the GridBoxId (all bins!)
@@ -2577,7 +2611,7 @@ void CATS::SetUpSourceGrid(){
     //sets up kSourceGrid
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         if(UseAnalyticSource){
-            kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, AnalyticSource, AnaSourcePar, NULL, 0);
+            kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
         }
         else if(LoadedPairsPerMomBin[uMomBin]){
             kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, NULL, NULL,
@@ -2620,7 +2654,7 @@ void CATS::SetUpSourceGrid(){
             AnaSourcePar[0] = GetMomentum(uMomBin);
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 if(UseAnalyticSource){
-                    kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, AnalyticSource, AnaSourcePar, NULL, 0);
+                    kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
                 }
                 else if(LoadedPairsPerBin[uMomBin][uIpBin]){
                     kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, NULL, NULL,
@@ -2854,7 +2888,7 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
     double Momentum = GetMomentum(uMomBin);
     if(uMomBin>=NumMomBins){
         if(Notifications>=nError)
-            printf("ERROR: There is a bug inside EvalWaveFunctionU! Contact the developer!");
+            printf("\033[1;31mERROR:\033[0m There is a bug inside EvalWaveFunctionU! Contact the developer!");
         return 0;
     }
 
@@ -3060,6 +3094,41 @@ template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigne
         printf("         Please use Get functions to cross-check your output and contact the developers!\n");
         return 1e6;
     }
+}
+
+double CATS::EvaluateTheSource(double* Pars){
+    if(!AnalyticSource && !ForwardedSource){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! The source is not defined!\n");
+        }
+        return 0;
+    }
+    if(AnalyticSource && ForwardedSource){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported multiple definitions of the source!\n");
+            printf("         This is a bug, please contact the developers!\n");
+        }
+        return 0;
+    }
+    if(!Pars){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! This is most likely a bug!\n");
+            printf("         Please contact the developers, reporting that Pars=NULL\n");
+        }
+        return 0;
+    }
+    if(AnalyticSource){
+        return AnalyticSource(Pars);
+    }
+    //this is the case of ForwardedSource
+    if(!SourceContext){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! This is most likely a bug!\n");
+            printf("         Please contact the developers, reporting that SourceContext=NULL\n");
+        }
+        return 0;
+    }
+    return ForwardedSource(SourceContext,Pars);
 }
 
 void CATS::UpdateCPF(){

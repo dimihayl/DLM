@@ -11,11 +11,8 @@ const double PI = 3.141592653589793;
 //#include <stdio.h>
 
 double GaussSourceTF1(double* x, double* Pars){
-    //double& Momentum = Pars[0];
-    double& Radius = *x;
-    //double& CosTheta = Pars[2];
-    double& Size = Pars[3];
-    return Pars[0]*4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+    Pars[1] = *x;
+    return GaussSource(Pars);
 }
 
 double GaussSource(double* Pars){
@@ -199,7 +196,7 @@ double Gauss_Exp_Approx(double* Pars){
         //we are interested in the true value of the integral, without normalization. Thus later on the Result is not normalized
         NORM = 1.23456789;
         DLM_INT_SetFunction(Gauss_Exp_Approx,Pars,1);
-        NORM = DLM_INT_SimpsonWiki(0,SIG*8.+TKM*8.,256);
+        NORM = DLM_INT_aSimpsonWiki(0,SIG*8.+TKM*8.);
         RAD = OldRad;
         oldMOM = MOM;
         oldSIG = SIG;
@@ -310,7 +307,7 @@ double GaussExpSimple_Approx(double* Pars){
         //we are interested in the true value of the integral, without normalization. Thus later on the Result is not normalized
         NORM = 1.23456789;
         DLM_INT_SetFunction(GaussExpSimple_Approx,Pars,1);
-        NORM = DLM_INT_SimpsonWiki(0,SIG*8.+TKM*8.,256);
+        NORM = DLM_INT_aSimpsonWiki(0,SIG*8.+TKM*8.);
         RAD = OldRad;
         oldMOM = MOM;
         oldSIG = SIG;
@@ -424,7 +421,6 @@ double GaussExpTotIdenticalSimple_2body(double* Pars){
     double& p2MASS = Pars[8];
     double oldrTAU = rTAU;
     rTAU = rTAU*sqrt(pow(rMASS,4.)-2.*pow(rMASS*p1MASS,2.)+pow(p1MASS,4.)-2.*pow(rMASS*p2MASS,2.)-2.*pow(p1MASS*p2MASS,2.)+pow(p2MASS,4.))/(2.*p1MASS)/rMASS;
-//printf("rTAU = %.2f\n",rTAU);
     double Result = GaussExpTotIdenticalSimple(Pars);
     rTAU = oldrTAU;
     return Result;
@@ -446,7 +442,6 @@ double GaussExpTotSimple_2body(double* Pars){
     double& rMASS_2 = Pars[11];
     double& p1MASS_2 = Pars[12];
     double& p2MASS_2 = Pars[13];
-
     double PARS[8];
     double& TKMA = PARS[4];
     double& TKMB = PARS[5];
@@ -464,9 +459,189 @@ double GaussExpTotSimple_2body(double* Pars){
 //[4] = Number of resonances related to particle 1
 //[5] = Number of resonances related to particle 2
 
-//[4 : 3+NkT] = the radii of the different kT bins
-//[3+NkT : 3+2*NkT] = the weights of each kT bin
+//[6 : 5+NkT] = the radii of the different kT bins
+//[6+NkT : 3+2*NkT] = the weights of each kT bin
 //
-double Gauss_kT_Exp(double* Pars){
+double GaussExpTotSimple_2body_kT(double* Pars){
 
+}
+
+double MemberSourceForwarder(void* context, double* Pars){return static_cast<MemberSource*>(context)->Eval(Pars);}
+
+double MemberSource::Eval(double* Pars){
+    return 0;
+}
+double MemberSource::Eval(const double& Momentum, const double Radius, const double& Angle){
+        PARS[0] = Momentum;
+        PARS[1] = Radius;
+        PARS[2] = Angle;
+        return Eval(PARS);
+}
+
+double MS_Gauss::Eval(double* Pars){
+    double& Radius = Pars[1];
+    return 4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+}
+
+MS_GaussExp_mT_Simple::MS_GaussExp_mT_Simple(){
+    Num_mT = 0;
+    Mean_mT = NULL;
+    Weight_mT = NULL;
+    Linear_mT = 0;
+    Slope_mT = 0;
+    Mass = new double [2];
+    MassR = new double [2];
+    MassD = new double [2];
+    Tau = new double [2];
+    Weight_R = new double [2];
+    Parameters = new double [14];
+}
+MS_GaussExp_mT_Simple::~MS_GaussExp_mT_Simple(){
+    delete[]Mass; Mass=NULL;
+    delete[]MassR; MassR=NULL;
+    delete[]MassD; MassD=NULL;
+    delete[]Tau; Tau=NULL;
+    delete[]Weight_R; Weight_R=NULL;
+    delete[]Parameters; Parameters=NULL;
+}
+
+void MS_GaussExp_mT_Simple::SetNum_mT(const unsigned& nmt){
+    if(!nmt){
+        printf("\033[1;33mWARNING:\033[0m You must have at least one mT bin\n");
+        return;
+    }
+    if(Num_mT==nmt) return;
+    Num_mT=nmt;
+
+    if(Mean_mT)delete[]Mean_mT;Mean_mT=new double [nmt];
+    if(Weight_mT)delete[]Weight_mT;Weight_mT=new double [nmt];
+}
+void MS_GaussExp_mT_Simple::SetMean_mT(const unsigned& umt, const double& mmt){
+    if(umt>=Num_mT){
+        printf("\033[1;33mWARNING:\033[0m Current number of mT bins is %u and you attempt to set bin nr. %u\n",Num_mT,umt);
+        return;
+    }
+    Mean_mT[umt] = mmt;
+}
+void MS_GaussExp_mT_Simple::SetWeight_mT(const unsigned& umt, const double& wmt){
+    if(umt>=Num_mT){
+        printf("\033[1;33mWARNING:\033[0m Current number of mT bins is %u and you attempt to set bin nr. %u\n",Num_mT,umt);
+        return;
+    }
+    Weight_mT[umt] = wmt;
+}
+void MS_GaussExp_mT_Simple::SetLinear_mT(const double& lin){
+    Linear_mT = lin;
+}
+void MS_GaussExp_mT_Simple::SetSlope_mT(const double& slope){
+    Slope_mT = slope;
+}
+void MS_GaussExp_mT_Simple::SetMass(const unsigned short& particle, const double& mass){
+    if(particle>1){
+        printf("\033[1;33mWARNING:\033[0m MS_GaussExp_mT_Simple can be used only for particle 0 or 1\n");
+        return;
+    }
+    if(mass<0){
+        printf("\033[1;33mWARNING:\033[0m You are setting a negative mass!\n");
+        return;
+    }
+    Mass[particle] = mass;
+}
+void MS_GaussExp_mT_Simple::SetMassR(const unsigned short& particle, const double& mass){
+    if(particle>1){
+        printf("\033[1;33mWARNING:\033[0m MS_GaussExp_mT_Simple can be used only for particle 0 or 1\n");
+        return;
+    }
+    if(mass<0){
+        printf("\033[1;33mWARNING:\033[0m You are setting a negative mass!\n");
+        return;
+    }
+    MassR[particle] = mass;
+}
+void MS_GaussExp_mT_Simple::SetMassD(const unsigned short& particle, const double& mass){
+    if(particle>1){
+        printf("\033[1;33mWARNING:\033[0m MS_GaussExp_mT_Simple can be used only for particle 0 or 1\n");
+        return;
+    }
+    if(mass<0){
+        printf("\033[1;33mWARNING:\033[0m You are setting a negative mass!\n");
+        return;
+    }
+    MassD[particle] = mass;
+}
+void MS_GaussExp_mT_Simple::SetTau(const unsigned short& particle, const double& tau){
+    if(particle>1){
+        printf("\033[1;33mWARNING:\033[0m MS_GaussExp_mT_Simple can be used only for particle 0 or 1\n");
+        return;
+    }
+    if(tau<0){
+        printf("\033[1;33mWARNING:\033[0m You are setting a negative lifetime!\n");
+        return;
+    }
+    Tau[particle] = tau;
+}
+void MS_GaussExp_mT_Simple::SetResonanceWeight(const unsigned short& particle, const double& weight){
+    if(particle>1){
+        printf("\033[1;33mWARNING:\033[0m MS_GaussExp_mT_Simple can be used only for particle 0 or 1\n");
+        return;
+    }
+    if(weight<0){
+        printf("\033[1;33mWARNING:\033[0m You are setting a negative weight!\n");
+        return;
+    }
+    if(weight>1){
+        printf("\033[1;33mWARNING:\033[0m You are setting a bigger than 1!\n");
+        return;
+    }
+    Weight_R[particle] = weight;
+}
+
+/*
+double GaussExpTotSimple_2body(double* Pars){
+    //double& MOM = Pars[0];
+    //double& RAD = Pars[1];
+    //double& SIG = Pars[3];//size
+    double& rTAU = Pars[4];
+    double& prim = Pars[5];//fraction of primaries
+    double& rMASS = Pars[6];
+    double& p1MASS = Pars[7];
+    double& p2MASS = Pars[8];
+    double& rTAU_2 = Pars[9];
+    double& prim_2 = Pars[10];
+    double& rMASS_2 = Pars[11];
+    double& p1MASS_2 = Pars[12];
+    double& p2MASS_2 = Pars[13];
+*/
+double MS_GaussExp_mT_Simple::Eval(double* Pars){
+    double Result=0;
+    Parameters[1]=Pars[1];
+    Parameters[4] = Tau[0];
+    Parameters[5] = 1.-Weight_R[0];
+    Parameters[6] = MassR[0];
+    Parameters[7] = Mass[0];
+    Parameters[8] = MassD[0];
+    Parameters[9] = Tau[1];
+    Parameters[10] = 1.-Weight_R[1];
+    Parameters[11] = MassR[1];
+    Parameters[12] = Mass[1];
+    Parameters[13] = MassD[1];
+    double Rad_mT;
+    for(unsigned umt=0; umt<Num_mT; umt++){
+        if(!Weight_mT[umt]) continue;
+        Rad_mT = Linear_mT+Slope_mT*Mean_mT[umt];
+        Parameters[3] = Rad_mT;
+        Result += Weight_mT[umt]*GaussExpTotSimple_2body(Parameters);
+    }
+if(Result!=Result || Result>1 || Result<0){
+    /*
+    printf("Result=%e\n",Result);
+    for(unsigned uPar=0; uPar<14; uPar++){
+        printf("   Parameters[%u]=%f\n",uPar,Parameters[uPar]);
+    }
+    */
+    Result = 0;
+}
+
+
+    return Result;
 }

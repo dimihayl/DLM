@@ -52,7 +52,7 @@ class CATSelder;
 class CATSnode;
 
 class CATS{
-//friend class CATSelder;
+friend class CATSelder;
 friend class CATSnode;
 public:
     CATS();
@@ -267,7 +267,38 @@ public:
     void RemoveAnaSource();
     //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
     double* AnaSourcePar;
+    double ForwardedSourcePar[3];
+
     void SetAnaSource(double (*AS)(double*), double* Pars);
+    //this definition uses a C++ trick, allowing to pass the member function of any object as an input argument.
+    //!This class needs to have a function Eval(double* Pars), where Pars[0,1,2] are the momentum,radius and cosθ
+    //Imagine you have a class called "MYCLASS" and it has the Eval function. To use this source from an object MYCLASS OBJ you just need to do:
+    //1) define a "forwarder" function double FORWARDER(void* context, double* Pars){return static_cast<MYCLASS*>(context)->Eval(Pars);}
+    //2) define a source function as double SOURCE(double (*fptr)(void*, double*), void* context, double* Pars){return fptr(context,Pars);}
+    //3) pass to your CATS object the source by calling .SetAnaSource(FORWARDER,OBJ);
+    void SetAnaSource(double (*FS)(void*, double*), void* context);
+/*
+///////////////////////////////////////////////////////////////////////////////////////////
+double test_ad5_function(double (*fptr)(void*, const double*), void* context, const double* Pars){
+    return fptr(context,Pars);
+}
+double test_ad5_forward(void* context, const double* Pars){
+    return static_cast<af_class1*>(context)->afc1_7(Pars);
+}
+
+//!so here I can use a member function of an object as an argument
+//the way it is done is by introducing a forwarder, which basically tells us where to look for the function of the object
+//i.e. we have an object afc1 that is our "context". Then we define a forwarder (test_ad4_forward) that takes the context as an argument
+//and calls some member function. The return value of the forwarder should be the same as of the member function.
+//To execute all of that we need to define a function that takes as arguments both the forwarder and the context.
+void test_ad5(){
+    af_class1 afc1;
+    double Pars[3] = {1,2,3};
+    double result = test_ad5_function(&test_ad5_forward,&afc1,Pars);
+    printf("result = %.4f\n",result);
+}
+///////////////////////////////////////////////////////////////////////////////////////////
+*/
     //set the value of the WhichPar-th parameter of the source
     //N.B. WhichPar counts from zero, i.e. CATS sets the value of AnaSourcePar[2+WhichPar].
     //It is the responsibility of the user to respect the size of the array and avoid segmentation fault!
@@ -297,7 +328,7 @@ public:
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
 
-private:
+protected:
 
     enum PrevNext { kNext=1, kPrevious=-1 };
 
@@ -466,6 +497,8 @@ private:
 
     //input vars: [0] should always be the momentum, [1] the radius and [2] 'cosθ'
     double (*AnalyticSource)(double*);
+    double (*ForwardedSource)(void*, double*);
+    void* SourceContext;
     //!------------------------------------------------
 
     //!Any other variables or functions used at runtime internally by CATS
@@ -531,6 +564,8 @@ private:
 
     template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin);
     template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function);
+
+    double EvaluateTheSource(double* Pars);
 
     //double SourceFunction(const double* Pars, const double& GridSize);
     void UpdateCPF();
