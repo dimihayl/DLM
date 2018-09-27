@@ -1167,8 +1167,7 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
 //I am pretty sure this already includes the p n mass splitting
 //TYPE==1 take the complex wf
 //! WE SHOULD SET UP KITTY AT SOME POINT
-void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins,
-               const double& MaxMomentum, const int& TYPE){
+void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
 
 
     //double kMin = Kitty.GetMomBinLowEdge(0);
