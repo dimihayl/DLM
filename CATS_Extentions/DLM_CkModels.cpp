@@ -61,7 +61,6 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
 
     double F1 = gsl_sf_dawson(2.*Momentum*Radius)/(2.*Momentum*Radius);
     double F2 = (1.-exp(-4.*Momentum*Momentum*Radius*Radius))/(2.*Momentum*Radius);
-
     complex<double> ScattAmplSin = pow(1./sLen1+0.5*eRan1*Momentum*Momentum-i*Momentum,-1.);
 
     double CkValue = 0.;

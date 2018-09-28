@@ -1220,9 +1220,10 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
     const double MaxRad = 15.0;
     NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
     bool* RadBinLoaded = new bool [NumRadBins+1];
-
+printf("Here\n");
     WaveFunctionU[0] = new complex<double>*** [NumMomBins];
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+printf("uMomBin=%u\n",uMomBin);
         WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
         for(unsigned usCh=0; usCh<NumChannels; usCh++){
             WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];

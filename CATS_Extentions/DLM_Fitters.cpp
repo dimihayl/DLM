@@ -1119,10 +1119,10 @@ printf("\n");
 
 
 
-    TFile* tmpFile = new TFile(TString::Format("%stmpFile.root",OutputDirName.Data()),"recreate");
-    HistoGlobal->Write();
-    FitGlobal->Write();
-    delete tmpFile;
+    //TFile* tmpFile = new TFile(TString::Format("%stmpFile.root",OutputDirName.Data()),"recreate");
+    //HistoGlobal->Write();
+    //FitGlobal->Write();
+    //delete tmpFile;
 
 }
 
