@@ -276,6 +276,200 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
     return Result;
 }
 
+
+
+struct LatticeValues{
+    const unsigned NumPots = 3;
+    LatticeValues(){
+        PAR_V0 = new double* [NumPots];
+        PAR_VS = new double* [NumPots];
+        PAR_VT = new double* [NumPots];
+        PAR_VST = new double* [NumPots];
+        for(unsigned uPot=0; uPot<NumPots; uPot++){
+            PAR_V0[uPot] = new double [8];
+            PAR_VS[uPot] = new double [8];
+            PAR_VT[uPot] = new double [8];
+            PAR_VST[uPot] = new double [8];
+        }
+        for(unsigned uFlag=11; uFlag<=13; uFlag++){
+            switch(uFlag){
+            case 11:
+                PAR_V0[uFlag-11][0] = 832.719;
+                PAR_V0[uFlag-11][1] = 0.126567;
+                PAR_V0[uFlag-11][2] = 306.315;
+                PAR_V0[uFlag-11][3] = 0.262349;
+                PAR_V0[uFlag-11][4] = 521.285;
+                PAR_V0[uFlag-11][5] = 0.461616;
+                PAR_V0[uFlag-11][6] = -80.9157;
+                PAR_V0[uFlag-11][7] = 9.41638;
+
+                PAR_VS[uFlag-11][0] = -112.713;
+                PAR_VS[uFlag-11][1] = 0.119882;
+                PAR_VS[uFlag-11][2] = -60.3916;
+                PAR_VS[uFlag-11][3] = 0.219904;
+                PAR_VS[uFlag-11][4] = -12.971;
+                PAR_VS[uFlag-11][5] = 0.440375;
+                PAR_VS[uFlag-11][6] = 0;
+                PAR_VS[uFlag-11][7] = 0;
+
+                PAR_VT[uFlag-11][0] = 205.93;
+                PAR_VT[uFlag-11][1] = 0.135111;
+                PAR_VT[uFlag-11][2] = 93.3825;
+                PAR_VT[uFlag-11][3] = 0.278859;
+                PAR_VT[uFlag-11][4] = 26.9143;
+                PAR_VT[uFlag-11][5] = 0.588477;
+                PAR_VT[uFlag-11][6] = 0;
+                PAR_VT[uFlag-11][7] = 0;
+
+                PAR_VST[uFlag-11][0] = -79.774;
+                PAR_VST[uFlag-11][1] = 0.135531;
+                PAR_VST[uFlag-11][2] = -32.564;
+                PAR_VST[uFlag-11][3] = 0.275606;
+                PAR_VST[uFlag-11][4] = -9.3541;
+                PAR_VST[uFlag-11][5] = 0.538997;
+                PAR_VST[uFlag-11][6] = -1.75591;
+                PAR_VST[uFlag-11][7] = 2.88912;
+                break;
+            case 12:
+                PAR_V0[uFlag-11][0] = 800.944;
+                PAR_V0[uFlag-11][1] = 0.125499;
+                PAR_V0[uFlag-11][2] = 340.209;
+                PAR_V0[uFlag-11][3] = 0.25353;
+                PAR_V0[uFlag-11][4] = 528.537;
+                PAR_V0[uFlag-11][5] = 0.453636;
+                PAR_V0[uFlag-11][6] = -74.9729;
+                PAR_V0[uFlag-11][7] = 9.89426;
+
+                PAR_VS[uFlag-11][0] = -124.804;
+                PAR_VS[uFlag-11][1] = 0.122483;
+                PAR_VS[uFlag-11][2] = -48.2802;
+                PAR_VS[uFlag-11][3] = 0.234785;
+                PAR_VS[uFlag-11][4] = -12.4604;
+                PAR_VS[uFlag-11][5] = 0.450708;
+                PAR_VS[uFlag-11][6] = 0;
+                PAR_VS[uFlag-11][7] = 0;
+
+                PAR_VT[uFlag-11][0] = 170.527;
+                PAR_VT[uFlag-11][1] = 0.121487;
+                PAR_VT[uFlag-11][2] = 117.874;
+                PAR_VT[uFlag-11][3] = 0.224199;
+                PAR_VT[uFlag-11][4] = 42.0892;
+                PAR_VT[uFlag-11][5] = 0.510129;
+                PAR_VT[uFlag-11][6] = 0;
+                PAR_VT[uFlag-11][7] = 0;
+
+                PAR_VST[uFlag-11][0] = -90.3105;
+                PAR_VST[uFlag-11][1] = 0.148112;
+                PAR_VST[uFlag-11][2] = -26.359;
+                PAR_VST[uFlag-11][3] = 0.351332;
+                PAR_VST[uFlag-11][4] = -4.72814;
+                PAR_VST[uFlag-11][5] = 0.707443;
+                PAR_VST[uFlag-11][6] = -1.26899;
+                PAR_VST[uFlag-11][7] = 2.55046;
+                break;
+            case 13:
+                PAR_V0[uFlag-11][0] = 807.648;
+                PAR_V0[uFlag-11][1] = 0.12642;
+                PAR_V0[uFlag-11][2] = 359.403;
+                PAR_V0[uFlag-11][3] = 0.255362;
+                PAR_V0[uFlag-11][4] = 500.769;
+                PAR_V0[uFlag-11][5] = 0.451934;
+                PAR_V0[uFlag-11][6] = -67.7968;
+                PAR_V0[uFlag-11][7] = 10.0506;
+
+                PAR_VS[uFlag-11][0] = -52.9071;
+                PAR_VS[uFlag-11][1] = 0.0916017;
+                PAR_VS[uFlag-11][2] = -119.322;
+                PAR_VS[uFlag-11][3] = 0.164464;
+                PAR_VS[uFlag-11][4] = -22.4783;
+                PAR_VS[uFlag-11][5] = 0.408204;
+                PAR_VS[uFlag-11][6] = 0;
+                PAR_VS[uFlag-11][7] = 0;
+
+                PAR_VT[uFlag-11][0] = 124.788;
+                PAR_VT[uFlag-11][1] = 0.112992;
+                PAR_VT[uFlag-11][2] = 151.176;
+                PAR_VT[uFlag-11][3] = 0.194521;
+                PAR_VT[uFlag-11][4] = 48.0954;
+                PAR_VT[uFlag-11][5] = 0.490352;
+                PAR_VT[uFlag-11][6] = 0;
+                PAR_VT[uFlag-11][7] = 0;
+
+                PAR_VST[uFlag-11][0] = -82.1509;
+                PAR_VST[uFlag-11][1] = 0.15925;
+                PAR_VST[uFlag-11][2] = -26.2495;
+                PAR_VST[uFlag-11][3] = 0.358359;
+                PAR_VST[uFlag-11][4] = -6.31347;
+                PAR_VST[uFlag-11][5] = 0.639725;
+                PAR_VST[uFlag-11][6] = -1.32727;
+                PAR_VST[uFlag-11][7] = 2.67235;
+                break;
+            default:break;
+            }
+        }
+    }
+    ~LatticeValues(){
+        for(unsigned uPot=0; uPot<NumPots; uPot++){
+            delete [] PAR_V0[uPot];
+            delete [] PAR_VS[uPot];
+            delete [] PAR_VT[uPot];
+            delete [] PAR_VST[uPot];
+        }
+        delete [] PAR_V0;
+        delete [] PAR_VS;
+        delete [] PAR_VT;
+        delete [] PAR_VST;
+    }
+
+    double** PAR_V0;
+    double** PAR_VS;
+    double** PAR_VT;
+    double** PAR_VST;
+
+    double EvalV(const int& iFlag, const int& Element, const double& Rad){
+        if(iFlag>=3 || iFlag<0) return 0;
+        double* PAR = Element==0?PAR_V0[iFlag]:Element==1?PAR_VS[iFlag]:Element==2?PAR_VT[iFlag]:Element==3?PAR_VST[iFlag]:NULL;
+        if(!PAR) return 0;
+        if(!Rad || !PAR[1] || !PAR[3] || !PAR[5]) return 0;
+        return  PAR[0]*exp(-pow(Rad/PAR[1],2.))+PAR[2]*exp(-pow(Rad/PAR[3],2.))+PAR[4]*exp(-pow(Rad/PAR[5],2.))+
+                PAR[6]*pow(1.-exp(-PAR[7]*Rad*Rad),2.)*exp(-2.*146./197.3269602*Rad)/(Rad*Rad);
+    }
+
+    double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
+        int iFlag = DlmPotFlag-11;
+        if(IsoSpin==0 && Spin==0){
+            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlag,3,Rad);
+        }
+        else if(IsoSpin==0 && Spin==1){
+            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3,Rad);
+        }
+        else if(IsoSpin==1 && Spin==0){
+            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3,Rad);
+        }
+        else if(IsoSpin==1 && Spin==1){
+            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlag,3,Rad);
+        }
+        else return 0;
+    }
+
+};
+
+
+//updated version from 1th October 2018
+double LatticePots_pXi_ver2(const int& WhichPot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
+    static LatticeValues LVAL;
+    if(AngMom) return 0;
+    return LVAL.Eval(DlmPotFlag,IsoSpin,Spin,Radius[0]);
+}
+
+
+
+
+
+
+
 //! The flags are such that the first two digits are the flags to be used for the I0, the second two for I1
 //e.g. flags I0 = 12 and I=1 = 6 would be 1206
 double LatticePots_pXi_Avg(const int& WhichPot, const int& DlmPotFlag,
@@ -701,6 +895,7 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
         case pp_ReidVale : return fReidVale(Radius[0],Spin,AngMom,TotMom);
         case pL_UsmaniOli : return UsmaniPotentialOli(Spin,Radius);
         case pXim_Lattice : return LatticePots_pXi(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
+        case pXim_HALQCD1 : return LatticePots_pXi_ver2(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pXim_LatticeAvg : return LatticePots_pXi_Avg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pXim_LatticeSqrtAvg : return LatticePots_pXi_SqrtAvg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pKm_Tetsuo : return Tetsuo_pKm(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);

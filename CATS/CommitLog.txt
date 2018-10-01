@@ -119,3 +119,6 @@ The Gamow correction is still not extensively tested, use with care.
 
 17.09.2018 CATS 2.16.1
 More source functions
+
+01.10.2018 CATS 2.17
+Improvements to the extentions, including an improved version of the HALQCD potentials (pXim)
