@@ -16,7 +16,7 @@
 using namespace std;
 
 CATS::CATS():
-    NumPotPars(2),NumSourcePars(3),MaxPw(256)
+    NumPotPars(2),NumSourcePars(3)
     {
     IdenticalParticles = false;
     Q1Q2 = 0;
@@ -34,6 +34,7 @@ CATS::CATS():
     EpsilonConv = 5e-6;
     MaxRad = 32.*FmToNu;
     MaxRho = 16;
+    MaxPw = 256;
     ExcludeFailedConvergence = true;
     GridMinDepth = 5;
     GridMaxDepth = 0;
@@ -303,7 +304,7 @@ void CATS::SetRedMass(const double& redMass){
     ComputedCorrFunction = false;
     GamowCorrected = false;
 }
-double CATS::GetRedMass(){
+double CATS::GetRedMass() const{
     return RedMass;
 }
 
@@ -318,7 +319,7 @@ void CATS::SetPdgId(const int& id1, const int& id2){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-void CATS::GetPdgId(int& id1, int& id2){
+void CATS::GetPdgId(int& id1, int& id2) const{
     id1 = pdgID[0];
     id2 = pdgID[1];
 }
@@ -338,7 +339,7 @@ void CATS::SetQuantumStatistics(short qs){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-short CATS::GetQuantumStatistics(){
+short CATS::GetQuantumStatistics() const{
     return QuantumStatistics;
 }
 
@@ -391,7 +392,7 @@ void CATS::SetNumChannels(const unsigned short& numCh){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-unsigned short CATS::GetNumChannels(){
+unsigned short CATS::GetNumChannels() const{
     return NumCh;
 }
 
@@ -463,7 +464,7 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-unsigned short CATS::GetNumPW(const unsigned short& usCh){
+unsigned short CATS::GetNumPW(const unsigned short& usCh) const{
     if(usCh>=NumCh){
         if(Notifications>=nError)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetNumPW(unsigned short usCh)\n");
@@ -483,7 +484,7 @@ void CATS::SetSpin(const unsigned short& usCh, const unsigned short& spin){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-unsigned short CATS::GetSpin(const unsigned short& usCh){
+unsigned short CATS::GetSpin(const unsigned short& usCh) const{
     if(usCh>=NumCh){
         if(Notifications>=nError)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetSpin(...)\n");
@@ -499,7 +500,7 @@ void CATS::SetQ1Q2(const int& q1q2){
     ComputedCorrFunction = false;
     GamowCorrected = false;
 }
-int CATS::GetQ1Q2(){
+int CATS::GetQ1Q2() const{
     return Q1Q2;
 }
 void CATS::SetGamow(const bool& gamow){
@@ -509,19 +510,19 @@ void CATS::SetGamow(const bool& gamow){
     ComputedCorrFunction = false;
     GamowCorrected = false;
 }
-bool CATS::GetGamow(){
+bool CATS::GetGamow() const{
     return Gamow;
 }
 
-unsigned CATS::GetNumMomBins(){
+unsigned CATS::GetNumMomBins() const{
     return NumMomBins;
 }
 
-unsigned CATS::GetNumIpBins(){
+unsigned CATS::GetNumIpBins() const{
     return NumIpBins;
 }
 
-unsigned CATS::GetNumPairs(){
+unsigned CATS::GetNumPairs() const{
     return NumPairs;
 }
 
@@ -688,7 +689,7 @@ void CATS::SetChannelWeight(const unsigned short& usCh, const double& weight){
     ComputedCorrFunction = false;
 }
 
-double CATS::GetChannelWeight(const unsigned short& usCh){
+double CATS::GetChannelWeight(const unsigned short& usCh) const{
     if(usCh>=NumCh){
         if(Notifications>=nError)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetSpinWeight(const unsigned short& usCh)\n");
@@ -703,7 +704,7 @@ void CATS::SetStartRad(const double& srad){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-double CATS::GetStartRad(){
+double CATS::GetStartRad() const{
     return StartRad;
 }
 
@@ -714,7 +715,7 @@ void CATS::SetEpsilonProp(const double& epsp){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-double CATS::GetEpsilonProp(){
+double CATS::GetEpsilonProp() const{
     return EpsilonProp;
 }
 
@@ -724,7 +725,7 @@ void CATS::SetEpsilonConv(const double& epsc){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-double CATS::GetEpsilonConv(){
+double CATS::GetEpsilonConv() const{
     return EpsilonConv;
 }
 
@@ -738,7 +739,7 @@ void CATS::SetMaxRad(const double& maxrad){
     ComputedCorrFunction = false;
 }
 
-double CATS::GetMaxRad(){
+double CATS::GetMaxRad() const{
     return MaxRad;
 }
 
@@ -749,7 +750,17 @@ void CATS::SetMaxRho(const double& maxrho){
     ComputedCorrFunction = false;
 }
 
-double CATS::GetMaxRho(){
+double CATS::GetMaxRho() const{
+    return MaxRho;
+}
+void CATS::SetMaxPw(const unsigned short& maxpw){
+    if(MaxPw==maxpw) return;
+    MaxPw = maxpw;
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;
+}
+
+unsigned short CATS::GetMaxPw() const{
     return MaxRho;
 }
 
@@ -759,7 +770,7 @@ void CATS::SetExcludeFailedBins(const bool& efb){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-bool CATS::GetExcludeFailedBins(){
+bool CATS::GetExcludeFailedBins() const{
     return ExcludeFailedConvergence;
 }
 
@@ -771,7 +782,7 @@ void CATS::SetGridMinDepth(const short& val){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-short CATS::GetGridMinDepth(){
+short CATS::GetGridMinDepth() const{
     return GridMinDepth;
 }
 void CATS::SetGridMaxDepth(const short& val){
@@ -782,7 +793,7 @@ void CATS::SetGridMaxDepth(const short& val){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-short CATS::GetGridManDepth(){
+short CATS::GetGridManDepth() const{
     return GridMaxDepth;
 }
 void CATS::SetGridEpsilon(const double& val){
@@ -794,7 +805,7 @@ void CATS::SetGridEpsilon(const double& val){
     ComputedCorrFunction = false;
 
 }
-double CATS::GetGridEpsilon(){
+double CATS::GetGridEpsilon() const{
     return GridEpsilon;
 }
 
@@ -812,7 +823,7 @@ void CATS::SetMaxPairsPerBin(unsigned mpp){
     if(!UseAnalyticSource) SourceUpdated = false;
     if(!UseAnalyticSource) ComputedCorrFunction = false;
 }
-unsigned CATS::GetMaxPairsPerBin(){
+unsigned CATS::GetMaxPairsPerBin() const{
     return MaxPairsPerBin;
 }
 
@@ -829,7 +840,7 @@ void CATS::SetMaxPairsToRead(unsigned mpp){
     if(!UseAnalyticSource) SourceUpdated = false;
     if(!UseAnalyticSource) ComputedCorrFunction = false;
 }
-unsigned CATS::GetMaxPairsToRead(){
+unsigned CATS::GetMaxPairsToRead() const{
     return MaxPairsToRead;
 }
 
@@ -854,7 +865,7 @@ void CATS::SetMixingDepth(const unsigned short& mix){
     if(!UseAnalyticSource) SourceUpdated = false;
     if(!UseAnalyticSource) ComputedCorrFunction = false;
 }
-unsigned short CATS::GetMixingDepth(){
+unsigned short CATS::GetMixingDepth() const{
     return MixingDepth;
 }
 void CATS::SetTauCorrection(const bool& tc){
@@ -865,7 +876,7 @@ void CATS::SetTauCorrection(const bool& tc){
     if(!UseAnalyticSource) SourceUpdated = false;
     if(!UseAnalyticSource) ComputedCorrFunction = false;
 }
-bool CATS::GetTauCorrection(){
+bool CATS::GetTauCorrection() const{
     return TauCorrection;
 }
 
@@ -876,7 +887,7 @@ void CATS::SetUseAnalyticSource(const bool& val){
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
-bool CATS::GetUseAnalyticSource(){
+bool CATS::GetUseAnalyticSource() const{
     return UseAnalyticSource;
 }
 
@@ -897,7 +908,7 @@ void CATS::SetThetaDependentSource(const bool& val){
         delete [] LegPol; LegPol=NULL;
     }
 }
-bool CATS::GetThetaDependentSource(){
+bool CATS::GetThetaDependentSource() const{
     return ThetaDependentSource;
 }
 
@@ -908,7 +919,7 @@ void CATS::SetTransportRenorm(const double& val){
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
-double CATS::GetTransportRenorm(){
+double CATS::GetTransportRenorm() const{
     return TransportRenorm;
 }
 
@@ -917,7 +928,7 @@ void CATS::SetPoorManRenorm(const double& val){
     PoorManRenorm = fabs(val);
     ComputedCorrFunction = false;
 }
-double CATS::GetPoorManRenorm(){
+double CATS::GetPoorManRenorm() const{
     return PoorManRenorm;
 }
 
@@ -931,10 +942,10 @@ void CATS::SetSourceMaxRange(const double& val){
     if(val<SourceMaxRad) ComputedCorrFunction = false;
     SourceMaxRad = val;
 }
-double CATS::GetSourceMinRange(){
+double CATS::GetSourceMinRange() const{
     return SourceMinRad;
 }
-double CATS::GetSourceMaxRange(){
+double CATS::GetSourceMaxRange() const{
     return SourceMaxRad;
 }
 
@@ -957,7 +968,7 @@ void CATS::SetTotPairMomCut(const double& minval, const double& maxval){
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
-void CATS::GetTotPairMomCut(double& minval, double& maxval){
+void CATS::GetTotPairMomCut(double& minval, double& maxval) const{
     minval = MinTotPairMom;
     maxval = MaxTotPairMom;
 }
@@ -968,7 +979,7 @@ void CATS::RemoveTotPairMomCut(){
 void CATS::SetNotifications(const short& notify){
     Notifications = notify;
 }
-short CATS::GetNotifications(){
+short CATS::GetNotifications() const{
     return Notifications;
 }
 
@@ -997,7 +1008,7 @@ void CATS::SetInputFileName(const char* fname){
     if(!UseAnalyticSource) ComputedCorrFunction = false;
 }
 
-void CATS::GetInputFileName(char* fname){
+void CATS::GetInputFileName(char* fname) const{
     if(!InputFileName){
         strcpy(fname, "");
         return;
@@ -1005,18 +1016,18 @@ void CATS::GetInputFileName(char* fname){
     strcpy(fname, InputFileName);
 }
 
-unsigned CATS::GetNumPairsPerBin(const unsigned& uMomBin, const unsigned& uIpBin){
+unsigned CATS::GetNumPairsPerBin(const unsigned& uMomBin, const unsigned& uIpBin) const{
     if(uMomBin>=NumMomBins || uIpBin>=NumIpBins || !LoadedData) return 0;
     return LoadedPairsPerBin[uMomBin][uIpBin];
 }
 
-unsigned CATS::GetNumPairsPerBin(const unsigned& uMomBin){
+unsigned CATS::GetNumPairsPerBin(const unsigned& uMomBin) const{
     if(uMomBin>=NumMomBins || !LoadedData) return 0;
     return LoadedPairsPerMomBin[uMomBin];
 }
 
 void CATS::GetPairInfo(const unsigned& uWhichPair,
-                     double& RelMom, double& RelPos, double& RelCosTh, double& TotMom){
+                     double& RelMom, double& RelPos, double& RelCosTh, double& TotMom) const{
 
     RelMom=0;
     RelPos=0;
@@ -1030,43 +1041,43 @@ void CATS::GetPairInfo(const unsigned& uWhichPair,
     TotMom=UseTotMomCut?TotalPairMomentum[uWhichPair]:0;
 
 }
-void CATS::GetPairInfo(const unsigned& uWhichPair, double* Output){
+void CATS::GetPairInfo(const unsigned& uWhichPair, double* Output) const{
     GetPairInfo(uWhichPair,
                 Output[0],Output[1],Output[2],Output[3]);
 }
 
-unsigned CATS::GetLoadedPairs(const unsigned& WhichMomBin, const unsigned& WhichIpBin){
+unsigned CATS::GetLoadedPairs(const unsigned& WhichMomBin, const unsigned& WhichIpBin) const{
     if(!LoadedData) return 0;
     if(WhichMomBin>=NumMomBins) return 0;
     if(WhichIpBin>=NumIpBins) return 0;
     return LoadedPairsPerBin[WhichMomBin][WhichIpBin];
 }
-unsigned CATS::GetRelativeMomentum(const unsigned& WhichParticle){
+unsigned CATS::GetRelativeMomentum(const unsigned& WhichParticle) const{
     if(!LoadedData) return 0;
     if(WhichParticle>=NumPairs) return 0;
     return RelativeMomentum[WhichParticle];
 }
-unsigned CATS::GetRelativePosition(const unsigned& WhichParticle){
+unsigned CATS::GetRelativePosition(const unsigned& WhichParticle) const{
     if(!LoadedData) return 0;
     if(WhichParticle>=NumPairs) return 0;
     return RelativePosition[WhichParticle]*NuToFm;
 }
-unsigned CATS::GetRelativeCosTheta(const unsigned& WhichParticle){
+unsigned CATS::GetRelativeCosTheta(const unsigned& WhichParticle) const{
     if(!LoadedData) return 0;
     if(WhichParticle>=NumPairs) return 0;
     return RelativeCosTheta[WhichParticle];
 }
-unsigned CATS::GetTotalPairMomentum(const unsigned& WhichParticle){
+unsigned CATS::GetTotalPairMomentum(const unsigned& WhichParticle) const{
     if(!LoadedData) return 0;
     if(WhichParticle>=NumPairs) return 0;
     return TotalPairMomentum[WhichParticle];
 }
 
-double CATS::GetCorrFun(const unsigned& WhichMomBin){
+double CATS::GetCorrFun(const unsigned& WhichMomBin) const{
     if(WhichMomBin>=NumMomBins || !kCorrFun) return 0;
     return kCorrFun[WhichMomBin];
 }
-double CATS::GetCorrFun(const unsigned& WhichMomBin, double& Momentum){
+double CATS::GetCorrFun(const unsigned& WhichMomBin, double& Momentum) const{
     if(WhichMomBin>=NumMomBins || !kCorrFun) return 0;
     Momentum = WhichMomBin<NumMomBins?MomBinCenter[WhichMomBin]:0;
     //Momentum = WhichMomBin<NumMomBins?GetMomentum(WhichMomBin):0;
@@ -1077,35 +1088,35 @@ double CATS::GetCorrFun(const unsigned& WhichMomBin, double& Momentum){
 //In perfect case Momentum should be between the two points. However, in case we are working in the first
 //half of the 0th bin, or the last half of the last mom. bin, than we need to take either the two point above or
 //the two points below the value of Momentum
-double CATS::EvalCorrFun(const double& Momentum){
+double CATS::EvalCorrFun(const double& Momentum) const{
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins]) return 0;
     return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, kCorrFun);
     //return EvalBinnedFun(Momentum, NumMomBins, MomBin, NULL, kCorrFun);
 }
 
-double CATS::EvalCorrFunErr(const double& Momentum){
+double CATS::EvalCorrFunErr(const double& Momentum) const{
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins]) return 0;
     return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, kCorrFunErr);
     //return EvalBinnedFun(Momentum, NumMomBins, MomBin, NULL, kCorrFunErr);
 }
 
-double CATS::GetCorrFunErr(const unsigned& WhichMomBin){
+double CATS::GetCorrFunErr(const unsigned& WhichMomBin) const{
     if(WhichMomBin>=NumMomBins || !kCorrFunErr) return 0;
     return kCorrFunErr[WhichMomBin];
 }
 
-double CATS::GetCorrFunErr(const unsigned& WhichMomBin, double& Momentum){
+double CATS::GetCorrFunErr(const unsigned& WhichMomBin, double& Momentum) const{
     if(WhichMomBin>=NumMomBins || !kCorrFunErr) return 0;
     Momentum = GetMomentum(WhichMomBin);
     return kCorrFunErr[WhichMomBin];
 }
 
-double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin){
+double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin) const{
     if(WhichMomBin>=NumMomBins || WhichIpBin>=NumIpBins || !kbCorrFun) return 0;
     return kbCorrFun[WhichMomBin][WhichIpBin];
 }
 
-double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin, double& Momentum, double& ImpPar){
+double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin, double& Momentum, double& ImpPar) const{
     if(NumMomBins<=WhichMomBin || NumIpBins<=WhichIpBin || !kCorrFun) return 0;
     Momentum = WhichMomBin<NumMomBins?MomBinCenter[WhichMomBin]:0;
     //Momentum = WhichMomBin<NumMomBins?GetMomentum(WhichMomBin):0;
@@ -1113,28 +1124,28 @@ double CATS::GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBi
     return GetCorrFunIp(WhichMomBin, WhichIpBin);
 }
 
-double CATS::GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW){
+double CATS::GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW) const{
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
     return PhaseShift[WhichMomBin][usCh][usPW];
 }
 
-float CATS::EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW){
+float CATS::EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW) const{
     if(Momentum<MomBin[0] || Momentum>MomBin[NumMomBins] || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
     return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, PhaseShiftF[usCh][usPW]);
     //return EvalBinnedFun(Momentum, NumMomBins, MomBin, NULL, PhaseShiftF[usCh][usPW]);
 }
 
-unsigned CATS::GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW){
+unsigned CATS::GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW) const{
     return SavedWaveFunBins[WhichMomBin][usCh][usPW];
 }
 
-complex<double> CATS::GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin){
+complex<double> CATS::GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin) const{
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW || SavedWaveFunBins[WhichMomBin][usCh][usPW]<=WhichRadBin) return 0;
     return WaveFunctionU[WhichMomBin][usCh][usPW][WhichRadBin];
 }
 
 complex<double> CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
-                                    const bool& DivideByR){
+                                    const bool& DivideByR) const{
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
     return EvalWaveFunctionU(WhichMomBin, Radius*FmToNu, usCh, usPW, DivideByR);
 }
@@ -1161,18 +1172,18 @@ complex<double> CATS::EvalReferenceRadialWF(const unsigned& WhichMomBin, const u
     return ReferencePartialWave(Radius*FmToNu, GetMomentum(WhichMomBin), usPW, Q1Q2)*MultFactor;
 }
 
-double CATS::GetMomentum(const unsigned& WhichMomBin){
+double CATS::GetMomentum(const unsigned& WhichMomBin) const{
     if(NumMomBins<=WhichMomBin) return 0;
     return MomBinCenter[WhichMomBin];
     //return 0.5*(MomBin[WhichMomBin]+MomBin[WhichMomBin+1]);
 }
 
-double CATS::GetMomBinLowEdge(const unsigned& WhichMomBin){
+double CATS::GetMomBinLowEdge(const unsigned& WhichMomBin) const{
     if(NumMomBins<WhichMomBin) return 0;
     return MomBin[WhichMomBin];
 }
 
-double CATS::GetMomBinUpEdge(const unsigned& WhichMomBin){
+double CATS::GetMomBinUpEdge(const unsigned& WhichMomBin) const{
     if(NumMomBins<=WhichMomBin) return 0;
     return MomBin[WhichMomBin+1];
 }
@@ -1185,11 +1196,11 @@ double* CATS::CopyMomBin(){
     return MomBinCopy;
 }
 
-const double& CATS::FmNu(){
+const double& CATS::FmNu() const{
     return FmToNu;
 }
 
-const double& CATS::NuFm(){
+const double& CATS::NuFm() const{
     return NuToFm;
 }
 
@@ -1321,7 +1332,7 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
         ComputedCorrFunction = false;
     }
 }
-double CATS::GetAnaSourcePar(const unsigned& WhichPar){
+double CATS::GetAnaSourcePar(const unsigned& WhichPar) const{
     if(!UseAnalyticSource) return 0;
     if(ForwardedSource){
         if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to get any parameters!\n");
@@ -2707,7 +2718,7 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     Full = Basic + 2*RedMass*ShortRangePotential[usCh][usPW](PotPar[usCh][usPW]);
 }
 
-double CATS::PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW){
+double CATS::PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW) const{
     double Rho = Radius*Momentum;
     //if Rho is zero, the gsl function will not work
     if(!Rho){
@@ -2718,7 +2729,7 @@ double CATS::PlanePartialWave(const double& Radius, const double& Momentum, cons
     return Rho>0?(Radius)*gsl_sf_bessel_jl(usPW,Rho):pow(-1,usPW)*(Radius)*gsl_sf_bessel_jl(usPW,-Rho);
 }
 
-double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2){
+double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const{
     double Eta = RedMass*double(q1q2)*AlphaFS/Momentum;
     double Rho = Radius*Momentum;
     double Overflow=0;
@@ -2739,18 +2750,18 @@ double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, co
 
 //note that this function is never corrected for the Gamow factor, as in the asymptotic region one could just take the exact solution
 //instead of correcting a plane wave by Gamow factor
-double CATS::ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2){
+double CATS::ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const{
     return q1q2 ? CoulombPartialWave(Radius,Momentum,usPW,q1q2) : PlanePartialWave(Radius,Momentum,usPW);
     //return (Q1Q2&&!Gamow) ? CoulombPartialWave(Radius,Momentum,usPW) : PlanePartialWave(Radius,Momentum,usPW);
 }
 
-double CATS::AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2){
+double CATS::AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const{
     return ReferencePartialWave(Radius+CurrentRhoStep/Momentum, Momentum, usPW, q1q2)/(ReferencePartialWave(Radius, Momentum, usPW, q1q2)+1e-64);
 }
 
-double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&),
+double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&) const,
                           const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
-                          const double&  xMin, const double&  xMax, const double& fValShift){
+                          const double&  xMin, const double&  xMax, const double& fValShift) const{
 
     const unsigned maxIter = 256;
 
@@ -2883,7 +2894,7 @@ unsigned CATS::GetBoxId(double* particle){
 }
 
 complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
-                                const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic){
+                                const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic) const{
 
     double Momentum = GetMomentum(uMomBin);
     if(uMomBin>=NumMomBins){
@@ -2921,11 +2932,14 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
     complex<double> OldResult=100;
     double TotalResult=0;
     double Momentum = GetMomentum(uMomBin);
+    //here we make the assumption that the individual partial waves are orthogonal to one another!
+    //this should be the case in the absence of angular dependence due to the Legendre polynomials
     for(unsigned short usPW=0; usPW<MaxPw; usPW++){
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         //numerical solution, no computation result for zero potential
         if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[uMomBin][usCh][usPW])){
+        //if(false){
             Result = EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             //Check this!!! Should it be squared?
             //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
@@ -2942,6 +2956,7 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
             OldResult = Result;
         }
     }
+
     return TotalResult*(1+IdenticalParticles);
 }
 
@@ -3002,7 +3017,7 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
     return TotWF;
 }
 
-unsigned CATS::GetBin(const double& Value, const double* Range, const unsigned& NumBins){
+unsigned CATS::GetBin(const double& Value, const double* Range, const unsigned& NumBins) const{
     if(NumBins<=1) return 0;
     unsigned WhichBin=NumBins/2;
     unsigned BinMod=4;
@@ -3029,22 +3044,22 @@ unsigned CATS::GetBin(const double& Value, const double* Range, const unsigned& 
     }
 }
 
-unsigned CATS::GetMomBin(const double& Momentum){
+unsigned CATS::GetMomBin(const double& Momentum) const{
     return GetBin(Momentum, MomBin, NumMomBins+1);
 }
-unsigned CATS::GetIpBin(const double& bVal){
+unsigned CATS::GetIpBin(const double& bVal) const{
     return GetBin(bVal, IpBin, NumIpBins+1);
 }
 unsigned CATS::GetRadBin(const double& Radius, const unsigned& uMomBin,
-                         const unsigned short& usCh, const unsigned short& usPW){
+                         const unsigned short& usCh, const unsigned short& usPW) const{
     return GetBin(Radius, WaveFunRad[uMomBin][usCh][usPW], SavedWaveFunBins[uMomBin][usCh][usPW]+1);
 }
 
-template <class Type> Type CATS::GetBinCenter(const Type* Bins, const unsigned& WhichBin){
+template <class Type> Type CATS::GetBinCenter(const Type* Bins, const unsigned& WhichBin) const{
     return 0.5*(Bins[WhichBin]+Bins[WhichBin+1]);
 }
 
-template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function){
+template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function) const{
     if(xVal<Bins[0] || xVal>Bins[NumBins]) return 0;
     if(NumBins==1) return Function[0];
     unsigned WhichBin = GetBin(xVal,Bins,NumBins+1);
@@ -3096,7 +3111,7 @@ template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigne
     }
 }
 
-double CATS::EvaluateTheSource(double* Pars){
+double CATS::EvaluateTheSource(double* Pars) const{
     if(!AnalyticSource && !ForwardedSource){
         if(Notifications>=nError){
             printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! The source is not defined!\n");

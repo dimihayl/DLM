@@ -1072,6 +1072,7 @@ void DLM_Fitter1::GoBabyGo(){
 
     //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
     HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
+    //HistoGlobal->Fit(FitGlobal,"Q");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         for(unsigned uPar=0; uPar<NumPar; uPar++){

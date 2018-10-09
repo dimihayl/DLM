@@ -1167,6 +1167,7 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
 //TYPE 2 = La pi0; //TYPE 3 = Si+ pi-
 //TYPE 4 = Si0 pi0; //TYPE 5 = Si- pi+
 //Be careful, as due to the weird binning of the wave functions, we actually initialize pretty much everything about the object here
+//!? As this WF is w/o Coulomb, shouldn't we SetQ1Q2(0), and does it makes a difference?
 void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
     const double BinCenters[] = {
         0.8145,18.8835,26.0830,
@@ -1368,7 +1369,21 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
         if(fabs(fMomentum-Kitty.GetMomentum(MomBin))>0.1){
             continue;
         }
-        WaveFunctionU[0][MomBin][0][0][RadBin] = (fCatsReWf[TYPE]+i*fCatsImWf[TYPE])*fRadius;
+        //if(!TYPE){
+        //    WaveFunctionU[0][MomBin][0][0][RadBin] = 0;
+        //    for(int iTyp=0; iTyp<6; iTyp++){
+        //        WaveFunctionU[0][MomBin][0][0][RadBin] += (fCatsReWf[TYPE]+i*fCatsImWf[TYPE])*fRadius;
+        //    }
+        //}
+        //if(!TYPE){
+        //    WaveFunctionU[0][MomBin][0][0][RadBin] = (fCatsReWf[TYPE]+i*fCatsImWf[TYPE])*fRadius;//default
+        //}
+        //else{
+        //    WaveFunctionU[0][MomBin][0][0][RadBin] = (fCatsReWf[TYPE]+i*fCatsImWf[TYPE])*fRadius - float(1.)+std::complex<float>(Kitty.EvalReferenceRadialWF(MomBin,0,fRadius,false));
+        //}
+        WaveFunctionU[0][MomBin][0][0][RadBin] = (fCatsReWf[TYPE]+i*fCatsImWf[TYPE])*fRadius;//default
+        //WaveFunctionU[0][MomBin][0][0][RadBin] = 0;
+        //WaveFunctionU[0][MomBin][0][0][RadBin] =  -float(1.)/fRadius;
         //printf("WaveFunctionU[0][%u][0][0][%u] = %.2e, %.2e\n", MomBin, RadBin, fCatsReWf[TYPE]*fRadius, fCatsImWf[TYPE]*fRadius);
         RadBinLoaded[RadBin] = true;
     }

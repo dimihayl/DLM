@@ -60,34 +60,34 @@ public:
 
     //!Sets and gets
     void SetRedMass(const double& redMass);
-    double GetRedMass();
+    double GetRedMass() const;
 
     void SetPdgId(const int& id1, const int& id2);
-    void GetPdgId(int& id1, int& id2);
+    void GetPdgId(int& id1, int& id2) const;
 
     //0 = turned off; 1 = turned on; else = automatically set based on the PdgID
     void SetQuantumStatistics(short qs);
-    short GetQuantumStatistics();
+    short GetQuantumStatistics() const;
 
     //If the number of polarizations is changed, all previous input about the
     //polarization themselves is lost (i.e. NumPW is reset!)
     void SetNumChannels(const unsigned short& numCh);
-    unsigned short GetNumChannels();
+    unsigned short GetNumChannels() const;
 
     void SetNumPW(const unsigned short& usCh, const unsigned short& numPW);
-    unsigned short GetNumPW(const unsigned short& usCh);
+    unsigned short GetNumPW(const unsigned short& usCh) const;
 
     void SetSpin(const unsigned short& usCh, const unsigned short& spin);
-    unsigned short GetSpin(const unsigned short& spin);
+    unsigned short GetSpin(const unsigned short& spin) const;
 
     void SetQ1Q2(const int& q1q2);
-    int GetQ1Q2();
+    int GetQ1Q2() const;
     void SetGamow(const bool& gamow);
-    bool GetGamow();
+    bool GetGamow() const;
 
-    unsigned GetNumMomBins();
-    unsigned GetNumIpBins();
-    unsigned GetNumPairs();
+    unsigned GetNumMomBins() const;
+    unsigned GetNumIpBins() const;
+    unsigned GetNumPairs() const;
 
     //N.B. the size of mombins should be NumMomBins+1, where each element represents the low-edge of
     //the corresponding bin, and the one extra element is the upper edge of the last bin.
@@ -98,128 +98,131 @@ public:
     void SetIpBins(const unsigned& numBbins, const double& MinImpPar, const double& MaxImpPar);
 
     void SetChannelWeight(const unsigned short& usCh, const double& weight);
-    double GetChannelWeight(const unsigned short& usCh);
+    double GetChannelWeight(const unsigned short& usCh) const;
 
     void SetStartRad(const double& srad);
-    double GetStartRad();
+    double GetStartRad() const;
 
     void SetEpsilonProp(const double& epsp);
-    double GetEpsilonProp();
+    double GetEpsilonProp() const;
 
     void SetEpsilonConv(const double& epsc);
-    double GetEpsilonConv();
+    double GetEpsilonConv() const;
 
     //in fm
     void SetMaxRad(const double& maxrad);
-    double GetMaxRad();
+    double GetMaxRad() const;
+
+    void SetMaxPw(const unsigned short& maxpw);
+    unsigned short GetMaxPw() const;
 
     void SetMaxRho(const double& maxrho);
-    double GetMaxRho();
+    double GetMaxRho() const;
 
     void SetExcludeFailedBins(const bool& efb);
-    bool GetExcludeFailedBins();
+    bool GetExcludeFailedBins() const;
 
     void SetMaxGridDepth(const short& mgd);
-    short GetMaxGridDepth();
+    short GetMaxGridDepth() const;
     void SetSourceMinValOnGrid(const double& smvg);
-    double GetSourceMinValOnGrid();
+    double GetSourceMinValOnGrid() const;
     void SetMaxNumGridPart(const unsigned& mngp);
-    unsigned GetMaxNumGridPart();
+    unsigned GetMaxNumGridPart() const;
 
     void SetGridMinDepth(const short& val);
-    short GetGridMinDepth();
+    short GetGridMinDepth() const;
     void SetGridMaxDepth(const short& val);
-    short GetGridManDepth();
+    short GetGridManDepth() const;
     void SetGridEpsilon(const double& val);
-    double GetGridEpsilon();
+    double GetGridEpsilon() const;
 
     void SetUseAnalyticSource(const bool& val);
-    bool GetUseAnalyticSource();
+    bool GetUseAnalyticSource() const;
 
     void SetThetaDependentSource(const bool& val);
-    bool GetThetaDependentSource();
+    bool GetThetaDependentSource() const;
 
     void SetTransportRenorm(const double& val);
-    double GetTransportRenorm();
+    double GetTransportRenorm() const;
 
     void SetPoorManRenorm(const double& val);
-    double GetPoorManRenorm();
+    double GetPoorManRenorm() const;
 
     void SetSourceMinRange(const double& val);
     void SetSourceMaxRange(const double& val);
-    double GetSourceMinRange();
-    double GetSourceMaxRange();
+    double GetSourceMinRange() const;
+    double GetSourceMaxRange() const;
 
     //the input values should be non-negative
     //please set this condition BEFORE you load the source, else CATS will not save the TotalMomentum at all
     //The values should be in MeV
     //if noReload is true, than CATS will not reload the data from the file. The user should
     void SetTotPairMomCut(const double& minval, const double& maxval);
-    void GetTotPairMomCut(double& minval, double& maxval);
+    void GetTotPairMomCut(double& minval, double& maxval) const;
     void RemoveTotPairMomCut();
 
     void SetNotifications(const short& notify);
-    short GetNotifications();
+    short GetNotifications() const;
 
     void SetMaxPairsPerBin(unsigned mpp);
-    unsigned GetMaxPairsPerBin();
+    unsigned GetMaxPairsPerBin() const;
 
     void SetMaxPairsToRead(unsigned mpp);
-    unsigned GetMaxPairsToRead();
+    unsigned GetMaxPairsToRead() const;
 
     //void SetMaxPairsToLoad(unsigned mpp);
     //unsigned GetMaxPairsToLoad();
 
     void SetMixingDepth(const unsigned short& mix);
-    unsigned short GetMixingDepth();
+    unsigned short GetMixingDepth() const;
 
     void SetBufferEventMix(const unsigned& bem);
-    unsigned GetBufferEventMix();
+    unsigned GetBufferEventMix() const;
 
     void SetTauCorrection(const bool& tc);
-    bool GetTauCorrection();
+    bool GetTauCorrection() const;
 
     void SetInputFileName(const char* fname);
-    void GetInputFileName(char* fname);
+    void GetInputFileName(char* fname) const;
 
-    unsigned GetNumPairsPerBin(const unsigned& uMomBin, const unsigned& uIpBin);
-    unsigned GetNumPairsPerBin(const unsigned& uMomBin);
+    unsigned GetNumPairsPerBin(const unsigned& uMomBin, const unsigned& uIpBin) const;
+    unsigned GetNumPairsPerBin(const unsigned& uMomBin) const;
 
     void GetPairInfo(const unsigned& uWhichPair,
-                     double& RelMom, double& RelPos, double& RelCosTh, double& TotMom);
-    void GetPairInfo(const unsigned& uWhichPair, double* Output);
+                     double& RelMom, double& RelPos, double& RelCosTh, double& TotMom) const;
+    void GetPairInfo(const unsigned& uWhichPair, double* Output) const;
 
-    unsigned GetLoadedPairs(const unsigned& WhichMomBin, const unsigned& WhichIpBin);
-    unsigned GetRelativeMomentum(const unsigned& WhichParticle);
-    unsigned GetRelativePosition(const unsigned& WhichParticle);
-    unsigned GetRelativeCosTheta(const unsigned& WhichParticle);
-    unsigned GetTotalPairMomentum(const unsigned& WhichParticle);
-
-    //returns the CorrFun evaluated for some MomBin
-    double GetCorrFun(const unsigned& WhichMomBin);
-    //the same, but the value of the corresponding Momentum as saved in Momentum
-    double GetCorrFun(const unsigned& WhichMomBin, double& Momentum);
-    //evaluates Ck at this point based on interpolation
-    double EvalCorrFun(const double& Momentum);
+    unsigned GetLoadedPairs(const unsigned& WhichMomBin, const unsigned& WhichIpBin) const;
+    unsigned GetRelativeMomentum(const unsigned& WhichParticle) const;
+    unsigned GetRelativePosition(const unsigned& WhichParticle) const;
+    unsigned GetRelativeCosTheta(const unsigned& WhichParticle) const;
+    unsigned GetTotalPairMomentum(const unsigned& WhichParticle) const;
 
     //returns the CorrFun evaluated for some MomBin
-    double GetCorrFunErr(const unsigned& WhichMomBin);
+    double GetCorrFun(const unsigned& WhichMomBin) const;
     //the same, but the value of the corresponding Momentum as saved in Momentum
-    double GetCorrFunErr(const unsigned& WhichMomBin, double& Momentum);
+    double GetCorrFun(const unsigned& WhichMomBin, double& Momentum) const;
     //evaluates Ck at this point based on interpolation
-    double EvalCorrFunErr(const double& Momentum);
+    double EvalCorrFun(const double& Momentum) const;
+
+    //returns the CorrFun evaluated for some MomBin
+    double GetCorrFunErr(const unsigned& WhichMomBin) const;
+    //the same, but the value of the corresponding Momentum as saved in Momentum
+    double GetCorrFunErr(const unsigned& WhichMomBin, double& Momentum) const;
+    //evaluates Ck at this point based on interpolation
+    double EvalCorrFunErr(const double& Momentum) const;
 
     //The same, but for a specific impact parameter bin
-    double GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin);
-    double GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin, double& Momentum, double& ImpPar);
+    double GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin) const;
+    double GetCorrFunIp(const unsigned& WhichMomBin, const unsigned& WhichIpBin, double& Momentum, double& ImpPar) const;
 
-    double GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW);
-    float EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW);
+    double GetPhaseShift(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW) const;
+    float EvalPhaseShift(const double& Momentum, const unsigned short& usCh, const unsigned short& usPW) const;
 
-    unsigned GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW);
-    complex<double> GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin);
+    unsigned GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW) const;
+    complex<double> GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin) const;
     complex<double> EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
-                                  const bool& DivideByR=true);
+                                  const bool& DivideByR=true) const;
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
 
@@ -228,25 +231,25 @@ public:
     complex<double> EvalReferenceRadialWF(const unsigned& WhichMomBin,const unsigned short& usPW, const double& Radius, const bool& DivideByR=true);
 
     //The momentum in the WhichMomBin-th bin
-    double GetMomentum(const unsigned& WhichMomBin);
-    double GetMomBinLowEdge(const unsigned& WhichMomBin);
-    double GetMomBinUpEdge(const unsigned& WhichMomBin);
+    double GetMomentum(const unsigned& WhichMomBin) const;
+    double GetMomBinLowEdge(const unsigned& WhichMomBin) const;
+    double GetMomBinUpEdge(const unsigned& WhichMomBin) const;
     //use with care, the memory allocation is not monitored by cats, i.e. the pointer you
     //get from here should be deleted later in your code!
     double* CopyMomBin();
 
-    unsigned GetMomBin(const double& Momentum);
-    unsigned GetIpBin(const double& bVal);
+    unsigned GetMomBin(const double& Momentum) const;
+    unsigned GetIpBin(const double& bVal) const;
     //computes the momentum bin corresponding to Momentum
-    unsigned GetBin(const double& Value, const double* Range, const unsigned& NumBins);
+    unsigned GetBin(const double& Value, const double* Range, const unsigned& NumBins) const;
     //computes the radius bin corresponding to Radius (for a certain l and S)
     unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
-                       const unsigned short& usCh, const unsigned short& usPW);
+                       const unsigned short& usCh, const unsigned short& usPW) const;
 
     //convert fm to 1/MeV
-    const double& FmNu();
+    const double& FmNu() const;
     //convert 1/MeV to fm
-    const double& NuFm();
+    const double& NuFm() const;
 
     //[0]-[2] reserved for CATS ([0] is Momentum, [1] is Radius (fm), [2] is CosTheta)
     //n.b. for the time being CATS assumes radial symmetric potential, thus [2] is actually never used,
@@ -305,7 +308,7 @@ void test_ad5(){
     //if(SmallChange==true) => force CATS to reuse the computing grid
     //This will  gain performance, might decrease the accuracy though, please use only when fine-tuning the source
     void SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange=false);
-    double GetAnaSourcePar(const unsigned& WhichPar);
+    double GetAnaSourcePar(const unsigned& WhichPar) const;
 
     //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
     void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
@@ -432,6 +435,8 @@ protected:
     //more important in the presence of a short-range potential. The default value is 16
     //N.B. this parameter influences ONLY the Schroedinger solver (unlike MaxRad)
     double MaxRho;
+    //the max. 'l' to be computed by CATS
+    unsigned short MaxPw;
 
     bool ExcludeFailedConvergence;
 
@@ -509,9 +514,6 @@ protected:
     //!Constants
     const unsigned short NumPotPars;
     const unsigned short NumSourcePars;
-
-    //the max. 'l' to be computed by CATS
-    const unsigned short MaxPw;
     //!------------------------------------------------
 
     //!Functions used internally by CATS
@@ -534,18 +536,18 @@ protected:
     float ProgressFold;
 
     //plane partial wave as a solution from the gsl libraries
-    double PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW);
+    double PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW) const;
     //coulomb partial wave as a solution from the gsl libraries
-    double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2);
+    double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
     //radial/coulomb partial wave as a solution from the gsl libraries
-    double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2);
+    double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
 
-    double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2);
+    double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
 
     //a numerical root-finder. Very fast and accurate for well-behaved (near to linear) functions
-    double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&),
+    double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&) const,
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
-                          const double&  xMin, const double&  xMax, const double& fValShift);
+                          const double&  xMin, const double&  xMax, const double& fValShift) const;
 
     template <class Type> void ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter);
     unsigned GetBoxId(double* particle);
@@ -555,17 +557,17 @@ protected:
     //the computed range we use the shifted reference wave. If DivideByR==true, computed is R = u/r.
     //N.B. The result would differ from EvalWaveFunctionU/Radius due to the extrapolation done.
     complex<double> EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
-                             const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic=false);
+                             const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic=false) const;
     double EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
     double EffectiveFunction(const unsigned& uMomBin, const double& Radius);
 
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta);
 
-    template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin);
-    template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function);
+    template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin) const;
+    template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function) const;
 
-    double EvaluateTheSource(double* Pars);
+    double EvaluateTheSource(double* Pars) const;
 
     //double SourceFunction(const double* Pars, const double& GridSize);
     void UpdateCPF();
