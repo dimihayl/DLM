@@ -1170,7 +1170,7 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
 //!? As this WF is w/o Coulomb, shouldn't we SetQ1Q2(0), and does it makes a difference?
 void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
     const double BinCenters[] = {
-        0.8145,18.8835,26.0830,
+        0.8145,6.0205,12.0126,18.8835,26.0830,
         36.4455,43.7270,47.0314,
         52.0749,54.3229,56.0890,
         57.2364,58.1940,58.4093,
@@ -1182,7 +1182,7 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
         184.9410,194.6850,204.4536
     };
 
-    const unsigned NumMomBins = 30;
+    const unsigned NumMomBins = 32;
     double* MomBins = new double [NumMomBins+1];
     MomBins[0] = 0;
     for(unsigned uBin=1; uBin<NumMomBins; uBin++){
@@ -1279,7 +1279,7 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
 
     char* InputFileName = new char [128];
     strcpy(InputFileName, InputFolder);
-    strcat(InputFileName, "kmp.data");
+    strcat(InputFileName, "kmpV.data");
 
     const unsigned NumBlankTransitionLines = 1;
     const double MinRad = 0.1;

@@ -224,7 +224,6 @@ DEBUGFLAG=0;
 }
 
 DLM_CkDecomposition::~DLM_CkDecomposition(){
-return;
     if(ERROR_STATE) return;
     if(NumChildren){
         delete [] Child; Child=NULL;
