@@ -48,7 +48,7 @@ class DLM_CkDecomposition{
 public:
     enum CkDecType { cFeedDown, cFake };
 
-    DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, TH2F* hSigmaMatrix, const bool& InvertAxis=false);
+    DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, const TH2F* hSigmaMatrix, const bool& InvertAxis=false);
 //DLM_CkDecomposition():ERROR_STATE(0),NumChildren(0){}
     ~DLM_CkDecomposition();
 
@@ -57,7 +57,7 @@ public:
     //                 TH2F* hResidualMatrix, const bool& InvertedAxis=false);
     //void AddImpurity(const unsigned& WhichCk, const double& fraction, DLM_CkDecomposition* child);
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child=NULL,
-                         TH2F* hResidualMatrix=NULL, const bool& InvertedAxis=false);
+                         const TH2F* hResidualMatrix=NULL, const bool& InvertedAxis=false);
 
     double EvalCk(const double& Momentum);
     double EvalMain(const double& Momentum);

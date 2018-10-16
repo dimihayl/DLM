@@ -130,3 +130,6 @@ The user can now change the MaxPw used in the evaluation of the total wave-funct
 Hot fix:
 It turns out that starting your destructor with a return statement is a bad idea
 Also it seems that in the extentions I forgot to commit the latest Haidenbauer file -> good job Dimi
+
+16.10.2018 CATS 2.19
+changes to the extentions, nothing drastic, just some small new features

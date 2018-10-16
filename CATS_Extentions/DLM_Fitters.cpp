@@ -11,7 +11,7 @@
 #include "DLM_CkDecomposition.h"
 
 DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(15),NumPotPar(6),NumRangePar(4){
-    HistoOriginal = new TH1F* [MaxNumSyst];
+    HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
     SourceSystems = NULL;
@@ -139,7 +139,7 @@ DLM_Fitter1::~DLM_Fitter1(){
 //return;
 //}
 
-void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, TH1F& histo, const double& FromMeV ,
+void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, const TH1F& histo, const double& FromMeV ,
                    DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX){
 
 
@@ -162,10 +162,10 @@ printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,K
         return;
     }
 
-    unsigned BinMin = histo.FindBin(KMIN/FromMeV);
+    unsigned BinMin = histo.GetXaxis()->FindBin(KMIN/FromMeV);
     //unsigned BinFemto = histo->FindBin(KFEMTO/FromMeV);
     //unsigned BinLinear = histo->FindBin(KLINEAR/FromMeV);
-    unsigned BinMax = histo.FindBin(KMAX/FromMeV);
+    unsigned BinMax = histo.GetXaxis()->FindBin(KMAX/FromMeV);
 
     FitRange[WhichSyst][kmin] = KMIN;
     FitRange[WhichSyst][kf] = KFEMTO;

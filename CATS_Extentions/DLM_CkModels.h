@@ -10,7 +10,7 @@ double LednickyAsInStar(const double& Momentum, const double& GaussR, const doub
 double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
                        const double& ScattLenTri, const double& EffRangeTri,
-                       const bool& SinOnly, const bool& QS);
+                       const bool& SinOnly, const bool& QS, const bool& InverseScatLen=false);
 
 double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
@@ -22,6 +22,7 @@ double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
 
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar);
+double Lednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);

@@ -172,7 +172,7 @@ printf("%.2f\n",Lednicky_Identical_Singlet(GetBinCenter(uBin), SourcePar, PotPar
 }
 
 //the main contribution does not count as a child, i.e. 1 child implies one contribution additionally to the main one!
-DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, TH2F* hSigmaMatrix, const bool& InvertAxis):
+DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, const TH2F* hSigmaMatrix, const bool& InvertAxis):
     ERROR_STATE(!name),NumChildren(numchildren),CkMain(&ckfunction){
 DEBUGFLAG=0;
     Child = NULL;
@@ -246,7 +246,7 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
 }
 
 void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child,
-                                          TH2F* hResidualMatrix, const bool& InvertedAxis){
+                                          const TH2F* hResidualMatrix, const bool& InvertedAxis){
     if(ERROR_STATE) return;
 
     if(WhichCk>=NumChildren){

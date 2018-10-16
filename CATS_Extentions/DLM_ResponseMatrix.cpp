@@ -69,7 +69,7 @@ void DLM_ResponseMatrix::DefaultConstructor(){
 
 }
 
-DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, TH2F* hs, TH2F* hr, const bool& ia):
+DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ab.GetNumMomBins()){
     double* BINS = ab.CopyMomBin();
     CatHisto = new CATShisto<double> (ab.GetNumMomBins(), BINS);
@@ -79,7 +79,7 @@ DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, TH2F* hs, TH2F* hr, const bool&
     DefaultConstructor();
 }
 
-DLM_ResponseMatrix::DLM_ResponseMatrix(CATShisto<double>& ch, TH2F* hs, TH2F* hr, const bool& ia):
+DLM_ResponseMatrix::DLM_ResponseMatrix(CATShisto<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ch.GetNbins()){
 
     CatHisto = &ch;
@@ -191,7 +191,7 @@ void DLM_ResponseMatrix::MakeUnitMatrix(const int& WhichMatr){
     }
 }
 
-void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, TH2F* input, const bool& InvAxis){
+void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, const bool& InvAxis){
 
     int** Sparse = GetSparse(WhichMatr);
     double** Matrix = GetMatrix(WhichMatr);

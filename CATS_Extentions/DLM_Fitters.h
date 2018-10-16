@@ -33,7 +33,7 @@ public:
     ~DLM_Fitter1();
 
     //sets up a certain system that we want to fit
-    void SetSystem(const unsigned& WhichSyst, TH1F& histo, const double& FromMeV ,
+    void SetSystem(const unsigned& WhichSyst, const TH1F& histo, const double& FromMeV ,
                    DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
     int GetSystem(const TString& System);
     TString GetSystem(const unsigned& WhichSyst);
@@ -95,7 +95,7 @@ private:
 
     TString OutputDirName;
 
-    TH1F** HistoOriginal;
+    const TH1F** HistoOriginal;
     TH1F** HistoToFit;
 
     //[WhichSyst]

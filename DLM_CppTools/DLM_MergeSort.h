@@ -87,7 +87,7 @@ private:
    //imagine two boxes: [a,b,c,d] [e,f,g]
    //a = Start; e = Mid; g = End, where a,b,c... are the array number of KeyTemp
 
-    void MergeSortBox(const Num& Start, const Num& Mid, const Num& End){
+    void MergeSortBox(const Num& Start, const Num& Mid, const Num& End, const bool& descending){
         Num pragmasplit = Start + (End-Start)/2;
 
         Num PosFirstBox = Start;
@@ -103,7 +103,11 @@ private:
                 KeyTemp[i] = Key[PosFirstBox];
                 PosFirstBox++;
             }
-            else if(Input[Key[PosFirstBox]] > Input[Key[PosSecondBox]]){
+            else if(Input[Key[PosFirstBox]] > Input[Key[PosSecondBox]] && !descending){
+                KeyTemp[i] = Key[PosSecondBox];
+                PosSecondBox++;
+            }
+            else if(Input[Key[PosFirstBox]] < Input[Key[PosSecondBox]] && descending){
                 KeyTemp[i] = Key[PosSecondBox];
                 PosSecondBox++;
             }
@@ -126,7 +130,11 @@ private:
                 KeyTemp[i] = Key[PosSecondBox];
                 PosSecondBox--;
             }
-            else if(Input[Key[PosSecondBox]] < Input[Key[PosFirstBox]]){
+            else if(Input[Key[PosSecondBox]] < Input[Key[PosFirstBox]] && !descending){
+                KeyTemp[i] = Key[PosFirstBox];
+                PosFirstBox--;
+            }
+            else if(Input[Key[PosSecondBox]] > Input[Key[PosFirstBox]] && descending){
                 KeyTemp[i] = Key[PosFirstBox];
                 PosFirstBox--;
             }
@@ -225,7 +233,7 @@ public:
     //merging and sorting each 2 neighbouring boxes. Thus on the first level we have 2 elements in all boxes. Do note,
     //that in the last box we might have less (i.e. one for the first level) elements. In any case, we again merge-sort
     //each 2 neighbouring boxes and continue until we have all elements in a single box.
-    bool MergeSort(){
+    bool MergeSort(const bool& descending=false){
         if(!Input){
             printf("DLM_MergeSort says: ERROR! No data is loaded for sorting! Please use SetData(Element* input, Num N).");
             return false;
@@ -249,7 +257,7 @@ public:
                 Num Mid = Start + ElementsPerBox;
                 Num End = Mid + ElementsPerBox - 1;
                 if(End>=NumOfEl) End = NumOfEl-1;
-                MergeSortBox(Start, Mid, End);
+                MergeSortBox(Start, Mid, End, descending);
             }
             ElementsPerBox *= 2;
             lldiv_t divresult;
