@@ -212,8 +212,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
     double* WeightXY = new double [MaxBufferSize];
 
     //if the axis are inverted
-    TAxis* Xaxis = InvAxis?input->GetYaxis():input->GetXaxis();
-    TAxis* Yaxis = InvAxis?input->GetXaxis():input->GetYaxis();
+    const TAxis* Xaxis = InvAxis?input->GetYaxis():input->GetXaxis();
+    const TAxis* Yaxis = InvAxis?input->GetXaxis():input->GetYaxis();
     for(int iBin=0; iBin<NumMomBins; iBin++){
         Sparse[iBin][xAxisFirst] = -1;
         Sparse[iBin][xAxisLast] = -2;
@@ -227,8 +227,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
         MomLowEdgeX = CatHisto->GetBinLowEdge(iBinX);
         MomUpEdgeX = CatHisto->GetBinUpEdge(iBinX);
         //the corresponding bin numbers in the smear histogram
-        WhichBinAtLowEdgeX = Xaxis->FindBin(MomLowEdgeX);
-        WhichBinAtUpEdgeX = Xaxis->FindBin(MomUpEdgeX);
+        WhichBinAtLowEdgeX = Xaxis->FindFixBin(MomLowEdgeX);
+        WhichBinAtUpEdgeX = Xaxis->FindFixBin(MomUpEdgeX);
         //number of histogram bins that are enclosed in this interval
         NumOldBinsX = WhichBinAtUpEdgeX - WhichBinAtLowEdgeX + 1;
 //Printf("MomLowEdgeX=%f", MomLowEdgeX);
@@ -244,8 +244,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
         for(int iBinY=0; iBinY<NumMomBins; iBinY++){
             MomLowEdgeY = CatHisto->GetBinLowEdge(iBinY);
             MomUpEdgeY = CatHisto->GetBinUpEdge(iBinY);
-            WhichBinAtLowEdgeY = Xaxis->FindBin(MomLowEdgeY);
-            WhichBinAtUpEdgeY = Xaxis->FindBin(MomUpEdgeY);
+            WhichBinAtLowEdgeY = Xaxis->FindFixBin(MomLowEdgeY);
+            WhichBinAtUpEdgeY = Xaxis->FindFixBin(MomUpEdgeY);
             NumOldBinsY = WhichBinAtUpEdgeY - WhichBinAtLowEdgeY + 1;
             if(NumOldBinsY>MaxBufferSize){
                 printf("ERROR: DLM_ResponseMatrix::ConvertMatrix hates you since NumOldBinsX>MaxBufferSize\nA CRASH SHOULD FOLLOW!\n");
