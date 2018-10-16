@@ -9,7 +9,7 @@
 //pp_ReidOli models S=1 with 3P1
 //pp_ReidCrab is the castrated Reid including ONLY 3P2 for the S=1 state
 enum DLMPOT {   NN_AV18, NN_ReidV8, pp_ReidSC, pp_ReidOli, pp_ReidCrab, pp_ReidVale,
-                pL_UsmaniOli, pXim_Lattice, pXim_HALQCD1, pXim_LatticeAvg, pXim_LatticeSqrtAvg, pKm_Tetsuo};
+                pL_UsmaniOli, pXim_Lattice, pXim_HALQCD1, pXim_LatticeAvg, pXim_LatticeSqrtAvg, pKm_Tetsuo, pOmega_Lattice};
 
 //specific flags that are to be passed the potentials. 0 is the default
 //extern int DlmPotFlag;
@@ -28,7 +28,9 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
 double LatticePots_pXi_Avg(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars);
-
+double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars);
 struct LatticeValues;
 
 
