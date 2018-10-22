@@ -3,8 +3,10 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 project(CATS)
 # SET PATHS #
 SET(CATS_DESTINATION "/home/dmihaylov/Dudek_Ubuntu/Temp/cat/CatsSource")#where to install CATS. Folder must exist.
-SET(ROOT_INCLUDE "/home/dmihaylov/Apps/root-6.14.00/obj/include")#where are all ROOT related .h files
-SET(ROOT_LIB "/home/dmihaylov/Apps/root-6.14.00/obj/lib")#where are the ROOT related .a and .so files
+#SET(ROOT_INCLUDE "/home/dmihaylov/Apps/root-6.14.00/obj/include")#where are all ROOT related .h files
+#SET(ROOT_LIB "/home/dmihaylov/Apps/root-6.14.00/obj/lib")#where are the ROOT related .a and .so files
+SET(ROOT_INCLUDE "/home/dmihaylov/root/include")#where are all ROOT related .h files
+SET(ROOT_LIB "/home/dmihaylov/root/lib")#where are the ROOT related .a and .so files
 SET(GSL_INCLUDE "/usr/include/gsl")#where are all GSL related .h files
 SET(GSL_LIB "/usr/lib")#where are the GSL .a and .so files
 SET(CATS_FOLDER "/home/dmihaylov/Dudek_Ubuntu/DLM_GitHub")#where is the CATS main folder located

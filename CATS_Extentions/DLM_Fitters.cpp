@@ -419,6 +419,8 @@ void DLM_Fitter1::AddSamePotential(const TString& System, const TString& EqualTo
     SamePotentialMap[NumPotentialMapEntries][1] = EqualTo;
     NumSamePotentialPar[NumPotentialMapEntries] = numpars;
 
+//printf("System=%s; EqualTo=%s\n",System.Data(),EqualTo.Data());
+
     NumPotentialMapEntries++;
 }
 
@@ -851,14 +853,24 @@ void DLM_Fitter1::GoBabyGo(){
         NumPotentialSystems += bool(SystemToFit[uSyst]);
     }
     for(unsigned uPotentialMap=0; uPotentialMap<NumPotentialMapEntries; uPotentialMap++){
+//printf("uPotentialMap=%u; NumPotentialMapEntries=%u\n" ,uPotentialMap, NumPotentialMapEntries);
         bool IsNotCkToFit=true;
         for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
             if(!SystemToFit[uSyst]) continue;
             SystemToFit[uSyst]->GetName(buffer);
             if(strcmp(buffer,SamePotentialMap[uPotentialMap][0].Data())==0) IsNotCkToFit=false;
+//printf("buffer = %s;\n",buffer);
+//printf(" SamePotentialMap = %p;\n",SamePotentialMap);
+//printf(" SamePotentialMap[%u] = %p;\n",uPotentialMap,SamePotentialMap[uPotentialMap]);
+//printf(" SamePotentialMap[%u][0] = %s;\n",uPotentialMap,SamePotentialMap[uPotentialMap][0].Data());
+
+
+//printf("buffer = %s; SamePotentialMap[%u][0] = %s\n",buffer,SamePotentialMap[uPotentialMap][0].Data());
+
         }
         //we add to the counter all entries with a parent source, that are not main contributions.
         //the reason is that the main contributions are already included above.
+//printf(" uPotentialMap=%u; IsNotCkToFit=%i\n" ,uPotentialMap, int(IsNotCkToFit));
         NumPotentialSystems += IsNotCkToFit;
     }
 
@@ -869,6 +881,7 @@ void DLM_Fitter1::GoBabyGo(){
     if(ParentPotential){delete[]ParentPotential;ParentPotential=NULL;}
     if(NumPotentialSystems) ParentPotential = new int [NumPotentialSystems];
 //printf("PotentialSystems=%p\n",PotentialSystems);
+//printf("NumPotentialSystems=%u\n",NumPotentialSystems);
 
     unsigned uActualPotential=0;
     //set the addresses of the main Ck functions to the PotentialSystems
@@ -1033,20 +1046,25 @@ void DLM_Fitter1::GoBabyGo(){
             }
 
             //if the radius should be taken from a parent -> fix the source to a dummy value
-            if(int(uPar)==p_sor0 && ParentSource[uSyst]!=int(uSyst)){
+            if(int(uPar)>=p_sor0 && int(uPar)<=p_sor5 && ParentSource[uSyst]!=int(uSyst)){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor1, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor2, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor4, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor5, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor1, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor2, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor4, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor5, -1e6);
+//printf("FIX SOR\n");
             }
+//printf("uSyst=%u; ParentPotential[uSyst]=%u\n",uSyst,ParentPotential[uSyst]);
             //if the potential should be taken from a parent -> fix the potential pars to dummy values
-            if(int(uPar)==p_pot0 && ParentPotential[uSyst]!=int(uSyst)){
+            if(int(uPar)>=p_pot0 && int(uPar)<=p_pot3 && ParentPotential[uSyst]!=int(uSyst)){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_pot1, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_pot2, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_pot3, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_pot1, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_pot2, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_pot3, -1e6);
+//printf("FIX POT\n");
+//printf(" fixing %u\n",uSyst*NumPar+uPar);
+//printf(" fixing %u %u %u %u\n",uSyst*NumPar+uPar,uSyst*NumPar+p_pot1,uSyst*NumPar+p_pot2,uSyst*NumPar+p_pot3);
             }
 
             //if kf==kl, than there is an active boundary condition for the linear part of C(k)
