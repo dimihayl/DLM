@@ -133,3 +133,6 @@ Also it seems that in the extentions I forgot to commit the latest Haidenbauer f
 
 16.10.2018 CATS 2.19
 changes to the extentions, nothing drastic, just some small new features
+
+22.10.2018 CATS 2.20
+Base on input from B. Hohlweger -> an attempt to fix a probelm with the Lednicky extention, causing the Dawson functions to overflow.
