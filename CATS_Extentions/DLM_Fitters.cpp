@@ -10,7 +10,7 @@
 
 #include "DLM_CkDecomposition.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(15),NumPotPar(6),NumRangePar(4){
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(15),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -49,8 +49,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         FixPar[uSyst] = new bool [NumPar];
         //fix the pot pars
         for(unsigned uPar=0; uPar<NumPar; uPar++){
-            if(uPar<NumPar-NumPotPar) FixPar[uSyst][uPar] = false;
-            else FixPar[uSyst][uPar] = true;
+            FixPar[uSyst][uPar] = false;
         }
         SeparateBaseLineFit[uSyst] = true;
         ParValue[uSyst][p_a] = 1; ParDownLimit[uSyst][p_a] = 0.5; ParUpLimit[uSyst][p_a] = 2;
@@ -58,10 +57,11 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
         FixPar[uSyst][p_c] = true;
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
-        FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
+        FixPar[uSyst][p_sor0]=true; FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
         ParValue[uSyst][p_Cl] = 1; ParDownLimit[uSyst][p_Cl] = 0.75; ParUpLimit[uSyst][p_Cl] = 1.25;
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
         ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0;
+        FixPar[uSyst][p_pot0]=true; FixPar[uSyst][p_pot1]=true; FixPar[uSyst][p_pot2]=true; FixPar[uSyst][p_pot3]=true;
         //FitBL[uSyst] = new TF1(TString::Format("FitBL%u",uSyst),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
         FitBL[uSyst] = NULL;
     }
@@ -1090,7 +1090,7 @@ void DLM_Fitter1::GoBabyGo(){
 
     //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
     HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
-    //HistoGlobal->Fit(FitGlobal,"Q");
+    //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         for(unsigned uPar=0; uPar<NumPar; uPar++){
@@ -1142,6 +1142,13 @@ printf("\n");
     //HistoGlobal->Write();
     //FitGlobal->Write();
     //delete tmpFile;
+//if(FitGlobal->GetNDF()==22){
+//printf("NGLOB=%u\n",HistoGlobal->GetNbinsX());
+//printf("NFIT=%u\n",FitGlobal->GetNDF());
+//printf("NFPar=%u\n",FitGlobal->GetNumberFreeParameters());
+//printf("NFPts=%u\n",FitGlobal->GetNumberFitPoints());
+//FitGlobal->Print();
+//}
 
 }
 

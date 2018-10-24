@@ -5,3 +5,8 @@ TO INSTALL CATS:
 2) run in terminal: source configure.sh
 3) unless there are errors, run in terminal: make
                                              make install
+
+you may need to do:
+export LD_LIBRARY_PATH=/mypath${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
+to make sure the librieries are accessible at runtime. mypath would be the path to the lib folder where CATS is installed

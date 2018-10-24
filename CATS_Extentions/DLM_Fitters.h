@@ -90,7 +90,7 @@ public:
 private:
     const unsigned MaxNumSyst;
     const unsigned NumPar;
-    const unsigned NumPotPar;
+    //const unsigned NumPotPar;
     const unsigned NumRangePar;
 
     TString OutputDirName;
