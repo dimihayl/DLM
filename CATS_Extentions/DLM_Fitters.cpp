@@ -57,6 +57,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
         FixPar[uSyst][p_c] = true;
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
+        ParValue[uSyst][p_sor1] = 0; ParValue[uSyst][p_sor2] = 0; ParValue[uSyst][p_sor3] = 0; ParValue[uSyst][p_sor4] = 0; ParValue[uSyst][p_sor5] = 0;
         FixPar[uSyst][p_sor0]=true; FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
         ParValue[uSyst][p_Cl] = 1; ParDownLimit[uSyst][p_Cl] = 0.75; ParUpLimit[uSyst][p_Cl] = 1.25;
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
@@ -1053,7 +1054,7 @@ void DLM_Fitter1::GoBabyGo(){
                 //FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
                 //FitGlobal->FixParameter(uSyst*NumPar+p_sor4, -1e6);
                 //FitGlobal->FixParameter(uSyst*NumPar+p_sor5, -1e6);
-//printf("FIX SOR\n");
+//printf("FIX SOR %u\n",uSyst*NumPar+uPar);
             }
 //printf("uSyst=%u; ParentPotential[uSyst]=%u\n",uSyst,ParentPotential[uSyst]);
             //if the potential should be taken from a parent -> fix the potential pars to dummy values
@@ -1071,11 +1072,13 @@ void DLM_Fitter1::GoBabyGo(){
             //thus Cl will be determined by the fitter, here we set a dummy value
             if(int(uPar)==p_Cl && FitRange[uSyst][kl]==FitRange[uSyst][kf]){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+uPar, ParValue[uSyst][uPar]);
             }
 
             //if we want to fit with a flat long-range C(k)
             if(int(uPar)==p_kc && ParValue[uSyst][p_Cl]<=0){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+uPar, ParValue[uSyst][uPar]);
 //printf("HEY from %u\n",uSyst*NumPar+uPar);
             }
         }
@@ -1084,6 +1087,8 @@ void DLM_Fitter1::GoBabyGo(){
         if(FitRange[uSyst][kl]==FitRange[uSyst][kmax]){
             FitGlobal->FixParameter(uSyst*NumPar+p_Cl, -1e6);
             FitGlobal->FixParameter(uSyst*NumPar+p_kc, -1e6);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+p_Cl, ParValue[uSyst][p_Cl]);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+p_kc, ParValue[uSyst][p_kc]);
         }
         //uActSyst++;
     }
@@ -1143,10 +1148,12 @@ printf("\n");
     //FitGlobal->Write();
     //delete tmpFile;
 //if(FitGlobal->GetNDF()==22){
+
 //printf("NGLOB=%u\n",HistoGlobal->GetNbinsX());
 //printf("NFIT=%u\n",FitGlobal->GetNDF());
 //printf("NFPar=%u\n",FitGlobal->GetNumberFreeParameters());
-//printf("NFPts=%u\n",FitGlobal->GetNumberFitPoints());
+//printf("NFPts=%u\n\n",FitGlobal->GetNumberFitPoints());
+
 //FitGlobal->Print();
 //}
 
