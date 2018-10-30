@@ -1568,7 +1568,7 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
     const unsigned short NumPwPerCh = 1;
     unsigned short NumMomBins = 36;
     double* Momentum = new double [NumMomBins];
-    double* MomentumBins = new double [NumMomBins];
+    double* MomentumBins = new double [NumMomBins+1];
     double* pLab = new double [NumMomBins];
     pLab[0] = 5;
     pLab[1] = 10;
@@ -1691,12 +1691,15 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
+//if(uFile==NumMomBins) printf("uFile=%u (%s)\n",uFile,InputFileName[uFile]);
+//printf("uFile=%u (%s)\n",uFile,InputFileName[uFile]);
         while(!feof(InFile)){
             fgets(cdummy, 255, InFile);
 //printf("I am here - %i!\n", strlen(cdummy));
             //if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f",
                    &fRadius,&fCatsWf);
+//if(uFile==NumMomBins) printf("&fRadius,&fCatsWf = %e %e\n",fRadius,fCatsWf);
             fMomentum = Momentum[uFile%(NumMomBins)];
             LastRadBin = RadBin;
             RadBin = Kitty.GetBin(fRadius,RadBins[0],NumRadBins+1);
@@ -1730,14 +1733,13 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
         delete [] cdummy;
         fclose(InFile);
     }//uFile
-
+//printf("Outside\n");
     for(unsigned uBin=0; uBin<NumMomBins; uBin++){
         Kitty.UseExternalWaveFunction(uBin,0,0,WaveFunctionU[0][uBin][0][0], NumRadBins, RadBins[0]);
         Kitty.UseExternalWaveFunction(uBin,1,0,WaveFunctionU[0][uBin][1][0], NumRadBins, RadBins[0]);
         Kitty.UseExternalWaveFunction(uBin,2,0,WaveFunctionU[0][uBin][2][0], NumRadBins, RadBins[0]);
         Kitty.UseExternalWaveFunction(uBin,3,0,WaveFunctionU[0][uBin][3][0], NumRadBins, RadBins[0]);
     }
-
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         delete [] InputFileName[uFile];
     }
