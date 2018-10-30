@@ -74,6 +74,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
     CumulativeNumBinsSyst = NULL;
 
     OutputDirName = "./";
+    RemoveNegCk = false;
 
 }
 
@@ -675,6 +676,10 @@ void DLM_Fitter1::SetSeparateBL(const unsigned& WhichSyst, const bool& yesno){
     if(WhichSyst>=MaxNumSyst) return;
     SeparateBaseLineFit[WhichSyst] = yesno;
 }
+void DLM_Fitter1::RemoveNegativeCk(const bool& yesno){
+    RemoveNegCk = yesno;
+}
+
 TF1* DLM_Fitter1::GetFit(){
     return FitGlobal;
 }
@@ -1260,5 +1265,18 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             if(Clin>1 && CkVal<1) CkVal=1;
         }
     }
+
+    //this is here to make sure that we do not get an unphysical correlation function. If we do we put a HUGE value to CkVal to make the chi2 very bad
+    //so that the fitter eventually rejects such combinations.
+    if(RemoveNegCk){
+        //does not really work yet
+        double CkMain = SystemToFit[WhichSyst]->EvalMain(Momentum);
+        //if(CkMain<0) CkVal-=fabs(CkMain*1000);
+        if(CkMain<0) CkVal-=(exp(-CkMain*32)-1);
+        //CkVal=-1e16;
+
+        //printf("SystemToFit[WhichSyst]->EvalMain(%.3f)=%.3f\n", Momentum, SystemToFit[WhichSyst]->EvalMain(Momentum));
+    }
+
     return BlVal*CkVal;
 }

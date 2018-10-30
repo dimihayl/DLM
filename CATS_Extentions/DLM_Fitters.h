@@ -73,6 +73,8 @@ public:
     void SetOutputDir(const TString& outdirname);
     void SetSeparateBL(const unsigned& WhichSyst, const bool& yesno);
 
+    void RemoveNegativeCk(const bool& yesno);
+
     const unsigned GetNumParPerSyst(){return NumPar;}
 
     TF1* GetFit();
@@ -92,6 +94,7 @@ private:
     const unsigned NumPar;
     //const unsigned NumPotPar;
     const unsigned NumRangePar;
+    bool RemoveNegCk;
 
     TString OutputDirName;
 

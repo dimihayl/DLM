@@ -1399,10 +1399,8 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
 }
 
 
-//see email in may 2018, this is isospin averaged
-//basically we have two channels: s1+p1 and s1+p3
-//I am pretty sure this already includes the p n mass splitting
-//TYPE==1 take the complex wf
+
+
 //! WE SHOULD SET UP KITTY AT SOME POINT
 void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
 
@@ -1561,6 +1559,197 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
 //printf("hhhhhhhhhhhh\n");
 }
 
+
+
+//! WE SHOULD SET UP KITTY AT SOME POINT
+void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
+//void InitESC08_v2(const double& MaxMomentum){
+    const unsigned short NumChannels = 4;
+    const unsigned short NumPwPerCh = 1;
+    unsigned short NumMomBins = 36;
+    double* Momentum = new double [NumMomBins];
+    double* MomentumBins = new double [NumMomBins];
+    double* pLab = new double [NumMomBins];
+    pLab[0] = 5;
+    pLab[1] = 10;
+    for(unsigned uBin=2; uBin<NumMomBins; uBin++){
+        pLab[uBin] = pLab[uBin-1]+10;
+
+    }
+    //we assume the proton is at rest?
+    const double Mass_p = 938.272;
+    const double Mass_Xim = 1321.7;
+    for(unsigned uBin=0; uBin<NumMomBins; uBin++){
+        Momentum[uBin] = sqrt(pow(Mass_p*pLab[uBin],2)/(pow(Mass_p,2)+pow(Mass_Xim,2)+2*Mass_p*sqrt(pow(Mass_Xim,2)+pow(pLab[uBin],2))));
+        if(Momentum[uBin]>MaxMomentum) {NumMomBins=uBin; break;}
+    }
+    MomentumBins[0]=0;
+    for(unsigned short uBin=0; uBin<NumMomBins-1; uBin++){
+        MomentumBins[uBin+1] = (Momentum[uBin]+Momentum[uBin+1])*0.5;
+    }
+    MomentumBins[NumMomBins] = Momentum[NumMomBins-1]+(Momentum[NumMomBins-1]-MomentumBins[NumMomBins-1]);
+
+    //for(unsigned uBin=0; uBin<NumMomBins; uBin++){
+        //printf("MomBin %u: %.2f ... %.2f ... %.2f\n",uBin,MomentumBins[uBin],Momentum[uBin],MomentumBins[uBin+1]);
+    //}
+
+//
+
+    Kitty.SetMomBins(NumMomBins,MomentumBins,Momentum);
+    Kitty.SetNumChannels(NumChannels);
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        Kitty.SetNumPW(uCh,1);
+        Kitty.SetChannelWeight(uCh,1./4.);
+        Kitty.SetSpin(uCh,uCh?1:0);
+    }
+    Kitty.SetQ1Q2(-1);
+    Kitty.SetPdgId(2212, 3312);
+    Kitty.SetRedMass( Mass_p*Mass_Xim/(Mass_p+Mass_Xim) );
+
+    const unsigned short NumFiles = NumMomBins*NumChannels;
+
+    char** InputFileName = new char* [NumFiles];
+    char* buffer = new char[256];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char[256];
+        strcpy(InputFileName[uFile],InputFolder);
+        if(uFile<NumMomBins){
+            strcat(InputFileName[uFile], "lsj000/");
+            sprintf(buffer,"wflsj000_plab%.0f.dat",pLab[uFile%(NumMomBins)]);
+        }
+        else if(uFile<2*NumMomBins){
+            strcat(InputFileName[uFile], "lsj011/ss/");
+            sprintf(buffer,"wflsj011_plab%.0f.dat",pLab[uFile%(NumMomBins)]);
+        }
+        else if(uFile<3*NumMomBins){
+            strcat(InputFileName[uFile], "lsj011/sd/");
+            sprintf(buffer,"wflsj011_plab%.0f.dat",pLab[uFile%(NumMomBins)]);
+        }
+        else{
+            strcat(InputFileName[uFile], "lsj011/dd/");
+            sprintf(buffer,"wflsj011_plab%.0f.dat",pLab[uFile%(NumMomBins)]);
+        }
+        strcat(InputFileName[uFile],buffer);
+    }
+
+    const unsigned NumBlankTransitionLines = 0;
+    const double MinRad = 0.05;
+    const double RadStep = 0.05;
+    const double MaxRad = 15.0;
+    NumRadBins = round((MaxRad-MinRad)/RadStep) + 1;
+    bool* RadBinLoaded = new bool [NumRadBins+1];
+//printf("Here\n");
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+//printf("uMomBin=%u\n",uMomBin);
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
+        for(unsigned usCh=0; usCh<NumChannels; usCh++){
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
+            for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
+            }
+        }
+    }
+
+    RadBins[0] = new double [NumRadBins+1];
+    for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+        RadBins[0][uRad] = MinRad-RadStep*0.5 + RadStep*double(uRad);
+        RadBinLoaded[uRad] = false;
+    }
+//printf("Hey!\n");
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        FILE *InFile;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            return;
+        }
+//printf("uFile=%u\n",uFile);
+        fseek ( InFile , 0 , SEEK_END );
+        //long EndPos;
+        //EndPos = ftell (InFile);
+        fseek ( InFile , 0 , SEEK_SET );
+        //long CurPos;
+
+        char* cdummy = new char [256];
+
+        //Read the header lines
+        for(unsigned short us=0; us<NumBlankTransitionLines; us++){
+            fgets(cdummy, 255, InFile);
+        }
+
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return;
+        }
+
+        float fRadius;
+        float fMomentum;
+        float fCatsWf;
+
+        unsigned RadBin;
+        unsigned LastRadBin;
+        unsigned MomBin;
+        //!---Iteration over all events---
+        while(!feof(InFile)){
+            fgets(cdummy, 255, InFile);
+//printf("I am here - %i!\n", strlen(cdummy));
+            //if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
+            sscanf(cdummy, " %f %f",
+                   &fRadius,&fCatsWf);
+            fMomentum = Momentum[uFile%(NumMomBins)];
+            LastRadBin = RadBin;
+            RadBin = Kitty.GetBin(fRadius,RadBins[0],NumRadBins+1);
+            //we filled up all rad bins
+            if(RadBin<=LastRadBin){
+                for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+                    RadBinLoaded[uRad]=false;
+                }
+
+            }
+            if(RadBin>=NumRadBins) continue;
+            if(RadBinLoaded[RadBin]){
+                printf("\033[1;33mWARNING:\033[0m Trying to load RadBin #%u twice!\n", RadBin);
+                continue;
+            }
+            MomBin = Kitty.GetMomBin(fMomentum);
+            if(MomBin!=uFile%(NumMomBins)){
+                printf("\033[1;31mERROR:\033[0m Bug in InitESC08\n");
+                break;
+            }
+            // mom/ch/pw/rad
+            //CHANNELS, S=0 or 1
+            WaveFunctionU[0][MomBin][uFile>=NumMomBins][0][RadBin] = fCatsWf*fRadius;
+            if(uFile<NumMomBins) WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+            else if(uFile<2*NumMomBins) WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+            else if(uFile<3*NumMomBins) WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
+            else WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
+
+            RadBinLoaded[RadBin] = true;
+        }
+        delete [] cdummy;
+        fclose(InFile);
+    }//uFile
+
+    for(unsigned uBin=0; uBin<NumMomBins; uBin++){
+        Kitty.UseExternalWaveFunction(uBin,0,0,WaveFunctionU[0][uBin][0][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uBin,1,0,WaveFunctionU[0][uBin][1][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uBin,2,0,WaveFunctionU[0][uBin][2][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uBin,3,0,WaveFunctionU[0][uBin][3][0], NumRadBins, RadBins[0]);
+    }
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] InputFileName[uFile];
+    }
+    delete [] InputFileName;
+    delete [] Momentum;
+    delete [] MomentumBins;
+    delete [] pLab;
+    delete [] buffer;
+    delete [] RadBinLoaded;
+//printf("hhhhhhhhhhhh\n");
+
+}
 
 void CleanHaidenbauer(CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins){
     unsigned NumMomBins = Kitty.GetNumMomBins();
