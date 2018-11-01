@@ -185,9 +185,9 @@ printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,K
 
     HistoOriginal[WhichSyst] = &histo;
     SystemToFit[WhichSyst] = &decomp;
-
+//printf("HistoToFit[WhichSyst] = %p\n",HistoToFit[WhichSyst]);
     if(HistoToFit[WhichSyst]){
-        delete [] HistoToFit[WhichSyst];
+        delete HistoToFit[WhichSyst];
     }
 
 //printf("HistoToFit = %p\n",HistoToFit);
