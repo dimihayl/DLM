@@ -24,13 +24,56 @@ double ZeroPotential(double* Radius){
     return 0;
 }
 
+double DoubleGaussSum(double* Pars){
+    return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],2));
+}
+
 //V0*exp(-r^2/β0^2)+V1*exp(-r^2/β1^2)+V2*exp(-r^2/β2^2)
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2
 double TripleGaussSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],2))+Pars[6]*exp(-pow(Pars[0]/Pars[7],2));
 }
 
+/*
+double CustomUsmaniStefano1(const double& Radius,const int& ipart){
 
+    const double mju = 0.98;
+    const double vZero = -49.2;
+    double PotVal;
+
+    if(ipart==0){
+        PotVal = mju*mju*vZero/Power(CosH(mju*Radius),2);
+    }
+    else{
+        PotVal = 0;
+        //Printf("KUREC!");
+        //PotVal = mju*mju*vZero/Power(CosH(mju*Radius),2);
+    }
+
+    //if(ipart==0) hCustomUsmaniStefano1->SetBinContent(hCustomUsmaniStefano1->FindBin(Radius),PotVal);
+
+    return PotVal;
+}
+
+double CustomUsmaniStefano2(const double& Radius,const int& ipart){
+
+    const double mju=2.08;
+    const double vZero = -57.8;
+    double PotVal;
+    if(ipart==0){
+        PotVal = mju*mju*vZero*(Exp(-mju*Radius)-2*Exp(-2*mju*Radius));
+    }
+    else{
+        PotVal = 0;
+        //Printf("KUREC!");
+        //PotVal = mju*mju*vZero*(Exp(-mju*Radius)-2*Exp(-2*mju*Radius));
+    }
+
+    //if(ipart==0) hCustomUsmaniStefano2->SetBinContent(hCustomUsmaniStefano2->FindBin(Radius),PotVal);
+
+    return PotVal;
+}
+*/
 //f(x) = (x > 0 ? a*exp(-b*x*x)+c*(1-exp(-d*x*x))**1*(exp(-e*x)/x)**1 : a) #  for 1S0 effective
 //g(x) = (x > 0 ? a*exp(-b*x*x)+f*exp(-g*x*x)+c*(1-exp(-d*x*x))**1*(exp(-e*x)/x)**2 : a+f+c*d)  # for 3S1
 //Other pars --> used for the dummy I=1 case, in which we use a shifted 3P1 of the AV18, OtherPars[0] contains info about the shift
