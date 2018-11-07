@@ -679,13 +679,29 @@ void DLM_Fitter1::SetSeparateBL(const unsigned& WhichSyst, const bool& yesno){
 void DLM_Fitter1::RemoveNegativeCk(const bool& yesno){
     RemoveNegCk = yesno;
 }
+bool DLM_Fitter1::CheckNegativeCk(){
+    //printf("1/f0=%f\n",FitGlobal->GetParameter(p_pot0));
+    //printf("d0=%f\n",FitGlobal->GetParameter(p_pot1));
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        if(SystemToFit[uSyst]){
+            for(unsigned uBin=0; uBin<SystemToFit[uSyst]->GetCk()->GetNbins(); uBin++){
+                //printf(" SystemToFit[uSyst]->GetCk()->GetBinContent(%u)=%f\n",uBin,SystemToFit[uSyst]->GetCk()->GetBinContent(uBin));
+                if(SystemToFit[uSyst]->GetCk()->GetBinContent(uBin)<0) return true;
+            }
+        }
+    }
+    return false;
+}
 
 TF1* DLM_Fitter1::GetFit(){
     return FitGlobal;
 }
-TF1* DLM_Fitter1::GetBaselineFit(const unsigned& WhichSyst){
+TF1* DLM_Fitter1::GetBaselineFit(const unsigned& WhichSyst) const{
     if(WhichSyst>=MaxNumSyst) return NULL;
     return FitBL[WhichSyst];
+}
+const TH1F* DLM_Fitter1::GetGlobalHisto() const{
+    return HistoGlobal;
 }
 
 void DLM_Fitter1::GoBabyGo(){
