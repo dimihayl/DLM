@@ -136,3 +136,6 @@ changes to the extentions, nothing drastic, just some small new features
 
 22.10.2018 CATS 2.20
 Base on input from B. Hohlweger -> an attempt to fix a probelm with the Lednicky extention, causing the Dawson functions to overflow.
+
+08.11.2018 CATS 2.24
+Added further functionalities in the DLM_Decomposition and CATShisto

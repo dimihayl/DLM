@@ -383,13 +383,16 @@ DLM_CkDecomposition* DLM_CkDecomposition::GetContribution(const char* name){
     }
     return RESULT;
 }
-CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const unsigned& WhichChild){
+CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const unsigned& WhichChild, const bool& WithLambda){
     if(WhichChild>=NumChildren) return NULL;
     CATShisto<double>* Histo = new CATShisto<double> (*CkChildMainFeed[WhichChild]);
-    Smear(CkChildMainFeed[WhichChild], RM_MomResolution, Histo);
+    if(Type[WhichChild]!=cFake){
+        Smear(CkChildMainFeed[WhichChild], RM_MomResolution, Histo);
+    }
+    if(WithLambda) Histo->Scale(LambdaPar[WhichChild]);
     return Histo;
 }
-CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const char* name){
+CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const char* name, const bool& WithLambda){
     for(unsigned uChild=0; uChild<NumChildren; uChild++){
         if(!Child[uChild]) continue;
         if(strcmp(name,Child[uChild]->Name)==0){
