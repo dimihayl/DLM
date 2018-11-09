@@ -434,7 +434,8 @@ void InitHaidenbauer_pXi(const char* InputFolder, CATS& Kitty, complex<double>**
             }
 //printf("!!!!\n");
 
-            WaveFunctionU[0][MomBin][uFile][uFile%2][RadBin] = (fReWf+i*fImWf)*fRadius;
+            //WaveFunctionU[0][MomBin][uFile][uFile%2][RadBin] = (fReWf+i*fImWf)*fRadius;
+            WaveFunctionU[0][MomBin][uFile][0][RadBin] = (fReWf+i*fImWf)*fRadius;
             PhaseShifts[0][MomBin][uFile][uFile%2] = 0;
 
             RadBinLoaded[RadBin] = true;
@@ -442,6 +443,13 @@ void InitHaidenbauer_pXi(const char* InputFolder, CATS& Kitty, complex<double>**
 
         fclose(InFile);
     }//uFile
+
+    for(unsigned uBin=0; uBin<NumMomBins; uBin++){
+        Kitty.UseExternalWaveFunction(uBin,0,0,WaveFunctionU[0][uBin][0][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uBin,1,0,WaveFunctionU[0][uBin][1][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uBin,2,0,WaveFunctionU[0][uBin][2][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uBin,3,0,WaveFunctionU[0][uBin][3][0], NumRadBins, RadBins[0]);
+    }
 
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         delete [] InputFileName[uFile];
