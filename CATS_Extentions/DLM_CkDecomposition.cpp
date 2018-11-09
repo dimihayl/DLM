@@ -396,7 +396,7 @@ CATShisto<double>* DLM_CkDecomposition::GetChildContribution(const char* name, c
     for(unsigned uChild=0; uChild<NumChildren; uChild++){
         if(!Child[uChild]) continue;
         if(strcmp(name,Child[uChild]->Name)==0){
-            return GetChildContribution(uChild);
+            return GetChildContribution(uChild,WithLambda);
         }
     }
     return NULL;
