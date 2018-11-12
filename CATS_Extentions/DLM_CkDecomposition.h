@@ -22,6 +22,7 @@ public:
     double GetSourcePar(const unsigned& WhichPar);
     unsigned GetNumSourcePar();
     void SetPotPar(const unsigned& WhichPar, const double& Value);
+    double GetPotPar(const unsigned& WhichPar);
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
 

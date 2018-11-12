@@ -139,3 +139,7 @@ Base on input from B. Hohlweger -> an attempt to fix a probelm with the Lednicky
 
 08.11.2018 CATS 2.24
 Added further functionalities in the DLM_Decomposition and CATShisto
+
+12.11.2018 CATS 2.25
+Significant bug found in the DLM_Fitter, which had an influence for global fits including shared parameters between the potential
+

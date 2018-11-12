@@ -57,7 +57,9 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     //const double FmToNu=5.067731237e-3;
     //const std::complex<double> i(0,1);
     //const double Pi(3.141592653589793);
-
+//if(ScattLenSin>211){
+//printf("ScattLenSin = %e\n",ScattLenSin);
+//}
     if(GaussR!=GaussR){
         printf("\033[1;33mWARNING:\033[0m GeneralLednicky got a bad value for the Radius (nan). Returning default value of 1.\n");
         return 1;

@@ -1216,20 +1216,25 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
         //if(!FixPar[0][p_sor3])
             //SourceSystems[uSource]->GetCk()->SetSourcePar(3, Pars[ParentSource[uSource]*NumPar+p_sor3]);
     }
-
-    for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
-        for(unsigned uPar=0; uPar<PotentialSystems[uPotential]->GetCk()->GetNumPotPar(); uPar++){
-            PotentialSystems[uPotential]->GetCk()->SetPotPar(uPar, Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
-        }
-    }
-
+/*
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!SystemToFit[uSyst]) continue;
         for(unsigned uPot=0; uPot<NumPar; uPot++){
             if(uPot>=SystemToFit[uSyst]->GetCk()->GetNumPotPar()) break;
             SystemToFit[uSyst]->GetCk()->SetPotPar(uPot, Pars[uSyst*NumPar+p_pot0+uPot]);
+//printf("uSyst=%u; uPot=%u; %e\n",uSyst,uPot,Pars[uSyst*NumPar+p_pot0+uPot]);
         }
     }
+*/
+    for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
+        for(unsigned uPar=0; uPar<PotentialSystems[uPotential]->GetCk()->GetNumPotPar(); uPar++){
+            PotentialSystems[uPotential]->GetCk()->SetPotPar(uPar, Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
+//printf(" uPotential=%u; uPar=%u;  --> %e\n",uPotential,uPar,Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
+        }
+    }
+
+
+//usleep(2e6);
 
     //update all systems. It is better to do this here than in the loop before,
     //in order to make sure that ALL systems have their sources adjusted before the update

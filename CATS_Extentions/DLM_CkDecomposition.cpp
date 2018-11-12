@@ -101,6 +101,11 @@ double DLM_Ck::GetSourcePar(const unsigned& WhichPar){
 unsigned DLM_Ck::GetNumSourcePar(){
     return NumSourcePar;
 }
+
+double DLM_Ck::GetPotPar(const unsigned& WhichPar){
+    if(WhichPar>=NumPotPar) return 0;
+    return PotPar[WhichPar];
+}
 unsigned DLM_Ck::GetNumPotPar(){
     return NumPotPar;
 }
