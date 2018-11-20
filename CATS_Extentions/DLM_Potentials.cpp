@@ -545,6 +545,58 @@ double LatticePots_pXi_SqrtAvg(const int& WhichPot, const int& DlmPotFlag,
 
 }
 
+//B1*exp(-B2*r*r)+B3*(1-exp(-b4*r*r))(exp(-2*mpi*r)/(r*r))
+double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
+
+
+    const double mpihal = 146.;
+    const double hcbar = 197.3;
+    const double mpihalfm = mpihal/hcbar;
+
+    double B1;
+    double B2;
+    double B3;
+    double B4;
+    double Result;
+    const double& rad=Radius[0];
+    const double rad2=rad*rad;
+
+    //I=1/2; 5S2
+        switch(DlmPotFlag){
+        case 11 :
+          B1 = -306.5;
+          B2 = 73.9;
+          B3 = -266.0;
+          B4 = 0.78;
+            break;
+        case 12 :
+          B1 = -313.0;
+          B2 = 81.7;
+          B3 = -252.0;
+          B4 = 0.85;
+            break;
+        case 13 :
+          B1 = -316.7;
+          B2 = 81.9;
+          B3 = -237.0;
+          B4 = 0.91;
+            break;
+        case 14 :
+          B1 = -296;
+          B2 = 64.0;
+          B3 = -272.0;
+          B4 = 0.76;
+            break;
+        default :
+            return 0;
+        }
+ //f(x) = (x > 0 ? a*exp(-b*x*x)+c*(1-exp(-d*x*x))**1*(exp(-e*x)/x)**1 : a) #  for 1S0 effective
+        Result = B1*exp(-B2*rad2)+B3*(1.-exp(-B4*rad2))*exp(-2.0*mpihalfm*rad)/rad2;
+
+        return Result;
+}
 //flag 0 = p
 //flag 1 = n
 //flag 2 = p+avgIsospinPotential (i.e. for only a single channel and V=0.5*(VI0+VI1))
@@ -942,6 +994,7 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
         case pXim_LatticeAvg : return LatticePots_pXi_Avg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pXim_LatticeSqrtAvg : return LatticePots_pXi_SqrtAvg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pKm_Tetsuo : return Tetsuo_pKm(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
+        case pOmega_Lattice : return LatticePots_pOmega(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         default : return 0;
     }
 }
@@ -988,8 +1041,3 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name){
     sprintf(Buffer, "%i", potflag);
     if(potflag!=0 && strcmp(name,"Unknown potential")){strcat(name, "^{(");strcat(name,Buffer);strcat(name,")}");}
 }
-
-
-
-
-
