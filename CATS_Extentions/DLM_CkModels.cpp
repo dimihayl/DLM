@@ -26,6 +26,11 @@ double LednickyAsInStar(const double& Momentum, const double& GaussR, const doub
 
     //const double Pi(3.141592653589793);
 
+    if(GaussR!=GaussR){
+        printf("\033[1;33mWARNING:\033[0m LednickyAsInStar got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
+
     const double Radius = GaussR*FmToNu;
     const double sLen1 = ScattLenSin*FmToNu;
     const double eRan1 = EffRangeSin*FmToNu;
@@ -52,6 +57,13 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     //const double FmToNu=5.067731237e-3;
     //const std::complex<double> i(0,1);
     //const double Pi(3.141592653589793);
+//if(ScattLenSin>211){
+//printf("ScattLenSin = %e\n",ScattLenSin);
+//}
+    if(GaussR!=GaussR){
+        printf("\033[1;33mWARNING:\033[0m GeneralLednicky got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
 
     const double Radius = GaussR*FmToNu;
     const double IsLen1 = InverseScatLen?ScattLenSin/FmToNu:1./(ScattLenSin*FmToNu+1e-64);
@@ -96,6 +108,11 @@ double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
     //const double FmToNu=5.067731237e-3;
     //const std::complex<double> i(0,1);
     //const double Pi(3.141592653589793);
+
+    if(GaussR!=GaussR){
+        printf("\033[1;33mWARNING:\033[0m GeneralCoulombLednicky got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
 
     const double Momentum2 = Momentum*Momentum;
     const double Radius = GaussR*FmToNu;

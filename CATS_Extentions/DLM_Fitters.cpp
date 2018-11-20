@@ -10,7 +10,7 @@
 
 #include "DLM_CkDecomposition.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(15),NumPotPar(6),NumRangePar(4){
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(15),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -49,8 +49,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         FixPar[uSyst] = new bool [NumPar];
         //fix the pot pars
         for(unsigned uPar=0; uPar<NumPar; uPar++){
-            if(uPar<NumPar-NumPotPar) FixPar[uSyst][uPar] = false;
-            else FixPar[uSyst][uPar] = true;
+            FixPar[uSyst][uPar] = false;
         }
         SeparateBaseLineFit[uSyst] = true;
         ParValue[uSyst][p_a] = 1; ParDownLimit[uSyst][p_a] = 0.5; ParUpLimit[uSyst][p_a] = 2;
@@ -58,10 +57,12 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
         FixPar[uSyst][p_c] = true;
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
-        FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
+        ParValue[uSyst][p_sor1] = 0; ParValue[uSyst][p_sor2] = 0; ParValue[uSyst][p_sor3] = 0; ParValue[uSyst][p_sor4] = 0; ParValue[uSyst][p_sor5] = 0;
+        FixPar[uSyst][p_sor0]=true; FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
         ParValue[uSyst][p_Cl] = 1; ParDownLimit[uSyst][p_Cl] = 0.75; ParUpLimit[uSyst][p_Cl] = 1.25;
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
         ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0;
+        FixPar[uSyst][p_pot0]=true; FixPar[uSyst][p_pot1]=true; FixPar[uSyst][p_pot2]=true; FixPar[uSyst][p_pot3]=true;
         //FitBL[uSyst] = new TF1(TString::Format("FitBL%u",uSyst),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
         FitBL[uSyst] = NULL;
     }
@@ -73,6 +74,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
     CumulativeNumBinsSyst = NULL;
 
     OutputDirName = "./";
+    RemoveNegCk = false;
 
 }
 
@@ -183,9 +185,9 @@ printf("KMIN=%.2f; KFEMTO=%.2f; KLINEAR=%.2f; KMAX=%.2f\n",KMIN,KFEMTO,KLINEAR,K
 
     HistoOriginal[WhichSyst] = &histo;
     SystemToFit[WhichSyst] = &decomp;
-
+//printf("HistoToFit[WhichSyst] = %p\n",HistoToFit[WhichSyst]);
     if(HistoToFit[WhichSyst]){
-        delete [] HistoToFit[WhichSyst];
+        delete HistoToFit[WhichSyst];
     }
 
 //printf("HistoToFit = %p\n",HistoToFit);
@@ -418,6 +420,8 @@ void DLM_Fitter1::AddSamePotential(const TString& System, const TString& EqualTo
     SamePotentialMap[NumPotentialMapEntries][0] = System;
     SamePotentialMap[NumPotentialMapEntries][1] = EqualTo;
     NumSamePotentialPar[NumPotentialMapEntries] = numpars;
+
+//printf("System=%s; EqualTo=%s\n",System.Data(),EqualTo.Data());
 
     NumPotentialMapEntries++;
 }
@@ -672,12 +676,32 @@ void DLM_Fitter1::SetSeparateBL(const unsigned& WhichSyst, const bool& yesno){
     if(WhichSyst>=MaxNumSyst) return;
     SeparateBaseLineFit[WhichSyst] = yesno;
 }
+void DLM_Fitter1::RemoveNegativeCk(const bool& yesno){
+    RemoveNegCk = yesno;
+}
+bool DLM_Fitter1::CheckNegativeCk(){
+    //printf("1/f0=%f\n",FitGlobal->GetParameter(p_pot0));
+    //printf("d0=%f\n",FitGlobal->GetParameter(p_pot1));
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        if(SystemToFit[uSyst]){
+            for(unsigned uBin=0; uBin<SystemToFit[uSyst]->GetCk()->GetNbins(); uBin++){
+                //printf(" SystemToFit[uSyst]->GetCk()->GetBinContent(%u)=%f\n",uBin,SystemToFit[uSyst]->GetCk()->GetBinContent(uBin));
+                if(SystemToFit[uSyst]->GetCk()->GetBinContent(uBin)<0) return true;
+            }
+        }
+    }
+    return false;
+}
+
 TF1* DLM_Fitter1::GetFit(){
     return FitGlobal;
 }
-TF1* DLM_Fitter1::GetBaselineFit(const unsigned& WhichSyst){
+TF1* DLM_Fitter1::GetBaselineFit(const unsigned& WhichSyst) const{
     if(WhichSyst>=MaxNumSyst) return NULL;
     return FitBL[WhichSyst];
+}
+const TH1F* DLM_Fitter1::GetGlobalHisto() const{
+    return HistoGlobal;
 }
 
 void DLM_Fitter1::GoBabyGo(){
@@ -851,14 +875,24 @@ void DLM_Fitter1::GoBabyGo(){
         NumPotentialSystems += bool(SystemToFit[uSyst]);
     }
     for(unsigned uPotentialMap=0; uPotentialMap<NumPotentialMapEntries; uPotentialMap++){
+//printf("uPotentialMap=%u; NumPotentialMapEntries=%u\n" ,uPotentialMap, NumPotentialMapEntries);
         bool IsNotCkToFit=true;
         for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
             if(!SystemToFit[uSyst]) continue;
             SystemToFit[uSyst]->GetName(buffer);
             if(strcmp(buffer,SamePotentialMap[uPotentialMap][0].Data())==0) IsNotCkToFit=false;
+//printf("buffer = %s;\n",buffer);
+//printf(" SamePotentialMap = %p;\n",SamePotentialMap);
+//printf(" SamePotentialMap[%u] = %p;\n",uPotentialMap,SamePotentialMap[uPotentialMap]);
+//printf(" SamePotentialMap[%u][0] = %s;\n",uPotentialMap,SamePotentialMap[uPotentialMap][0].Data());
+
+
+//printf("buffer = %s; SamePotentialMap[%u][0] = %s\n",buffer,SamePotentialMap[uPotentialMap][0].Data());
+
         }
         //we add to the counter all entries with a parent source, that are not main contributions.
         //the reason is that the main contributions are already included above.
+//printf(" uPotentialMap=%u; IsNotCkToFit=%i\n" ,uPotentialMap, int(IsNotCkToFit));
         NumPotentialSystems += IsNotCkToFit;
     }
 
@@ -869,6 +903,7 @@ void DLM_Fitter1::GoBabyGo(){
     if(ParentPotential){delete[]ParentPotential;ParentPotential=NULL;}
     if(NumPotentialSystems) ParentPotential = new int [NumPotentialSystems];
 //printf("PotentialSystems=%p\n",PotentialSystems);
+//printf("NumPotentialSystems=%u\n",NumPotentialSystems);
 
     unsigned uActualPotential=0;
     //set the addresses of the main Ck functions to the PotentialSystems
@@ -1033,31 +1068,38 @@ void DLM_Fitter1::GoBabyGo(){
             }
 
             //if the radius should be taken from a parent -> fix the source to a dummy value
-            if(int(uPar)==p_sor0 && ParentSource[uSyst]!=int(uSyst)){
+            if(int(uPar)>=p_sor0 && int(uPar)<=p_sor5 && ParentSource[uSyst]!=int(uSyst)){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor1, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor2, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor4, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_sor5, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor1, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor2, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor3, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor4, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_sor5, -1e6);
+//printf("FIX SOR %u\n",uSyst*NumPar+uPar);
             }
+//printf("uSyst=%u; ParentPotential[uSyst]=%u\n",uSyst,ParentPotential[uSyst]);
             //if the potential should be taken from a parent -> fix the potential pars to dummy values
-            if(int(uPar)==p_pot0 && ParentPotential[uSyst]!=int(uSyst)){
+            if(int(uPar)>=p_pot0 && int(uPar)<=p_pot3 && ParentPotential[uSyst]!=int(uSyst)){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_pot1, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_pot2, -1e6);
-                FitGlobal->FixParameter(uSyst*NumPar+p_pot3, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_pot1, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_pot2, -1e6);
+                //FitGlobal->FixParameter(uSyst*NumPar+p_pot3, -1e6);
+//printf("FIX POT\n");
+//printf(" fixing %u\n",uSyst*NumPar+uPar);
+//printf(" fixing %u %u %u %u\n",uSyst*NumPar+uPar,uSyst*NumPar+p_pot1,uSyst*NumPar+p_pot2,uSyst*NumPar+p_pot3);
             }
 
             //if kf==kl, than there is an active boundary condition for the linear part of C(k)
             //thus Cl will be determined by the fitter, here we set a dummy value
             if(int(uPar)==p_Cl && FitRange[uSyst][kl]==FitRange[uSyst][kf]){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+uPar, ParValue[uSyst][uPar]);
             }
 
             //if we want to fit with a flat long-range C(k)
             if(int(uPar)==p_kc && ParValue[uSyst][p_Cl]<=0){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+uPar, ParValue[uSyst][uPar]);
 //printf("HEY from %u\n",uSyst*NumPar+uPar);
             }
         }
@@ -1066,13 +1108,15 @@ void DLM_Fitter1::GoBabyGo(){
         if(FitRange[uSyst][kl]==FitRange[uSyst][kmax]){
             FitGlobal->FixParameter(uSyst*NumPar+p_Cl, -1e6);
             FitGlobal->FixParameter(uSyst*NumPar+p_kc, -1e6);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+p_Cl, ParValue[uSyst][p_Cl]);
+//printf("Fix PAR%u = %f\n", uSyst*NumPar+p_kc, ParValue[uSyst][p_kc]);
         }
         //uActSyst++;
     }
 
     //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
     HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
-    //HistoGlobal->Fit(FitGlobal,"Q");
+    //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         for(unsigned uPar=0; uPar<NumPar; uPar++){
@@ -1124,6 +1168,15 @@ printf("\n");
     //HistoGlobal->Write();
     //FitGlobal->Write();
     //delete tmpFile;
+//if(FitGlobal->GetNDF()==22){
+
+//printf("NGLOB=%u\n",HistoGlobal->GetNbinsX());
+//printf("NFIT=%u\n",FitGlobal->GetNDF());
+//printf("NFPar=%u\n",FitGlobal->GetNumberFreeParameters());
+//printf("NFPts=%u\n\n",FitGlobal->GetNumberFitPoints());
+
+//FitGlobal->Print();
+//}
 
 }
 
@@ -1163,20 +1216,25 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
         //if(!FixPar[0][p_sor3])
             //SourceSystems[uSource]->GetCk()->SetSourcePar(3, Pars[ParentSource[uSource]*NumPar+p_sor3]);
     }
-
-    for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
-        for(unsigned uPar=0; uPar<PotentialSystems[uPotential]->GetCk()->GetNumPotPar(); uPar++){
-            PotentialSystems[uPotential]->GetCk()->SetPotPar(uPar, Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
-        }
-    }
-
+/*
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!SystemToFit[uSyst]) continue;
         for(unsigned uPot=0; uPot<NumPar; uPot++){
             if(uPot>=SystemToFit[uSyst]->GetCk()->GetNumPotPar()) break;
             SystemToFit[uSyst]->GetCk()->SetPotPar(uPot, Pars[uSyst*NumPar+p_pot0+uPot]);
+//printf("uSyst=%u; uPot=%u; %e\n",uSyst,uPot,Pars[uSyst*NumPar+p_pot0+uPot]);
         }
     }
+*/
+    for(unsigned uPotential=0; uPotential<NumPotentialSystems; uPotential++){
+        for(unsigned uPar=0; uPar<PotentialSystems[uPotential]->GetCk()->GetNumPotPar(); uPar++){
+            PotentialSystems[uPotential]->GetCk()->SetPotPar(uPar, Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
+//printf(" uPotential=%u; uPar=%u;  --> %e\n",uPotential,uPar,Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
+        }
+    }
+
+
+//usleep(2e6);
 
     //update all systems. It is better to do this here than in the loop before,
     //in order to make sure that ALL systems have their sources adjusted before the update
@@ -1228,5 +1286,18 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             if(Clin>1 && CkVal<1) CkVal=1;
         }
     }
+
+    //this is here to make sure that we do not get an unphysical correlation function. If we do we put a HUGE value to CkVal to make the chi2 very bad
+    //so that the fitter eventually rejects such combinations.
+    if(RemoveNegCk){
+        //does not really work yet
+        double CkMain = SystemToFit[WhichSyst]->EvalMain(Momentum);
+        //if(CkMain<0) CkVal-=fabs(CkMain*1000);
+        if(CkMain<0) CkVal-=(exp(-CkMain*32)-1);
+        //CkVal=-1e16;
+
+        //printf("SystemToFit[WhichSyst]->EvalMain(%.3f)=%.3f\n", Momentum, SystemToFit[WhichSyst]->EvalMain(Momentum));
+    }
+
     return BlVal*CkVal;
 }

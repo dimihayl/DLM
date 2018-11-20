@@ -310,6 +310,9 @@ void test_ad5(){
     void SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange=false);
     double GetAnaSourcePar(const unsigned& WhichPar) const;
 
+    //void SetPotPar(const unsigned& WhichPar, const double& Value);
+    double GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar) const;
+
     //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
     void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
                                  const complex<double>* RadWF=NULL, const unsigned& NumRadBins=0, const double* RadBins=NULL, const double& PHASESHIFT=0);

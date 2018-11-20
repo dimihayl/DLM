@@ -73,10 +73,15 @@ public:
     void SetOutputDir(const TString& outdirname);
     void SetSeparateBL(const unsigned& WhichSyst, const bool& yesno);
 
+    void RemoveNegativeCk(const bool& yesno);
+    bool CheckNegativeCk();
+
     const unsigned GetNumParPerSyst(){return NumPar;}
 
     TF1* GetFit();
-    TF1* GetBaselineFit(const unsigned& WhichSyst);
+    TF1* GetBaselineFit(const unsigned& WhichSyst) const;
+    const TH1F* GetGlobalHisto() const;
+
 
     //set up the global histogram and perform the fit
     void GoBabyGo();
@@ -90,8 +95,9 @@ public:
 private:
     const unsigned MaxNumSyst;
     const unsigned NumPar;
-    const unsigned NumPotPar;
+    //const unsigned NumPotPar;
     const unsigned NumRangePar;
+    bool RemoveNegCk;
 
     TString OutputDirName;
 

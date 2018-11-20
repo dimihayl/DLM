@@ -1340,6 +1340,14 @@ double CATS::GetAnaSourcePar(const unsigned& WhichPar) const{
     }
     return AnaSourcePar[NumSourcePars+WhichPar];
 }
+double CATS::GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar) const{
+    if(NumCh<=usCh || NumPW[usCh]<=usPW){
+        if(Notifications>=nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetPotPar(...)\n");
+        return 0;
+    }
+    return PotPar[usCh][usPW][NumPotPars+WhichPar];
+}
 
 void CATS::UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
                                  const complex<double>* RadWF, const unsigned& NumRadBins, const double* RadBins, const double& PHASESHIFT){

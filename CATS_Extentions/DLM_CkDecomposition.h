@@ -22,6 +22,7 @@ public:
     double GetSourcePar(const unsigned& WhichPar);
     unsigned GetNumSourcePar();
     void SetPotPar(const unsigned& WhichPar, const double& Value);
+    double GetPotPar(const unsigned& WhichPar);
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
 
@@ -81,8 +82,8 @@ public:
     unsigned GetNumChildren();
     DLM_CkDecomposition* GetChild(const unsigned& WhichChild);
     DLM_CkDecomposition* GetContribution(const char* name);
-    CATShisto<double>* GetChildContribution(const unsigned& WhichChild);
-    CATShisto<double>* GetChildContribution(const char* name);
+    CATShisto<double>* GetChildContribution(const unsigned& WhichChild, const bool& WithLambda=false);
+    CATShisto<double>* GetChildContribution(const char* name, const bool& WithLambda=false);
     DLM_Ck* GetCk();
 
     void GetName(char* name);

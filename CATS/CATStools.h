@@ -444,6 +444,9 @@ public:
     void Add(const Type& Value){
         for(unsigned uBin=0; uBin<NumBins; uBin++) BinValue[uBin] += Value;
     }
+    void Scale(const Type& Value){
+        for(unsigned uBin=0; uBin<NumBins; uBin++) BinValue[uBin] *= Value;
+    }
 
     bool operator=(const CATShisto& other){
         return Copy(other, 1);

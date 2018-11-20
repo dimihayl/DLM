@@ -133,3 +133,13 @@ Also it seems that in the extentions I forgot to commit the latest Haidenbauer f
 
 16.10.2018 CATS 2.19
 changes to the extentions, nothing drastic, just some small new features
+
+22.10.2018 CATS 2.20
+Base on input from B. Hohlweger -> an attempt to fix a probelm with the Lednicky extention, causing the Dawson functions to overflow.
+
+08.11.2018 CATS 2.24
+Added further functionalities in the DLM_Decomposition and CATShisto
+
+12.11.2018 CATS 2.25
+Significant bug found in the DLM_Fitter, which had an influence for global fits including shared parameters between the potential
+
