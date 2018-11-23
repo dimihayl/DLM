@@ -1005,6 +1005,7 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
 //[7] Spin (s), [8] AngMom (l), [9] TotMom (j)
 //[10] - optional stuff
 double fDlmPot(double* Parameters){
+    //printf(" fDlmPot called with %p\n",Parameters);
     return fDlmPot(round(Parameters[2]),round(Parameters[3]),round(Parameters[4]),round(Parameters[5]),
                    round(Parameters[6]),round(Parameters[7]),round(Parameters[8]),round(Parameters[9]),Parameters,&Parameters[10]);
 }

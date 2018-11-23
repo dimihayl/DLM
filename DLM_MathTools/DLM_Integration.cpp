@@ -27,6 +27,7 @@ double FUNCTION(const double& x){
     else{
         printf("\033[1;31mERROR!\033[0m DLM_Integration: NULL pointer to the function!\n");
     }
+    return 0;
 }
 
 
@@ -34,7 +35,7 @@ double DLM_INT_Trapez(const double& a, const double& b, const unsigned& N){
     if(!N) return 0;
 	double result = 0;
 	double h = (b-a)/double(N);
-	for(int i=1; i<N; i++){ //interm. steps
+	for(unsigned i=1; i<N; i++){ //interm. steps
 		result += h*FUNCTION(a+i*h);
 	}
 	result += 0.5*h*FUNCTION(a);  //first step
@@ -46,7 +47,7 @@ double DLM_INT_Simpson(const double& a, const double& b, const unsigned& N){
     if(!N) return 0;
 	double result = 0;
 	double h = (b-a)/double(N);
-	for(int i=1; i<N; i++){ //interm. steps
+	for(unsigned i=1; i<N; i++){ //interm. steps
 		result += (1+i%2)*2./3.*h*FUNCTION(a+i*h);
 	}
 	result += h/3.*FUNCTION(a);  //first step
@@ -60,7 +61,7 @@ double DLM_INT_TrapezWiki(const double& a, const double& b, const unsigned& N){
 	double result = 0;
 	double h = (b-a)/double(N);
 	//double temp;
-	for(int i=0; i<N; i++){ //interm. steps
+	for(unsigned i=0; i<N; i++){ //interm. steps
 	    result += h*(FUNCTION(a+i*h) + FUNCTION(a+(i+1)*h))/2.;
 	}
 	return result;
@@ -70,7 +71,7 @@ double DLM_INT_SimpsonWiki(const double& a, const double& b, const unsigned& N){
     if(!N) return 0;
 	double result = 0;
 	double h = (b-a)/double(N);
-	for(int i=0; i<N; i++){ //interm. steps
+	for(unsigned i=0; i<N; i++){ //interm. steps
 		result += h*(FUNCTION(a+i*h)+4*FUNCTION(a+i*h+0.5*h)+FUNCTION(a+(i+1)*h))/6.;
 	}
 	//result += h/3.*Function1(a, 5);  //first step

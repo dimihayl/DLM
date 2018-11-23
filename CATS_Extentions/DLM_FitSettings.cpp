@@ -283,10 +283,11 @@ FemtoExpPair::FemtoExpPair(const FemtoPair& ppair, const FemtoExperiment& experi
 
     Kitty=NULL;
     CorrelationModel=NULL;
-    CatSourcePars = new double [32];
-    CatPotPars = new double* [32];
+    //CatSourcePars = new double [32];
+    CatSourcePars = new CATSparameters(CATSparameters::tSource,32,true);
+    CatPotPars = new CATSparameters* [32];
     for(int i=0; i<32; i++){
-        CatPotPars[i] = new double [32];
+        CatPotPars[i] = new CATSparameters(CATSparameters::tPotential,32,true);
     }
     WaveFunctionU = NULL;
     PhaseShifts = NULL;
@@ -306,9 +307,9 @@ FemtoExpPair::~FemtoExpPair(){
     if(Kitty){delete Kitty; Kitty=NULL;}
     if(CorrelationModel){delete CorrelationModel; CorrelationModel=NULL;}
     //if(hFeedDown){delete [] hFeedDown; hFeedDown=NULL;}
-    delete [] CatSourcePars;
+    delete CatSourcePars;
     for(int i=0; i<32; i++){
-        delete [] CatPotPars[i];
+        delete CatPotPars[i];
     }
     delete [] CatPotPars;
 
@@ -367,7 +368,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
     }
     MomBins[NumMomBins] = histoDATA->GetXaxis()->GetBinUpEdge(LastBin);
 
-    CatSourcePars[3] = 1.5;
+    CatSourcePars->SetParameter(0,1.5);
 
     //if statements for the standard interactions
     if(PartPair.IsIt("Proton","Proton")){
@@ -377,7 +378,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
 
             if(Kitty){delete Kitty;}
             Kitty = new CATS();
-            Kitty->SetAnaSource(GaussSource, CatSourcePars);
+            Kitty->SetAnaSource(GaussSource, *CatSourcePars);
             Kitty->SetUseAnalyticSource(true);
 
             Kitty->SetExcludeFailedBins(false);
@@ -402,19 +403,46 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
             const double Mass_p=938.272;
             Kitty->SetRedMass( 0.5*Mass_p );
 
-            CatPotPars[0][0]=0; CatPotPars[0][1]=0; CatPotPars[0][2]=NN_AV18; CatPotPars[0][3]=v18_Coupled3P2; CatPotPars[0][4]=1; CatPotPars[0][5]=1; CatPotPars[0][6]=1;
-            CatPotPars[0][7]=0; CatPotPars[0][8]=0; CatPotPars[0][9]=0;
-            CatPotPars[1][0]=0; CatPotPars[1][1]=0; CatPotPars[1][2]=NN_AV18; CatPotPars[1][3]=v18_Coupled3P2; CatPotPars[1][4]=1; CatPotPars[1][5]=1; CatPotPars[1][6]=1;
-            CatPotPars[1][7]=1; CatPotPars[1][8]=1; CatPotPars[1][9]=0;
-            CatPotPars[2][0]=0; CatPotPars[2][1]=0; CatPotPars[2][2]=NN_AV18; CatPotPars[2][3]=v18_Coupled3P2; CatPotPars[2][4]=1; CatPotPars[2][5]=1; CatPotPars[2][6]=1;
-            CatPotPars[2][7]=1; CatPotPars[2][8]=1; CatPotPars[2][9]=1;
-            CatPotPars[3][0]=0; CatPotPars[3][1]=0; CatPotPars[3][2]=NN_AV18; CatPotPars[3][3]=v18_Coupled3P2; CatPotPars[3][4]=1; CatPotPars[3][5]=1; CatPotPars[3][6]=1;
-            CatPotPars[3][7]=1; CatPotPars[3][8]=1; CatPotPars[3][9]=2;
+            CatPotPars[0]->SetParameter(0,NN_AV18);
+            CatPotPars[0]->SetParameter(1,v18_Coupled3P2);
+            CatPotPars[0]->SetParameter(2,1);
+            CatPotPars[0]->SetParameter(3,1);
+            CatPotPars[0]->SetParameter(4,1);
+            CatPotPars[0]->SetParameter(5,0);
+            CatPotPars[0]->SetParameter(6,0);
+            CatPotPars[0]->SetParameter(7,0);
 
-            Kitty->SetShortRangePotential(0,0,fDlmPot,CatPotPars[0]);
-            Kitty->SetShortRangePotential(1,1,fDlmPot,CatPotPars[1]);
-            Kitty->SetShortRangePotential(2,1,fDlmPot,CatPotPars[2]);
-            Kitty->SetShortRangePotential(3,1,fDlmPot,CatPotPars[3]);
+            CatPotPars[1]->SetParameter(0,NN_AV18);
+            CatPotPars[1]->SetParameter(1,v18_Coupled3P2);
+            CatPotPars[1]->SetParameter(2,1);
+            CatPotPars[1]->SetParameter(3,1);
+            CatPotPars[1]->SetParameter(4,1);
+            CatPotPars[1]->SetParameter(5,1);
+            CatPotPars[1]->SetParameter(6,1);
+            CatPotPars[1]->SetParameter(7,0);
+
+            CatPotPars[2]->SetParameter(0,NN_AV18);
+            CatPotPars[2]->SetParameter(1,v18_Coupled3P2);
+            CatPotPars[2]->SetParameter(2,1);
+            CatPotPars[2]->SetParameter(3,1);
+            CatPotPars[2]->SetParameter(4,1);
+            CatPotPars[2]->SetParameter(5,1);
+            CatPotPars[2]->SetParameter(6,1);
+            CatPotPars[2]->SetParameter(7,1);
+
+            CatPotPars[3]->SetParameter(0,NN_AV18);
+            CatPotPars[3]->SetParameter(1,v18_Coupled3P2);
+            CatPotPars[3]->SetParameter(2,1);
+            CatPotPars[3]->SetParameter(3,1);
+            CatPotPars[3]->SetParameter(4,1);
+            CatPotPars[3]->SetParameter(5,1);
+            CatPotPars[3]->SetParameter(6,1);
+            CatPotPars[3]->SetParameter(7,2);
+
+            Kitty->SetShortRangePotential(0,0,fDlmPot,*CatPotPars[0]);
+            Kitty->SetShortRangePotential(1,1,fDlmPot,*CatPotPars[1]);
+            Kitty->SetShortRangePotential(2,1,fDlmPot,*CatPotPars[2]);
+            Kitty->SetShortRangePotential(3,1,fDlmPot,*CatPotPars[3]);
 
             Kitty->KillTheCat();
 
@@ -433,7 +461,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
 
             if(Kitty){delete Kitty;}
             Kitty = new CATS();
-            Kitty->SetAnaSource(GaussSource, CatSourcePars);
+            Kitty->SetAnaSource(GaussSource, *CatSourcePars);
             Kitty->SetUseAnalyticSource(true);
             Kitty->SetMomBins(NumMomBins,MomBins);
 
@@ -470,7 +498,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
 
             if(Kitty){delete Kitty;}
             Kitty = new CATS();
-            Kitty->SetAnaSource(GaussSource, CatSourcePars);
+            Kitty->SetAnaSource(GaussSource, *CatSourcePars);
             Kitty->SetUseAnalyticSource(true);
 
             Kitty->SetExcludeFailedBins(false);
@@ -489,13 +517,26 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
             const double Mass_p=938.272; const double Mass_L=1115.683;
             Kitty->SetRedMass( (Mass_p*Mass_L)/(Mass_p+Mass_L) );
 
-            CatPotPars[0][0]=0; CatPotPars[0][1]=0; CatPotPars[0][2]=pL_UsmaniOli; CatPotPars[0][3]=0; CatPotPars[0][4]=0; CatPotPars[0][5]=0; CatPotPars[0][6]=0;
-            CatPotPars[0][7]=0; CatPotPars[0][8]=0; CatPotPars[0][9]=0;
-            CatPotPars[1][0]=0; CatPotPars[1][1]=0; CatPotPars[1][2]=pL_UsmaniOli; CatPotPars[1][3]=0; CatPotPars[1][4]=0; CatPotPars[1][5]=0; CatPotPars[1][6]=0;
-            CatPotPars[1][7]=1; CatPotPars[1][8]=0; CatPotPars[1][9]=1;
+            CatPotPars[0]->SetParameter(0,pL_UsmaniOli);
+            CatPotPars[0]->SetParameter(1,0);
+            CatPotPars[0]->SetParameter(2,0);
+            CatPotPars[0]->SetParameter(3,0);
+            CatPotPars[0]->SetParameter(4,0);
+            CatPotPars[0]->SetParameter(5,0);
+            CatPotPars[0]->SetParameter(6,0);
+            CatPotPars[0]->SetParameter(7,0);
 
-            Kitty->SetShortRangePotential(0,0,fDlmPot,CatPotPars[0]);
-            Kitty->SetShortRangePotential(1,0,fDlmPot,CatPotPars[1]);
+            CatPotPars[1]->SetParameter(0,pL_UsmaniOli);
+            CatPotPars[1]->SetParameter(1,0);
+            CatPotPars[1]->SetParameter(2,0);
+            CatPotPars[1]->SetParameter(3,0);
+            CatPotPars[1]->SetParameter(4,0);
+            CatPotPars[1]->SetParameter(5,1);
+            CatPotPars[1]->SetParameter(6,0);
+            CatPotPars[1]->SetParameter(7,1);
+
+            Kitty->SetShortRangePotential(0,0,fDlmPot,*CatPotPars[0]);
+            Kitty->SetShortRangePotential(1,0,fDlmPot,*CatPotPars[1]);
 
             Kitty->KillTheCat();
 
@@ -533,7 +574,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
 
             if(Kitty){delete Kitty;}
             Kitty = new CATS();
-            Kitty->SetAnaSource(GaussSource, CatSourcePars);
+            Kitty->SetAnaSource(GaussSource, *CatSourcePars);
             Kitty->SetUseAnalyticSource(true);
 
             Kitty->SetExcludeFailedBins(false);
@@ -558,19 +599,46 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
             const double Mass_p=938.272; const double Mass_Xim = 1321.7;
             Kitty->SetRedMass( (Mass_p*Mass_Xim)/(Mass_p+Mass_Xim) );
 
-            CatPotPars[0][0]=0; CatPotPars[0][1]=0; CatPotPars[0][2]=pXim_Lattice; CatPotPars[0][3]=12; CatPotPars[0][4]=0; CatPotPars[0][5]=-1; CatPotPars[0][6]=1;
-            CatPotPars[0][7]=0; CatPotPars[0][8]=0; CatPotPars[0][9]=0;
-            CatPotPars[1][0]=0; CatPotPars[1][1]=0; CatPotPars[1][2]=pXim_Lattice; CatPotPars[1][3]=12; CatPotPars[1][4]=0; CatPotPars[1][5]=-1; CatPotPars[1][6]=1;
-            CatPotPars[1][7]=1; CatPotPars[1][8]=0; CatPotPars[1][9]=1;
-            CatPotPars[2][0]=0; CatPotPars[2][1]=0; CatPotPars[2][2]=pXim_Lattice; CatPotPars[2][3]=6; CatPotPars[2][4]=1; CatPotPars[2][5]=1; CatPotPars[2][6]=1;
-            CatPotPars[2][7]=0; CatPotPars[2][8]=0; CatPotPars[2][9]=0;
-            CatPotPars[3][0]=0; CatPotPars[3][1]=0; CatPotPars[3][2]=pXim_Lattice; CatPotPars[3][3]=6; CatPotPars[3][4]=1; CatPotPars[3][5]=1; CatPotPars[3][6]=1;
-            CatPotPars[3][7]=1; CatPotPars[3][8]=0; CatPotPars[3][9]=1;
+            CatPotPars[0]->SetParameter(0,pXim_Lattice);
+            CatPotPars[0]->SetParameter(1,12);
+            CatPotPars[0]->SetParameter(2,0);
+            CatPotPars[0]->SetParameter(3,-1);
+            CatPotPars[0]->SetParameter(4,1);
+            CatPotPars[0]->SetParameter(5,0);
+            CatPotPars[0]->SetParameter(6,0);
+            CatPotPars[0]->SetParameter(7,0);
 
-            Kitty->SetShortRangePotential(0,0,fDlmPot,CatPotPars[0]);
-            Kitty->SetShortRangePotential(1,0,fDlmPot,CatPotPars[1]);
-            Kitty->SetShortRangePotential(2,0,fDlmPot,CatPotPars[2]);
-            Kitty->SetShortRangePotential(3,0,fDlmPot,CatPotPars[3]);
+            CatPotPars[1]->SetParameter(0,pXim_Lattice);
+            CatPotPars[1]->SetParameter(1,12);
+            CatPotPars[1]->SetParameter(2,0);
+            CatPotPars[1]->SetParameter(3,-1);
+            CatPotPars[1]->SetParameter(4,1);
+            CatPotPars[1]->SetParameter(5,1);
+            CatPotPars[1]->SetParameter(6,0);
+            CatPotPars[1]->SetParameter(7,1);
+
+            CatPotPars[2]->SetParameter(0,pXim_Lattice);
+            CatPotPars[2]->SetParameter(1,6);
+            CatPotPars[2]->SetParameter(2,1);
+            CatPotPars[2]->SetParameter(3,1);
+            CatPotPars[2]->SetParameter(4,1);
+            CatPotPars[2]->SetParameter(5,0);
+            CatPotPars[2]->SetParameter(6,0);
+            CatPotPars[2]->SetParameter(7,0);
+
+            CatPotPars[3]->SetParameter(0,pXim_Lattice);
+            CatPotPars[3]->SetParameter(1,6);
+            CatPotPars[3]->SetParameter(2,1);
+            CatPotPars[3]->SetParameter(3,1);
+            CatPotPars[3]->SetParameter(4,1);
+            CatPotPars[3]->SetParameter(5,1);
+            CatPotPars[3]->SetParameter(6,0);
+            CatPotPars[3]->SetParameter(7,1);
+
+            Kitty->SetShortRangePotential(0,0,fDlmPot,*CatPotPars[0]);
+            Kitty->SetShortRangePotential(1,0,fDlmPot,*CatPotPars[1]);
+            Kitty->SetShortRangePotential(2,0,fDlmPot,*CatPotPars[2]);
+            Kitty->SetShortRangePotential(3,0,fDlmPot,*CatPotPars[3]);
 
             Kitty->SetMaxRad(64);
             Kitty->SetMaxRho(32);
@@ -586,7 +654,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
 
             if(Kitty){delete Kitty;}
             Kitty = new CATS();
-            Kitty->SetAnaSource(GaussSource, CatSourcePars);
+            Kitty->SetAnaSource(GaussSource, *CatSourcePars);
             Kitty->SetUseAnalyticSource(true);
 
             Kitty->SetExcludeFailedBins(false);
@@ -629,7 +697,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
             StandardInter = Inter;
             if(Kitty){delete Kitty;}
             Kitty = new CATS();
-            Kitty->SetAnaSource(GaussSource, CatSourcePars);
+            Kitty->SetAnaSource(GaussSource, *CatSourcePars);
             Kitty->SetUseAnalyticSource(true);
 
             Kitty->SetExcludeFailedBins(false);

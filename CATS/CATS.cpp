@@ -13,7 +13,7 @@
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
 
-//#include <omp.h>
+#include <omp.h>
 //#include <unistd.h>
 
 using namespace std;
@@ -376,7 +376,7 @@ void CATS::SetNumChannels(const unsigned short& numCh){
     }
     ShortRangePotential = new CatsPotential* [numCh];
 
-    PotPar = new double** [numCh];
+    PotPar = new CATSparameters** [numCh];
     for(unsigned short usCh=0; usCh<numCh; usCh++){
         ShortRangePotential[usCh] = NULL;
         PotPar[usCh] = NULL;
@@ -417,7 +417,7 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     }
 
     if(PotPar[usCh]) delete[]PotPar[usCh];
-    PotPar[usCh] = new double* [numPW];
+    PotPar[usCh] = new CATSparameters* [numPW];
 
     //Reserve memory for the output
     SavedWaveFunBins = new unsigned** [NumMomBins];
@@ -1213,7 +1213,7 @@ void CATS::RemoveShortRangePotential(){
     for(unsigned short usCh=0; usCh<NumCh; usCh++){
         for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
             ShortRangePotential[usCh][usPW] = 0;
-            PotPar[usCh][usPW] = 0;
+            PotPar[usCh][usPW] = NULL;
         }
     }
     ComputedWaveFunction = false;
@@ -1234,12 +1234,12 @@ void CATS::RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW)
     if(!ShortRangePotential) return;
     if(!ShortRangePotential[usCh]) return;
     ShortRangePotential[usCh][usPW] = 0;
-    PotPar[usCh][usPW] = 0;
+    PotPar[usCh][usPW] = NULL;
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
 
-void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars){
+void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), CATSparameters& Pars){
     if(usCh>=NumCh){
         if(Notifications>=nError)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
@@ -1250,12 +1250,12 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
-    if(ShortRangePotential[usCh][usPW]==pot && PotPar[usCh][usPW]==Pars){
+    if(ShortRangePotential[usCh][usPW]==pot && PotPar[usCh][usPW]==&Pars){
         return;
     }
 
     ShortRangePotential[usCh][usPW] = pot;
-    PotPar[usCh][usPW] = Pars;
+    PotPar[usCh][usPW] = &Pars;
 
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
@@ -1273,10 +1273,10 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, co
         return;
     }
 
-    if(PotPar[usCh][usPW][NumPotPars+WhichPar]==Value) return;
+    if(PotPar[usCh][usPW]->GetParameter(WhichPar)==Value) return;
     if(!ShortRangePotential[usCh][usPW]) return;
 
-    PotPar[usCh][usPW][NumPotPars+WhichPar] = Value;
+    PotPar[usCh][usPW]->SetParameter(WhichPar,Value);
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 
@@ -1290,19 +1290,20 @@ void CATS::RemoveAnaSource(){
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
-void CATS::SetAnaSource(double (*AS)(double*), double* Pars){
-    if(AnalyticSource==AS && AnaSourcePar==Pars) return;
-    if(!Pars){
-        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source parameters!\n");
-        return;
-    }
+void CATS::SetAnaSource(double (*AS)(double*), CATSparameters& Pars){
+    if(AnalyticSource==AS && AnaSourcePar==&Pars) return;
+    //if(!Pars){
+    //    if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source parameters!\n");
+    //    return;
+    //}
     AnalyticSource = AS;
     ForwardedSource = NULL;
-    AnaSourcePar = Pars;
+    AnaSourcePar = &Pars;
     SourceGridReady = false;
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
+/*
 void CATS::SetAnaSource(double (*FS)(void*, double*), void* context){
     if(ForwardedSource==FS) return;
     if(!FS){
@@ -1321,6 +1322,7 @@ void CATS::SetAnaSource(double (*FS)(void*, double*), void* context){
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
+*/
 void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange){
     if(!AnaSourcePar) return;
     //if we use a member function, we assume that there are no parameters to be changed here
@@ -1328,8 +1330,8 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
         if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to set any parameters!\n");
         return;
     }
-    if(AnaSourcePar[NumSourcePars+WhichPar]==Value) return;
-    AnaSourcePar[NumSourcePars+WhichPar] = Value;
+    if(AnaSourcePar->GetParameter(WhichPar)==Value) return;
+    AnaSourcePar->SetParameter(WhichPar,Value);
     if(UseAnalyticSource){
         SourceGridReady = SourceGridReady?SmallChange:false;
         SourceUpdated = false;
@@ -1342,7 +1344,7 @@ double CATS::GetAnaSourcePar(const unsigned& WhichPar) const{
         if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to get any parameters!\n");
         return 0;
     }
-    return AnaSourcePar[NumSourcePars+WhichPar];
+    return AnaSourcePar->GetParameter(WhichPar);
 }
 double CATS::GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar) const{
     if(NumCh<=usCh || NumPW[usCh]<=usPW){
@@ -1350,7 +1352,7 @@ double CATS::GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigne
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetPotPar(...)\n");
         return 0;
     }
-    return PotPar[usCh][usPW][NumPotPars+WhichPar];
+    return PotPar[usCh][usPW]->GetParameter(WhichPar);
 }
 
 void CATS::UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
@@ -1557,6 +1559,7 @@ void CATS::ComputeWaveFunction(){
     //the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
     //this is however difficult as currently I only pass a single pointer as PotPar, and I do not know how many arguments there are
     //the same problem should occur for the source
+    #pragma omp parallel for private(uMomBin,usCh,usPW)
     for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++){
         //compute to which MomBin, Polarization and PW corresponds this MPP,
         //i.e. map uMomBin, usCh and usPW to uMPP
@@ -1986,6 +1989,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     double CurrentStep;
     DLM_Timer dlmTimer;
 
+    #pragma omp parallel for private(Radius,CosTheta)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         //Momentum = GetMomentum(uMomBin);
         for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
@@ -1997,6 +2001,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                                                         EffectiveFunctionTheta(uMomBin, Radius, CosTheta, usCh):
                                                         EffectiveFunction(uMomBin, Radius, usCh);
             }
+/*
             CurrentStep = double(uMomBin)*double(NumGridPts)+double(uGrid+1);
             Progress = CurrentStep/TotalSteps;
             pTotal = int(Progress*100);
@@ -2008,6 +2013,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                 cout << flush;
                 pTotalOld = pTotal;
             }
+*/
         }
     }
     if(Notifications>=nAll) printf("\r\033[K");
@@ -2482,10 +2488,10 @@ void CATS::FoldSourceAndWF(){
     double Integrand;
     double SourceInt;
     double SourceIntCut;
+    #pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         kCorrFun[uMomBin] = 0;
         kCorrFunErr[uMomBin] = 0;
-
         for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
             //perform the k,b analysis only for a data-source which has at least 2 b-bins
             if(UseAnalyticSource || NumIpBins<=1) continue;
@@ -2608,7 +2614,7 @@ void CATS::SetUpSourceGrid(){
     }
     if(UseAnalyticSource){
         //for setting up the grid we take the "mean" value of k
-        AnaSourcePar[0] = (MomBin[0]+MomBin[NumMomBins])*0.5;
+        AnaSourcePar->SetVariable(0,(MomBin[0]+MomBin[NumMomBins])*0.5);
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
                          this, AnaSourcePar, NULL, 0);
     }
@@ -2686,7 +2692,7 @@ void CATS::SetUpSourceGrid(){
         kbSourceGrid = new CATSelder** [NumMomBins];
         for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
             kbSourceGrid[uMomBin] = new CATSelder* [NumIpBins];
-            AnaSourcePar[0] = GetMomentum(uMomBin);
+            AnaSourcePar->SetVariable(0,GetMomentum(uMomBin));
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 if(UseAnalyticSource){
                     kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
@@ -2734,12 +2740,14 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
                                  const unsigned short& usPW, const unsigned short& usCh){
     //make sure that there is no division by zero by adding 1e-64
     //the Basic result is the Prop.Fun. WITHOUT a short range potential
+
     Basic = 2*RedMass*CoulombPotential(Radius) + double(usPW)*(double(usPW)+1)/(Radius*Radius+1e-64) - Momentum*Momentum;
     //the Full result is the Prop.Fun. WITH a short range potential
-    PotPar[usCh][usPW][0] = Radius*NuToFm; PotPar[usCh][usPW][1] = Momentum;
+    PotPar[usCh][usPW]->SetVariable(0,Radius*NuToFm);
+    PotPar[usCh][usPW]->SetVariable(1,Momentum);
     //! In principle this should be executed only if ShortRangePotential[usCh][usPW] is defined.
     //! Do note that this function is NEVER called in case this is not true! Make sure that this stays so!
-    Full = Basic + 2*RedMass*ShortRangePotential[usCh][usPW](PotPar[usCh][usPW]);
+    Full = Basic + 2*RedMass*ShortRangePotential[usCh][usPW](PotPar[usCh][usPW]->GetParameters());
 }
 
 double CATS::PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW) const{
@@ -3135,7 +3143,7 @@ template <class Type> Type CATS::EvalBinnedFun(const double& xVal, const unsigne
     }
 }
 
-double CATS::EvaluateTheSource(double* Pars) const{
+double CATS::EvaluateTheSource(CATSparameters* Pars) const{
     if(!AnalyticSource && !ForwardedSource){
         if(Notifications>=nError){
             printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! The source is not defined!\n");
@@ -3157,7 +3165,7 @@ double CATS::EvaluateTheSource(double* Pars) const{
         return 0;
     }
     if(AnalyticSource){
-        return AnalyticSource(Pars);
+        return AnalyticSource(Pars->GetParameters());
     }
     //this is the case of ForwardedSource
     if(!SourceContext){
@@ -3167,7 +3175,7 @@ double CATS::EvaluateTheSource(double* Pars) const{
         }
         return 0;
     }
-    return ForwardedSource(SourceContext,Pars);
+    return ForwardedSource(SourceContext,Pars->GetParameters());
 }
 
 void CATS::UpdateCPF(){

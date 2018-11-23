@@ -4,6 +4,8 @@
 #include "TString.h"
 #include <complex>
 
+class CATSparameters;
+
 using namespace std;
 
 //forward declaration
@@ -137,8 +139,9 @@ private:
     int BlType;
 
     CATS* Kitty;
-    double* CatSourcePars;
-    double** CatPotPars;
+    CATSparameters* CatSourcePars;
+    //double** CatPotPars;
+    CATSparameters** CatPotPars;
     complex<double>**** WaveFunctionU; double*** PhaseShifts; double* RadBins; unsigned NumRadBins;
     DLM_Ck* CorrelationModel;
     TString StandardInter;

@@ -8,6 +8,32 @@
 
 class CatsParticle;
 
+class CATSparameters{
+friend class CATSelder;
+public:
+    enum Type {tSource=3,tPotential=2};
+    CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe);
+    ~CATSparameters();
+    double* GetParameters() const;
+    //the parameter is set the same for all threads!
+    void SetParameter(const unsigned& WhichPar, const double& Value);
+    void SetParameters(const double* pars);
+    //the variable is set only for the current thread!
+    void SetVariable(const unsigned& WhichVar, const double& Value);
+    double GetParameter(const unsigned& WhichPar);
+    double GetVariable(const unsigned& WhichVar);
+protected:
+    //the number of dummy parameters (variables)
+    const unsigned NumVars;
+    //the number of actual parameters
+    const unsigned NumPars;
+    //dummy+actual parameters
+    const unsigned TotNumPars;
+    const bool ThreadSafe;
+    const unsigned NumThreads;
+    double** Parameter;
+};
+
 class CatsLorentzVector{
 friend class CatsParticlePair;
 public:
@@ -183,7 +209,6 @@ protected:
 };
 
 
-
 //! THE IDEA FOR TOMORROW:
 //бате махни kitty от конструктура и сложи пойнтър към GridBoxId и double (*AnalyticSource)(double*).
 //съответно от CATS винаги викай конструктура с един от двата пойнтъра NULL. Този който е зададен ще
@@ -195,10 +220,10 @@ friend class CATSnode;
 public:
     CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon,
               //double* mean, double* len, double (CATS::*sfun)(const double*, const double&));
-              double* mean, double* len, void* context, double* Pars, int64_t* gbid, const unsigned& numel);
+              double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel);
     CATSelder(const CATSelder* TemplateElder,
-              void* context, double* Pars, int64_t* gbid, const unsigned& numel);
-    void BaseConstructor(double* mean, double* len, void* context, double* Pars, int64_t* gbid, const unsigned& numel,
+              void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel);
+    void BaseConstructor(double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel,
                          const CATSelder* TemplateElder);
     ~CATSelder();
 
@@ -230,7 +255,7 @@ protected:
 
     //pars and grid-size
     void* SourceContext;
-    double* SourcePars;
+    CATSparameters* SourcePars;
     int64_t* GridBoxId;
     const unsigned NumOfEl;
 
@@ -238,6 +263,8 @@ protected:
 
     //CATS* Kitty;
 };
+
+
 
 template <class Type> class CATShisto{
 public:

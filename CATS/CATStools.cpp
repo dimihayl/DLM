@@ -9,10 +9,82 @@
 #include "CATSconstants.h"
 #include "CATS.h"
 
+#include <omp.h>
+
 //!Needed only for testing (contains usleep)
 //#include <unistd.h>
 
 using namespace std;
+
+//omp_get_num_procs()
+CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(omp_get_num_procs()){
+    Parameter = new double* [NumThreads];
+    for(unsigned uThr=0; uThr<NumThreads; uThr++){
+        Parameter[uThr] = new double [TotNumPars];
+    }
+}
+CATSparameters::~CATSparameters(){
+    for(unsigned uThr=0; uThr<NumThreads; uThr++){
+        delete [] Parameter[uThr];
+    }
+    delete [] Parameter;
+}
+
+double* CATSparameters::GetParameters() const{
+    //if(ThreadId>=NumThreads){
+    //    printf("\033[1;31mERROR:\033[0m GetParameters is attempted to access the non-existing ThreadId=%u\n",ThreadId);
+    //    return NULL;
+    //}
+    unsigned WhichThread = 0;
+    WhichThread = omp_get_thread_num();
+//if(NumVars==2)printf("GetParameters[%u] -> %p\n", WhichThread, Parameter[WhichThread]);
+    return Parameter[WhichThread];
+}
+void CATSparameters::SetParameter(const unsigned& WhichPar, const double& Value){
+    if(WhichPar>=NumPars){
+        printf("\033[1;33mWARNING:\033[0m CATSparameters::SetParameter got an non-existing parameter (%u) as an input\n",WhichPar);
+        return;
+    }
+    for(unsigned uThr=0; uThr<NumThreads; uThr++){
+        #pragma omp critical
+        {
+        Parameter[uThr][NumVars+WhichPar]=Value;
+        }
+    }
+}
+void CATSparameters::SetParameters(const double* pars){
+    for(unsigned uPar=0; uPar<NumPars; uPar++){
+        SetParameter(uPar,pars[uPar]);
+    }
+}
+void CATSparameters::SetVariable(const unsigned& WhichVar, const double& Value){
+    if(WhichVar>=NumVars){
+        printf("\033[1;33mWARNING:\033[0m CATSparameters::SetVariable got an non-existing variable (%u) as an input\n",WhichVar);
+        return;
+    }
+    unsigned WhichThread = 0;
+    WhichThread = omp_get_thread_num();
+    Parameter[WhichThread][WhichVar]=Value;
+}
+double CATSparameters::GetParameter(const unsigned& WhichPar){
+    if(WhichPar>=NumPars){
+        printf("\033[1;33mWARNING:\033[0m CATSparameters::GetParameter got an non-existing parameter (%u) as an input\n",WhichPar);
+        return 0;
+    }
+    unsigned WhichThread = 0;
+    WhichThread = omp_get_thread_num();
+    return Parameter[WhichThread][WhichPar];
+}
+double CATSparameters::GetVariable(const unsigned& WhichVar){
+    if(WhichVar>=NumVars){
+        printf("\033[1;33mWARNING:\033[0m CATSparameters::GetVariable got an non-existing variable (%u) as an input\n",WhichVar);
+        return 0;
+    }
+    unsigned WhichThread = 0;
+    WhichThread = omp_get_thread_num();
+    return Parameter[WhichThread][WhichVar];
+}
+
 
 CatsLorentzVector::CatsLorentzVector(){
     FourSpace[0]=0;
@@ -593,7 +665,7 @@ void CATSnode::Update(const bool& ThisNodeOnly){
 //if(!ThisNodeOnly) printf("SourceValue = %.3f -->",SourceValue*100);
     if(Elder->SourceContext){
         for(short sDim=0; sDim<Elder->Dim; sDim++){
-            Elder->SourcePars[1+sDim] = MeanVal[sDim];
+            Elder->SourcePars->SetVariable(1+sDim,MeanVal[sDim]);
         }
 //if(!ThisNodeOnly) printf(" ESF(%f)=%f --> GridSize=%f -->",Elder->SourcePars[1],Elder->SourceFunction(Elder->SourcePars),GridSize);
         SourceValue = Elder->SourceFunction(Elder->SourceContext)*GridSize;
@@ -693,14 +765,14 @@ void CATSnode::StandardNodeInit(double* mean, double* len, const CATSnode* Templ
 
 //! see what happens if epsilon==0
 CATSelder::CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon, double* mean, double* len,
-                     void* context, double* Pars, int64_t* gbid, const unsigned& numel):
+                     void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel):
     CATSnode(this, 0, 0, uipow(2,dim*maxdep)-1, mean, len),
     Dim(dim),MinDepth(mindep),MaxDepth(maxdep),Epsilon(epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
 
     BaseConstructor(mean, len, context, Pars, gbid, numel, NULL);
 }
 
-CATSelder::CATSelder(const CATSelder* TemplateElder, void* context, double* Pars, int64_t* gbid, const unsigned& numel):
+CATSelder::CATSelder(const CATSelder* TemplateElder, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel):
     CATSnode(this, 0, 0, uipow(2,TemplateElder->Dim*TemplateElder->MaxDepth)-1, TemplateElder->MeanVal, TemplateElder->IntLen),
     Dim(TemplateElder->Dim),MinDepth(TemplateElder->MinDepth),MaxDepth(TemplateElder->MaxDepth),
     Epsilon(TemplateElder->Epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
@@ -709,7 +781,7 @@ CATSelder::CATSelder(const CATSelder* TemplateElder, void* context, double* Pars
 
 }
 
-void CATSelder::BaseConstructor(double* mean, double* len, void* context, double* Pars, int64_t* gbid, const unsigned& numel,
+void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel,
                                 const CATSelder* TemplateElder){
 
     if(TemplateElder){
@@ -949,7 +1021,6 @@ double CATSelder::SourceFunction(void* context){
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2){
     if(!Momentum) return 0;
