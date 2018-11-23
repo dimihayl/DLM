@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+#CATSSYS=$(dirname $(pwd))
+CATSSYS=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+CATSSYS=$(dirname $CATSSYS)
+
+usage="\
+Usage: cats-config [--libs-basic] [--libs-extended] [--libs-dev]\
+ [--libdir] [--incdir] [--version] [--help]"
+
+if test $# -eq 0; then
+   echo "${usage}" 1>&2
+   exit 1
+fi
+
+while test $# -gt 0; do
+  case "$1" in
+  -*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+  *)    optarg= ;;
+  esac
+  case $1 in
+    --libs-basic)
+      out="${CATSSYS}/lib -lCATSbasic"
+      ;;
+    --libs-extended)
+      out="${CATSSYS}/lib -lCATSbasic -lCATSextended"
+      ;;
+    --libs-dev)
+      out="${CATSSYS}/lib -lCATSbasic -lCATSextended -lCATSdev"
+      ;;
+    --libdir)
+      out="${CATSSYS}/lib"
+      ;;
+    --incdir)
+      out="${CATSSYS}/include"
+      ;;
+    --version)
+      out="CATS 2.25"
+      ;;
+    --help)
+      ### Print a help message
+      echo "Usage: cats-config [options]"
+      echo ""
+      echo "  --libs-basic          Print regular CATS libraries"
+      echo "  --libs-extended       Print regular CATS libraries and the CATSextentions"
+      echo "  --libs-dev            Print the libraries of the full CATS repository"
+      echo "  --libdir              Print the library directory"
+      echo "  --incdir              Print the header directory"
+      echo "  --version             Print the CATS version"
+      echo "  --help                Print this message"
+      exit 0
+      ;;
+    *)
+      ### Give an error
+      echo "Unknown argument \"$1\"!" 1>&2
+      echo "${usage}" 1>&2
+      exit 1
+      ;;
+  esac
+  shift
+done
+
+### Output the stuff
+echo $out
