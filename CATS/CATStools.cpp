@@ -228,11 +228,14 @@ CatsParticle::~CatsParticle(){
 }
 void CatsParticle::ReadFromOscarFile(FILE *InFile){
     int ParticleNr;
-    fscanf(InFile,"%i %i %lf %lf %lf %lf %lf %lf %lf %lf %lf",
+    if(
+        !fscanf(InFile,"%i %i %lf %lf %lf %lf %lf %lf %lf %lf %lf",
         &ParticleNr,&Pid,
         &FourMomentum[1],&FourMomentum[2],&FourMomentum[3],&FourMomentum[0],
         &Mass,
-        &FourSpace[1],&FourSpace[2],&FourSpace[3],&FourSpace[0]);
+        &FourSpace[1],&FourSpace[2],&FourSpace[3],&FourSpace[0])){
+        printf("\033[1;33mWARNING!\033[0m Possible bad input-file, error when reading the OscarFile!\n");
+    }
     ComputeBetaGamma();
 }
 void CatsParticle::SetPid(const int& pid){

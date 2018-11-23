@@ -140,7 +140,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -163,7 +163,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             if(strlen(cdummy)!=105) continue;
             sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
@@ -368,7 +368,7 @@ void InitHaidenbauer_pXi(const char* InputFolder, CATS& Kitty, complex<double>**
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -391,7 +391,7 @@ void InitHaidenbauer_pXi(const char* InputFolder, CATS& Kitty, complex<double>**
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             if(strlen(cdummy)<60) continue;
             if(uFile==fI0S0){
@@ -543,7 +543,7 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<doub
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -567,7 +567,7 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<doub
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
@@ -741,7 +741,7 @@ void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -765,7 +765,7 @@ void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
@@ -912,7 +912,7 @@ printf("uFile=%u\n",uFile);
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -936,7 +936,7 @@ printf("uFile=%u\n",uFile);
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
@@ -1076,7 +1076,7 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>**
         char* cdummy = new char [256];
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
         if(feof(InFile)){
             printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
@@ -1098,7 +1098,7 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>**
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
             if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f %f %f",
                    &fRadius,&fMomentum,&fCatsReWf,&fCatsImWf);
@@ -1310,7 +1310,7 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
     char* cdummy = new char [256];
     //Read the header lines
     for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-        fgets(cdummy, 255, InFile);
+        if(!fgets(cdummy, 255, InFile)) continue;
     }
     if(feof(InFile)){
         printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName);
@@ -1331,7 +1331,7 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
 
     //!---Iteration over all events---
     while(!feof(InFile)){
-        fgets(cdummy, 255, InFile);
+        if(!fgets(cdummy, 255, InFile)) continue;
         if(strlen(cdummy)!=165) continue;
         sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
                 &fRadius,&fMomentum,
@@ -1532,7 +1532,7 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
     char* cdummy = new char [256];
     //Read the header lines
     for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-        fgets(cdummy, 255, InFile);
+        if(!fgets(cdummy, 255, InFile)) continue;
     }
     if(feof(InFile)){
         printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName);
@@ -1553,7 +1553,7 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
 
     //!---Iteration over all events---
     while(!feof(InFile)){
-        fgets(cdummy, 255, InFile);
+        if(!fgets(cdummy, 255, InFile)) continue;
         if(strlen(cdummy)!=165) continue;
         sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
                 &fRadius,&fMomentum,
@@ -1703,7 +1703,7 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -1720,7 +1720,7 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
         unsigned MomBin;
         //!---Iteration over all events---
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             //if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f",
@@ -1886,7 +1886,7 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
 
         //Read the header lines
         for(unsigned short us=0; us<NumBlankTransitionLines; us++){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
         }
 
         if(feof(InFile)){
@@ -1905,7 +1905,7 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
 //if(uFile==NumMomBins) printf("uFile=%u (%s)\n",uFile,InputFileName[uFile]);
 //printf("uFile=%u (%s)\n",uFile,InputFileName[uFile]);
         while(!feof(InFile)){
-            fgets(cdummy, 255, InFile);
+            if(!fgets(cdummy, 255, InFile)) continue;
 //printf("I am here - %i!\n", strlen(cdummy));
             //if(strlen(cdummy)<105 || strlen(cdummy)>106) continue;
             sscanf(cdummy, " %f %f",

@@ -254,6 +254,7 @@ public:
     //[0]-[2] reserved for CATS ([0] is Momentum, [1] is Radius (fm), [2] is CosTheta)
     //n.b. for the time being CATS assumes radial symmetric potential, thus [2] is actually never used,
     //i.e. please always use only radial symmetric potential
+    //[usCh][usPW][...]
     double*** PotPar;
 
     void RemoveShortRangePotential();

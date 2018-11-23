@@ -5,10 +5,13 @@ green=`tput setaf 2`
 reset=`tput sgr0`
 
 if ! cmake .; then
-	echo "Configuration ${red}failed${reset}"
+	echo "Configuration of CATS ${red}failed${reset}"
 	return 3
 fi
-echo "The configuration was ${green}successful${reset}"
+
+echo "The configuration of CATS was ${green}successful${reset}"
+#echo "  Configured using "$1
 echo "  To proceed type: make"
+
 
 return 0

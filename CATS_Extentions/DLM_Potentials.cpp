@@ -322,8 +322,8 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
 
 
 struct LatticeValues{
-    const unsigned NumPots = 3;
-    LatticeValues(){
+    const unsigned NumPots;
+    LatticeValues():NumPots(3){
         PAR_V0 = new double* [NumPots];
         PAR_VS = new double* [NumPots];
         PAR_VT = new double* [NumPots];

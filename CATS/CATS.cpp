@@ -13,6 +13,9 @@
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
 
+//#include <omp.h>
+//#include <unistd.h>
+
 using namespace std;
 
 CATS::CATS():
@@ -372,6 +375,7 @@ void CATS::SetNumChannels(const unsigned short& numCh){
         delete[]PotPar; PotPar=NULL;
     }
     ShortRangePotential = new CatsPotential* [numCh];
+
     PotPar = new double** [numCh];
     for(unsigned short usCh=0; usCh<numCh; usCh++){
         ShortRangePotential[usCh] = NULL;
@@ -1549,6 +1553,10 @@ void CATS::ComputeWaveFunction(){
     unsigned short usCh;
     unsigned short usPW;
 
+    //#pragma omp parallel for private(uMomBin,usCh,usPW)
+    //the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
+    //this is however difficult as currently I only pass a single pointer as PotPar, and I do not know how many arguments there are
+    //the same problem should occur for the source
     for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++){
         //compute to which MomBin, Polarization and PW corresponds this MPP,
         //i.e. map uMomBin, usCh and usPW to uMPP
@@ -1937,6 +1945,7 @@ void CATS::ComputeWaveFunction(){
         }
     }//for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++)
     ComputedWaveFunction = true;
+
 }
 
 void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
@@ -2068,7 +2077,10 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
 
     //Read the header lines
     for(unsigned short us=0; us<NumBlankHeaderLines; us++){
-        fgets(cdummy, 511, InFile);
+        if(!fgets(cdummy, 255, InFile)){
+            printf("\033[1;33mWARNING!\033[0m Possible bad input-file, error when reading from %s!\n",InputFileName);
+            continue;
+        }
     }
 
     if(feof(InFile)){
@@ -2153,7 +2165,11 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
         if(NumPairs>=MaxTotPairs) break;
         if(NumTotalPairs>=MaxPairsToRead) break;
 
-        fscanf(InFile,"%i %i %lf %lf",&EventNumber,&NumPartInEvent,&ImpPar,&fDummy);
+        if(!fscanf(InFile,"%i %i %lf %lf",&EventNumber,&NumPartInEvent,&ImpPar,&fDummy)){
+            printf("\033[1;33mWARNING!\033[0m Possible bad input-file, error when reading from %s!\n",InputFileName);
+            continue;
+        }
+
         NewInterestingEvent = false;
 
         ImpPar = fabs(ImpPar);
