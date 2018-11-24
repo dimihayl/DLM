@@ -1544,16 +1544,32 @@ void CATS::ComputeWaveFunction(){
     //here one finds the max num PWs, this is needed later on for
     //the correct mapping of all variables
     unsigned short MaxNumPW=0;
+    //we also find the total number of steps to iterate over
+    unsigned TotNumSteps=0;
     for(unsigned short usCh=0; usCh<NumCh; usCh++){
         if(NumPW[usCh]>MaxNumPW){
             MaxNumPW = NumPW[usCh];
         }
+        for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+            if(!ShortRangePotential[usCh][usPW] && !ExternalWF[0][usCh][usPW]) continue;
+            TotNumSteps++;
+        }
     }
     unsigned TotalNumberOfBins = NumMomBins*NumCh*MaxNumPW;
+    TotNumSteps *= NumMomBins;
 
     unsigned uMomBin;
     unsigned short usCh;
     unsigned short usPW;
+
+    double Time;
+    int pTotal;
+    int pTotalOld;
+    double Progress;
+    char* cdummy = new char [512];
+    double TotalSteps = TotNumSteps;
+    long long CurrentStep=0;
+    DLM_Timer dlmTimer;
 
     //#pragma omp parallel for private(uMomBin,usCh,usPW)
     //the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
@@ -1946,9 +1962,27 @@ void CATS::ComputeWaveFunction(){
                 WaveFunctionU[uMomBin][usCh][usPW][uPoint] = CPF[uMomBin]*ExternalWF[uMomBin][usCh][usPW][uPoint]*FmToNu;
             }
         }
+
+        #pragma omp atomic
+        CurrentStep++;
+        #pragma omp critical
+        {
+            Progress = double(CurrentStep)/TotalSteps;
+            pTotal = int(Progress*100);
+            if(pTotal!=pTotalOld){
+                Time = double(dlmTimer.Stop())/1e6;
+                Time = round((1./Progress-1.)*Time);
+                ShowTime((long long)(Time), cdummy, 2, true, 5);
+                if(Notifications>=nAll) printf("\r\033[K          Progress %3d%%, ETA %s",pTotal,cdummy);
+                cout << flush;
+                pTotalOld = pTotal;
+            }
+        }
+
     }//for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++)
     ComputedWaveFunction = true;
-
+    if(Notifications>=nAll) printf("\r\033[K");
+    delete [] cdummy;
 }
 
 void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
@@ -1986,7 +2020,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     double Progress;
     char* cdummy = new char [512];
     double TotalSteps = double(NumMomBins)*double(NumGridPts);
-    double CurrentStep;
+    long long CurrentStep=0;
     DLM_Timer dlmTimer;
 
     #pragma omp parallel for private(Radius,CosTheta)
@@ -2001,19 +2035,23 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                                                         EffectiveFunctionTheta(uMomBin, Radius, CosTheta, usCh):
                                                         EffectiveFunction(uMomBin, Radius, usCh);
             }
-/*
-            CurrentStep = double(uMomBin)*double(NumGridPts)+double(uGrid+1);
-            Progress = CurrentStep/TotalSteps;
-            pTotal = int(Progress*100);
-            if(pTotal!=pTotalOld){
-                Time = double(dlmTimer.Stop())/1000000.;
-                Time = round((1./Progress-1.)*Time);
-                ShowTime((long long)(Time), cdummy, 2);
-                if(Notifications>=nAll) printf("\r\033[K          Progress %3d%%, ETA %s",pTotal,cdummy);
-                cout << flush;
-                pTotalOld = pTotal;
+
+            #pragma omp atomic
+            CurrentStep++;
+            #pragma omp critical
+            {
+                Progress = double(CurrentStep)/TotalSteps;
+                pTotal = int(Progress*100);
+                if(pTotal!=pTotalOld){
+                    Time = double(dlmTimer.Stop())/1e6;
+                    Time = round((1./Progress-1.)*Time);
+                    ShowTime((long long)(Time), cdummy, 2, true, 5);
+                    if(Notifications>=nAll) printf("\r\033[K          Progress %3d%%, ETA %s",pTotal,cdummy);
+                    cout << flush;
+                    pTotalOld = pTotal;
+                }
             }
-*/
+
         }
     }
     if(Notifications>=nAll) printf("\r\033[K");
@@ -2261,11 +2299,11 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
 
         pTotal = int(ProgressLoad*100);
         if(pTotal!=pTotalOld){
-            Time = double(dlmTimer.Stop())/1000000.;
+            Time = double(dlmTimer.Stop())/1e6;
             //EtaPerBin = round((1./pMaxPairsPerBin-1.)*Time);
             //EtaToLoad = round((1./pMaxPairsToLoad-1.)*Time);
             Time = round((1./ProgressLoad-1.)*Time);
-            ShowTime((long long)(Time), cdummy, 2);
+            ShowTime((long long)(Time), cdummy, 2, true, 5);
             if(Notifications>=nAll)
                 printf("\r\033[K          Progress %3d%%, ETA %s",pTotal,cdummy);
             ProgressBar = true;

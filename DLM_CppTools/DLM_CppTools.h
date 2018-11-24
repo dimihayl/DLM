@@ -10,7 +10,7 @@ extern long DLM_CppHelp_TimeUS;
 int ipow(int base, unsigned char exp);
 unsigned uipow(unsigned base, unsigned char exp);
 
-void ShowTime(long long T, char * str, short show=0, bool compact=true);
+void ShowTime(long long T, char * str, short show=0, bool compact=true, short NumUnits=7);
 
 class DLM_Timer{
 

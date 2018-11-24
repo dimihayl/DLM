@@ -5,19 +5,28 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <omp.h>
 
 //int DlmPot=0;
 //int DlmPotFlag=0;
-DLM_StefanoPotentials** fV18pot=NULL;
+DLM_StefanoPotentials*** fV18pot=NULL;
+unsigned NumThreads_DLMPOT;
 
 void CleanUpV18Pot(){
     if(fV18pot){
-        for(unsigned iPot=0; iPot<30; iPot++){
-            delete fV18pot[iPot];
+        for(unsigned uThread=0; uThread<NumThreads_DLMPOT; uThread++){
+            if(fV18pot[uThread]){
+                for(unsigned iPot=0; iPot<30; iPot++){
+                    if(fV18pot[uThread][iPot]){delete fV18pot[uThread][iPot]; fV18pot[uThread][iPot]=NULL;}
+                }
+                delete [] fV18pot[uThread];
+                fV18pot[uThread] = NULL;
+            }
         }
         delete [] fV18pot;
         fV18pot = NULL;
     }
+
 }
 
 double ZeroPotential(double* Radius){
@@ -879,22 +888,27 @@ double fReidVale3P(double* rad){
 double fV18potential(const int& V18Pot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
+
     if( (V18Pot<1||V18Pot>24) && (V18Pot<112||V18Pot>114) && (V18Pot<122||V18Pot>124) ){
         return 0;
     }
+
+    #pragma omp critical
+    {
     if(!fV18pot){
-        fV18pot = new DLM_StefanoPotentials* [30];
-        for(unsigned uPot=0; uPot<30; uPot++){
-            unsigned WhichPot = uPot+1;
-            if(uPot==24) WhichPot=112;
-            else if(uPot==24+1) WhichPot=113;
-            else if(uPot==24+2) WhichPot=114;
-            else if(uPot==24+3) WhichPot=122;
-            else if(uPot==24+4) WhichPot=123;
-            else if(uPot==24+5) WhichPot=124;
-            fV18pot[uPot] = new DLM_StefanoPotentials(WhichPot);
+        NumThreads_DLMPOT = 1;
+        NumThreads_DLMPOT = omp_get_num_procs();
+        fV18pot = new DLM_StefanoPotentials** [NumThreads_DLMPOT];
+        for(unsigned uThread=0; uThread<NumThreads_DLMPOT; uThread++){
+            fV18pot[uThread] = new DLM_StefanoPotentials* [30];
+            for(unsigned uPot=0; uPot<30; uPot++){
+                fV18pot[uThread][uPot] = NULL;
+            }
         }
     }
+    }
+
+
     unsigned StefPotId = V18Pot-1;
     if(V18Pot==112) StefPotId=24;
     else if(V18Pot==113) StefPotId=25;
@@ -902,9 +916,16 @@ double fV18potential(const int& V18Pot, const int& DlmPotFlag,
     else if(V18Pot==122) StefPotId=27;
     else if(V18Pot==123) StefPotId=28;
     else if(V18Pot==124) StefPotId=29;
+    unsigned tid = omp_get_thread_num();
+    if(!fV18pot[tid][StefPotId]){
+        fV18pot[tid][StefPotId] = new DLM_StefanoPotentials(V18Pot);
+    }
+
 //printf("StefPotId=%i --> V=%f\n",StefPotId,fV18pot[StefPotId]->EvalCATS_v1_0(Radius[0],0));
     //return fV18pot[StefPotId]->Eval_PWprojector_pp(Radius[0],Spin,AngMom,TotMom,DlmPotFlag);
-    return fV18pot[StefPotId]->Eval_PWprojector(Radius[0],IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,DlmPotFlag);
+//printf("fV18pot[%u][%u]=%p\n",tid,StefPotId,fV18pot[tid][StefPotId]);
+    return fV18pot[tid][StefPotId]->Eval_PWprojector(Radius[0],IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,DlmPotFlag);
+    //return 0;
 }
 
 
@@ -1015,12 +1036,13 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name){
     double Radius=1;
     //fV18potential(1,0,0,0,&Radius);
     fV18potential(1,0,1,1,1,0,0,0,&Radius);
+    unsigned tid = omp_get_thread_num();
     switch(potid){
         case NN_AV18 :
-            fV18pot[8]->PotentialName(9, name);
+            fV18pot[tid][8]->PotentialName(9, name);
             break;
         case NN_ReidV8 :
-            fV18pot[1]->PotentialName(2, name);
+            fV18pot[tid][1]->PotentialName(2, name);
             break;
         case pp_ReidSC :
             strcpy(name,"Castrated Reid SC");
