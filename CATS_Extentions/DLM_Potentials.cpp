@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#include <omp.h>
 
 //int DlmPot=0;
 //int DlmPotFlag=0;
@@ -893,11 +892,11 @@ double fV18potential(const int& V18Pot, const int& DlmPotFlag,
         return 0;
     }
 
-    #pragma omp critical
+    //#pragma omp critical
     {
     if(!fV18pot){
         NumThreads_DLMPOT = 1;
-        NumThreads_DLMPOT = omp_get_num_procs();
+        //NumThreads_DLMPOT = omp_get_num_procs();
         fV18pot = new DLM_StefanoPotentials** [NumThreads_DLMPOT];
         for(unsigned uThread=0; uThread<NumThreads_DLMPOT; uThread++){
             fV18pot[uThread] = new DLM_StefanoPotentials* [30];
@@ -916,7 +915,8 @@ double fV18potential(const int& V18Pot, const int& DlmPotFlag,
     else if(V18Pot==122) StefPotId=27;
     else if(V18Pot==123) StefPotId=28;
     else if(V18Pot==124) StefPotId=29;
-    unsigned tid = omp_get_thread_num();
+    unsigned tid = 0;
+    //tid = omp_get_thread_num();
     if(!fV18pot[tid][StefPotId]){
         fV18pot[tid][StefPotId] = new DLM_StefanoPotentials(V18Pot);
     }
@@ -1036,7 +1036,8 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name){
     double Radius=1;
     //fV18potential(1,0,0,0,&Radius);
     fV18potential(1,0,1,1,1,0,0,0,&Radius);
-    unsigned tid = omp_get_thread_num();
+    unsigned tid = 0;
+    //tid = omp_get_thread_num();
     switch(potid){
         case NN_AV18 :
             fV18pot[tid][8]->PotentialName(9, name);
