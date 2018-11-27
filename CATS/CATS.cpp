@@ -13,7 +13,7 @@
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
 
-//#include <omp.h>
+#include <omp.h>
 //#include <unistd.h>
 
 using namespace std;
@@ -1574,7 +1574,7 @@ void CATS::ComputeWaveFunction(){
     //the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
     //this is however difficult as currently I only pass a single pointer as PotPar, and I do not know how many arguments there are
     //the same problem should occur for the source
-    //#pragma omp parallel for private(uMomBin,usCh,usPW)
+    #pragma omp parallel for private(uMomBin,usCh,usPW)
     for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++){
         //compute to which MomBin, Polarization and PW corresponds this MPP,
         //i.e. map uMomBin, usCh and usPW to uMPP
@@ -1962,9 +1962,9 @@ void CATS::ComputeWaveFunction(){
             }
         }
 
-        //#pragma omp atomic
+        #pragma omp atomic
         CurrentStep++;
-        //#pragma omp critical
+        #pragma omp critical
         {
             Progress = double(CurrentStep)/TotalSteps;
             pTotal = int(Progress*100);
@@ -2022,7 +2022,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     long long CurrentStep=0;
     DLM_Timer dlmTimer;
 
-    //#pragma omp parallel for private(Radius,CosTheta)
+    #pragma omp parallel for private(Radius,CosTheta)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         //Momentum = GetMomentum(uMomBin);
         for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
@@ -2035,9 +2035,9 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                                                         EffectiveFunction(uMomBin, Radius, usCh);
             }
 
-            //#pragma omp atomic
+            #pragma omp atomic
             CurrentStep++;
-            //#pragma omp critical
+            #pragma omp critical
             {
                 Progress = double(CurrentStep)/TotalSteps;
                 pTotal = int(Progress*100);
@@ -2525,7 +2525,7 @@ void CATS::FoldSourceAndWF(){
     double Integrand;
     double SourceInt;
     double SourceIntCut;
-    //#pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut)
+    #pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         kCorrFun[uMomBin] = 0;
         kCorrFunErr[uMomBin] = 0;

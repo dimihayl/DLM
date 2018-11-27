@@ -9,7 +9,7 @@
 #include "CATSconstants.h"
 #include "CATS.h"
 
-//#include <omp.h>
+#include <omp.h>
 
 //!Needed only for testing (contains usleep)
 //#include <unistd.h>
@@ -18,7 +18,7 @@ using namespace std;
 
 //omp_get_num_procs()
 //CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(omp_get_num_procs()){
-CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(1){
+CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(omp_get_num_procs()){
     Parameter = new double* [NumThreads];
     for(unsigned uThr=0; uThr<NumThreads; uThr++){
         Parameter[uThr] = new double [TotNumPars];
@@ -37,7 +37,7 @@ double* CATSparameters::GetParameters() const{
     //    return NULL;
     //}
     unsigned WhichThread = 0;
-    //WhichThread = omp_get_thread_num();
+    WhichThread = omp_get_thread_num();
 //if(NumVars==2)printf("GetParameters[%u] -> %p\n", WhichThread, Parameter[WhichThread]);
     return Parameter[WhichThread];
 }
@@ -47,7 +47,7 @@ void CATSparameters::SetParameter(const unsigned& WhichPar, const double& Value)
         return;
     }
     for(unsigned uThr=0; uThr<NumThreads; uThr++){
-        //#pragma omp critical
+        #pragma omp critical
         {
         Parameter[uThr][NumVars+WhichPar]=Value;
         }
@@ -64,7 +64,7 @@ void CATSparameters::SetVariable(const unsigned& WhichVar, const double& Value){
         return;
     }
     unsigned WhichThread = 0;
-    //WhichThread = omp_get_thread_num();
+    WhichThread = omp_get_thread_num();
     Parameter[WhichThread][WhichVar]=Value;
 }
 double CATSparameters::GetParameter(const unsigned& WhichPar){
@@ -73,7 +73,7 @@ double CATSparameters::GetParameter(const unsigned& WhichPar){
         return 0;
     }
     unsigned WhichThread = 0;
-    //WhichThread = omp_get_thread_num();
+    WhichThread = omp_get_thread_num();
     return Parameter[WhichThread][WhichPar];
 }
 double CATSparameters::GetVariable(const unsigned& WhichVar){
@@ -82,7 +82,7 @@ double CATSparameters::GetVariable(const unsigned& WhichVar){
         return 0;
     }
     unsigned WhichThread = 0;
-    //WhichThread = omp_get_thread_num();
+    WhichThread = omp_get_thread_num();
     return Parameter[WhichThread][WhichVar];
 }
 
