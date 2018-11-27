@@ -1,7 +1,11 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-
+CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 #It is recommended that you copy all CMake related files in a local folder of yours,
 #else whenever you pull/push there will be conflicts to resolve
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+ set(CMAKE_CXX_FLAGS "-std=c++1y ${CMAKE_CXX_FLAGS}")
+ set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS} -undefined dynamic_lookup")
+endif()
 
 SET(PROJECT_NAME "CATS")
 
@@ -15,8 +19,8 @@ SET(GSL_LIB "/usr/lib")#where are the GSL .a and .so files
 SET(CATS_FOLDER "/home/dmihaylov/Dudek_Ubuntu/DLM_GitHub")#where is the CATS main folder located
 # DO NOT CHANGE THE REST #
 
-SET(VERSION_MAJOR 2)
-SET(VERSION_MINOR 25)
+SET(VERSION_MAJOR 3)
+SET(VERSION_MINOR 0)
 SET(VERSION_PATCH 0)
 SET(VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CATS_DESTINATION})
@@ -48,25 +52,22 @@ add_library(CATSdev	SHARED		${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.c
 
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --cflags" OUTPUT_VARIABLE CFLAGS)
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --libs" OUTPUT_VARIABLE LIBS)
-execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --glibs" OUTPUT_VARIABLE GLIBS)
-execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --incdir" OUTPUT_VARIABLE ROOT_INCLUDE)
-execute_process(COMMAND bash -c "${CATS_PATH}/cats-config --incdir" OUTPUT_VARIABLE CATS_INCLUDE)
-execute_process(COMMAND bash -c "${CATS_PATH}/cats-config --libs-${CATS_TYPE}" OUTPUT_VARIABLE CATS_LIBS)
 
 string(REGEX REPLACE "\n$" "" CFLAGS "${CFLAGS}")
 string(REGEX REPLACE "\n$" "" LIBS "${LIBS}")
-string(REGEX REPLACE "\n$" "" GLIBS "${GLIBS}")
-string(REGEX REPLACE "\n$" "" ROOT_INCLUDE "${ROOT_INCLUDE}")
-string(REGEX REPLACE "\n$" "" CATS_INCLUDE "${CATS_INCLUDE}")
-string(REGEX REPLACE "\n$" "" CATS_LIBS "${CATS_LIBS}")
 
-string(APPEND CFLAGS " -O2")
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 set_target_properties( 	CATSbasic CATSextended CATSdev PROPERTIES COMPILE_FLAGS ${CFLAGS} ARCHIVE_OUTPUT_DIRECTORY "${CATS_DESTINATION}/lib" LIBRARY_OUTPUT_DIRECTORY "${CATS_DESTINATION}/lib" RUNTIME_OUTPUT_DIRECTORY "${CATS_DESTINATION}/bin")
 
-install (TARGETS CATSbasic DESTINATION ${CATS_DESTINATION}/lib)
-install (TARGETS CATSextended DESTINATION ${CATS_DESTINATION}/lib)
-install (TARGETS CATSdev DESTINATION ${CATS_DESTINATION}/lib)
+target_link_libraries(  CATSbasic -L${GSL_LIB} -lgsl -lgslcblas ${LIBS})
+target_link_libraries(  CATSextended -L${GSL_LIB} -lgsl -lgslcblas CATSbasic ${LIBS})
+target_link_libraries(  CATSdev -L${GSL_LIB} -lgsl -lgslcblas CATSbasic ${LIBS})
 
 install (FILES ${CATS_FOLDER}/CATS/CATS.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS/CATStools.h DESTINATION ${CATS_DESTINATION}/include)
