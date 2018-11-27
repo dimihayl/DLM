@@ -50,8 +50,8 @@ execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --cflags" OUTPUT_V
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --libs" OUTPUT_VARIABLE LIBS)
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --glibs" OUTPUT_VARIABLE GLIBS)
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --incdir" OUTPUT_VARIABLE ROOT_INCLUDE)
-execute_process(COMMAND bash -c "${CATS_PATH}/cats-config --incdir" OUTPUT_VARIABLE CATS_INCLUDE)
-execute_process(COMMAND bash -c "${CATS_PATH}/cats-config --libs-${CATS_TYPE}" OUTPUT_VARIABLE CATS_LIBS)
+execute_process(COMMAND bash -c "${CATS_FOLDER}/cats-config --incdir" OUTPUT_VARIABLE CATS_INCLUDE)
+execute_process(COMMAND bash -c "${CATS_FOLDER}/cats-config --libs-${CATS_TYPE}" OUTPUT_VARIABLE CATS_LIBS)
 
 string(REGEX REPLACE "\n$" "" CFLAGS "${CFLAGS}")
 string(REGEX REPLACE "\n$" "" LIBS "${LIBS}")
