@@ -212,6 +212,10 @@ double Lednicky_Identical_Singlet_InvScatLen(const double& Momentum, const doubl
 double Lednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false);
 }
+double Lednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
+    return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false,true);
+}
+
 double Lednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,true);
 }

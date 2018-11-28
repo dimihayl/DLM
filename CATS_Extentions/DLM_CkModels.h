@@ -30,6 +30,7 @@ double Flat_Residual(const double& Momentum, const double* SourcePar, const doub
 double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar);
+double Lednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double LednickyCoulomb_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar);
