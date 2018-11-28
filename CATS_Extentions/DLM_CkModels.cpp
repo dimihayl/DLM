@@ -101,6 +101,50 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     return CkValue;
 }
 
+double GeneralLednicky(const double& Momentum, const double& GaussR,
+                       const complex<double>& ScattLenSin, const double& EffRangeSin,
+                       const complex<double>& ScattLenTri, const double& EffRangeTri,
+                       const bool& SinOnly, const bool& QS, const bool& InverseScatLen){
+
+    if(GaussR!=GaussR){
+        printf("\033[1;33mWARNING:\033[0m GeneralLednicky got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
+
+    const double Radius = GaussR*FmToNu;
+    const complex<double> IsLen1 = InverseScatLen?ScattLenSin/FmToNu:1./(ScattLenSin*FmToNu+1e-64);
+    const double eRan1 = EffRangeSin*FmToNu;
+    const complex<double> IsLen3 = InverseScatLen?ScattLenTri/FmToNu:1./(ScattLenTri*FmToNu+1e-64);
+    const double eRan3 = EffRangeTri*FmToNu;
+
+    double F1 = gsl_sf_dawson(2.*Momentum*Radius)/(2.*Momentum*Radius);
+    double F2 = (1.-exp(-4.*Momentum*Momentum*Radius*Radius))/(2.*Momentum*Radius);
+    complex<double> ScattAmplSin = pow(IsLen1+0.5*eRan1*Momentum*Momentum-i*Momentum,-1.);
+
+    double CkValue = 0.;
+    CkValue +=  0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
+                2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius;
+    //so far this is the eq. for singlet only, w/o QS
+
+    //if we need to include the triplet, we add the term with a weight factor of 3 more than the singlet.
+    //since however the correct norm. coeff. are 0.25 and 0.75 we need to divide by 4 to get the final result
+    if(!SinOnly){
+        complex<double> ScattAmplTri = pow(IsLen3+0.5*eRan3*Momentum*Momentum-i*Momentum,-1.);
+        CkValue +=  3*(
+                    0.5*pow(abs(ScattAmplTri)/Radius,2)*(1-(eRan3)/(2*sqrt(Pi)*Radius))+
+                    2*real(ScattAmplTri)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplTri)*F2/Radius);
+        CkValue *= 0.25;
+    }
+    //if we have to include QS we need to add a correction factor and normalize by factor of 1/2
+    if(QS){
+        CkValue -= exp(-Radius*Radius*4.*Momentum*Momentum);
+        CkValue *= 0.5;
+    }
+
+    CkValue += 1;
+
+    return CkValue;
+}
 
 double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
@@ -167,16 +211,44 @@ double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePa
 double Lednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,true,true);
 }
-
 double Lednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false);
+}
+double Lednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
+    return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false,true);
 }
 double Lednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,true);
 }
-
 double Lednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,false);
+}
+
+double ComplexLednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,true,false);
+}
+double ComplexLednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,true,true);
+}
+double ComplexLednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
+}
+double ComplexLednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false,true);
+}
+double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen1(PotPar[0],PotPar[1]);
+    complex<double> ScatLen3(PotPar[3],PotPar[4]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen1,PotPar[2],ScatLen3,PotPar[5],false,true);
+}
+double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen1(PotPar[0],PotPar[1]);
+    complex<double> ScatLen3(PotPar[3],PotPar[4]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen1,PotPar[2],ScatLen3,PotPar[5],false,false);
 }
 
 
