@@ -256,12 +256,14 @@ public:
     //i.e. please always use only radial symmetric potential
     //[usCh][usPW][...]
     CATSparameters*** PotPar;
+    //double*** PotParArray;
 
     void RemoveShortRangePotential();
     void RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW);
     //Pars[0] should be the radius, Pars[1] should be the momentum.
     //!Pars should be an array with at least 2 elements
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), CATSparameters& Pars);
+    //void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars);
     //set the value of the WhichPar-th parameter of the potential corresponding to the usCh,usPW
     //N.B. WhichPar counts from zero, i.e. CATS sets the value of PotPar[usCh][usPW][3+WhichPar]. Since CATS
     //has no information of the length of this array, it is the responsibility of the user to make source there is
@@ -271,16 +273,18 @@ public:
     void RemoveAnaSource();
     //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
     CATSparameters* AnaSourcePar;
-    double ForwardedSourcePar[3];
+    //double* AnaSourceParArray;
+    CATSparameters* ForwardedSourcePar;
 
     void SetAnaSource(double (*AS)(double*), CATSparameters& Pars);
+    //void SetAnaSource(double (*AS)(double*), double* Pars);
     //this definition uses a C++ trick, allowing to pass the member function of any object as an input argument.
     //!This class needs to have a function Eval(double* Pars), where Pars[0,1,2] are the momentum,radius and cosθ
     //Imagine you have a class called "MYCLASS" and it has the Eval function. To use this source from an object MYCLASS OBJ you just need to do:
     //1) define a "forwarder" function double FORWARDER(void* context, double* Pars){return static_cast<MYCLASS*>(context)->Eval(Pars);}
     //2) define a source function as double SOURCE(double (*fptr)(void*, double*), void* context, double* Pars){return fptr(context,Pars);}
     //3) pass to your CATS object the source by calling .SetAnaSource(FORWARDER,OBJ);
-    //void SetAnaSource(double (*FS)(void*, double*), void* context);
+    void SetAnaSource(double (*FS)(void*, double*), void* context);
 /*
 ///////////////////////////////////////////////////////////////////////////////////////////
 double test_ad5_function(double (*fptr)(void*, const double*), void* context, const double* Pars){
