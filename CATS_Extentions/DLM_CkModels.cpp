@@ -96,7 +96,6 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     return CkValue;
 }
 
-
 double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const complex<double>& ScattLenSin, const double& EffRangeSin,
                        const complex<double>& ScattLenTri, const double& EffRangeTri,
@@ -141,7 +140,6 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
 
     return CkValue;
 }
-
 
 double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
@@ -195,7 +193,6 @@ double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
             +0.75*GeneralCoulombLednicky(Momentum,GaussR,ScattLenTri,EffRangeTri,QS,RedMass,Q1Q2);
 }
 
-
 //e.g. ΛΛ
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
@@ -208,22 +205,45 @@ double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePa
 double Lednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,true,true);
 }
-
 double Lednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false);
 }
 double Lednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],0,0,true,false,true);
 }
-
 double Lednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,true);
 }
-
 double Lednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,false);
 }
 
+double ComplexLednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,true,false);
+}
+double ComplexLednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,true,true);
+}
+double ComplexLednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
+}
+double ComplexLednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false,true);
+}
+double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen1(PotPar[0],PotPar[1]);
+    complex<double> ScatLen3(PotPar[3],PotPar[4]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen1,PotPar[2],ScatLen3,PotPar[5],false,true);
+}
+double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen1(PotPar[0],PotPar[1]);
+    complex<double> ScatLen3(PotPar[3],PotPar[4]);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen1,PotPar[2],ScatLen3,PotPar[5],false,false);
+}
 
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
@@ -258,7 +278,6 @@ double LednickyCoulomb_Identical_Triplet(const double& Momentum, const double* S
     //return CoulombPenetrationFactor(Momentum,PotPar[4],PotPar[5])*Lednicky_Identical_Triplet(Momentum,SourcePar,PotPar);
     return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],true,PotPar[4],PotPar[5]);
 }
-
 
 //e.g. pΛ
 //SourcePar[0] = Radius

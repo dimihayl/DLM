@@ -5,6 +5,9 @@
 #include "DLM_WfModel.h"
 #include "CATS.h"
 
+//for testing
+//#include <unistd.h>
+
 using namespace std;
 
 const complex<float>i(0,1);
@@ -1804,15 +1807,15 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
         //printf("MomBin %u: %.2f ... %.2f ... %.2f\n",uBin,MomentumBins[uBin],Momentum[uBin],MomentumBins[uBin+1]);
     //}
 
-//
-
     Kitty.SetMomBins(NumMomBins,MomentumBins,Momentum);
+
     Kitty.SetNumChannels(NumChannels);
     for(unsigned uCh=0; uCh<NumChannels; uCh++){
         Kitty.SetNumPW(uCh,1);
         Kitty.SetChannelWeight(uCh,1./4.);
         Kitty.SetSpin(uCh,uCh?1:0);
     }
+
     Kitty.SetQ1Q2(-1);
     Kitty.SetPdgId(2212, 3312);
     Kitty.SetRedMass( Mass_p*Mass_Xim/(Mass_p+Mass_Xim) );
@@ -1933,12 +1936,10 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
             }
             // mom/ch/pw/rad
             //CHANNELS, S=0 or 1
-            WaveFunctionU[0][MomBin][uFile>=NumMomBins][0][RadBin] = fCatsWf*fRadius;
             if(uFile<NumMomBins) WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
             else if(uFile<2*NumMomBins) WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
             else if(uFile<3*NumMomBins) WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
             else WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
-
             RadBinLoaded[RadBin] = true;
         }
         delete [] cdummy;
