@@ -25,9 +25,13 @@ public:
     double GetPotPar(const unsigned& WhichPar);
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
+    //the momentum value after which the correlation will be considered 1
+    //N.B. if we go outside the maximum momentum, the same is assumed
+    void SetFlatCutOff(const double& Momentum);
 
     bool Status();
     void Update(const bool& FORCE=false);
+    double Eval(const double& Momentum);
 
 private:
     const unsigned NumSourcePar;
@@ -39,6 +43,7 @@ private:
     bool SourceUpToDate;
     double* PotPar;
     bool PotUpToDate;
+    double FlatCutOff;
 
     void DefaultConstructor();
 };

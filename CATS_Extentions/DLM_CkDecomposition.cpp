@@ -49,6 +49,7 @@ DLM_Ck::~DLM_Ck(){
 void DLM_Ck::DefaultConstructor(){
     SourcePar = NULL;
     PotPar = NULL;
+    FlatCutOff = BinRange[NumBins];
     if(CkFunction){
         if(NumSourcePar) SourcePar = new double [NumSourcePar];
         if(NumPotPar) PotPar = new double [NumPotPar];
@@ -108,6 +109,10 @@ double DLM_Ck::GetPotPar(const unsigned& WhichPar){
 }
 unsigned DLM_Ck::GetNumPotPar(){
     return NumPotPar;
+}
+void DLM_Ck::SetFlatCutOff(const double& Momentum){
+    if(Momentum<GetBinUpEdge(NumBins)) FlatCutOff = Momentum;
+    else FlatCutOff = GetBinUpEdge(NumBins);
 }
 
 void DLM_Ck::SetPotPar(const unsigned& WhichPar, const double& Value){
@@ -174,6 +179,11 @@ printf("%.2f\n",Lednicky_Identical_Singlet(GetBinCenter(uBin), SourcePar, PotPar
     else{
         return;
     }
+}
+double DLM_Ck::Eval(const double& Momentum){
+    if(Momentum<BinRange[0]) return 0;
+    if(Momentum>FlatCutOff) return 1;
+    else return CATShisto::Eval(Momentum);
 }
 
 //the main contribution does not count as a child, i.e. 1 child implies one contribution additionally to the main one!

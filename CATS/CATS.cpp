@@ -1419,7 +1419,7 @@ double CATS::GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigne
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetPotPar(...)\n");
         return 0;
     }
-    if(PotPar[usCh][usPW]) PotPar[usCh][usPW]->GetParameter(WhichPar);
+    if(PotPar[usCh][usPW]) return PotPar[usCh][usPW]->GetParameter(WhichPar);
     //else if(PotParArray[usCh][usPW]) return PotParArray[usCh][usPW][WhichPar+NumPotPars];
     else return 0;
 }
