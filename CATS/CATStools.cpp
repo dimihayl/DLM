@@ -74,7 +74,7 @@ double CATSparameters::GetParameter(const unsigned& WhichPar){
     }
     unsigned WhichThread = 0;
     WhichThread = ThreadSafe?omp_get_thread_num():0;
-    return Parameter[WhichThread][WhichPar];
+    return Parameter[WhichThread][NumVars+WhichPar];
 }
 double CATSparameters::GetVariable(const unsigned& WhichVar){
     if(WhichVar>=NumVars){
