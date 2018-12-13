@@ -2003,7 +2003,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
             if(pTotal!=pTotalOld){
                 Time = double(dlmTimer.Stop())/1000000.;
                 Time = round((1./Progress-1.)*Time);
-                ShowTime((long long)(Time), cdummy, 2);
+                ShowTime((long long)(Time), cdummy, 2, true, 5);
                 if(Notifications>=nAll) printf("\r\033[K          Progress %3d%%, ETA %s",pTotal,cdummy);
                 cout << flush;
                 pTotalOld = pTotal;
@@ -2259,7 +2259,7 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
             //EtaPerBin = round((1./pMaxPairsPerBin-1.)*Time);
             //EtaToLoad = round((1./pMaxPairsToLoad-1.)*Time);
             Time = round((1./ProgressLoad-1.)*Time);
-            ShowTime((long long)(Time), cdummy, 2);
+            ShowTime((long long)(Time), cdummy, 2, true, 5);
             if(Notifications>=nAll)
                 printf("\r\033[K          Progress %3d%%, ETA %s",pTotal,cdummy);
             ProgressBar = true;
