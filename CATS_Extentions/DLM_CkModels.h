@@ -1,4 +1,3 @@
-
 #ifndef DLM_CKMODELS_H
 #define DLM_CKMODELS_H
 
@@ -43,7 +42,6 @@ double ComplexLednicky_Singlet(const double& Momentum, const double* SourcePar, 
 double ComplexLednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
 double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
-
 
 double pXi_pheno(const double &Momentum, const double* SourcePar, const double* PotPar);
 

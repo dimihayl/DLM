@@ -462,9 +462,9 @@ double GaussExpTotSimple_2body(double* Pars){
 //[6 : 5+NkT] = the radii of the different kT bins
 //[6+NkT : 3+2*NkT] = the weights of each kT bin
 //
-double GaussExpTotSimple_2body_kT(double* Pars){
+//double GaussExpTotSimple_2body_kT(double* Pars){
 
-}
+//}
 
 double MemberSourceForwarder(void* context, double* Pars){return static_cast<MemberSource*>(context)->Eval(Pars);}
 

@@ -5,19 +5,15 @@
 #include "TComplex.h"
 #include "gsl_sf_dawson.h"
 
-#include <complex>
-
 #include "CATSconstants.h"
 #include "CATStools.h"
 
 using namespace std;
 
-
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar){
 //printf("FR at %f\n", Momentum);
     return 1;
 }
-
 
 double LednickyAsInStar(const double& Momentum, const double& GaussR, const double& ScattLenSin, const double& EffRangeSin,
                         const double& Norm, const double& lambda, const double& ares, const double& RadRes){
@@ -48,7 +44,6 @@ double LednickyAsInStar(const double& Momentum, const double& GaussR, const doub
           );
 
 }
-
 
 double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
@@ -198,7 +193,6 @@ double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
             +0.75*GeneralCoulombLednicky(Momentum,GaussR,ScattLenTri,EffRangeTri,QS,RedMass,Q1Q2);
 }
 
-
 //e.g. ΛΛ
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
@@ -251,7 +245,6 @@ double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, 
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen1,PotPar[2],ScatLen3,PotPar[5],false,false);
 }
 
-
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
 //PotPar[1] = Reff for 1S0
@@ -285,7 +278,6 @@ double LednickyCoulomb_Identical_Triplet(const double& Momentum, const double* S
     //return CoulombPenetrationFactor(Momentum,PotPar[4],PotPar[5])*Lednicky_Identical_Triplet(Momentum,SourcePar,PotPar);
     return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],true,PotPar[4],PotPar[5]);
 }
-
 
 //e.g. pΛ
 //SourcePar[0] = Radius

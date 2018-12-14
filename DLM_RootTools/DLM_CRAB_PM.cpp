@@ -315,7 +315,7 @@ void DLM_CRAB_PM::RunPhasemaker(unsigned Seed){
 
     double p[4],r[4];
     double weight,pmag2,pmag,cthet,sthet,phi;
-    unsigned i,id,alpha,iblankline;
+    unsigned i,id,alpha;
     TRandom3 rangen(Seed);
     FILE *fptr;
     if(OutputFileName!="") fptr=fopen(OutputFileName.c_str(),"w");
