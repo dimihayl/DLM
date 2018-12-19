@@ -13,7 +13,7 @@
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
 
-#include <omp.h>
+//#include <omp.h>
 //#include <unistd.h>
 
 using namespace std;
