@@ -116,6 +116,9 @@ public:
     void SetMaxPw(const unsigned short& maxpw);
     unsigned short GetMaxPw() const;
 
+    void SetMaxNumThreads(const unsigned short& maxnumthreads);
+    unsigned short GetMaxNumThreads() const;
+
     void SetMaxRho(const double& maxrho);
     double GetMaxRho() const;
 
@@ -445,6 +448,7 @@ protected:
     double MaxRho;
     //the max. 'l' to be computed by CATS
     unsigned short MaxPw;
+    unsigned short MaxNumThreads;
 
     bool ExcludeFailedConvergence;
 
@@ -642,6 +646,7 @@ protected:
     double* LegPol;
     //the gamow correction factors (Coulomb penetration factor) pre-computed for all momentum bins
     complex<double>* CPF;
+int DEBUG;
 };
 
 #endif // CATS_H

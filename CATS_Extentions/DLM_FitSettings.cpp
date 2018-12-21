@@ -368,7 +368,7 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
     }
     MomBins[NumMomBins] = histoDATA->GetXaxis()->GetBinUpEdge(LastBin);
 
-    CatSourcePars->SetParameter(0,1.5);
+    CatSourcePars->SetParameter(0,1.5,false);
 
     //if statements for the standard interactions
     if(PartPair.IsIt("Proton","Proton")){

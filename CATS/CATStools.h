@@ -16,10 +16,10 @@ public:
     ~CATSparameters();
     double* GetParameters() const;
     //the parameter is set the same for all threads!
-    void SetParameter(const unsigned& WhichPar, const double& Value);
-    void SetParameters(const double* pars);
+    void SetParameter(const unsigned& WhichPar, const double& Value, const bool& CurrentThread=false);
+    void SetParameters(const double* pars, const bool& CurrentThread=false);
     //the variable is set only for the current thread!
-    void SetVariable(const unsigned& WhichVar, const double& Value);
+    void SetVariable(const unsigned& WhichVar, const double& Value, const bool& CurrentThread);
     double GetParameter(const unsigned& WhichPar);
     double GetVariable(const unsigned& WhichVar);
 protected:

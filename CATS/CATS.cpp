@@ -13,7 +13,7 @@
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
 
-//#include <omp.h>
+#include <omp.h>
 //#include <unistd.h>
 
 using namespace std;
@@ -38,6 +38,7 @@ CATS::CATS():
     MaxRad = 32.*FmToNu;
     MaxRho = 16;
     MaxPw = 256;
+    MaxNumThreads = 32767;
     ExcludeFailedConvergence = true;
     GridMinDepth = 5;
     GridMaxDepth = 0;
@@ -121,7 +122,7 @@ CATS::CATS():
     LegPol = NULL;
 
     CPF = NULL;
-
+DEBUG=-1;
     SetIpBins(1, -1000, 1000);
 }
 
@@ -775,9 +776,15 @@ void CATS::SetMaxPw(const unsigned short& maxpw){
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
-
 unsigned short CATS::GetMaxPw() const{
     return MaxRho;
+}
+
+void CATS::SetMaxNumThreads(const unsigned short& maxnumthreads){
+    MaxNumThreads = maxnumthreads;
+}
+unsigned short CATS::GetMaxNumThreads() const{
+    return MaxNumThreads;
 }
 
 void CATS::SetExcludeFailedBins(const bool& efb){
@@ -1314,7 +1321,7 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, co
     if(GetPotPar(usCh,usPW,WhichPar)==Value) return;
     if(!ShortRangePotential[usCh][usPW]) return;
 
-    if(PotPar[usCh][usPW]) PotPar[usCh][usPW]->SetParameter(WhichPar,Value);
+    if(PotPar[usCh][usPW]) PotPar[usCh][usPW]->SetParameter(WhichPar,Value,false);
     //else if(PotParArray[usCh][usPW]) PotParArray[usCh][usPW][WhichPar+NumPotPars]=Value;
 
     ComputedWaveFunction = false;
@@ -1390,7 +1397,7 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
     }
     if(AnaSourcePar){
         if(AnaSourcePar->GetParameter(WhichPar)==Value) return;
-        AnaSourcePar->SetParameter(WhichPar,Value);
+        AnaSourcePar->SetParameter(WhichPar,Value,false);
     }
     //else if(AnaSourceParArray){
     //    if(AnaSourceParArray[NumSourcePars+WhichPar]==Value) return;
@@ -1643,7 +1650,9 @@ void CATS::ComputeWaveFunction(){
     //the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
     //this is however difficult as currently I only pass a single pointer as PotPar, and I do not know how many arguments there are
     //the same problem should occur for the source
-    //#pragma omp parallel for private(uMomBin,usCh,usPW)
+    unsigned short NumThreads = omp_get_num_procs();
+    if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
+    #pragma omp parallel for private(uMomBin,usCh,usPW) num_threads(NumThreads)
     for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++){
         //compute to which MomBin, Polarization and PW corresponds this MPP,
         //i.e. map uMomBin, usCh and usPW to uMPP
@@ -1808,7 +1817,16 @@ void CATS::ComputeWaveFunction(){
                 }
 
                 BufferWaveFunction[NumComputedPoints] = WaveFun[kNew];
-
+if(NumComputedPoints<32 && NumComputedPoints%1==0 && uMomBin==0 && uMPP==0 && false){
+printf("Momentum=%f\n",Momentum);
+DEBUG=omp_get_thread_num();
+}
+else{
+    #pragma omp critical
+    {
+    DEBUG=-1;
+    }
+}
                 PropagatingFunction(PropFunWithoutSI[kNew], PropFunVal[kNew], PosRad[kNew], Momentum, usPW, usCh);
 
                 DeltaRad2[kNew] = EpsilonProp/(fabs(PropFunVal[kNew])+1e-64);
@@ -1823,6 +1841,13 @@ void CATS::ComputeWaveFunction(){
                 }
 
                 BufferRad[NumComputedPoints] = PosRad[kNew];
+if(DEBUG==omp_get_thread_num()){
+printf("Stuff: \n");
+printf(" PropFunWithoutSI[%u]=%.15e\n",kNew,PropFunWithoutSI[kNew]);
+printf(" PropFunVal[%u]=%.15e\n",kNew,PropFunVal[kNew]);
+printf(" BufferRad[%u]=%.15e\n",NumComputedPoints,BufferRad[NumComputedPoints]);
+DEBUG=-1;
+}
 
                 Convergence =   fabs( (PropFunWithoutSI[kOld]-PropFunVal[kOld])/(fabs(PropFunWithoutSI[kOld]+PropFunVal[kOld])+1e-64) ) < EpsilonConv &&
                                 fabs( (PropFunWithoutSI[kCurrent]-PropFunVal[kCurrent])/(fabs(PropFunWithoutSI[kCurrent]+PropFunVal[kCurrent])+1e-64) ) < EpsilonConv &&
@@ -2031,9 +2056,9 @@ void CATS::ComputeWaveFunction(){
             }
         }
 
-        //#pragma omp atomic
+        #pragma omp atomic
         CurrentStep++;
-        //#pragma omp critical
+        #pragma omp critical
         {
             Progress = double(CurrentStep)/TotalSteps;
             pTotal = int(Progress*100);
@@ -2090,8 +2115,9 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     double TotalSteps = double(NumMomBins)*double(NumGridPts);
     long long CurrentStep=0;
     DLM_Timer dlmTimer;
-
-    //#pragma omp parallel for private(Radius,CosTheta)
+    unsigned short NumThreads = omp_get_num_procs();
+    if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
+    #pragma omp parallel for private(Radius,CosTheta) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         //Momentum = GetMomentum(uMomBin);
         for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
@@ -2104,9 +2130,9 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                                                         EffectiveFunction(uMomBin, Radius, usCh);
             }
 
-            //#pragma omp atomic
+            #pragma omp atomic
             CurrentStep++;
-            //#pragma omp critical
+            #pragma omp critical
             {
                 Progress = double(CurrentStep)/TotalSteps;
                 pTotal = int(Progress*100);
@@ -2594,7 +2620,9 @@ void CATS::FoldSourceAndWF(){
     double Integrand;
     double SourceInt;
     double SourceIntCut;
-    //#pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut)
+    unsigned short NumThreads = omp_get_num_procs();
+    if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
+    #pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         kCorrFun[uMomBin] = 0;
         kCorrFunErr[uMomBin] = 0;
@@ -2720,7 +2748,7 @@ void CATS::SetUpSourceGrid(){
     }
     if(UseAnalyticSource){
         //for setting up the grid we take the "mean" value of k
-        AnaSourcePar->SetVariable(0,(MomBin[0]+MomBin[NumMomBins])*0.5);
+        AnaSourcePar->SetVariable(0,(MomBin[0]+MomBin[NumMomBins])*0.5,false);
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
                          this, AnaSourcePar, NULL, 0);
     }
@@ -2798,7 +2826,7 @@ void CATS::SetUpSourceGrid(){
         kbSourceGrid = new CATSelder** [NumMomBins];
         for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
             kbSourceGrid[uMomBin] = new CATSelder* [NumIpBins];
-            AnaSourcePar->SetVariable(0,GetMomentum(uMomBin));
+            AnaSourcePar->SetVariable(0,GetMomentum(uMomBin),false);
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 if(UseAnalyticSource){
                     kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
@@ -2851,8 +2879,8 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     //the Full result is the Prop.Fun. WITH a short range potential
     double* Parameters = NULL;
     if(PotPar[usCh][usPW]){
-        PotPar[usCh][usPW]->SetVariable(0,Radius*NuToFm);
-        PotPar[usCh][usPW]->SetVariable(1,Momentum);
+        PotPar[usCh][usPW]->SetVariable(0,Radius*NuToFm,true);
+        PotPar[usCh][usPW]->SetVariable(1,Momentum,true);
         Parameters = PotPar[usCh][usPW]->GetParameters();
     }
     //else if(PotParArray[usCh][usPW]){
@@ -2863,7 +2891,15 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     else{
         return;
     }
-
+if(DEBUG==omp_get_thread_num())
+{
+printf("  Basic=%.15e\n",Basic);
+printf("  ShortRangePotential[%u][%u]=%.15e\n",usCh,usPW,ShortRangePotential[usCh][usPW](Parameters));
+printf("  Parameters[0]=%.15e\n",Parameters[0]);
+printf("  Parameters[1]=%.15e\n",Parameters[1]);
+printf("  Parameters[2]=%.15e\n",Parameters[2]);
+printf("  Full=%.15e\n",Full);
+}
     //! In principle this should be executed only if ShortRangePotential[usCh][usPW] is defined.
     //! Do note that this function is NEVER called in case this is not true! Make sure that this stays so!
     Full = Basic + 2*RedMass*ShortRangePotential[usCh][usPW](Parameters);

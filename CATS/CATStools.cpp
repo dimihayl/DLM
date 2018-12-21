@@ -9,7 +9,7 @@
 #include "CATSconstants.h"
 #include "CATS.h"
 
-//#include <omp.h>
+#include <omp.h>
 
 //!Needed only for testing (contains usleep)
 //#include <unistd.h>
@@ -18,8 +18,8 @@ using namespace std;
 
 //omp_get_num_procs()
 //CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(omp_get_num_procs()){
-//CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(ThreadSafe?omp_get_num_procs():1){
-CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(1){
+CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(ThreadSafe?omp_get_num_procs():1){
+//CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(1){
     Parameter = new double* [NumThreads];
     for(unsigned uThr=0; uThr<NumThreads; uThr++){
         Parameter[uThr] = new double [TotNumPars];
@@ -38,37 +38,55 @@ double* CATSparameters::GetParameters() const{
     //    return NULL;
     //}
     unsigned WhichThread = 0;
-    //WhichThread = ThreadSafe?omp_get_thread_num():0;
-    WhichThread = 0;
+    WhichThread = ThreadSafe?omp_get_thread_num():0;
+    //WhichThread = 0;
 //if(NumVars==2)printf("GetParameters[%u] -> %p\n", WhichThread, Parameter[WhichThread]);
     return Parameter[WhichThread];
 }
-void CATSparameters::SetParameter(const unsigned& WhichPar, const double& Value){
+void CATSparameters::SetParameter(const unsigned& WhichPar, const double& Value, const bool& CurrentThread){
     if(WhichPar>=NumPars){
         printf("\033[1;33mWARNING:\033[0m CATSparameters::SetParameter got an non-existing parameter (%u) as an input\n",WhichPar);
         return;
     }
-    for(unsigned uThr=0; uThr<NumThreads; uThr++){
-        //#pragma omp critical
-        {
-        Parameter[uThr][NumVars+WhichPar]=Value;
+    if(CurrentThread){
+        unsigned WhichThread = 0;
+        WhichThread = ThreadSafe?omp_get_thread_num():0;
+        //WhichThread = 0;
+        Parameter[WhichThread][NumVars+WhichPar]=Value;
+    }
+    else{
+        for(unsigned uThr=0; uThr<NumThreads; uThr++){
+            #pragma omp critical
+            {
+            Parameter[uThr][NumVars+WhichPar]=Value;
+            }
         }
     }
 }
-void CATSparameters::SetParameters(const double* pars){
+void CATSparameters::SetParameters(const double* pars, const bool& CurrentThread){
     for(unsigned uPar=0; uPar<NumPars; uPar++){
-        SetParameter(uPar,pars[uPar]);
+        SetParameter(uPar,pars[uPar],CurrentThread);
     }
 }
-void CATSparameters::SetVariable(const unsigned& WhichVar, const double& Value){
+void CATSparameters::SetVariable(const unsigned& WhichVar, const double& Value, const bool& CurrentThread){
     if(WhichVar>=NumVars){
         printf("\033[1;33mWARNING:\033[0m CATSparameters::SetVariable got an non-existing variable (%u) as an input\n",WhichVar);
         return;
     }
-    unsigned WhichThread = 0;
-    //WhichThread = ThreadSafe?omp_get_thread_num():0;
-    WhichThread = 0;
-    Parameter[WhichThread][WhichVar]=Value;
+    if(CurrentThread){
+        unsigned WhichThread = 0;
+        WhichThread = ThreadSafe?omp_get_thread_num():0;
+        //WhichThread = 0;
+        Parameter[WhichThread][WhichVar]=Value;
+    }
+    else{
+        for(unsigned uThr=0; uThr<NumThreads; uThr++){
+            #pragma omp critical
+            {
+            Parameter[uThr][WhichVar]=Value;
+            }
+        }
+    }
 }
 double CATSparameters::GetParameter(const unsigned& WhichPar){
     if(WhichPar>=NumPars){
@@ -76,8 +94,8 @@ double CATSparameters::GetParameter(const unsigned& WhichPar){
         return 0;
     }
     unsigned WhichThread = 0;
-    //WhichThread = ThreadSafe?omp_get_thread_num():0;
-    WhichThread = 0;
+    WhichThread = ThreadSafe?omp_get_thread_num():0;
+    //WhichThread = 0;
     return Parameter[WhichThread][NumVars+WhichPar];
 }
 double CATSparameters::GetVariable(const unsigned& WhichVar){
@@ -86,8 +104,8 @@ double CATSparameters::GetVariable(const unsigned& WhichVar){
         return 0;
     }
     unsigned WhichThread = 0;
-    //WhichThread = ThreadSafe?omp_get_thread_num():0;
-    WhichThread = 0;
+    WhichThread = ThreadSafe?omp_get_thread_num():0;
+    //WhichThread = 0;
     return Parameter[WhichThread][WhichVar];
 }
 
@@ -671,7 +689,7 @@ void CATSnode::Update(const bool& ThisNodeOnly){
 //if(!ThisNodeOnly) printf("SourceValue = %.3f -->",SourceValue*100);
     if(Elder->SourceContext){
         for(short sDim=0; sDim<Elder->Dim; sDim++){
-            Elder->SourcePars->SetVariable(1+sDim,MeanVal[sDim]);
+            Elder->SourcePars->SetVariable(1+sDim,MeanVal[sDim],false);
         }
 //if(!ThisNodeOnly) printf(" ESF(%f)=%f --> GridSize=%f -->",Elder->SourcePars[1],Elder->SourceFunction(Elder->SourcePars),GridSize);
         SourceValue = Elder->SourceFunction(Elder->SourceContext)*GridSize;
