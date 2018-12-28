@@ -698,7 +698,7 @@ void CATS::SetIpBins(const unsigned& numBbins, const double& MinImpPar, const do
 void CATS::SetChannelWeight(const unsigned short& usCh, const double& weight){
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetSpinWeight(const unsigned short& usCh, const double& weight)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetChannelWeight(const unsigned short& usCh, const double& weight)\n");
         return;
     }
     if(ChannelWeight[usCh]==weight) return;
@@ -709,7 +709,7 @@ void CATS::SetChannelWeight(const unsigned short& usCh, const double& weight){
 double CATS::GetChannelWeight(const unsigned short& usCh) const{
     if(usCh>=NumCh){
         if(Notifications>=nError)
-            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetSpinWeight(const unsigned short& usCh)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetChannelWeight(const unsigned short& usCh)\n");
         return 0;
     }
     return ChannelWeight[usCh];

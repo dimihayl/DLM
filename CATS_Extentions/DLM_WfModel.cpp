@@ -1828,11 +1828,11 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
         InputFileName[uFile] = new char[256];
         strcpy(InputFileName[uFile],InputFolder);
         if(uFile<NumMomBins){
-            strcat(InputFileName[uFile], "lsj000/");
+            strcat(InputFileName[uFile], "lsj000/");//s=0
             sprintf(buffer,"wflsj000_plab%.0f.dat",pLab[uFile%(NumMomBins)]);
         }
         else if(uFile<2*NumMomBins){
-            strcat(InputFileName[uFile], "lsj011/ss/");
+            strcat(InputFileName[uFile], "lsj011/ss/");//s=1, s-wave
             sprintf(buffer,"wflsj011_plab%.0f.dat",pLab[uFile%(NumMomBins)]);
         }
         else if(uFile<3*NumMomBins){
