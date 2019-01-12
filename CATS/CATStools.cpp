@@ -584,18 +584,19 @@ unsigned CATSnode::GetNumOfEl(){
     if(Elder==this) return Elder->NumOfEl;
     return round(SourceValue*double(Elder->NumOfEl));
 }
+double CATSnode::GetGridSize(){
+    return GridSize;
+}
 
 void CATSnode::Update(){
     Update(false);
 }
 
 void CATSnode::Update(const bool& ThisNodeOnly){
-//if(!ThisNodeOnly) printf("SourceValue = %.3f -->",SourceValue*100);
     if(Elder->SourceContext){
         for(short sDim=0; sDim<Elder->Dim; sDim++){
             Elder->SourcePars[1+sDim] = MeanVal[sDim];
         }
-//if(!ThisNodeOnly) printf(" ESF(%f)=%f --> GridSize=%f -->",Elder->SourcePars[1],Elder->SourceFunction(Elder->SourcePars),GridSize);
         SourceValue = Elder->SourceFunction(Elder->SourceContext)*GridSize;
     }
     else if(Elder->GridBoxId){
@@ -627,7 +628,6 @@ void CATSnode::Update(const bool& ThisNodeOnly){
     else{
        SourceValue = 0;
     }
-//if(!ThisNodeOnly) printf(" %.3f %\n",SourceValue*100);
     if(child && !ThisNodeOnly){
         for(unsigned uSub=0; uSub<Elder->NumSubNodes; uSub++) child[uSub]->Update();
     }
@@ -696,7 +696,6 @@ CATSelder::CATSelder(const short& dim, const short& mindep, const short& maxdep,
                      void* context, double* Pars, int64_t* gbid, const unsigned& numel):
     CATSnode(this, 0, 0, uipow(2,dim*maxdep)-1, mean, len),
     Dim(dim),MinDepth(mindep),MaxDepth(maxdep),Epsilon(epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
-
     BaseConstructor(mean, len, context, Pars, gbid, numel, NULL);
 }
 
@@ -728,6 +727,11 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, double
     SourcePars = Pars;
     GridBoxId = gbid;
 
+    //the min number of entries required in a node
+    //I believe this should be zero in case we work with an Ana Source
+    if(Elder->SourceContext) MinEntries=0;
+    else MinEntries = Elder->NumSubNodes*4;
+
     if( (!SourceContext && !SourcePars && !GridBoxId) ||
         (SourceContext && SourcePars && GridBoxId) ||
         (!SourceContext && SourcePars) || (SourceContext && !SourcePars) ||
@@ -739,7 +743,6 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, double
         GridBoxId = NULL;
     }
     StandardNodeInit(mean, len, TemplateElder);
-
     if(TemplateElder && NumEndNodes!=TemplateElder->NumEndNodes){
         printf("WARNING! A potential huge bug in CATSelder::BaseConstructor, please contact the developers!\n");
     }
@@ -756,9 +759,6 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, double
 
     if(SourceRenormError<1) SourceRenormError = SourceRenormError?1./SourceRenormError:1e64;
     SourceRenormError -= 1;
-
-    //the min number of entries required in a node
-    MinEntries = Elder->NumSubNodes*4;
 
     double EffectiveEpsilon = double(MinEntries)/double(NumOfEl);
     if(Epsilon>EffectiveEpsilon) EffectiveEpsilon=Epsilon;
@@ -795,16 +795,26 @@ double CATSelder::GetParValue(const unsigned& WhichNode, const short& WhichPar){
     return EndNode[WhichNode]->MeanVal[WhichPar];
 }
 
-double CATSelder::GetGridValue(const unsigned& WhichNode){
+double CATSelder::GetGridValue(const unsigned& WhichNode, const bool& Normalized){
     if(WhichNode>=NumEndNodes) return 0;
-    return EndNode[WhichNode]->SourceValue;
+    return EndNode[WhichNode]->SourceValue/(Normalized?EndNode[WhichNode]->GridSize:1);
 }
 
-double CATSelder::GetGridError(const unsigned& WhichNode){
+double CATSelder::GetGridError(const unsigned& WhichNode, const bool& Normalized){
     if(WhichNode>=NumEndNodes) return 0;
-    if(SourceContext) return SourceRenormError;
-    else return pow(double(EndNode[WhichNode]->GetNumOfEl()),-0.5);
+    if(SourceContext) return SourceRenormError/(Normalized?EndNode[WhichNode]->GridSize:1);
+    else return pow(double(EndNode[WhichNode]->GetNumOfEl()),-0.5)/(Normalized?EndNode[WhichNode]->GridSize:1);
 }
+void CATSelder::GetGridAxis(const unsigned& WhichNode, double* Axis){
+    for(short sDim=0; sDim<Dim; sDim++){
+        Axis[sDim]=0;
+    }
+    if(WhichNode>=NumEndNodes) return;
+    for(short sDim=0; sDim<Dim; sDim++){
+        Axis[sDim]=EndNode[WhichNode]->MeanVal[sDim];
+    }
+}
+
 //btw, if the range is outside the limits, the return value will be equal
 //to the NumberOfBoxes. Used somewhere else this might lead to potential segmentation faults, so
 //make sure to take care of that!

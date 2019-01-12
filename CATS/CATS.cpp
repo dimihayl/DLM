@@ -39,7 +39,7 @@ CATS::CATS():
     MaxRho = 16;
     MaxPw = 256;
     ExcludeFailedConvergence = true;
-    GridMinDepth = 5;
+    GridMinDepth = 7;
     GridMaxDepth = 0;
     GridEpsilon = 0;
     NumPairs = 0;
@@ -2475,7 +2475,6 @@ void CATS::FoldSourceAndWF(){
     //this can happen if we change something about the source, but force CATS to use the same grid.
     //in such a case before folding the date one needs to update the values for the source!
     if(!SourceUpdated) UpdateSourceGrid();
-
     unsigned NumGridPts;
     double SourceVal;
     double WaveFunVal;
@@ -3168,6 +3167,9 @@ double CATS::EvaluateTheSource(double* Pars) const{
         return 0;
     }
     return ForwardedSource(SourceContext,Pars);
+}
+CATSelder* CATS::GetTheElder(const double& Momentum){
+    return kSourceGrid[GetMomBin(Momentum)];
 }
 
 void CATS::UpdateCPF(){

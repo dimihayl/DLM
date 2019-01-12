@@ -245,6 +245,8 @@ public:
     //computes the radius bin corresponding to Radius (for a certain l and S)
     unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
                        const unsigned short& usCh, const unsigned short& usPW) const;
+    double EvaluateTheSource(double* Pars) const;
+    CATSelder* GetTheElder(const double& Momentum);
 
     //convert fm to 1/MeV
     const double& FmNu() const;
@@ -570,8 +572,6 @@ protected:
 
     template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin) const;
     template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function) const;
-
-    double EvaluateTheSource(double* Pars) const;
 
     //double SourceFunction(const double* Pars, const double& GridSize);
     void UpdateCPF();
