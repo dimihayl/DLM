@@ -191,6 +191,7 @@ public:
     ~CATSnode();
     unsigned GetNumOfBoxes();
     unsigned GetNumOfEl();
+    double GetGridSize();
     void Update();
 protected:
     CATSelder* Elder;
@@ -231,8 +232,9 @@ public:
     unsigned GetNumEndNodes();
     void GetParValues(const unsigned& WhichNode, double* values);
     double GetParValue(const unsigned& WhichNode, const short& WhichPar);
-    double GetGridValue(const unsigned& WhichNode);
-    double GetGridError(const unsigned& WhichNode);
+    double GetGridValue(const unsigned& WhichNode, const bool& Normalized=false);
+    double GetGridError(const unsigned& WhichNode, const bool& Normalized=false);
+    void GetGridAxis(const unsigned& WhichNode, double* Axis);
 
     unsigned GetBoxId(double* particle);
     unsigned FindFirstParticleWithID(const unsigned& gbid);

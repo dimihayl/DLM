@@ -40,7 +40,7 @@ CATS::CATS():
     MaxPw = 256;
     MaxNumThreads = 32767;
     ExcludeFailedConvergence = true;
-    GridMinDepth = 5;
+    GridMinDepth = 7;
     GridMaxDepth = 0;
     GridEpsilon = 0;
     NumPairs = 0;
@@ -3331,6 +3331,10 @@ double CATS::EvaluateTheSource(CATSparameters* Pars) const{
         return 0;
     }
     return ForwardedSource(SourceContext,Pars->GetParameters());
+}
+
+CATSelder* CATS::GetTheElder(const double& Momentum){
+    return kSourceGrid[GetMomBin(Momentum)];
 }
 
 void CATS::UpdateCPF(){
