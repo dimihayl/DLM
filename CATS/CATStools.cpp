@@ -62,6 +62,7 @@ void CATSparameters::SetParameter(const unsigned& WhichPar, const double& Value,
             }
         }
     }
+    //printf("WhichPar=%u; Value=%f; CurrentThread=%i\n",WhichPar,Value,int(CurrentThread));
 }
 void CATSparameters::SetParameters(const double* pars, const bool& CurrentThread){
     for(unsigned uPar=0; uPar<NumPars; uPar++){

@@ -751,7 +751,6 @@ void DLM_Fitter1::GoBabyGo(){
         */
     }
 
-
     double Momentum;
     double CkVal;
     double CkValErr;
@@ -760,8 +759,6 @@ void DLM_Fitter1::GoBabyGo(){
     //this might be needed if I allow for zero pointers to some of the main functions
     //for the time being this is not the case
     unsigned ActualNumSyst = 0;
-
-
 
     char* buffer = new char[128];
     char* buffer2 = new char[128];
@@ -979,15 +976,8 @@ void DLM_Fitter1::GoBabyGo(){
         uActualPotential++;
     }
 
-
     delete [] buffer;
     delete [] buffer2;
-
-
-
-
-
-
 
     unsigned NumBinsGlobal = 0;
     if(NumBinsSyst) delete [] NumBinsSyst;
