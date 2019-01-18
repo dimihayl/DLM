@@ -2,18 +2,18 @@
 #define DLM_ResponseMatrixH
 
 #include "CATS.h"
-#include "CATStools.h"
+#include "DLM_Histo.h"
 
 #include "TH2F.h"
 
 class DLM_ResponseMatrix{
 
 public:
-    DLM_ResponseMatrix(CATShisto<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia=false);
+    DLM_ResponseMatrix(DLM_Histo<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia=false);
     DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia=false);
     ~DLM_ResponseMatrix();
 
-    CATShisto<double>* CatHisto;
+    DLM_Histo<double>* CatHisto;
     bool CatHistoIsMyOwn;
     const TH2F* hSigmaMatrix;
     const TH2F* hResidualMatrix;

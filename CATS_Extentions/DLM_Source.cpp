@@ -645,3 +645,23 @@ if(Result!=Result || Result>1 || Result<0){
 
     return Result;
 }
+
+DLM_StableDistribution::DLM_StableDistribution(const unsigned& numgridpts):NumGridPts(numgridpts){
+    Histo = NULL;
+}
+DLM_StableDistribution::~DLM_StableDistribution(){
+    if(Histo) {delete Histo; Histo=NULL;}
+}
+double DLM_StableDistribution::Eval(double* Pars){
+    double& rVal=Pars[1];
+    if(rVal<=0) return 0;
+    if(Stability!=Pars[3]||Skewness!=Pars[4]||Scale!=Pars[5]||Location!=Pars[6]){
+        //Generate(Pars[3],Pars[4],Pars[5],Pars[6]);
+    }
+    if(rVal<5*Scale){
+        Histo->Eval(rVal);
+    }
+    else{
+        //...
+    }
+}

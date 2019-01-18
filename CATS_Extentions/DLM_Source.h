@@ -2,6 +2,8 @@
 #ifndef DLM_SOURCE_H
 #define DLM_SOURCE_H
 
+#include "DLM_Histo.h"
+
 double GaussSource(double* Pars);
 double GaussSourceTF1(double* x, double* Pars);
 double GaussSourceTheta(double* Pars);
@@ -72,4 +74,21 @@ private:
 
     double* Parameters;
 };
+
+class DLM_StableDistribution:public MemberSource{
+public:
+    DLM_StableDistribution(const unsigned& numgridpts);
+    ~DLM_StableDistribution();
+    double Eval(double* Pars);
+private:
+    const unsigned NumGridPts;
+    double Stability;
+    double Skewness;
+    double Scale;
+    double Location;
+    void Generate(const double& stability, const double& skewness, const double& scale, const double& location);
+    DLM_Histo<double>* Histo;
+};
+
+
 #endif
