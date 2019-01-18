@@ -1,10 +1,12 @@
-#ifndef DLM_MergeSortH
-#define DLM_MergeSortH
+#ifndef DLM_SortH
+#define DLM_SortH
 
 #include "stdio.h"
 #include <stdlib.h>
+#include "math.h"
 
 #include "DLM_CppTools.h"
+#include "DLM_Histo.h"
 
 template <class Element, typename Num>
 void MergeBoxes(Element* b1, Num& n1, Element* b2, Num& n2, Element* Result){
@@ -59,8 +61,9 @@ void MergeBoxes(Element* b1, Num& n1, Element* b2, Num& n2, Element* Result){
 }
 
 template <class Element, typename Num>
-class DLM_MergeSort{
+class DLM_Sort{
 private:
+	//Key[i] says where in the input file is the i-th highest/lowest element located
     Num* Key;
     Num* KeyTemp;
     Num NumOfEl;
@@ -155,7 +158,7 @@ public:
     long * TimeInfo2;
     int * NumBoxesPairs;
     int NumLevels;
-    DLM_MergeSort(){
+    DLM_Sort(){
         //we want Num to be an integer index (or char, short, unsigned etc.)
         Num inttest = 0.4;
         Key = NULL;
@@ -169,12 +172,12 @@ public:
         }
         TimeInfo2 = new long [30];
         if(inttest){
-            printf("DLM_MergeSort says: ERROR! You cannot have float/double as a typename for this class!");
+            printf("DLM_Sort says: ERROR! You cannot have float/double as a typename for this class!");
             return;
         }
         NumBoxesPairs = new int [4000000];
     }
-    ~DLM_MergeSort(){
+    ~DLM_Sort(){
         ClearMem();
         for(long i=0; i<30; i++){
             delete [] TimeInfo1[i];
@@ -235,7 +238,7 @@ public:
     //each 2 neighbouring boxes and continue until we have all elements in a single box.
     bool MergeSort(const bool& descending=false){
         if(!Input){
-            printf("DLM_MergeSort says: ERROR! No data is loaded for sorting! Please use SetData(Element* input, Num N).");
+            printf("DLM_Sort says: ERROR! No data is loaded for sorting! Please use SetData(Element* input, Num N).");
             return false;
         }
 
@@ -268,6 +271,105 @@ public:
         NumLevels = level;
 
         return true;
+    }
+
+    bool BucketSort(const bool& descending=false){
+        if(!Input){
+            printf("DLM_Sort says: ERROR! No data is loaded for sorting! Please use SetData(Element* input, Num N).");
+            return false;
+
+            Num NumOfBuckets = round(pow(2.*double(NumOfEl)*double(NumOfEl),1./3.));
+            Num AvgNumElPerBucket = NumOfEl/NumOfBuckets;  
+            Num NumSampleElements = round(sqrt(double(NumOfEl)));
+            Element* BucketRanges = new Element[NumOfBuckets+1];
+            if(!NumOfBuckets) NumOfBuckets=1;
+            if(!AvgNumElPerBucket) AvgNumElPerBucket=1;
+            Num* MemoryPerBucket = new Num [NumOfBuckets];
+            for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
+				MemoryPerBucket[nBuck] = vgNumElPerBucket+AvgNumElPerBucket/10+1;
+			}
+
+            Num RealNumEl=NumOfEl;
+            NumOfEl=NumSampleElements;
+            //sort only small fraction of the data
+            //this gives you an idea how the pdf of the data looks like, which is than used
+            //to determine a meaningful choice of the bucket ranges, such that all bins have
+            //similar number of elements in them, which leads to the best performance
+            MergeSort(descending);
+            NumOfEl=RealNumEl;
+            BucketRanges[0] = Output[0];
+            Num CurrentBucket=0;
+            Num CurrentBucketElemets=1;
+            //iterate over the small fraction of data, counting the number of elements
+            //that are put in each bin. The moment we have more than the avg number of elements,
+            //the bin is considered full and the corresponding value of the element saved
+            for(Num nEl=0; nEl<NumSampleElements; nEl++){
+                if(CurrentBucketElemets>AvgNumElPerBucket){
+                    BucketRanges[CurrentBucket+1]=Output[nEl];
+                    CurrentBucket++;
+                    CurrentBucketElemets=0;
+                }
+                else{
+                    CurrentBucketElemets++;
+                }
+            }
+            BucketRanges[NumOfBuckets] = Output[NumSampleElements-1];
+            Element** Bucket = new Element[NumOfBuckets];
+            Num* NumElInBucket = new Num[NumOfBuckets];
+            for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
+                Bucket[nBuck] = new Element [MemoryPerBucket[nBuck]];
+                NumElInBucket[nBuck] = 0;
+            }
+            DLM_Histo<Element> Histo(NumOfBuckets,BucketRanges);
+            //assign each element to a bucket
+            for(Num nEl=0; nEl<NumOfEl; nEl++){
+				unsigned WhichBucket = Histo.GetBin(Input[nEl]);
+				if(NumElInBucket[WhichBin]>=MemoryPerBucket[WhichBucket]){
+					Num OldMem = MemoryPerBucket[WhichBucket];
+					MemoryPerBucket[WhichBucket] *= 2;
+					Element* Temp = new Element [MemoryPerBucket[WhichBucket]];
+					for(Num nEl=0; nEl<OldMem; nEl++){
+						Temp[nEl] = Bucket[WhichBucket];
+					}
+					delete [] Bucket[WhichBucket];
+					Bucket[WhichBucket] = Temp[nEl];
+				}
+				Bucket[WhichBucket][NumElInBucket[WhichBucket]] = Input[nEl];
+				NumElInBucket[WhichBucket]++;
+            }
+//the problem is the fucking key, and the fact, that Key[0] should give me the Id if the smallest element
+//but how do I keep track of the Id of each element?
+            //sort each bucket
+            Num** BucketKey = new Num*[NumOfBuckets];
+            #pragma omp parallel for
+            for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
+				BucketKey[nBuck] = new Num [umElInBucket[nBuck]];
+				DLM_Sort<Element,Num> BucketSorter;
+				BucketSorter.SetData(Bucket[nBuck],NumElInBucket[nBuck]);
+				BucketSorter.MergeSort();
+				BucketSorter.GetSortedData(Bucket[nBuck],Bucket[nBuck]);
+				BucketSorter.CopyKey(BucketKey);
+			}
+			
+			//combine all buckets
+			Num CurrentElement=0;
+			for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
+				for(Num nEl=0; nEl<NumElInBucket[nBuck]; nEl++){
+					Key[CurrentElement] = BucketKey[nBuck]+CurrentElement;
+					CurrentElement++;
+				}
+			}
+
+            for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
+                delete [] Bucket[nBuck];
+                delete [] BucketKey[nBuck];
+            }
+            delete [] Bucket;
+            delete [] NumElInBucket;
+            delete [] BucketRanges;
+            delete [] MemoryPerBucket;
+            delete [] BucketKey;
+        }
     }
 
     void ClearMem(){

@@ -2703,7 +2703,7 @@ void CATS::FoldSourceAndWF(){
 
 void CATS::SortAllData(){
     if(NumPairs<=1) return;
-    DLM_MergeSort < int64_t, unsigned > SortTool;
+    DLM_Sort < int64_t, unsigned > SortTool;
     SortTool.SetData(GridBoxId,NumPairs);
     SortTool.MergeSort();
 
@@ -2988,7 +2988,7 @@ double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&,
     return xVal;
 }
 
-template <class Type> void CATS::ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter){
+template <class Type> void CATS::ResortData(Type* input, DLM_Sort <int64_t, unsigned>& Sorter){
     unsigned NumOfEl = Sorter.GetNumOfEl();
     Type* Temp;
     Temp = new Type[NumOfEl];

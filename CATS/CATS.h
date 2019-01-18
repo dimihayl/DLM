@@ -31,7 +31,7 @@
 #include <stdint.h>
 #include <complex>
 
-#include "DLM_MergeSort.h"
+#include "DLM_Sort.h"
 #include "CATStools.h"
 
 using namespace std;
@@ -562,7 +562,7 @@ protected:
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
                           const double&  xMin, const double&  xMax, const double& fValShift) const;
 
-    template <class Type> void ResortData(Type* input, DLM_MergeSort <int64_t, unsigned>& Sorter);
+    template <class Type> void ResortData(Type* input, DLM_Sort <int64_t, unsigned>& Sorter);
     unsigned GetBoxId(double* particle);
 
     //evaluates the solution to the radial equation based on the numerical result and the computed phaseshift.
