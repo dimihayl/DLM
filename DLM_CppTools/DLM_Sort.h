@@ -286,7 +286,7 @@ public:
             if(!AvgNumElPerBucket) AvgNumElPerBucket=1;
             Num* MemoryPerBucket = new Num [NumOfBuckets];
             for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
-				MemoryPerBucket[nBuck] = vgNumElPerBucket+AvgNumElPerBucket/10+1;
+				MemoryPerBucket[nBuck] = AvgNumElPerBucket+AvgNumElPerBucket/10+1;
 			}
 
             Num RealNumEl=NumOfEl;
@@ -324,7 +324,7 @@ public:
             //assign each element to a bucket
             for(Num nEl=0; nEl<NumOfEl; nEl++){
 				unsigned WhichBucket = Histo.GetBin(Input[nEl]);
-				if(NumElInBucket[WhichBin]>=MemoryPerBucket[WhichBucket]){
+				if(NumElInBucket[WhichBucket]>=MemoryPerBucket[WhichBucket]){
 					Num OldMem = MemoryPerBucket[WhichBucket];
 					MemoryPerBucket[WhichBucket] *= 2;
 					Element* Temp = new Element [MemoryPerBucket[WhichBucket]];
@@ -343,7 +343,7 @@ public:
             Num** BucketKey = new Num*[NumOfBuckets];
             #pragma omp parallel for
             for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){
-				BucketKey[nBuck] = new Num [umElInBucket[nBuck]];
+				BucketKey[nBuck] = new Num [NumElInBucket[nBuck]];
 				DLM_Sort<Element,Num> BucketSorter;
 				BucketSorter.SetData(Bucket[nBuck],NumElInBucket[nBuck]);
 				BucketSorter.MergeSort();
