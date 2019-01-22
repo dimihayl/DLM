@@ -12,6 +12,10 @@ DLM_Random::DLM_Random(const unsigned& seed):SEED(seed){
     ExpDist = new std::exponential_distribution<> (1);
     NormDist = new std::normal_distribution<> (0,1);
     CauchyDist = new std::cauchy_distribution<> (0,1);
+    STAB_TEMP=NULL;
+    SKEW_TEMP=NULL;
+    SCAL_TEMP=NULL;
+    LOCA_TEMP=NULL;
 }
 DLM_Random::~DLM_Random(){
     delete MT_RanGen;MT_RanGen=NULL;
@@ -29,7 +33,7 @@ double DLM_Random::Gauss(const double& mean, const double& sigma){
 double DLM_Random::Cauchy(const double& mean, const double& sigma){
     return (CauchyDist[0](*MT_RanGen))*sigma+mean;
 }
-double DLM_Random::Stable(const double& stability, const double& skewness, const double& scale, const double& location){
+double DLM_Random::Stable(const double& stability, const double& location, const double& scale, const double& skewness){
     if(stability<0||stability>2){
         printf("\033[1;33mWARNING:\033[0m Bad 'stability' parameter in DLM_Random::Stable\n");
         return 0;
@@ -60,27 +64,101 @@ double DLM_Random::Stable(const double& stability, const double& skewness, const
 
     }
 }
-double DLM_Random::StableR(const double& stability, const double& skewness, const double& scale, const double& location, const unsigned short& dim){
-    double STAB[dim];
-    double SKEW[dim];
-    double SCAL[dim];
-    double LOCA[dim];
-    for(unsigned short us=0; us<dim; us++){
-        STAB[us]=stability;
-        SKEW[us]=skewness;
-        SCAL[us]=scale;
-        LOCA[us]=location;
-    }
-    return StableR(STAB,SKEW,SCAL,LOCA,dim);
+
+double DLM_Random::GaussR(const unsigned short& dim, const double& mean, const double& sigma){
+    return StableR(dim,2,mean,sigma,0);
 }
-double DLM_Random::StableR(const double* stability, const double* skewness, const double* scale, const double* location, const unsigned short& dim){
+double DLM_Random::CauchyR(const unsigned short& dim, const double& mean, const double& sigma){
+    return StableR(dim,1,mean,sigma,0);
+}
+double DLM_Random::StableR(const unsigned short& dim, const double& stability, const double& location, const double& scale, const double& skewness){
     if(!dim) return 0;
-    double Coordinate[dim];
     double Result=0;
     for(unsigned short us=0; us<dim; us++){
-        Coordinate[us] = Stable(stability[us],skewness[us],scale[us],location[us]);
-        Coordinate[us] *= Coordinate[us];
-        Result+=Coordinate[us];
+        Result+=pow(Stable(stability,location,scale,skewness),2.);
+    }
+    return sqrt(Result);
+}
+double DLM_Random::GaussR(const unsigned short& dim, const double* mean, const double* sigma){
+    return StableR(dim,2,mean,sigma,NULL);
+}
+double DLM_Random::CauchyR(const unsigned short& dim, const double* mean, const double* sigma){
+    return StableR(dim,1,mean,sigma,NULL);
+}
+double DLM_Random::StableR(const unsigned short& dim, const double* stability, const double* location, const double* scale, const double* skewness){
+    if(!dim) return 0;
+    double Result=0;
+    for(unsigned short us=0; us<dim; us++){
+        Result+=pow(Stable(stability[us],location[us],scale[us],skewness[us]?skewness[us]:0),2.);
+    }
+    return sqrt(Result);
+}
+double DLM_Random::StableR(const unsigned short& dim, const double& stability, const double* location, const double* scale, const double* skewness){
+    if(!dim) return 0;
+    double Result=0;
+    for(unsigned short us=0; us<dim; us++){
+        Result+=pow(Stable(stability,location[us],scale[us],skewness[us]?skewness[us]:0),2.);
+    }
+    return sqrt(Result);
+}
+double DLM_Random::GaussDiffR(const unsigned short& dim, const double& mean, const double& sigma){
+    return StableDiffR(dim,2,mean,sigma,0);
+}
+double DLM_Random::CauchyDiffR(const unsigned short& dim, const double& mean, const double& sigma){
+    return StableDiffR(dim,1,mean,sigma,0);
+}
+double DLM_Random::StableDiffR(const unsigned short& dim,const double& stability, const double& location, const double& scale, const double& skewness){
+    return StableDiffR(dim,stability,location,scale,skewness,stability,location,scale,skewness);
+}
+double DLM_Random::GaussDiffR(const unsigned short& dim,
+                              const double& mean1, const double& sigma1,
+                              const double& mean2, const double& sigma2){
+    return StableDiffR(dim,2,mean1,sigma1,0,2,mean2,sigma2,0);
+}
+double DLM_Random::CauchyDiffR(const unsigned short& dim,
+                               const double& mean1, const double& sigma1,
+                               const double& mean2, const double& sigma2){
+    return StableDiffR(dim,1,mean1,sigma1,0,1,mean2,sigma2,0);
+}
+double DLM_Random::StableDiffR( const unsigned short& dim,
+                                const double& stability1, const double& location1, const double& scale1, const double& skewness1,
+                                const double& stability2, const double& location2, const double& scale2, const double& skewness2){
+    if(!dim) return 0;
+    double Result=0;
+    for(unsigned short us=0; us<dim; us++){
+        Result+=pow(Stable(stability2,location2,scale2,skewness2)-Stable(stability1,location1,scale1,skewness1),2.);
+    }
+    return sqrt(Result);
+}
+double DLM_Random::GaussDiffR(const unsigned short& dim, const double* mean, const double* sigma){
+    return StableDiffR(dim,2,mean,sigma,NULL);
+}
+double DLM_Random::CauchyDiffR(const unsigned short& dim, const double* mean, const double* sigma){
+    return StableDiffR(dim,2,mean,sigma,NULL);
+}
+double DLM_Random::StableDiffR(const unsigned short& dim,const double* stability, const double* location, const double* scale, const double* skewness){
+    return StableDiffR(dim,stability,location,scale,skewness,stability,location,scale,skewness);
+}
+double DLM_Random::StableDiffR(const unsigned short& dim,const double& stability, const double* location, const double* scale, const double* skewness){
+    return StableDiffR(dim,stability,location,scale,skewness,stability,location,scale,skewness);
+}
+double DLM_Random::StableDiffR( const unsigned short& dim,
+                                const double* stability1, const double* location1, const double* scale1, const double* skewness1,
+                                const double* stability2, const double* location2, const double* scale2, const double* skewness2){
+    if(!dim) return 0;
+    double Result=0;
+    for(unsigned short us=0; us<dim; us++){
+        Result+=pow(Stable(stability2[us],location2[us],scale2[us],skewness2[us]?skewness2[us]:0)-Stable(stability1[us],location1[us],scale1[us],skewness1[us]?skewness1[us]:0),2.);
+    }
+    return sqrt(Result);
+}
+double DLM_Random::StableDiffR( const unsigned short& dim,
+                                const double& stability1, const double* location1, const double* scale1, const double* skewness1,
+                                const double& stability2, const double* location2, const double* scale2, const double* skewness2){
+    if(!dim) return 0;
+    double Result=0;
+    for(unsigned short us=0; us<dim; us++){
+        Result+=pow(Stable(stability2,location2[us],scale2[us],skewness2[us]?skewness2[us]:0)-Stable(stability1,location1[us],scale1[us],skewness1[us]?skewness1[us]:0),2.);
     }
     return sqrt(Result);
 }
