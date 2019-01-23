@@ -22,6 +22,8 @@ public:
     void SetVariable(const unsigned& WhichVar, const double& Value, const bool& CurrentThread);
     double GetParameter(const unsigned& WhichPar);
     double GetVariable(const unsigned& WhichVar);
+    unsigned GetNumPars();
+    unsigned GetTotNumPars();
 protected:
     //the number of dummy parameters (variables)
     const unsigned NumVars;

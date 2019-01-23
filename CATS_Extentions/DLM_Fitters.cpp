@@ -1104,8 +1104,8 @@ void DLM_Fitter1::GoBabyGo(){
         //uActSyst++;
     }
 
-    //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
-    HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
+    HistoGlobal->Fit(FitGlobal,"V, S, N, R, M");
+    //HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
     //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
@@ -1190,8 +1190,13 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     bool FemtoRegion = (Momentum<=FitRange[WhichSyst][kf]);
     //loop over all systems that may need to have their source size adjusted
     //adjust the source of their corresponding "source-parent"
+//printf("WTF man\n");
+//usleep(0.1e6);
     for(unsigned uSource=0; uSource<NumSourceSystems; uSource++){
         for(unsigned uPar=0; uPar<SourceSystems[uSource]->GetCk()->GetNumSourcePar(); uPar++){
+//char buffer[32];
+//SourceSystems[uSource]->GetName(buffer);
+//printf("ssName=%s\n",buffer);
             SourceSystems[uSource]->GetCk()->SetSourcePar(uPar, Pars[ParentSource[uSource]*NumPar+p_sor0+uPar]);
         }
         //GetNumSourcePar

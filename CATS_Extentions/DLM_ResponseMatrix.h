@@ -9,11 +9,11 @@
 class DLM_ResponseMatrix{
 
 public:
-    DLM_ResponseMatrix(DLM_Histo<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia=false);
+    DLM_ResponseMatrix(DLM_Histo1D<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia=false);
     DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia=false);
     ~DLM_ResponseMatrix();
 
-    DLM_Histo<double>* CatHisto;
+    DLM_Histo1D<double>* CatHisto;
     bool CatHistoIsMyOwn;
     const TH2F* hSigmaMatrix;
     const TH2F* hResidualMatrix;

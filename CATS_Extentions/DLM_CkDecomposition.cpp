@@ -8,7 +8,7 @@
 /*
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):
     NumSourcePar(nSourcePar),NumPotPar(nPotPar),MomBinCopy(cat.CopyMomBin()),Kitty(&cat),
-    DLM_Histo<double>::DLM_Histo(cat.GetNumMomBins(),MomBinCopy){
+    DLM_Histo1D<double>::DLM_Histo1D(cat.GetNumMomBins(),MomBinCopy){
 printf("Hell yeah!\n");
     CkFunction = NULL;
     delete [] MomBinCopy; MomBinCopy=NULL;
@@ -16,7 +16,7 @@ printf("Hell yeah!\n");
 }
 */
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):
-                DLM_Histo<double>::DLM_Histo(cat.GetNumMomBins()),NumSourcePar(nSourcePar),NumPotPar(nPotPar){
+                DLM_Histo1D<double>::DLM_Histo1D(cat.GetNumMomBins()),NumSourcePar(nSourcePar),NumPotPar(nPotPar){
     for(unsigned uBin=0; uBin<NumBins; uBin++){
         BinRange[uBin] = cat.GetMomBinLowEdge(uBin);
         BinValue[uBin] = cat.GetCorrFun(uBin);
@@ -31,13 +31,13 @@ DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):
 
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar,
         const unsigned& numbin, const double* bins, double (*CorrFun)(const double&, const double*, const double*)):
-        DLM_Histo<double>::DLM_Histo(numbin,bins),NumSourcePar(nSourcePar),NumPotPar(nPotPar),CkFunction(CorrFun){
+        DLM_Histo1D<double>::DLM_Histo1D(numbin,bins),NumSourcePar(nSourcePar),NumPotPar(nPotPar),CkFunction(CorrFun){
     Kitty = NULL;
     DefaultConstructor();
 }
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar,
         const unsigned& numbin, const double& minMom, const double& maxMom, double (*CorrFun)(const double&, const double*, const double*)):
-        DLM_Histo<double>::DLM_Histo(numbin,minMom,maxMom),NumSourcePar(nSourcePar),NumPotPar(nPotPar),CkFunction(CorrFun){
+        DLM_Histo1D<double>::DLM_Histo1D(numbin,minMom,maxMom),NumSourcePar(nSourcePar),NumPotPar(nPotPar),CkFunction(CorrFun){
     Kitty = NULL;
     DefaultConstructor();
 }
@@ -61,16 +61,24 @@ void DLM_Ck::DefaultConstructor(){
 
 void DLM_Ck::SetSourcePar(const unsigned& WhichPar, const double& Value){
 //printf(" WhichPar=%u (%u)\n", WhichPar, NumSourcePar);
+//printf(" CkFunction=%p\n", CkFunction);
+//printf(" Kitty=%p\n", Kitty);
+//if(Kitty) printf(" Kitty->GetUseAnalyticSource()=%i\n", Kitty->GetUseAnalyticSource());
+//usleep(1e6);
     if(WhichPar>=NumSourcePar) return;
     if(CkFunction){
+//printf("Well, look at that!\n");
+//printf(" SourcePar=%p\n", SourcePar);
         if(SourcePar[WhichPar]==Value) return;
         SourcePar[WhichPar]=Value;
         SourceUpToDate = false;
 //printf(" SOURCE CHANGED %p!\n",this);
     }
     else if(Kitty && Kitty->GetUseAnalyticSource()){
+//printf("Well, look at that!\n");
 //printf(" Kitty=%p; r=%.2f; SUD=%i\n",Kitty,Kitty->GetAnaSourcePar(WhichPar),int(SourceUpToDate));
         if(Kitty->GetAnaSourcePar(WhichPar)==Value) return;
+//printf("Well, look at that again!\n");
         Kitty->SetAnaSource(WhichPar, Value, true);
         SourceUpToDate = false;
 //printf(" Kitty SOURCE CHANGED %p!\n",this);
@@ -183,7 +191,7 @@ printf("%.2f\n",Lednicky_Identical_Singlet(GetBinCenter(uBin), SourcePar, PotPar
 double DLM_Ck::Eval(const double& Momentum){
     if(Momentum<BinRange[0]) return 0;
     if(Momentum>FlatCutOff) return 1;
-    else return DLM_Histo::Eval(Momentum);
+    else return DLM_Histo1D::Eval(Momentum);
 }
 
 //the main contribution does not count as a child, i.e. 1 child implies one contribution additionally to the main one!
@@ -208,8 +216,8 @@ DEBUGFLAG=0;
     }
 
     RM_MomResolution = new DLM_ResponseMatrix(ckfunction, hSigmaMatrix, NULL, InvertAxis);
-    CkMainFeed = new DLM_Histo<double>(CkMain[0]);
-    CkSmearedMainFeed = new DLM_Histo<double>(CkMain[0]);
+    CkMainFeed = new DLM_Histo1D<double>(CkMain[0]);
+    CkSmearedMainFeed = new DLM_Histo1D<double>(CkMain[0]);
 
     Name = new char [strlen(name)+1];
     strcpy(Name,name);
@@ -223,7 +231,7 @@ DEBUGFLAG=0;
         Type = new int [NumChildren];
         RM_Child = new DLM_ResponseMatrix* [NumChildren];
         CurrentStatusChild = new bool [NumChildren];
-        CkChildMainFeed = new DLM_Histo<double>* [NumChildren];
+        CkChildMainFeed = new DLM_Histo1D<double>* [NumChildren];
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             Child[uChild] = NULL;
             LambdaPar[uChild] = 0;
@@ -301,8 +309,8 @@ void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double&
 
     if(CkChildMainFeed[WhichCk]) {delete CkChildMainFeed[WhichCk]; CkChildMainFeed[WhichCk]=NULL;}
     if(child){
-        //CkChildMainFeed[WhichCk] = new DLM_Histo<double> (*CkMain);
-        CkChildMainFeed[WhichCk] = new DLM_Histo<double> (*child->CkMain);
+        //CkChildMainFeed[WhichCk] = new DLM_Histo1D<double> (*CkMain);
+        CkChildMainFeed[WhichCk] = new DLM_Histo1D<double> (*child->CkMain);
 
 //if(strcmp("pLambda",Name)==0){
 //printf("I want to have kiddies! --> %u with name %p\n",WhichCk,CkChildMainFeed[WhichCk]);
@@ -342,7 +350,7 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
 
     double RESULT = MuPar*CkSmearedMainFeed->Eval(Momentum);
 //printf(" MuPar=%f\n",MuPar);
-//DLM_Histo<double>* CkMainSmeared = new DLM_Histo<double>(*CkMain);
+//DLM_Histo1D<double>* CkMainSmeared = new DLM_Histo1D<double>(*CkMain);
 //Smear(CkMain,RM_MomResolution,CkMainSmeared);
 //printf(" RESULT=%f\n",RESULT);
 //printf(" CkMain=%f <-> %f\n", CkMain->Eval(Momentum), CkMainSmeared->Eval(Momentum));
@@ -368,7 +376,7 @@ double DLM_CkDecomposition::EvalMain(const double& Momentum){
 }
 double DLM_CkDecomposition::EvalSmearedMain(const double& Momentum){
     if(!CkMainSmeared){
-        CkMainSmeared = new DLM_Histo<double>(*CkMain);
+        CkMainSmeared = new DLM_Histo1D<double>(*CkMain);
         Smear(CkMain,RM_MomResolution,CkMainSmeared);
     }
     return CkMainSmeared->Eval(Momentum);
@@ -398,16 +406,16 @@ DLM_CkDecomposition* DLM_CkDecomposition::GetContribution(const char* name){
     }
     return RESULT;
 }
-DLM_Histo<double>* DLM_CkDecomposition::GetChildContribution(const unsigned& WhichChild, const bool& WithLambda){
+DLM_Histo1D<double>* DLM_CkDecomposition::GetChildContribution(const unsigned& WhichChild, const bool& WithLambda){
     if(WhichChild>=NumChildren) return NULL;
-    DLM_Histo<double>* Histo = new DLM_Histo<double> (*CkChildMainFeed[WhichChild]);
+    DLM_Histo1D<double>* Histo = new DLM_Histo1D<double> (*CkChildMainFeed[WhichChild]);
     if(Type[WhichChild]!=cFake){
         Smear(CkChildMainFeed[WhichChild], RM_MomResolution, Histo);
     }
     if(WithLambda) Histo->Scale(LambdaPar[WhichChild]);
     return Histo;
 }
-DLM_Histo<double>* DLM_CkDecomposition::GetChildContribution(const char* name, const bool& WithLambda){
+DLM_Histo1D<double>* DLM_CkDecomposition::GetChildContribution(const char* name, const bool& WithLambda){
     for(unsigned uChild=0; uChild<NumChildren; uChild++){
         if(!Child[uChild]) continue;
         if(strcmp(name,Child[uChild]->Name)==0){
@@ -570,7 +578,7 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
 
 }
 
-void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
+void DLM_CkDecomposition::Smear(const DLM_Histo1D<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo1D<double>* CkSmeared){
 //printf("CALL FOR SMEAR!\n");
     //double MomentumTrue;
     if(!SmearMatrix){

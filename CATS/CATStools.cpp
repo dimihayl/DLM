@@ -97,6 +97,10 @@ double CATSparameters::GetParameter(const unsigned& WhichPar){
     unsigned WhichThread = 0;
     WhichThread = ThreadSafe?omp_get_thread_num():0;
     //WhichThread = 0;
+//printf("I do what I am told to do\n");
+//printf(" tid=%u\n",WhichThread);
+//printf(" Parameter=%p\n",Parameter);
+//printf(" Parameter[WhichThread]=%p\n",Parameter[WhichThread]);
     return Parameter[WhichThread][NumVars+WhichPar];
 }
 double CATSparameters::GetVariable(const unsigned& WhichVar){
@@ -109,7 +113,12 @@ double CATSparameters::GetVariable(const unsigned& WhichVar){
     //WhichThread = 0;
     return Parameter[WhichThread][WhichVar];
 }
-
+unsigned CATSparameters::GetNumPars(){
+    return NumPars;
+}
+unsigned CATSparameters::GetTotNumPars(){
+    return TotNumPars;
+}
 
 CatsLorentzVector::CatsLorentzVector(){
     FourSpace[0]=0;

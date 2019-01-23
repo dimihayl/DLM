@@ -279,7 +279,7 @@ public:
             return false;
 
             Num NumOfBuckets = round(pow(2.*double(NumOfEl)*double(NumOfEl),1./3.));
-            Num AvgNumElPerBucket = NumOfEl/NumOfBuckets;  
+            Num AvgNumElPerBucket = NumOfEl/NumOfBuckets;
             Num NumSampleElements = round(sqrt(double(NumOfEl)));
             Element* BucketRanges = new Element[NumOfBuckets+1];
             if(!NumOfBuckets) NumOfBuckets=1;
@@ -320,7 +320,7 @@ public:
                 Bucket[nBuck] = new Element [MemoryPerBucket[nBuck]];
                 NumElInBucket[nBuck] = 0;
             }
-            DLM_Histo<Element> Histo(NumOfBuckets,BucketRanges);
+            DLM_Histo1D<Element> Histo(NumOfBuckets,BucketRanges);
             //assign each element to a bucket
             for(Num nEl=0; nEl<NumOfEl; nEl++){
 				unsigned WhichBucket = Histo.GetBin(Input[nEl]);
@@ -350,7 +350,7 @@ public:
 				BucketSorter.GetSortedData(Bucket[nBuck],Bucket[nBuck]);
 				BucketSorter.CopyKey(BucketKey);
 			}
-			
+
 			//combine all buckets
 			Num CurrentElement=0;
 			for(Num nBuck=0; nBuck<NumOfBuckets; nBuck++){

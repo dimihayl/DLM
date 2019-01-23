@@ -155,6 +155,11 @@ public:
     void SetSourceMaxRange(const double& val);
     double GetSourceMinRange() const;
     double GetSourceMaxRange() const;
+    //if true, the source is assumed to be normalized over its full domain.
+    //any deviations from unity are attributed to long-range correlations which are assumed
+    //to contribute with a flat correlation, which is added automatically
+    void SetNormalizedSource(const bool& val=true);
+    bool GetNormalizedSource() const;
 
     //the input values should be non-negative
     //please set this condition BEFORE you load the source, else CATS will not save the TotalMomentum at all
@@ -288,7 +293,7 @@ public:
     //1) define a "forwarder" function double FORWARDER(void* context, double* Pars){return static_cast<MYCLASS*>(context)->Eval(Pars);}
     //2) define a source function as double SOURCE(double (*fptr)(void*, double*), void* context, double* Pars){return fptr(context,Pars);}
     //3) pass to your CATS object the source by calling .SetAnaSource(FORWARDER,OBJ);
-    void SetAnaSource(double (*FS)(void*, double*), void* context);
+    void SetAnaSource(double (*FS)(void*, double*), void* context, const unsigned& numparameters=0);
 /*
 ///////////////////////////////////////////////////////////////////////////////////////////
 double test_ad5_function(double (*fptr)(void*, const double*), void* context, const double* Pars){
@@ -396,6 +401,7 @@ protected:
     //the result is being renormalized such that the integral of the source is unchanged
     double SourceMinRad;
     double SourceMaxRad;
+    bool NormalizedSource;
 
     double MinTotPairMom;
     double MaxTotPairMom;

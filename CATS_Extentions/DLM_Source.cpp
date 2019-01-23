@@ -1,6 +1,7 @@
 #include "DLM_Source.h"
 #include "DLM_CRAB_PM.h"
 #include "DLM_Integration.h"
+#include "DLM_Random.h"
 
 #include "math.h"
 
@@ -468,6 +469,9 @@ double GaussExpTotSimple_2body(double* Pars){
 
 double MemberSourceForwarder(void* context, double* Pars){return static_cast<MemberSource*>(context)->Eval(Pars);}
 
+void MemberSource::SetParameter(const unsigned& WhichPar, const double& Value){
+    return;
+}
 double MemberSource::Eval(double* Pars){
     return 0;
 }
@@ -477,7 +481,9 @@ double MemberSource::Eval(const double& Momentum, const double Radius, const dou
         PARS[2] = Angle;
         return Eval(PARS);
 }
-
+void MS_Gauss::SetParameter(const unsigned& WhichPar, const double& Value){
+    printf("MS_Gauss::SetParameter is a DUMMY at the moment!\n");
+}
 double MS_Gauss::Eval(double* Pars){
     double& Radius = Pars[1];
     return 4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
@@ -595,6 +601,9 @@ void MS_GaussExp_mT_Simple::SetResonanceWeight(const unsigned short& particle, c
     }
     Weight_R[particle] = weight;
 }
+void MS_GaussExp_mT_Simple::SetParameter(const unsigned& WhichPar, const double& Value){
+    printf("MS_GaussExp_mT_Simple::SetParameter is a DUMMY at the moment!\n");
+}
 
 /*
 double GaussExpTotSimple_2body(double* Pars){
@@ -648,20 +657,96 @@ if(Result!=Result || Result>1 || Result<0){
 
 DLM_StableDistribution::DLM_StableDistribution(const unsigned& numgridpts):NumGridPts(numgridpts){
     Histo = NULL;
+    RanGen = new DLM_Random(NumGridPts);
+    //NumIter = 65536;
+    NumIter = 131072;
+    Generated = false;
 }
 DLM_StableDistribution::~DLM_StableDistribution(){
     if(Histo) {delete Histo; Histo=NULL;}
+    if(RanGen) {delete RanGen; RanGen=NULL;}
+}
+void DLM_StableDistribution::SetStability(const double& val){
+    if(Stability==val) return;
+    if(val<0||val>2){
+        Stability=2;
+    }
+    else{
+        Stability=val;
+    }
+    Generated = false;
+}
+void DLM_StableDistribution::SetLocation(const double& val){
+    if(Location==val) return;
+    if(val<0||val>2){
+        Location=2;
+    }
+    else{
+        Location=val;
+    }
+    Generated = false;
+}
+void DLM_StableDistribution::SetScale(const double& val){
+    if(Scale==val) return;
+    if(val<0||val>2){
+        Scale=2;
+    }
+    else{
+        Scale=val;
+    }
+    Generated = false;
+}
+void DLM_StableDistribution::SetSkewness(const double& val){
+    if(Skewness==val) return;
+    if(val<0||val>2){
+        Skewness=2;
+    }
+    else{
+        Skewness=val;
+    }
+    Generated = false;
+}
+void DLM_StableDistribution::SetNumIter(const unsigned& val){
+    NumIter = val;
+    if(NumIter<100) NumIter=100;
+}
+void DLM_StableDistribution::Generate(const double& stability, const double& location, const double& scale, const double& skewness){
+//printf("Hello there\n");
+    if(!Histo){
+        Histo = new DLM_Histo1D<double>(NumGridPts,0,64);
+    }
+    double RanVal;
+    for(unsigned uBin=0; uBin<NumIter; uBin++){
+        RanVal = RanGen->StableDiffR(3,stability,location,scale,skewness);
+        Histo->AddAt(RanVal,1.);
+    }
+    Histo->Scale(1./double(NumIter));
+    Histo->ScaleToBinWidth();
+    Generated = true;
+}
+void DLM_StableDistribution::SetParameter(const unsigned& WhichPar, const double& Value){
+    switch(WhichPar){
+    case 0 : SetStability(Value); break;
+    case 1 : SetLocation(Value); break;
+    case 2 : SetScale(Value); break;
+    case 3 : SetSkewness(Value); break;
+    default : break;
+    }
 }
 double DLM_StableDistribution::Eval(double* Pars){
     double& rVal=Pars[1];
+//for(int i=0; i<7; i++){
+    //    printf("%i = %f\n",i,Pars[i]);
+    //}
+    SetStability(Pars[3]);
+    SetLocation(Pars[4]);
+    SetScale(Pars[5]);
+    SetSkewness(Pars[6]);
     if(rVal<=0) return 0;
-    if(Stability!=Pars[3]||Skewness!=Pars[4]||Scale!=Pars[5]||Location!=Pars[6]){
-        //Generate(Pars[3],Pars[4],Pars[5],Pars[6]);
+    if(!Generated){
+        Generate(Stability,Location,Scale,Skewness);
     }
-    if(rVal<5*Scale){
-        Histo->Eval(rVal);
-    }
-    else{
-        //...
-    }
+//printf("I have been called!\n");
+//printf( "rVal=%f Histo->Eval(rVal)=%f\n",rVal,Histo->Eval(rVal));
+    return Histo->Eval(rVal);
 }

@@ -14,7 +14,7 @@
 #include "CATSconstants.h"
 
 #include <omp.h>
-//#include <unistd.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -62,8 +62,9 @@ CATS::CATS():
     ThetaDependentSource = false;
     TransportRenorm = 1;
     PoorManRenorm = 1;
-    SourceMinRad=-1e9;
-    SourceMaxRad=1e9;
+    SourceMinRad=0;
+    SourceMaxRad=64.*FmToNu;
+    NormalizedSource=true;
     MinTotPairMom = -1;
     MaxTotPairMom = 1e100;
     LoadedMinTotPairMom = -1;
@@ -971,6 +972,14 @@ double CATS::GetSourceMinRange() const{
 double CATS::GetSourceMaxRange() const{
     return SourceMaxRad;
 }
+void CATS::SetNormalizedSource(const bool& val){
+    if(val==NormalizedSource) return;
+    NormalizedSource = val;
+    ComputedCorrFunction = false;
+}
+bool CATS::GetNormalizedSource() const{
+    return NormalizedSource;
+}
 
 void CATS::SetTotPairMomCut(const double& minval, const double& maxval){
     if(minval<0 || maxval<minval){
@@ -1368,8 +1377,10 @@ void CATS::SetAnaSource(double (*AS)(double*), double* Pars){
     ComputedCorrFunction = false;
 }
 */
-void CATS::SetAnaSource(double (*FS)(void*, double*), void* context){
-    if(ForwardedSource==FS) return;
+void CATS::SetAnaSource(double (*FS)(void*, double*), void* context, const unsigned& numparameters){
+    if(ForwardedSource==FS&&ForwardedSourcePar->GetNumPars()==numparameters) return;
+    delete ForwardedSourcePar;
+    ForwardedSourcePar = new CATSparameters(CATSparameters::tSource,numparameters,true);
     if(!FS){
         if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source function!\n");
         return;
@@ -1381,6 +1392,9 @@ void CATS::SetAnaSource(double (*FS)(void*, double*), void* context){
     AnalyticSource = NULL;
     ForwardedSource = FS;
     AnaSourcePar = ForwardedSourcePar;
+//printf("AnaSourcePar = ForwardedSourcePar\n");
+//printf(" npar=%u\n",AnaSourcePar->GetNumPars());
+//usleep(1e6);
     SourceContext = context;
     SourceGridReady = false;
     SourceUpdated = false;
@@ -1390,12 +1404,17 @@ void CATS::SetAnaSource(double (*FS)(void*, double*), void* context){
 void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange){
     //if(!AnaSourcePar && !AnaSourceParArray) return;
     if(!AnaSourcePar) return;
+//printf("SetAnaSource\n");
+//usleep(1e6);
+    if(WhichPar>=AnaSourcePar->GetNumPars()) return;
     //if we use a member function, we assume that there are no parameters to be changed here
-    if(ForwardedSource){
-        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to set any parameters!\n");
-        return;
-    }
+    //if(ForwardedSource){
+    //    if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to set any parameters!\n");
+    //    return;
+    //}
     if(AnaSourcePar){
+//printf(" if(AnaSourcePar)\n");
+//usleep(1e6);
         if(AnaSourcePar->GetParameter(WhichPar)==Value) return;
         AnaSourcePar->SetParameter(WhichPar,Value,false);
     }
@@ -1411,11 +1430,14 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
     }
 }
 double CATS::GetAnaSourcePar(const unsigned& WhichPar) const{
+//printf("What is happening?\n");
     if(!UseAnalyticSource) return 0;
-    if(ForwardedSource){
-        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to get any parameters!\n");
-        return 0;
-    }
+    if(WhichPar>=AnaSourcePar->GetNumPars()) return 0;
+    //if(ForwardedSource){
+    //    if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to get any parameters!\n");
+    //    return 0;
+    //}
+//printf("I asked a question %p!\n", AnaSourcePar);
     if(AnaSourcePar) return AnaSourcePar->GetParameter(WhichPar);
     //else if(AnaSourceParArray) return AnaSourceParArray[NumSourcePars+WhichPar];
     else return 0;
@@ -2657,8 +2679,30 @@ void CATS::FoldSourceAndWF(){
                 kbCorrFun[uMomBin][uIpBin] += Integrand;
                 kbCorrFunErr[uMomBin][uIpBin] += pow(Integrand*kbSourceGrid[uMomBin][uIpBin]->GetGridError(uGrid),2);
             }//uGrid
-            kbCorrFun[uMomBin][uIpBin] *= double(SourceInt)/double(SourceIntCut);
-            kbCorrFunErr[uMomBin][uIpBin] = sqrt(kbCorrFunErr[uMomBin][uIpBin])*double(SourceInt)/double(SourceIntCut);
+
+            //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
+            //here this is corrected for
+            if(SourceInt>1+1e-4){
+                printf("\033[1;33mWARNING:\033[0m The source had to be renormalized, please check the validity of your input function!\n");
+                kbCorrFun[uMomBin][uIpBin] /= SourceInt;
+                kbCorrFunErr[uMomBin][uIpBin] = sqrt(kbCorrFunErr[uMomBin][uIpBin])/SourceInt;
+                SourceIntCut/=SourceInt;
+                SourceInt=1.;
+            }
+
+            //if the source is assumed normalized, any deviation below unity is considered to be an effect of a
+            //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
+            //a flat residual that is added to the correlation
+            if(NormalizedSource && SourceIntCut<1.){
+                kbCorrFun[uMomBin][uIpBin] += 1.-double(SourceIntCut);
+                kbCorrFunErr[uMomBin][uIpBin] = sqrt(kbCorrFunErr[uMomBin][uIpBin]);
+            }
+            //else simply re-normalize the source to the total value of the integral (even if below 1)
+            //I am not sure if this even makes sense, consider in the future to use only the NormalizedSource case
+            else{
+                kbCorrFun[uMomBin][uIpBin] *= double(SourceInt)/double(SourceIntCut);
+                kbCorrFunErr[uMomBin][uIpBin] = sqrt(kbCorrFunErr[uMomBin][uIpBin])*double(SourceInt)/double(SourceIntCut);
+            }
 
             //in case we use event mixing (data-source have more than a single b-bin), this is how we proceed
             if(MixingDepth>1){
@@ -2693,6 +2737,33 @@ void CATS::FoldSourceAndWF(){
                     kCorrFun[uMomBin] += Integrand;
                     kCorrFunErr[uMomBin] += pow(Integrand*kSourceGrid[uMomBin]->GetGridError(uGrid),2);
                 }//uGrid
+
+                //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
+                //here this is corrected for
+                if(SourceInt>1+1e-4){
+                    printf("\033[1;33mWARNING:\033[0m The source had to be renormalized, please check the validity of your input function!\n");
+printf(" SourceInt=%f\n",SourceInt);
+                    kCorrFun[uMomBin] /= SourceInt;
+                    kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])/SourceInt;
+                    SourceIntCut/=SourceInt;
+                    SourceInt=1.;
+                }
+
+                //if the source is assumed normalized, any deviation below unity is considered to be an effect of a
+                //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
+                //a flat residual that is added to the correlation
+                if(NormalizedSource && SourceIntCut<1.){
+                    kCorrFun[uMomBin] += 1.-double(SourceIntCut);
+                    kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin]);
+                    //printf("Added %f to C(%.0f)\n",1.-double(SourceIntCut),GetMomentum(uMomBin));
+                }
+                //else simply re-normalize the source to the total value of the integral (even if below 1)
+                //I am not sure if this even makes sense, consider in the future to use only the NormalizedSource case
+                else{
+                    kCorrFun[uMomBin] *= double(SourceInt)/double(SourceIntCut);
+                    kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])*double(SourceInt)/double(SourceIntCut);
+                }
+
                 kCorrFun[uMomBin] *= double(SourceInt)/double(SourceIntCut);
                 kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])*double(SourceInt)/double(SourceIntCut);
             }
@@ -2736,8 +2807,8 @@ void CATS::SetUpSourceGrid(){
 
     double* MEAN = new double[DIM];
     double* LENGTH = new double[DIM];
-    MEAN[0] = MaxRad*0.5*NuToFm;
-    LENGTH[0] = MaxRad*NuToFm;
+    MEAN[0] = SourceMaxRad*0.5*NuToFm;
+    LENGTH[0] = SourceMaxRad*NuToFm;
     if(ThetaDependentSource){
         MEAN[1] = 0;
         LENGTH[1] = 2;
@@ -3009,8 +3080,8 @@ unsigned CATS::GetBoxId(double* particle){
     double ParentMean[Dim];
     double ParentLen[Dim];
 
-    ParentMean[0] = MaxRad*0.5;
-    ParentLen[0] = MaxRad;
+    ParentMean[0] = SourceMaxRad*0.5;
+    ParentLen[0] = SourceMaxRad;
     if(ThetaDependentSource){
         ParentMean[1] = 0;
         ParentLen[1] = 2;
@@ -3330,6 +3401,7 @@ double CATS::EvaluateTheSource(CATSparameters* Pars) const{
         }
         return 0;
     }
+//printf("test\n");
     return ForwardedSource(SourceContext,Pars->GetParameters());
 }
 

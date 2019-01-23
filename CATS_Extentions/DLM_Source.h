@@ -4,6 +4,8 @@
 
 #include "DLM_Histo.h"
 
+class DLM_Random;
+
 double GaussSource(double* Pars);
 double GaussSourceTF1(double* x, double* Pars);
 double GaussSourceTheta(double* Pars);
@@ -28,6 +30,7 @@ double MemberSourceForwarder(void* context, double* Pars);
 class MemberSource{
 public:
     virtual double Eval(double* Pars);
+    virtual void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(const double& Momentum, const double Radius, const double& Angle);
 private:
     double PARS[3];
@@ -36,6 +39,7 @@ private:
 class MS_Gauss:public MemberSource{
 public:
     double Size;
+    void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
 };
 
@@ -57,6 +61,7 @@ public:
     void SetTau(const unsigned short& particle, const double& tau);
     void SetResonanceWeight(const unsigned short& particle, const double& weight);
 
+    void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
 private:
     unsigned Num_mT;//number of mT bins (common for the particle pair)
@@ -77,8 +82,14 @@ private:
 
 class DLM_StableDistribution:public MemberSource{
 public:
-    DLM_StableDistribution(const unsigned& numgridpts);
+    DLM_StableDistribution(const unsigned& numgridpts=512);
     ~DLM_StableDistribution();
+    void SetStability(const double& val);
+    void SetLocation(const double& val);
+    void SetScale(const double& val);
+    void SetSkewness(const double& val);
+    void SetNumIter(const unsigned& val);
+    void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
 private:
     const unsigned NumGridPts;
@@ -86,8 +97,11 @@ private:
     double Skewness;
     double Scale;
     double Location;
-    void Generate(const double& stability, const double& skewness, const double& scale, const double& location);
-    DLM_Histo<double>* Histo;
+    unsigned NumIter;
+    bool Generated;
+    void Generate(const double& stability, const double& location, const double& scale, const double& skewness);
+    DLM_Histo1D<double>* Histo;
+    DLM_Random* RanGen;
 };
 
 

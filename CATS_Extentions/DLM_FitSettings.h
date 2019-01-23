@@ -9,7 +9,7 @@ class CATSparameters;
 using namespace std;
 
 //forward declaration
-template<typename Type> class DLM_Histo;
+template<typename Type> class DLM_Histo1D;
 class DLM_Ck;
 class CATS;
 class TH1F;

@@ -72,14 +72,14 @@ void DLM_ResponseMatrix::DefaultConstructor(){
 DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ab.GetNumMomBins()){
     double* BINS = ab.CopyMomBin();
-    CatHisto = new DLM_Histo<double> (ab.GetNumMomBins(), BINS);
+    CatHisto = new DLM_Histo1D<double> (ab.GetNumMomBins(), BINS);
     CatHistoIsMyOwn = true;
     delete [] BINS;
 
     DefaultConstructor();
 }
 
-DLM_ResponseMatrix::DLM_ResponseMatrix(DLM_Histo<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia):
+DLM_ResponseMatrix::DLM_ResponseMatrix(DLM_Histo1D<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ch.GetNbins()){
 
     CatHisto = &ch;
