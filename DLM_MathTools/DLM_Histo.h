@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include "DLM_CppTools.h"
 //#include <stdint.h>
 //#include <complex>
 
@@ -254,10 +255,17 @@ template <class Type> class DLM_Histo{
 public:
     DLM_Histo(){
         BinRange = NULL;
-        BinRange = NULL;
-        BinRange = NULL;
+        BinValue = NULL;
+        BinError = NULL;
+        BinCenter = NULL;
         NumBins = NULL;
         TotNumBins=0;
+        PER = NULL;
+        //xValue = NULL;
+        //xBin = NULL;
+        //FunctionValue = NULL;
+        //Normalization = NULL;
+        //TotalNorm=0;
     }
     DLM_Histo(const DLM_Histo& other){
         operator=(other);
@@ -272,21 +280,31 @@ public:
             return;
         }
         if(Dim==dim) return;
+
         CleanUp();
 
         Dim = dim;
         BinRange = new Type* [Dim];
-        BinValue = new Type [Dim];
-        BinError = new Type [Dim];
+        BinValue = NULL;
+        BinError = NULL;
         BinCenter = new Type* [Dim];
         NumBins = new unsigned [Dim];
+        //xValue = new Type* [Dim];
+        //xBin = new unsigned* [Dim];
+        //FunctionValue = new Type* [Dim];
+        //Normalization = new Type* [Dim];
         for(unsigned short sDim=0; sDim<Dim; sDim++){
             BinRange[sDim]=NULL;
-            BinValue[sDim]=0;
-            BinError[sDim]=0;
+            //BinValue[sDim]=0;
+            //BinError[sDim]=0;
             BinCenter[sDim]=NULL;
             NumBins[sDim]=0;
+            //xValue[sDim] = new Type[2];
+            //xBin[sDim] = new unsigned[2];
+            //FunctionValue[sDim] = new Type[2];
+            //Normalization[sDim] = new Type[2];
         }
+        InitPER();
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const Type* bins){
         if(sDim>=Dim) return;
@@ -298,7 +316,7 @@ public:
         NumBins[sDim] = numbins;
         for(unsigned uBin=0; uBin<NumBins[sDim]; uBin++){
             BinRange[sDim][uBin] = bins[uBin];
-            if(uBin) BinCenter[sDim][uBin] = (bins[uBin-1]+bins[uBin])*0.5;
+            if(uBin) BinCenter[sDim][uBin-1] = (bins[uBin-1]+bins[uBin])*0.5;
         }
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const Type& xmin, const Type& xmax){
@@ -318,7 +336,7 @@ public:
             Type BinWidth = (xmax-xmin)/Type(NumBins[sDim]);
             for(unsigned uBin=0; uBin<=NumBins[sDim]; uBin++){
                 BinRange[sDim][uBin] = xmin + Type(uBin)*BinWidth;
-                if(uBin) BinCenter[sDim][uBin] = (BinRange[sDim][uBin-1]+BinRange[sDim][uBin])*0.5;
+                if(uBin) BinCenter[sDim][uBin-1] = (BinRange[sDim][uBin-1]+BinRange[sDim][uBin])*0.5;
             }
         }
     }
@@ -342,6 +360,16 @@ public:
             BinValue[TotNumBins+1]=0;
         }
     }
+    unsigned GetTotBin(const unsigned* WhichBin) const{
+        unsigned TotBin=0;
+        unsigned Base=1;
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            TotBin+=Base*WhichBin[sDim];
+            Base*=NumBins[sDim];
+        }
+        return TotBin;
+    }
+
     bool Copy(const DLM_Histo& other){
         return operator=(other);
     }
@@ -357,14 +385,12 @@ public:
         }
     }
     void Scale(const Type& scale){
-        for(unsigned short sDim=0; sDim<Dim; sDim++){
-            for(unsigned uBin=0; uBin<TotNumBins; uBin++){
-                BinValue[sDim][uBin] *= scale;
-                BinError[sDim][uBin] *= scale;
-            }
-            BinValue[sDim][TotNumBins] *= scale;
-            BinValue[sDim][TotNumBins+1] *= scale;
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            BinValue[uBin] *= scale;
+            BinError[uBin] *= scale;
         }
+        BinValue[TotNumBins] *= scale;
+        BinValue[TotNumBins+1] *= scale;
     }
     void ScaleToBinWidth(){
         //Type BinWidth;
@@ -385,25 +411,27 @@ public:
         if(WhichTotBin>=TotNumBins) return;
         BinError[WhichTotBin]=Val;
     }
-    void SetBinCenter(const unsigned& WhichTotBin, const Type& Val){
-        if(WhichTotBin>=TotNumBins) return;
-        BinCenter[WhichTotBin]=Val;
-    }
     void Add(const unsigned& WhichTotBin, const Type& Val, const Type& Err=0){
         if(WhichTotBin>=TotNumBins) return;
         BinValue[WhichTotBin]+=Val;
         BinError[WhichTotBin]=Type(sqrt(double(BinError[WhichTotBin]*BinError[WhichTotBin])+double(Err*Err)));
     }
 
-    void SetBinContent(const unsigned short& sDim, const unsigned& WhichBin, const Type& Val){
-        SetBinContent(GetTotBin(sDim,WhichBin),Val);
+    void SetBinContent(const unsigned* WhichBin, const Type& Val){
+        SetBinContent(GetTotBin(WhichBin),Val);
     }
-    void SetBinError(const unsigned short& sDim, const unsigned& WhichBin, const Type& Val){
-        SetBinError(GetTotBin(sDim,WhichBin),Val);
+    void SetBinError(const unsigned* WhichBin, const Type& Val){
+        SetBinError(GetTotBin(WhichBin),Val);
     }
+
     void SetBinCenter(const unsigned short& sDim, const unsigned& WhichBin, const Type& Val){
-        SetBinCenter(GetTotBin(sDim,WhichBin),Val);
+        if(sDim>=Dim)return;
+        if(WhichBin>=NumBins[sDim])return 0;
+        if(!BinCenter)return;
+        if(!BinCenter[sDim])return;
+        BinCenter[sDim][WhichBin] = Val;
     }
+/*
     void Add(const unsigned short& sDim, const unsigned& WhichBin, const Type& Val, const Type& Err=0){
         Add(GetTotBin(sDim,WhichBin),Val,Err);
     }
@@ -414,48 +442,49 @@ public:
     void AddAt(const unsigned short& sDim, const Type& xVal, const Type& Val, const Type& Err=0){
         Add(sDim,GetBin(sDim,xVal),Val,Err);
     }
+*/
 
-    Type GetBinCenter(const unsigned& WhichTotBin) const{
-        if(WhichTotBin>=TotNumBins) return 0;
-        return BinCenter[WhichTotBin];
-    }
     Type GetBinCenter(const unsigned short& sDim, const unsigned& WhichBin) const{
-        return GetBinCenter(sDim,GetTotBin(sDim,WhichBin));
+        if(sDim>=Dim)return 0;
+        if(WhichBin>=NumBins[sDim])return 0;
+        if(!BinCenter)return 0;
+        if(!BinCenter[sDim])return 0;
+        return BinCenter[sDim][WhichBin];
     }
 
     Type GetBinContent(const unsigned& WhichTotBin) const{
         if(WhichTotBin>=TotNumBins+2) return 0;
         return BinValue[WhichTotBin];
     }
-    Type GetBinContent(const unsigned short& sDim, const unsigned& WhichBin) const{
-        return GetBinContent(sDim,GetBin(sDim,WhichBin));
+    Type GetBinContent(const unsigned* WhichBin) const{
+        return GetBinContent(GetTotBin(WhichBin));
     }
 
     Type GetBinError(const unsigned& WhichTotBin) const{
         if(WhichTotBin>=TotNumBins) return 0;
         return BinValue[WhichTotBin];
     }
-    Type GetBinError(const unsigned short& sDim, const unsigned& WhichBin) const{
-        return GetBinError(sDim,GetBin(sDim,WhichBin));
-    }
+    //Type GetBinError(const unsigned short& sDim, const unsigned& WhichBin) const{
+    //    return GetBinError(sDim,GetBin(sDim,WhichBin));
+    //}
 
 
     Type GetBinLowEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(sDim>=Dim) return 0;
         if(WhichBin>=NumBins[sDim]) return 0;
-        return BinRange[WhichBin];
+        return BinRange[sDim][WhichBin];
     }
     Type GetBinUpEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(sDim>=Dim) return 0;
         if(WhichBin>=NumBins[sDim]) return 0;
-        return BinRange[WhichBin+1];
+        return BinRange[sDim][WhichBin+1];
     }
     Type GetBinWidth(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(sDim>=Dim) return 0;
         if(WhichBin>=NumBins[sDim]) return 0;
         return (BinRange[sDim][WhichBin+1]-BinRange[sDim][WhichBin]);
     }
-
+/*
     unsigned GetBin(const unsigned short& sDim, const Type& xVal) const{
         if(sDim>=Dim) return TotNumBins;
         unsigned WhichTotBin=GetTotBin(sDim,0);
@@ -485,9 +514,100 @@ public:
             }
         }
     }
+*/
+
+    Type Eval(const Type* xVal) const{
+
+        //this is here to make it thread-safe, but maybe hinders performance???
+        Type* xValue1 = new Type [Dim];
+        Type* xValue2 = new Type [Dim];
+        Type* DeltaX1 = new Type [Dim];
+        Type* DeltaX2 = new Type [Dim];
+        unsigned* xBin1 = new unsigned [Dim];
+        unsigned* xBin2 = new unsigned [Dim];
+        //Type* FunctionValue1 = new Type [Dim];
+        //Type* FunctionValue2 = new Type [Dim];
+        //Type Normalization = new Type* [Dim];
+        //Type TotalNorm=0;
+
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //xBin[sDim] = new Type [2];
+            //xValue[sDim] = unsigned Type [2];
+            //FunctionValue[sDim] = new Type [2];
+            //Normalization[sDim] = new Type [2];
+
+            xBin1[sDim] = GetBin(sDim,xVal[sDim]);
+            xValue1[sDim] = GetBinCenter(sDim,xBin1[sDim]);
+            if(NumBins[sDim]==1){
+                //set as dummy only one of the x-values with weight zero,
+                //this way the value of x2 will actually play no role
+                //despite of that just in case we set x1=x2
+                xBin1[sDim]=0;
+                xBin2[sDim]=0;
+                xValue1[sDim]=GetBinCenter(sDim,0);
+                xValue2[sDim]=GetBinCenter(sDim,0);
+                DeltaX1[sDim]=0;
+                DeltaX2[sDim]=1;
+            }
+            /*
+            else if(xVal[sDim]==xValue1[sDim]){
+                xBin2[sDim]=xBin1[sDim];
+                xValue2[sDim]=xValue1[sDim];
+                DeltaX1[sDim]=0;
+                DeltaX2[sDim]=1;
+            }
+            else if(xVal[sDim]==xValue2[sDim]){
+
+                DeltaX1[sDim]=1;
+                DeltaX2[sDim]=0;
+            }
+            */
+            //we take this and the previous bin
+            //this is the case when:
+            //a) xVal is smaller than the bin center and there is a lower bin available
+            //b) in case we are in the last bin
+            else if( (xVal[sDim]<xValue1[sDim]&&xBin1[sDim]>0) || xBin1[sDim]==NumBins[sDim]-1 ){
+                xBin2[sDim]=xBin1[sDim];
+                xBin1[sDim]=xBin1[sDim]-1;
+                xValue1[sDim] = GetBinCenter(sDim,xBin1[sDim]);
+                xValue2[sDim] = GetBinCenter(sDim,xBin2[sDim]);
+                DeltaX1[sDim]=xVal[sDim]-xValue1[sDim];
+                DeltaX2[sDim]=xValue2[sDim]-xVal[sDim];
+            }
+            //we take this and the next bin
+            //this is the case when:
+            //a) xVal is larger than the bin center and there is an upper bin available
+            //b) in case we are in the first bin
+            else if( (xVal[sDim]>xValue1[sDim]&&xBin1[sDim]<NumBins[sDim]-1) || xBin1[sDim]==0 ){
+                xBin2[sDim]=xBin1[sDim]+1;
+                xValue1[sDim] = GetBinCenter(sDim,xBin1[sDim]);
+                xValue2[sDim] = GetBinCenter(sDim,xBin2[sDim]);
+                DeltaX1[sDim]=xVal[sDim]-xValue1[sDim];
+                DeltaX2[sDim]=xValue2[sDim]-xVal[sDim];
+            }
+        }
+//f=A[p]*f[p]=dX[p]*dY[p]*BC1[p]*BC2[p]
+        Type Result=0;
+        for(unsigned uPer=0; uPer<NumPermutations; uPer++){\
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                //PER[uPer][sDim]
+            }
+            //Result += FunctionValue[uPer]*Normalization[uPer];
+            //Result +=
+        }
+        //Result /= TotalNorm;
+        //return Result;
+
+
+
+        delete [] xValue1;
+        delete [] xValue2;
+        delete [] xBin1;
+        delete [] xBin2;
+        delete [] DeltaX1;
+        delete [] DeltaX2;
 
 /*
-    Type Eval(const Type& xVal) const{
         if(xVal<BinRange[0] || xVal>BinRange[NumBins]) return 0;
         if(NumBins==1) return BinValue[0];
         unsigned WhichBin = GetBin(xVal);
@@ -529,8 +649,10 @@ public:
             printf("WTF!!! at bin %u\n",WhichBin);
             return 1e6;
         }
-    }
 */
+    }
+
+
     bool operator=(const DLM_Histo& other){
         SetUp(other.Dim);
         for(unsigned short sDim=0; sDim<Dim; sDim++) SetUp(sDim,other.NumBins[sDim],BinRange[sDim]);
@@ -541,14 +663,13 @@ public:
                 BinCenter[sDim][uBin] = other.BinCenter[sDim][uBin];
             }
             BinRange[sDim][NumBins[sDim]] = other.BinRange[sDim][NumBins[sDim]];
-
-            for(unsigned uBin=0; uBin<TotNumBins; uBin++){
-                BinValue[sDim][uBin] = other.BinValue[sDim][uBin];
-                BinError[sDim][uBin] = other.BinError[sDim][uBin];
-            }
-            BinValue[sDim][TotNumBins] = other.BinValue[sDim][TotNumBins];
-            BinValue[sDim][TotNumBins+1] = other.BinValue[sDim][TotNumBins+1];
         }
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            BinValue[uBin] = other.BinValue[uBin];
+            BinError[uBin] = other.BinError[uBin];
+        }
+        BinValue[TotNumBins] = other.BinValue[TotNumBins];
+        BinValue[TotNumBins+1] = other.BinValue[TotNumBins+1];
     }
     bool operator+=(const DLM_Histo& other){
         if(!SameStructure(other)) return false;
@@ -577,6 +698,38 @@ protected:
             delete [] BinCenter; BinCenter=NULL;
         }
         delete [] NumBins; NumBins=NULL;
+        if(PER){
+            for(unsigned uPer=0; uPer<NumPermutations; uPer++){
+                delete [] PER[uPer]; PER[uPer]=NULL;
+            }
+            delete [] PER; PER=NULL;
+        }
+        /*
+        if(xValue){
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                delete [] xValue[sDim]; xValue[sDim]=NULL;
+            }
+            delete [] xValue; xValue=NULL;
+        }
+        if(xBin){
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                delete [] xBin[sDim]; xBin[sDim]=NULL;
+            }
+            delete [] xBin; xBin=NULL;
+        }
+        if(FunctionValue){
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                delete [] FunctionValue[sDim]; FunctionValue[sDim]=NULL;
+            }
+            delete [] FunctionValue; FunctionValue=NULL;
+        }
+        if(Normalization){
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                delete [] Normalization[sDim]; Normalization[sDim]=NULL;
+            }
+            delete [] Normalization; Normalization=NULL;
+        }
+        */
     }
     void CleanUp(const unsigned short sDim){
         if(BinRange){
@@ -591,6 +744,20 @@ protected:
                 BinCenter[sDim]=NULL;
             }
         }
+        /*
+        if(FunctionValue){
+            if(FunctionValue[sDim]){
+                delete [] FunctionValue[sDim];
+                FunctionValue[sDim]=NULL;
+            }
+        }
+        if(Normalization){
+            if(Normalization[sDim]){
+                delete [] Normalization[sDim];
+                Normalization[sDim]=NULL;
+            }
+        }
+        */
     }
     bool SameStructure(DLM_Histo& other) const{
         if(Dim!=other.Dim) return false;
@@ -605,12 +772,42 @@ protected:
         if(TotNumBins!=other.TotNumBins) return false;
         return true;
     }
+
+    /*
     unsigned GetTotBin(const unsigned short& sDim, const unsigned& WhichBin) const{
         unsigned WhichTotBin=WhichBin;
         for(unsigned short sDim2=0; sDim2<sDim; sDim2++){
             WhichTotBin += NumBins[sDim2];
         }
         return WhichTotBin;
+    }
+    */
+    void InitPER(){
+        NumPermutations = 1;
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            NumPermutations *= 2;
+        }
+
+        PER = new char* [NumPermutations];
+        char UpdatedPer = 0;
+        for(unsigned uPer=0; uPer<NumPermutations; uPer++){
+            PER[uPer] = new char [Dim];
+            bool Increase = true;
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                if(!uPer) PER[uPer][sDim]=0;
+                else{
+                    PER[uPer][sDim]=PER[uPer-1][sDim];
+                    if(Increase && PER[uPer][sDim]==0){
+                        PER[uPer][sDim]=1;
+                        Increase=false;
+                    }
+                    else if(Increase){
+                        PER[uPer][sDim]=0;
+                        Increase=true;
+                    }
+                }
+            }
+        }
     }
     unsigned short Dim;
     unsigned TotNumBins;
@@ -620,5 +817,9 @@ protected:
     Type* BinValue;
     Type* BinError;
     Type** BinCenter;
+
+    unsigned NumPermutations;
+    char** PER;
+
 };
 #endif

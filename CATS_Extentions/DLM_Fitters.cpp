@@ -1104,8 +1104,8 @@ void DLM_Fitter1::GoBabyGo(){
         //uActSyst++;
     }
 
-    HistoGlobal->Fit(FitGlobal,"V, S, N, R, M");
-    //HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
+    //HistoGlobal->Fit(FitGlobal,"V, S, N, R, M");
+    HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
     //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
