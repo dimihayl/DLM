@@ -616,7 +616,6 @@ double Tetsuo_pOmega(const int& WhichPot, const int& DlmPotFlag,
     const double hbarc = 197.3269602;
     const double coeff[9] = {0.14,-13.76,306.81,-2729.49,11744.48,-26288.42,30558.08,-16730.80,3051.85};
     const double mn[9] = {100./hbarc,200./hbarc,300./hbarc,400./hbarc,500./hbarc,600./hbarc,700./hbarc,800./hbarc,900./hbarc};
-    const double sqrtPI = sqrt(3.1415926535897932384626433832795028841971693993751);
     const double pig = 3.1415926535897932384626433832795028841971693993751;
     const double lambda = 1000./hbarc;
 
@@ -701,6 +700,7 @@ printf(" VIA=%.2f\n",TempIA);
 double ReidSoftCore(const int& polar, double* Radius){
     double r = Radius[0];
     double pmux,f1,f2,f3,f4,f7,vr;
+    vr=0;
     /* See the appendix of B.D. Day, PRC24, p. 1203 (1981).
      with Tensor forces neglected */
     if(polar==0){
@@ -874,7 +874,7 @@ double fReidVale(const double& rad,const unsigned short& Spin,const unsigned sho
     }
 
     double s12=0;
-    double s12m;
+    double s12m=0;
     //double s12p;
     const double lsm=TotMom-1;
     //const double lsp=-(TotMom+2);

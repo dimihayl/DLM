@@ -549,7 +549,7 @@ public:
     void SetBinCenter(const unsigned short& sDim, const unsigned& WhichBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
         if(sDim>=Dim)return;
-        if(WhichBin>=NumBins[sDim])return 0;
+        if(WhichBin>=NumBins[sDim])return;
         if(!BinCenter)return;
         if(!BinCenter[sDim])return;
         BinCenter[sDim][WhichBin] = Val;

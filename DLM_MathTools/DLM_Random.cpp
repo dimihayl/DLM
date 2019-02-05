@@ -62,8 +62,8 @@ double DLM_Random::Stable(const double& stability, const double& location, const
     }
     else{
         const double E = atan(-S)/stability;
-double RESULT = pow(1.+S*S,0.5/stability)*sin(stability*(U+E))/pow(cos(U),1./stability)*pow(cos(U-stability*(U+E))/W,(1.-stability)/stability)*scale/sqrt(2)+location;
 /*
+double RESULT = pow(1.+S*S,0.5/stability)*sin(stability*(U+E))/pow(cos(U),1./stability)*pow(cos(U-stability*(U+E))/W,(1.-stability)/stability)*scale/sqrt(2)+location;
 if(RESULT!=RESULT){
     printf("RESULT=%e\n",RESULT);
     printf(" S=%e\n",S);

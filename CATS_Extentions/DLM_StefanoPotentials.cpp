@@ -1657,8 +1657,8 @@ double DLM_StefanoPotentials::Eval_PWprojector(const double& Radius,
     double vls2=vv[12]+t1dt2*vv[13];
     const int ls=(TotMom*(TotMom+1)-AngMom*(AngMom+1)-Spin*(Spin+1))/2;
     double s12=0;
-    double s12m;
-    double s12p;
+    double s12m=0;
+    double s12p=0;
     const double lsm=TotMom-1;
     const double lsp=-(TotMom+2);
 
@@ -1718,8 +1718,8 @@ double DLM_StefanoPotentials::Eval_PWprojector_pp(const double& Radius, const in
 
     const int ls=(TotMom*(TotMom+1)-AngMom*(AngMom+1)-Spin*(Spin+1))/2;
     double s12=0;
-    double s12m;
-    double s12p;
+    double s12m=0;
+    double s12p=0;
     const double lsm=TotMom-1;
     const double lsp=-(TotMom+2);
 

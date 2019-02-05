@@ -1663,7 +1663,7 @@ void CATS::ComputeWaveFunction(){
 
     double Time;
     int pTotal;
-    int pTotalOld;
+    int pTotalOld=0;
     double Progress;
     char* cdummy = new char [512];
     double TotalSteps = TotNumSteps;
@@ -1779,8 +1779,8 @@ void CATS::ComputeWaveFunction(){
             double MaxConvRho=0;
             //the last radius at which the computation was performed
             double MaxConvRad=0;
-            double DeltaRadAtMaxConvPrev;
-            double DeltaRadAtMaxConv;
+            double DeltaRadAtMaxConvPrev=DeltaRad[kOld];
+            double DeltaRadAtMaxConv=DeltaRad[kCurrent];
             double ConvPointOldWeight=-1;
             double ConvPointWeight=0;
 
@@ -2132,7 +2132,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
 
     double Time;
     int pTotal;
-    int pTotalOld;
+    int pTotalOld=0;
     double Progress;
     char* cdummy = new char [512];
     double TotalSteps = double(NumMomBins)*double(NumGridPts);
@@ -2310,7 +2310,7 @@ short CATS::LoadData(const unsigned short& NumBlankHeaderLines){
     float pTemp;
 
     short pTotal;
-    short pTotalOld;
+    short pTotalOld=0;
 
     bool SkipThisEvent;
     bool NewInterestingEvent;

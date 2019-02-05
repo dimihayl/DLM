@@ -161,7 +161,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
         float fDummy;
         float fPhaseShift;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -389,7 +389,7 @@ void InitHaidenbauer_pXi(const char* InputFolder, CATS& Kitty, complex<double>**
         float fDummy;
         //float fPhaseShift;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -565,7 +565,7 @@ void InitHaidenbauerKaonMinus(const char* InputFolder, CATS& Kitty, complex<doub
         float fCatsWf;
         float fPhaseShift;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -763,7 +763,7 @@ void InitHaidenbauerKaonMinus_ver2(const char* InputFolder, CATS& Kitty, complex
         float fCatsWf;
         float fPhaseShift;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -934,7 +934,7 @@ printf("uFile=%u\n",uFile);
         float fCatsWf;
         float fPhaseShift;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -1096,7 +1096,7 @@ void InitTetsuoKaonMinus(const char* InputFolder, CATS& Kitty, complex<double>**
         float fCatsWf;
         float fPhaseShift=0;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -1328,7 +1328,7 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
     float* fCatsImWf = new float [NumSystems];
     //float fPhaseShift=0;
 
-    unsigned RadBin;
+    unsigned RadBin=0;
     unsigned LastRadBin;
     unsigned MomBin;
 
@@ -1550,7 +1550,7 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
     float* fCatsImWf = new float [NumSystems];
     //float fPhaseShift=0;
 
-    unsigned RadBin;
+    unsigned RadBin=0;
     unsigned LastRadBin;
     unsigned MomBin;
 
@@ -1718,7 +1718,7 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
         float fMomentum;
         float fCatsWf;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -1901,7 +1901,7 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
         float fMomentum;
         float fCatsWf;
 
-        unsigned RadBin;
+        unsigned RadBin=0;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---

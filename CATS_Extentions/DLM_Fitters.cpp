@@ -1175,7 +1175,7 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 //printf("CALLING EVALGLOBAL\n");
     unsigned GlobalBin = HistoGlobal->FindBin(*xVal)-1;
     double Momentum = GlobalToMomentum[GlobalBin];
-    unsigned WhichSyst;
+    unsigned WhichSyst=0;
 //printf("Pars0[p_sor0/1/2] = %.2f/%.2f/%.2f\n",Pars[p_sor0],Pars[p_sor1],Pars[p_sor2]);
 //printf("Pars1[p_sor0/1/2] = %.2f/%.2f/%.2f\n",Pars[NumPar+p_sor0],Pars[NumPar+p_sor1],Pars[NumPar+p_sor2]);
 
