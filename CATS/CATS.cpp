@@ -38,7 +38,8 @@ CATS::CATS():
     MaxRad = 32.*FmToNu;
     MaxRho = 16;
     MaxPw = 256;
-    MaxNumThreads = 32767;
+    //MaxNumThreads = 32767;
+    MaxNumThreads = 1;
     ExcludeFailedConvergence = true;
     GridMinDepth = 7;
     GridMaxDepth = 0;
@@ -2820,6 +2821,8 @@ void CATS::SetUpSourceGrid(){
     if(UseAnalyticSource){
         //for setting up the grid we take the "mean" value of k
         AnaSourcePar->SetVariable(0,(MomBin[0]+MomBin[NumMomBins])*0.5,false);
+//printf("BaseSourceGrid = new CATSelder\n");
+//printf(" AnaSourcePar[3]=%e\n",AnaSourcePar->GetParameter(0));
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
                          this, AnaSourcePar, NULL, 0);
     }

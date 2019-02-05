@@ -82,7 +82,7 @@ private:
 
 class DLM_StableDistribution:public MemberSource{
 public:
-    DLM_StableDistribution(const unsigned& numgridpts=512);
+    DLM_StableDistribution(const unsigned& numgridpts=512*2);
     ~DLM_StableDistribution();
     void SetStability(const double& val);
     void SetLocation(const double& val);

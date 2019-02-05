@@ -623,7 +623,7 @@ double GaussExpTotSimple_2body(double* Pars){
 */
 double MS_GaussExp_mT_Simple::Eval(double* Pars){
     double Result=0;
-    Parameters[1]=Pars[1];
+    Parameters[1] = Pars[1];
     Parameters[4] = Tau[0];
     Parameters[5] = 1.-Weight_R[0];
     Parameters[6] = MassR[0];
@@ -659,7 +659,7 @@ DLM_StableDistribution::DLM_StableDistribution(const unsigned& numgridpts):NumGr
     Histo = NULL;
     RanGen = new DLM_Random(NumGridPts);
     //NumIter = 65536;
-    NumIter = 131072;
+    NumIter = 131072*4;
     Generated = false;
 }
 DLM_StableDistribution::~DLM_StableDistribution(){
@@ -668,7 +668,7 @@ DLM_StableDistribution::~DLM_StableDistribution(){
 }
 void DLM_StableDistribution::SetStability(const double& val){
     if(Stability==val) return;
-    if(val<0||val>2){
+    if(val<=0||val>2){
         Stability=2;
     }
     else{
@@ -711,18 +711,24 @@ void DLM_StableDistribution::SetNumIter(const unsigned& val){
     if(NumIter<100) NumIter=100;
 }
 void DLM_StableDistribution::Generate(const double& stability, const double& location, const double& scale, const double& skewness){
-//printf("Hello there\n");
+//printf("Hello there, stability=%e\n",stability);
     if(!Histo){
         Histo = new DLM_Histo1D<double>(NumGridPts,0,64);
     }
     double RanVal;
+    if(RanGen) delete RanGen;
+    RanGen = new DLM_Random(NumGridPts);
+//printf("Hi again\n");
     for(unsigned uBin=0; uBin<NumIter; uBin++){
+//printf(" uBin=%u\n",uBin);
         RanVal = RanGen->StableDiffR(3,stability,location,scale,skewness);
+//printf(" RanVal=%f\n",RanVal);
         Histo->AddAt(RanVal,1.);
     }
     Histo->Scale(1./double(NumIter));
     Histo->ScaleToBinWidth();
     Generated = true;
+//printf("Nothing to see here!\n");
 }
 void DLM_StableDistribution::SetParameter(const unsigned& WhichPar, const double& Value){
     switch(WhichPar){
@@ -735,13 +741,16 @@ void DLM_StableDistribution::SetParameter(const unsigned& WhichPar, const double
 }
 double DLM_StableDistribution::Eval(double* Pars){
     double& rVal=Pars[1];
-//for(int i=0; i<7; i++){
-    //    printf("%i = %f\n",i,Pars[i]);
-    //}
     SetStability(Pars[3]);
     SetLocation(Pars[4]);
     SetScale(Pars[5]);
     SetSkewness(Pars[6]);
+
+//if(fabs(Stability<1e-128))
+//for(int i=0; i<7; i++){
+//    printf("%i = %e\n",i,Pars[i]);
+//}
+
     if(rVal<=0) return 0;
     if(!Generated){
         Generate(Stability,Location,Scale,Skewness);

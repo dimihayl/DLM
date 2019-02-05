@@ -1105,6 +1105,7 @@ void DLM_Fitter1::GoBabyGo(){
     }
 
     //HistoGlobal->Fit(FitGlobal,"V, S, N, R, M");
+    //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
     HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
     //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 

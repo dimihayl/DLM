@@ -21,6 +21,8 @@ DLM_Random::~DLM_Random(){
     delete MT_RanGen;MT_RanGen=NULL;
     delete RealDist;RealDist=NULL;
     delete ExpDist;ExpDist=NULL;
+    delete NormDist;NormDist=NULL;
+    delete CauchyDist;CauchyDist=NULL;
 }
 
 double DLM_Random::Uniform(const double& from, const double& to){
@@ -34,7 +36,7 @@ double DLM_Random::Cauchy(const double& mean, const double& sigma){
     return (CauchyDist[0](*MT_RanGen))*sigma+mean;
 }
 double DLM_Random::Stable(const double& stability, const double& location, const double& scale, const double& skewness){
-    if(stability<0||stability>2){
+    if(stability<=0||stability>2){
         printf("\033[1;33mWARNING:\033[0m Bad 'stability' parameter in DLM_Random::Stable\n");
         return 0;
     }
@@ -60,8 +62,18 @@ double DLM_Random::Stable(const double& stability, const double& location, const
     }
     else{
         const double E = atan(-S)/stability;
+double RESULT = pow(1.+S*S,0.5/stability)*sin(stability*(U+E))/pow(cos(U),1./stability)*pow(cos(U-stability*(U+E))/W,(1.-stability)/stability)*scale/sqrt(2)+location;
+/*
+if(RESULT!=RESULT){
+    printf("RESULT=%e\n",RESULT);
+    printf(" S=%e\n",S);
+    printf(" stability=%e\n",stability);
+    printf(" U=%e\n",U);
+    printf(" E=%e\n",E);
+    printf(" W=%e\n",W);
+}
+*/
         return pow(1.+S*S,0.5/stability)*sin(stability*(U+E))/pow(cos(U),1./stability)*pow(cos(U-stability*(U+E))/W,(1.-stability)/stability)*scale/sqrt(2)+location;
-
     }
 }
 
@@ -127,6 +139,7 @@ double DLM_Random::StableDiffR( const unsigned short& dim,
     double Result=0;
     for(unsigned short us=0; us<dim; us++){
         Result+=pow(Stable(stability2,location2,scale2,skewness2)-Stable(stability1,location1,scale1,skewness1),2.);
+//if(Result!=Result) printf("Result = %f\n",Result);
     }
     return sqrt(Result);
 }

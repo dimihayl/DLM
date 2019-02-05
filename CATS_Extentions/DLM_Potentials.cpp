@@ -607,6 +607,30 @@ double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
 
         return Result;
 }
+
+//p-Omega local potential taken from Hyodo et al. arXiv:1805.04024
+//For the moment only the Real part is included (see Fig.9 in the paper), so only the real part out of the coefficinets in table 5-column total
+double Tetsuo_pOmega(const int& WhichPot, const int& DlmPotFlag,
+                     const int& IsoSpin, const int& t2p1, const int& t2p2,
+                     const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
+    const double hbarc = 197.3269602;
+    const double coeff[9] = {0.14,-13.76,306.81,-2729.49,11744.48,-26288.42,30558.08,-16730.80,3051.85};
+    const double mn[9] = {100./hbarc,200./hbarc,300./hbarc,400./hbarc,500./hbarc,600./hbarc,700./hbarc,800./hbarc,900./hbarc};
+    const double sqrtPI = sqrt(3.1415926535897932384626433832795028841971693993751);
+    const double pig = 3.1415926535897932384626433832795028841971693993751;
+    const double lambda = 1000./hbarc;
+
+    double Result=0;
+    const double& rad=Radius[0];
+
+    for(unsigned uPar=0; uPar<9; uPar++){
+        Result += hbarc*(((1./(4.*pig*rad))*coeff[uPar]*(pow(pow(lambda,2) /
+                        (pow(lambda,2)-pow(mn[uPar],2)),2)))*(exp(-mn[uPar]*rad)-exp(-lambda*rad)*
+                        ((pow(lambda,2)-pow(mn[uPar],2))*rad+2*lambda)/(2*lambda)));
+        }
+    return Result;
+}
+
 //flag 0 = p
 //flag 1 = n
 //flag 2 = p+avgIsospinPotential (i.e. for only a single channel and V=0.5*(VI0+VI1))
@@ -1018,6 +1042,7 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
         case pXim_LatticeSqrtAvg : return LatticePots_pXi_SqrtAvg(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pKm_Tetsuo : return Tetsuo_pKm(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
         case pOmega_Lattice : return LatticePots_pOmega(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
+        case pOmega_Tetsuo : return Tetsuo_pOmega(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         default : return 0;
     }
 }

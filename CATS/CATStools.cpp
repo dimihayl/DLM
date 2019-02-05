@@ -1063,6 +1063,7 @@ void CATSelder::AddEndNode(CATSnode* node){
 }
 
 double CATSelder::SourceFunction(void* context){
+//printf("CATSelder::SourceFunction\n");
     return static_cast<CATS*>(context)->EvaluateTheSource(SourcePars);
 }
 
