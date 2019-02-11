@@ -33,7 +33,7 @@ double DLM_Random::Gauss(const double& mean, const double& sigma){
     return (NormDist[0](*MT_RanGen))*sigma+mean;
 }
 double DLM_Random::Cauchy(const double& mean, const double& sigma){
-    return (CauchyDist[0](*MT_RanGen))*sigma+mean;
+    return (CauchyDist[0](*MT_RanGen))*sigma/sqrt(2.)+mean;
 }
 double DLM_Random::Stable(const double& stability, const double& location, const double& scale, const double& skewness){
     if(stability<=0||stability>2){

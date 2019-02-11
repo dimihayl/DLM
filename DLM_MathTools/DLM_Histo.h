@@ -529,6 +529,14 @@ public:
         BinValue[WhichTotBin]+=Val;
         BinError[WhichTotBin]=Type(sqrt(double(BinError[WhichTotBin]*BinError[WhichTotBin])+double(Err*Err)));
     }
+    void AddAt(const Type* AxisValue, const Type& Val=1){
+        if(!Initialized) {InitWarning(); return;}
+        unsigned* WhichBin = new unsigned [Dim];
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            WhichBin[sDim] = GetBin(sDim,AxisValue[sDim]);
+        }
+        BinValue[GetTotBin(WhichBin)] += Val;
+    }
 
     void SetBinContent(const unsigned* WhichBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -938,7 +946,7 @@ protected:
         }
 
         PER = new char* [NumPermutations];
-        char UpdatedPer = 0;
+        //char UpdatedPer = 0;
         for(unsigned uPer=0; uPer<NumPermutations; uPer++){
             PER[uPer] = new char [Dim];
             bool Increase = true;

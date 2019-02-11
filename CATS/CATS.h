@@ -33,6 +33,7 @@
 
 #include "DLM_Sort.h"
 #include "CATStools.h"
+//#include "DLM_Histo.h"
 
 using namespace std;
 
@@ -254,6 +255,7 @@ public:
     unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
                        const unsigned short& usCh, const unsigned short& usPW) const;
     double EvaluateTheSource(CATSparameters* Pars) const;
+    double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
     CATSelder* GetTheElder(const double& Momentum);
     //convert fm to 1/MeV
     const double& FmNu() const;
@@ -347,7 +349,7 @@ void test_ad5(){
     //!------------------------------------------------
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
-
+//DLM_Histo<double> SourceHistoTemp;
 protected:
 
     enum PrevNext { kNext=1, kPrevious=-1 };

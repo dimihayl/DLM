@@ -126,6 +126,10 @@ CATS::CATS():
     CPF = NULL;
 DEBUG=-1;
     SetIpBins(1, -1000, 1000);
+
+//SourceHistoTemp.SetUp(1);
+//SourceHistoTemp.SetUp(0,128,0,8);
+//SourceHistoTemp.Initialize();
 }
 
 CATS::~CATS(){
@@ -2532,7 +2536,7 @@ unsigned CATS::LoadDataBuffer(const unsigned& WhichIpBin, CatsDataBuffer* KittyB
     double RelMomCom;
     double RedMomComMeV;
 
-    unsigned WhichMomBin;
+    unsigned WhichMomBin=0;
     unsigned NumSePairs = KittyBuffer->GetNumPairsSameEvent();
     unsigned GoodSePairs = 0;
 
@@ -2559,14 +2563,22 @@ unsigned CATS::LoadDataBuffer(const unsigned& WhichIpBin, CatsDataBuffer* KittyB
         if(RedMomComMeV<MomBin[0] || RedMomComMeV>MomBin[NumMomBins]){
             Selected = false;
         }
+//printf("PairDif->GetParticle(0)->GetPid()=%i\n",PairDif->GetParticle(0).GetPid());
+//printf("PairDif->GetParticle(1)->GetPid()=%i\n",PairDif->GetParticle(1).GetPid());
+//printf("\n");
+//if(Selected) SourceHistoTemp.AddAt(&RelPosCom);
         else if(Selected){
             WhichMomBin = GetMomBin(RedMomComMeV);
-            if(WhichMomBin>=NumMomBins) Selected = false;
+            if(WhichMomBin>=NumMomBins){
+                Selected = false;
+//printf("WhichMomBin=%u/%u (k=%f)\n",WhichMomBin,NumMomBins,RedMomComMeV);
+            }
         }
 
         //check the total pair momentum condition
         if(UseTotMomCut && (PairSum->GetP()*1000<MinTotPairMom || PairSum->GetP()*1000>MaxTotPairMom)){
             Selected = false;
+//printf("PairSum->GetP()=%f\n",PairSum->GetP());
         }
 
         //if at this point the pair is not rejected yet, we count it as a "good" pair, i.e. it would be accepted
@@ -2578,6 +2590,7 @@ unsigned CATS::LoadDataBuffer(const unsigned& WhichIpBin, CatsDataBuffer* KittyB
         if(Selected){
             if(LoadedPairsPerBin[WhichMomBin][WhichIpBin]>=MaxPairsPerBin){
                 Selected = false;
+//printf("LoadedPairsPerBin[WhichMomBin][WhichIpBin]=%u\n",LoadedPairsPerBin[WhichMomBin][WhichIpBin]);
             }
         }
         if(!Selected){
@@ -3406,6 +3419,27 @@ double CATS::EvaluateTheSource(CATSparameters* Pars) const{
     }
 //printf("test\n");
     return ForwardedSource(SourceContext,Pars->GetParameters());
+}
+double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const{
+    if(!ShortRangePotential){
+        return 0;
+    }
+    if(usCh>=NumCh){
+        return 0;
+    }
+    if(usPW>=NumPW[usCh]){
+        return 0;
+    }
+    if(!ShortRangePotential[usCh]){
+        return 0;
+    }
+    if(!ShortRangePotential[usCh][usPW]){
+        return 0;
+    }
+    PotPar[usCh][usPW]->SetVariable(0,Radius,true);
+    PotPar[usCh][usPW]->SetVariable(1,Momentum,true);
+    double* Parameters =  PotPar[usCh][usPW]->GetParameters();
+    return ShortRangePotential[usCh][usPW](Parameters);
 }
 
 CATSelder* CATS::GetTheElder(const double& Momentum){

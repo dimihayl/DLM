@@ -375,13 +375,30 @@ void CatsParticlePair::SetPair(const CatsParticle& particle1, const CatsParticle
     Particle2=particle2;
     ParticleSum=Particle1+Particle2;
     CatsLorentzVector::operator = (Particle1-Particle2);
-
+/*
+printf("Before boost (%i):\n",int(BOOST));
+printf("P1r=(%f; %f; %f; %f)\n",Particle1.GetT(),Particle1.GetX(),Particle1.GetY(),Particle1.GetZ());
+printf(" P1k=(%f; %f; %f; %f)\n",Particle1.GetE(),Particle1.GetPx(),Particle1.GetPy(),Particle1.GetPz());
+printf("P2r=(%f; %f; %f; %f)\n",Particle2.GetT(),Particle2.GetX(),Particle2.GetY(),Particle2.GetZ());
+printf(" P2k=(%f; %f; %f; %f)\n",Particle2.GetE(),Particle2.GetPx(),Particle2.GetPy(),Particle2.GetPz());
+printf("dPr=(%f; %f; %f; %f)\n",GetT(),GetX(),GetY(),GetZ());
+printf(" dPk=(%f; %f; %f; %f)\n",GetE(),GetPx(),GetPy(),GetPz());
+*/
     if(BOOST){
         Particle1.Boost(ParticleSum);
         Particle2.Boost(ParticleSum);
         Boost(ParticleSum);
     }
-
+/*
+printf("After boost:\n");
+printf("P1r=(%f; %f; %f; %f)\n",Particle1.GetT(),Particle1.GetX(),Particle1.GetY(),Particle1.GetZ());
+printf(" P1k=(%f; %f; %f; %f)\n",Particle1.GetE(),Particle1.GetPx(),Particle1.GetPy(),Particle1.GetPz());
+printf("P2r=(%f; %f; %f; %f)\n",Particle2.GetT(),Particle2.GetX(),Particle2.GetY(),Particle2.GetZ());
+printf(" P2k=(%f; %f; %f; %f)\n",Particle2.GetE(),Particle2.GetPx(),Particle2.GetPy(),Particle2.GetPz());
+printf("dPr=(%f; %f; %f; %f)\n",GetT(),GetX(),GetY(),GetZ());
+printf(" dPk=(%f; %f; %f; %f)\n",GetE(),GetPx(),GetPy(),GetPz());
+printf("\n");
+*/
     if(TauCorrection){
         CatsParticle* FirstParticle;
         double deltaT;
