@@ -21,6 +21,7 @@ void DLM_INT_SetFunction(double (*f)(double*), double* par, const unsigned& n){
 double FUNCTION(const double& x){
     if(DLM_INT_TEMP_FUN1) return DLM_INT_TEMP_FUN1(x);
     else if(DLM_INT_TEMP_FUN2 && DLM_INT_TEMP_PAR){
+//printf("x=%f; n=%u\n",x,DLM_INT_TEMP_N);
         DLM_INT_TEMP_PAR[DLM_INT_TEMP_N] = x;
         return DLM_INT_TEMP_FUN2(DLM_INT_TEMP_PAR);
     }
@@ -86,10 +87,13 @@ double DLM_INT_adaptiveSimpsonsAuxWiki(const double& a, const double& b, const d
                          const double& S, const double& fa, const double&fb, const double& fc, const double& bottom) {
   double c = (a + b)/2, h = b - a;
   double d = (a + c)/2, e = (c + b)/2;
+//printf(" FUNCTION(%f)=%f\n",d,FUNCTION(d));
+//printf("  FUNCTION(%f)=%f\n",e,FUNCTION(e));
   double fd = FUNCTION(d), fe = FUNCTION(e);
   double Sleft = (h/12)*(fa + 4*fd + fc);
   double Sright = (h/12)*(fc + 4*fe + fb);
   double S2 = Sleft + Sright;
+
   if (bottom <= 0 || fabs(S2 - S) <= 15*epsilon)   // magic 15 comes from error analysis
     return S2 + (S2 - S)/15;
   return DLM_INT_adaptiveSimpsonsAuxWiki(a, c, epsilon/2, Sleft,  fa, fc, fd, bottom-1) +
@@ -105,6 +109,7 @@ double DLM_INT_aSimpsonWiki(const double& a, const double& b,  // interval [a,b]
   double c = (a + b)/2, h = b - a;
   double fa = FUNCTION(a), fb = FUNCTION(b), fc = FUNCTION(c);
   double S = (h/6)*(fa + 4*fc + fb);
+//printf("a=%f; b=%f\n",a,b);
   return DLM_INT_adaptiveSimpsonsAuxWiki(a, b, epsilon, S, fa, fb, fc, maxRecursionDepth);
 }
 

@@ -86,6 +86,7 @@ double DLM_Random::CauchyR(const unsigned short& dim, const double& mean, const 
 double DLM_Random::StableR(const unsigned short& dim, const double& stability, const double& location, const double& scale, const double& skewness){
     if(!dim) return 0;
     double Result=0;
+//printf("dim=%u; stability=%f; location=%f; scale=%f; skewness=%f\n",dim,stability,location,scale,skewness);
     for(unsigned short us=0; us<dim; us++){
         Result+=pow(Stable(stability,location,scale,skewness),2.);
     }

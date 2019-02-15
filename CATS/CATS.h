@@ -140,6 +140,8 @@ public:
     void SetGridEpsilon(const double& val);
     double GetGridEpsilon() const;
 
+    void SetMomentumDependentSource(const bool& val);
+
     void SetUseAnalyticSource(const bool& val);
     bool GetUseAnalyticSource() const;
 
@@ -460,6 +462,7 @@ protected:
     unsigned short MaxNumThreads;
 
     bool ExcludeFailedConvergence;
+    bool MomDepSource;
 
     //5 = default value
     short GridMinDepth;

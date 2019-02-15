@@ -46,8 +46,10 @@ public:
     void AddSameParameter(const TString& System, const unsigned& WhichPar, const TString& ParentSystem, const unsigned& ParentPar);
     void RemoveSameParameter(const TString& System, const unsigned& WhichPar);
     //returns not just the parent, but parent of the parent of the .....
-    bool GetBaseParameter(const TString& System, const unsigned& WhichPar);
-    bool GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar);
+    int GetBaseParameter(const int& WhichSyst, const int& WhichPar);
+    int GetBaseParameter(const int& WhichSyst, const int& WhichPar, int& ParentSystem, int& ParentPar);
+    int GetBaseParameter(const TString& System, const int& WhichPar);
+    int GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar);
 
     //
     //void SetSameSourceChildren(const TString& WhichSyst, const TString& EqualTo, const int& NumPars);
@@ -152,7 +154,8 @@ private:
     //unsigned SourceAnchoredTo(const);
 
     double EvalGlobal(double* xVal, double* Pars);
-    bool GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar, const TString& StartSystem, const unsigned& StartPar);
+    int GetBaseParameter(const int& WhichSyst, const int& WhichPar, int& ParentSystem, int& ParentPar, const int& StartSystem, const int& StartPar);
+    int GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar, const TString& StartSystem, const int& StartPar);
 
 };
 

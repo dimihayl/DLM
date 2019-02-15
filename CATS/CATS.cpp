@@ -65,6 +65,7 @@ CATS::CATS():
     PoorManRenorm = 1;
     SourceMinRad=0;
     SourceMaxRad=64.*FmToNu;
+    MomDepSource=true;
     NormalizedSource=true;
     MinTotPairMom = -1;
     MaxTotPairMom = 1e100;
@@ -285,6 +286,7 @@ void CATS::DelMomIp(){
     }
     if(kbSourceGrid){
         for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            if(!kbSourceGrid[uMomBin]) break;
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 if(kbSourceGrid[uMomBin][uIpBin]) delete kbSourceGrid[uMomBin][uIpBin];
             }
@@ -836,6 +838,12 @@ void CATS::SetGridEpsilon(const double& val){
 }
 double CATS::GetGridEpsilon() const{
     return GridEpsilon;
+}
+
+void CATS::SetMomentumDependentSource(const bool& val){
+    if(val==MomDepSource) return;
+    MomDepSource = val;
+    SourceGridReady = false;
 }
 
 void CATS::SetMaxPairsPerBin(unsigned mpp){
@@ -2658,15 +2666,17 @@ void CATS::FoldSourceAndWF(){
     double SourceIntCut;
     unsigned short NumThreads = omp_get_num_procs();
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
+    unsigned uMomBinSource;
     #pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        uMomBinSource = MomDepSource?uMomBin:0;
         kCorrFun[uMomBin] = 0;
         kCorrFunErr[uMomBin] = 0;
         for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
             //perform the k,b analysis only for a data-source which has at least 2 b-bins
             if(UseAnalyticSource || NumIpBins<=1) continue;
 
-            if(!kbSourceGrid[uMomBin][uIpBin]){
+            if(!kbSourceGrid[uMomBinSource][uIpBin]){
                 kbCorrFun[uMomBin][uIpBin] = 0;
                 kbCorrFunErr[uMomBin][uIpBin] = 1e6;
                 continue;
@@ -2674,15 +2684,15 @@ void CATS::FoldSourceAndWF(){
             kbCorrFun[uMomBin][uIpBin] = 0;
             kbCorrFunErr[uMomBin][uIpBin] = 0;
 
-            NumGridPts = kbSourceGrid[uMomBin][uIpBin]->GetNumEndNodes();
+            NumGridPts = kbSourceGrid[uMomBinSource][uIpBin]->GetNumEndNodes();
             SourceInt = 0;
-            SourceIntCut = 0;
+            SourceIntCut = 0;uMomBinSource = MomDepSource?uMomBin:0;
             for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
-                double Radius = kbSourceGrid[uMomBin][uIpBin]->GetParValue(uGrid, 0)*FmToNu;
+                double Radius = kbSourceGrid[uMomBinSource][uIpBin]->GetParValue(uGrid, 0)*FmToNu;
                 //this should return zero in case of !ThetaDependentSource,
                 //maybe worth doing a QA to make sure
                 //CosTheta = kbSourceGrid[uMomBin][uIpBin]->GetParValue(uGrid, 1);
-                SourceVal = kbSourceGrid[uMomBin][uIpBin]->GetGridValue(uGrid);
+                SourceVal = kbSourceGrid[uMomBinSource][uIpBin]->GetGridValue(uGrid);
                 if(!SourceVal) continue;
                 SourceInt += SourceVal;
                 if(Radius<SourceMinRad || Radius>SourceMaxRad) {continue;}
@@ -2691,7 +2701,7 @@ void CATS::FoldSourceAndWF(){
                 for(unsigned usCh=0; usCh<NumCh; usCh++) WaveFunVal+=WaveFunction2[uMomBin][uGrid][usCh]*ChannelWeight[usCh];
                 Integrand = SourceVal*WaveFunVal;
                 kbCorrFun[uMomBin][uIpBin] += Integrand;
-                kbCorrFunErr[uMomBin][uIpBin] += pow(Integrand*kbSourceGrid[uMomBin][uIpBin]->GetGridError(uGrid),2);
+                kbCorrFunErr[uMomBin][uIpBin] += pow(Integrand*kbSourceGrid[uMomBinSource][uIpBin]->GetGridError(uGrid),2);
             }//uGrid
 
             //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
@@ -2728,19 +2738,19 @@ void CATS::FoldSourceAndWF(){
         }
 
         if( UseAnalyticSource || NumIpBins<=1 || MixingDepth==1 ){
-            if(!kSourceGrid[uMomBin]){
+            if(!kSourceGrid[uMomBinSource]){
                 kCorrFunErr[uMomBin] = 1e6;
             }
             else{
-                NumGridPts = kSourceGrid[uMomBin]->GetNumEndNodes();
+                NumGridPts = kSourceGrid[uMomBinSource]->GetNumEndNodes();
                 SourceInt = 0;
                 SourceIntCut = 0;
                 for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
-                    double Radius = kSourceGrid[uMomBin]->GetParValue(uGrid, 0)*FmToNu;
+                    double Radius = kSourceGrid[uMomBinSource]->GetParValue(uGrid, 0)*FmToNu;
                     //this should return zero in case of !ThetaDependentSource,
                     //maybe worth doing a QA to make sure
                     //CosTheta = kSourceGrid[uMomBin]->GetParValue(uGrid, 1);
-                    SourceVal = kSourceGrid[uMomBin]->GetGridValue(uGrid);
+                    SourceVal = kSourceGrid[uMomBinSource]->GetGridValue(uGrid);
                     if(!SourceVal) continue;
                     SourceInt += SourceVal;
                     if(Radius<SourceMinRad || Radius>SourceMaxRad) {continue;}
@@ -2749,7 +2759,7 @@ void CATS::FoldSourceAndWF(){
                     for(unsigned usCh=0; usCh<NumCh; usCh++) WaveFunVal+=WaveFunction2[uMomBin][uGrid][usCh]*ChannelWeight[usCh];
                     Integrand = SourceVal*WaveFunVal;
                     kCorrFun[uMomBin] += Integrand;
-                    kCorrFunErr[uMomBin] += pow(Integrand*kSourceGrid[uMomBin]->GetGridError(uGrid),2);
+                    kCorrFunErr[uMomBin] += pow(Integrand*kSourceGrid[uMomBinSource]->GetGridError(uGrid),2);
                 }//uGrid
 
                 //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
@@ -2872,6 +2882,10 @@ void CATS::SetUpSourceGrid(){
 
     //sets up kSourceGrid
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        if(!MomDepSource&&uMomBin>0){
+            kSourceGrid[uMomBin] = NULL;
+            break;
+        }
         if(UseAnalyticSource){
             kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
         }
@@ -2887,6 +2901,7 @@ void CATS::SetUpSourceGrid(){
 
     if(kbSourceGrid){
         for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            if(!kbSourceGrid[uMomBin]) break;
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 if(kbSourceGrid[uMomBin][uIpBin]) delete kbSourceGrid[uMomBin][uIpBin];
             }
@@ -2912,6 +2927,10 @@ void CATS::SetUpSourceGrid(){
 
         kbSourceGrid = new CATSelder** [NumMomBins];
         for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            if(!MomDepSource&&uMomBin>0){
+                kbSourceGrid[uMomBin] = NULL;
+                break;
+            }
             kbSourceGrid[uMomBin] = new CATSelder* [NumIpBins];
             AnaSourcePar->SetVariable(0,GetMomentum(uMomBin),false);
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
@@ -3443,7 +3462,7 @@ double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned sho
 }
 
 CATSelder* CATS::GetTheElder(const double& Momentum){
-    return kSourceGrid[GetMomBin(Momentum)];
+    return kSourceGrid[MomDepSource?GetMomBin(Momentum):0];
 }
 
 void CATS::UpdateCPF(){

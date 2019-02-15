@@ -2,6 +2,9 @@
 #include "DLM_CRAB_PM.h"
 #include "DLM_Integration.h"
 #include "DLM_Random.h"
+#include "DLM_Bessel.h"
+#include "DLM_MathFunctions.h"
+#include "DLM_Histo.h"
 
 #include "math.h"
 
@@ -37,7 +40,16 @@ double CauchySource(double* Pars){
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double& Size = Pars[3];
-    return 2.97*2.*Size*Radius*Radius/PI*pow(Radius*Radius+0.25*2.97*2.97*Size*Size,-2.);
+    return 2.97*2.*Size*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.5*2.97*2.97*Size*Size,-2.);
+}
+
+double CauchySource_v2(double* Pars){
+    //double& Momentum = Pars[0];
+    double& Radius = Pars[1];
+    //double& CosTheta = Pars[2];
+    double& Size = Pars[3];
+    return 12.*Radius*Size*sqrt(2)/(PI*PI*sqrt(Radius*Radius+4.*Size*Size)*(Radius*Radius+6.*Size*Size))*
+            atan(sqrt(2.+0.5*pow(Radius/Size,2.))*Radius/Size/sqrt(2));
 }
 
 double CauchySourceTheta(double* Pars){
@@ -77,6 +89,125 @@ double GaussCauchySource(double* Pars){
             (1.-Weight1)*2.*Size2*Radius*Radius/PI*pow(Radius*Radius+0.25*Size2*Size2,-2.);
 
 }
+
+
+double LevyIntegral3D(double* Pars){
+    //just a dummy, we do not expect angular dependence, but need the memory for the integration variable
+    double& IntVar = Pars[2];
+    double& Radius = Pars[1];
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+    const double Dim = 3;
+    //double RadSzRatio = Radius/Scale;
+    if(Radius==0) return 0;
+    if(IntVar==0) return 0;
+//printf("IntVar=%f; Radius=%f; Scale=%f; Stability=%f\n",IntVar,Radius,Scale,Stability);
+//printf(" DLM_Bessel1(Dim*0.5-1.,Radius*IntVar)=%f\n",DLM_Bessel1(Dim*0.5-1.,Radius*IntVar));
+//double RetVal = pow(Radius*IntVar,Dim*0.5)*DLM_Bessel1(Dim*0.5-1.,Radius*IntVar)*exp(-pow(Scale*2./Stability*IntVar,Stability));
+//printf(" RetVal=%f\n",RetVal);
+    //return IntVar*IntVar/sqrt(IntVar*RadSzRatio)*DLM_Bessel1(0.5,IntVar*RadSzRatio)*exp(-pow(IntVar,Stability));
+    return pow(Radius*IntVar,Dim*0.5)*DLM_Bessel1(Dim*0.5-1.,Radius*IntVar)*exp(-pow(Scale*2./Stability*IntVar,Stability));
+//return RetVal;
+}
+
+//so I take the definition from something called
+//"Multivariate stable densities and distribution functions: general and elliptical case", equation 10
+//the normalization is properly done, however for whatever reason if I simulate R=sqrt(X2+Y2+Z2) with X,Y,Z being Levy,
+//and they are simulated as according to Wikipedia, I do get some difference, which is corrected for by
+//dividing the Scale /= sqrt(Stability).
+//Another funny thing I noticed, if I make R=sqrt((X1-X2)^2+(Y1-Y2)^2+(Z1-Z2)^2), than the resulting distribution can
+//always be modeled by another Levy3D, where Scale *= 2.*pow(Stability,1.5).
+//Effectively to modify this function we need to only make Scale *= 2.*Stability
+//THIS IS ALL IMPLEMENTED IN HERE, SO THAT WE GET THE DISTRIBUTION CORRESPONDING TO R=sqrt((X1-X2)^2+(Y1-Y2)^2+(Z1-Z2)^2)
+double LevySource3D_2particle(double* Pars){
+    double& Radius = Pars[1];
+    //double& Scale = Pars[3];
+    const double Dim = 3;
+    double& Stability = Pars[4];
+//static unsigned NumFunctionCalls=0;
+//NumFunctionCalls++;
+//if(NumFunctionCalls%1000==0)
+//printf("Function call Nr. %u\n",NumFunctionCalls);
+//if(Stability==1.01){
+//printf("Radius=%f; Scale=%f; Stability=%f\n",Pars[1],Pars[3],Pars[4]);
+//}
+
+    if(Stability==1){
+        return CauchySource(Pars);
+    }
+    else if(Stability==2){
+        return GaussSource(Pars);
+    }
+
+    DLM_INT_SetFunction(LevyIntegral3D,Pars,2);
+    if(Radius==0) return 0;
+    //return DLM_INT_aSimpsonWiki(0.,16.+Radius,1e-8,128)*pow(2.*PI*pow(Scale*Scale/3.,3.),-1.5)*4.*PI*Radius*Radius;
+    unsigned NSteps;
+    if(Radius>108) NSteps = 1024;
+    else if(Radius>36) NSteps = 512;
+    else if(Radius>12) NSteps = 256;
+    else if(Radius>4) NSteps = 128;
+    else NSteps = 64;
+
+    //x2+y2+z2=r2 => r2=3x2 x2=r2/3 x2y2z2=r6/27 = r2
+    //return DLM_INT_SimpsonWiki(0.,16.,NSteps)*pow(2.*PI*pow(Scale*Scale/3.,3.),-1.5)*4.*PI*Radius*Radius;
+    double ReturnVal = DLM_INT_SimpsonWiki(0.,16.,NSteps)*2./(pow(2.,Dim*0.5)*exp(gammln(Dim*0.5)));
+//if(ReturnVal!=ReturnVal)
+//printf("ReturnVal=%f\n",ReturnVal);
+    return ReturnVal;
+}
+/*
+double LevySource_A(double* Pars){
+    const unsigned MaxIter = 64;
+    const unsigned MinIter = 4;
+    const double Epsilon = 1e-10;
+    double& Radius = Pars[1];
+    double& Size = Pars[3];
+    double& Stability = Pars[4];
+    double Dim = round(Pars[5]);
+
+    double Result=0;
+    double Increase;
+    double kIter;
+    //double GAMMA;
+
+    if(Stability<=0 || Stability>2) return 0;
+    else if(Radius/Size>3){
+        double k1 = pow(2.,Stability)*sin(PI*Stability*0.5)*exp(gammln((Stability+2.)*0.5))*exp(gammln((Stability+Dim)*0.5))/
+                    (exp(gammln(Dim*0.5))*PI*Stability*0.5);
+        Result = Stability*k1*pow(Size/Radius,Stability)/Radius;
+    }
+    else if(Stability<1){
+
+    }
+    //Cauchy
+    else if(Stability==1){
+
+    }
+    else if(Stability<2){
+        for(unsigned uIter=0; uIter<MaxIter; uIter++){
+            kIter = uIter;
+            Increase=(uIter%2==0?1:-1)*exp(gammln((2.*kIter+Dim)/Stability)-gammln((2.*kIter+Dim)*0.5))*pow(0.5*Radius/Size,2.*kIter+Dim-1.)/
+                        (factrl(uIter));
+            Result+=Increase;
+            if(fabs(Increase/Result)<Epsilon && uIter>=MinIter) {
+                printf("uIter=%u (%f)\n",uIter,Radius);
+                printf(" Increase=%f (%f)\n",Increase,Result);
+
+                break;
+            }
+        }
+        printf(" Result(%f)=%f\n",Radius,Result);
+        Result *= 2./(Stability*Size*exp(gammln(Dim*0.5)));
+        printf(" Result(%f)=%f\n",Radius,Result);
+    }
+    //Gauss
+    else{
+
+    }
+    return Result;
+}
+*/
 
 //a monte-carlo out-side-long Gaussian source. Works very slowly!
 //pars[3] = R_OUT
@@ -758,4 +889,127 @@ double DLM_StableDistribution::Eval(double* Pars){
 //printf("I have been called!\n");
 //printf( "rVal=%f Histo->Eval(rVal)=%f\n",rVal,Histo->Eval(rVal));
     return Histo->Eval(rVal);
+}
+
+
+DLM_CleverLevy::DLM_CleverLevy(){
+    NumPtsStability = 64;
+    MinStability=1;
+    MaxStability=2;
+    NumPtsScale = 128;
+    MinScale=0.25;
+    MaxScale=4;
+    NumPtsRad = 512;
+    MinRad = 0;
+    MaxRad = 64;
+    Histo = NULL;
+}
+DLM_CleverLevy::~DLM_CleverLevy(){
+    if(Histo) {delete Histo;Histo=NULL;}
+}
+void DLM_CleverLevy::InitStability(const unsigned& numPts, const double& minVal, const double& maxVal){
+    Reset();
+    NumPtsStability=numPts;
+    MinStability=minVal;
+    MaxStability=maxVal;
+}
+void DLM_CleverLevy::InitScale(const unsigned& numPts, const double& minVal, const double& maxVal){
+    Reset();
+    NumPtsScale=numPts;
+    MinScale=minVal;
+    MaxScale=maxVal;
+}
+void DLM_CleverLevy::InitRad(const unsigned& numPts, const double& minVal, const double& maxVal){
+    Reset();
+    NumPtsRad=numPts;
+    MinRad=minVal;
+    MaxRad=maxVal;
+}
+double DLM_CleverLevy::Eval(double* Pars){
+    if(!Histo) {Init();}
+    if(!Histo) return -1;
+    double& Radius = Pars[1];
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+    const double RSS[3] = {Radius,Scale,Stability};
+    int RadBin = Histo->GetBin(0,Radius);
+    int ScaleBin = Histo->GetBin(1,Scale);
+    int StabilityBin = Histo->GetBin(2,Stability);
+    unsigned WhichBin[3];
+    double BIN_PARS[5];
+//printf("  Called with: r=%f; σ=%f; α=%f\n",Radius,Scale,Stability);
+//printf("  RadBin=%u; ScaleBin=%u; StabilityBin=%u\n",RadBin,ScaleBin,StabilityBin);
+    for(int iBin0=RadBin-1; iBin0<=RadBin+1; iBin0++){
+        if(iBin0<0||iBin0>=int(Histo->GetNbins(0))) continue;
+        WhichBin[0] = iBin0;
+        BIN_PARS[1] = Histo->GetBinCenter(0,iBin0);
+        for(int iBin1=ScaleBin-1; iBin1<=ScaleBin+1; iBin1++){
+            if(iBin1<0||iBin1>=int(Histo->GetNbins(1))) continue;
+            WhichBin[1] = iBin1;
+            BIN_PARS[3] = Histo->GetBinCenter(1,iBin1);
+            for(int iBin2=StabilityBin-1; iBin2<=StabilityBin+1; iBin2++){
+                if(iBin2<0||iBin2>=int(Histo->GetNbins(2))) continue;
+                WhichBin[2] = iBin2;
+                BIN_PARS[4] = Histo->GetBinCenter(2,iBin2);
+                if(Histo->GetBinContent(WhichBin)>=0.99e6){
+                    #pragma omp critical
+                    {
+//printf("   Setting up bin %i %i %i\n",iBin0,iBin1,iBin2);
+                    Histo->SetBinContent(WhichBin,LevySource3D_2particle(BIN_PARS));
+                    }
+                }
+            }
+        }
+    }
+/*
+printf("  I will try to evaluate at r=%f; σ=%f; α=%f\n",Radius,Scale,Stability);
+printf("  The REAL value is: %f\n",LevySource3D_2particle(Pars));
+printf("  The relevant bins are: %i(%f) %i(%f) %i(%f)\n",
+       RadBin,Histo->GetBinCenter(0,RadBin),
+       ScaleBin,Histo->GetBinCenter(1,ScaleBin),
+       StabilityBin,Histo->GetBinCenter(2,StabilityBin));
+WhichBin[0] = RadBin;
+WhichBin[1] = ScaleBin;
+WhichBin[2] = StabilityBin;
+printf("  The value in this bin is: %f\n",Histo->GetBinContent(WhichBin));
+double PARSTMP[5];
+PARSTMP[1] = Histo->GetBinCenter(0,RadBin);
+PARSTMP[3] = Histo->GetBinCenter(1,ScaleBin);
+PARSTMP[4] = Histo->GetBinCenter(2,StabilityBin);
+printf("  The value in bin SHOULD be: %f\n",LevySource3D_2particle(PARSTMP));
+printf("  The Eval value is: %f\n",Histo->Eval(RSS));
+printf("---------------------------------------------------\n");
+*/
+
+static unsigned NumFunctionCalls=0;
+NumFunctionCalls++;
+if(NumFunctionCalls%10000==0)
+printf("Function call Nr. %u\n",NumFunctionCalls);
+
+    return Histo->Eval(RSS);
+}
+void DLM_CleverLevy::Reset(){
+    if(Histo) {delete Histo;Histo=NULL;}
+}
+void DLM_CleverLevy::Init(){
+    Reset();
+    Histo  = new DLM_Histo<double>();
+    Histo->SetUp(3);
+    if(NumPtsRad==1) {Histo->SetUp(0,NumPtsRad,MinRad,MaxRad);}
+    else{
+        double BinWidth = (MaxRad-MinRad)/double(NumPtsRad-1);
+        Histo->SetUp(0,NumPtsRad,MinRad-BinWidth*0.5,MaxRad+BinWidth*0.5);
+    }
+    if(NumPtsScale==1) {Histo->SetUp(1,NumPtsScale,MinScale,MaxScale);}
+    else{
+        double BinWidth = (MaxScale-MinScale)/double(NumPtsScale-1);
+        Histo->SetUp(1,NumPtsScale,MinScale-BinWidth*0.5,MaxScale+BinWidth*0.5);
+    }
+    if(NumPtsStability==1) {Histo->SetUp(2,NumPtsStability,MinStability,MaxStability);}
+    else{
+        double BinWidth = (MaxStability-MinStability)/double(NumPtsStability-1);
+        Histo->SetUp(2,NumPtsStability,MinStability-BinWidth*0.5,MaxStability+BinWidth*0.5);
+    }
+    Histo->Initialize();
+    Histo->AddToAll(1e6);
 }

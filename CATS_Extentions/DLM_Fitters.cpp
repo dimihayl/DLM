@@ -475,9 +475,10 @@ void DLM_Fitter1::AddSameParameter(const TString& System, const unsigned& WhichP
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", ParentPar);
         return;
     }
+    //this guy is -1 if the system has no parent, else it is WhichParent*NumPar+ParentPar (i.e. the id of the parent parameter)
     ParentParameter[WhichSyst*NumPar+WhichPar] = WhichParent*NumPar+ParentPar;
 
-    if(!GetBaseParameter(System,WhichPar)){
+    if(GetBaseParameter(System,WhichPar)==-2){
         printf("\033[1;33mWARNING:\033[0m You are making a closed circle without a base parameter for %s par%u\n", System.Data(), WhichPar);
         ParentParameter[WhichSyst*NumPar+WhichPar] = -1;
     }
@@ -493,34 +494,100 @@ void DLM_Fitter1::RemoveSameParameter(const TString& System, const unsigned& Whi
     }
     ParentParameter[WhichSyst*NumPar+WhichPar] = -1;
 }
-bool DLM_Fitter1::GetBaseParameter(const TString& System, const unsigned& WhichPar){
-    TString sDUMMY;
-    unsigned uDUMMY;
-    return GetBaseParameter(System,WhichPar,sDUMMY,uDUMMY);
+int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar){
+    int sDUMMY;
+    int uDUMMY;
+    return GetBaseParameter(WhichSyst,WhichPar,sDUMMY,uDUMMY);
 }
-bool DLM_Fitter1::GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar){
-    return GetBaseParameter(System,WhichPar,ParentSystem,ParentPar,System,WhichPar);
+int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar, int& ParentSystem, int& ParentPar){
+    return GetBaseParameter(WhichSyst,WhichPar,ParentSystem,ParentPar,WhichSyst,WhichPar);
 }
-bool DLM_Fitter1::GetBaseParameter(const TString& System, const unsigned& WhichPar, TString& ParentSystem, unsigned& ParentPar, const TString& StartSystem, const unsigned& StartPar){
-    int WhichSyst = GetSystem(System);
+//return -2 is error
+int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar, int& ParentSystem, int& ParentPar, const int& StartSystem, const int& StartPar){
     if(WhichSyst<0){
-        return false;
+        return -2;
     }
-    if(WhichPar>=NumPar){
+    if(WhichPar>=int(NumPar)){
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
-        return false;
+        return -2;
     }
     if(ParentParameter[WhichSyst*NumPar+WhichPar]==-1){
-        ParentSystem = System;
+        ParentSystem = WhichSyst;
         ParentPar = WhichPar;
-        return true;
+        return WhichSyst*NumPar+WhichPar;
     }
     else{
-        unsigned NextSystem = (WhichSyst*NumPar+WhichPar)/WhichSyst;
-        unsigned NextPar = (WhichSyst*NumPar+WhichPar)%(WhichSyst*NumPar);
-        if(NextSystem==StartSystem && NextPar==StartPar) return false;
-        return GetBaseParameter(GetSystem((WhichSyst*NumPar+WhichPar)/WhichSyst),(WhichSyst*NumPar+WhichPar)%(WhichSyst*NumPar),ParentSystem,ParentPar,StartSystem,StartPar);
+        //unsigned NextSystem = (WhichSyst*NumPar+WhichPar)/WhichSyst;
+        //unsigned NextPar = (WhichSyst*NumPar+WhichPar)%(WhichSyst*NumPar);
+        //if(NextSystem==StartSystem && NextPar==StartPar) return false;
+        //return GetBaseParameter(GetSystem((WhichSyst*NumPar+WhichPar)/WhichSyst),(WhichSyst*NumPar+WhichPar)%(WhichSyst*NumPar),ParentSystem,ParentPar,StartSystem,StartPar);
+        int NextPar = ParentParameter[WhichSyst*NumPar+WhichPar];
+        int NextSystem = NextPar/NumPar;
+        //StartSystem StartPar is the original configuration, if we reach that one, we are in a loop
+        if(NextSystem==StartSystem && NextPar==StartPar) return -2;
+        //check the next parent
+        return GetBaseParameter(NextSystem,NextPar,ParentSystem,ParentPar,StartSystem,StartPar);
     }
+}
+
+
+int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar){
+    int WhichSyst = GetSystem(System);
+    if(WhichSyst<0){
+        return -2;
+    }
+    if(WhichPar>=int(NumPar)){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
+        return -2;
+    }
+    return GetBaseParameter(WhichSyst,WhichPar);
+}
+int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar){
+    int WhichSyst = GetSystem(System);
+    if(WhichSyst<0){
+        return -2;
+    }
+    if(WhichPar>=int(NumPar)){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
+        return -2;
+    }
+    int WhichParent = GetSystem(ParentSystem);
+    if(WhichParent<0){
+        return -2;
+    }
+    if(ParentPar>=int(NumPar)){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", ParentPar);
+        return -2;
+    }
+    return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar);
+}
+//figure out which is the parent parameter (recursively, i.e. if the parent has a parent we return that one)
+int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar, const TString& StartSystem, const int& StartPar){
+    int WhichSyst = GetSystem(System);
+    if(WhichSyst<0){
+        return -2;
+    }
+    if(WhichPar>=int(NumPar)){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
+        return -2;
+    }
+    int WhichParent = GetSystem(ParentSystem);
+    if(WhichParent<0){
+        return -2;
+    }
+    if(ParentPar>=int(NumPar)){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", ParentPar);
+        return -2;
+    }
+    int WhichStart = GetSystem(StartSystem);
+    if(WhichStart<0){
+        return -2;
+    }
+    if(StartPar>=int(NumPar)){
+        printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", StartPar);
+        return -2;
+    }
+    return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar,WhichStart,StartPar);
 }
 
 void DLM_Fitter1::SetParameter(const unsigned& WhichSyst, const unsigned& WhichPar, const double& Value, const double& ValueDown, const double& ValueUp){
@@ -1079,6 +1146,10 @@ void DLM_Fitter1::GoBabyGo(){
 //printf(" fixing %u %u %u %u\n",uSyst*NumPar+uPar,uSyst*NumPar+p_pot1,uSyst*NumPar+p_pot2,uSyst*NumPar+p_pot3);
             }
 
+            if(ParentParameter[uSyst*NumPar+uPar]!=-1){
+                FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
+            }
+
             //if kf==kl, than there is an active boundary condition for the linear part of C(k)
             //thus Cl will be determined by the fitter, here we set a dummy value
             if(int(uPar)==p_Cl && FitRange[uSyst][kl]==FitRange[uSyst][kf]){
@@ -1105,8 +1176,8 @@ void DLM_Fitter1::GoBabyGo(){
     }
 
     //HistoGlobal->Fit(FitGlobal,"V, S, N, R, M");
-    //HistoGlobal->Fit(FitGlobal,"S, N, R, M");
-    HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
+    HistoGlobal->Fit(FitGlobal,"S, N, R, M");
+    //HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
     //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
@@ -1187,6 +1258,30 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 
     if(!SystemToFit[WhichSyst]) return 0;
 
+    //we make sure ALL Pars are set to a meaningful value (i.e. in case there is a parent, we substitute the value)
+    for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
+        for(unsigned uPar=0; uPar<NumPar; uPar++){
+            int uParentParameter = GetBaseParameter(uSyst,uPar);
+            Pars[uSyst*NumPar+uPar]=Pars[uParentParameter];
+        }
+    }
+/*
+    for(unsigned uPar=0; uPar<NumPar; uPar++){
+        //if(ParentParameter[WhichSyst*NumPar+uPar]!=-1){
+        int WhichParentParameter = GetBaseParameter(WhichSyst,uPar);
+//printf("hi\n");
+//if(WhichSyst==1){
+//printf("WhichSyst=%u; WhichSyst*NumPar+uPar=%u; WhichParentParameter=%i; Pars[%u]=%f\n",
+//       WhichSyst,WhichSyst*NumPar+uPar,WhichParentParameter,WhichSyst*NumPar+uPar,Pars[WhichSyst*NumPar+uPar]);
+//}
+        if(WhichParentParameter!=int(WhichSyst*NumPar+uPar)){
+            Pars[WhichSyst*NumPar+uPar]=Pars[WhichParentParameter];
+//printf("Pars[%u]=Pars[%i]=%f\n",WhichSyst*NumPar+uPar,WhichParentParameter,Pars[WhichParentParameter]);
+        }
+    }
+*/
+
+
     //determine if we are in the femto region. If false => we are in the linear or flat region
     bool FemtoRegion = (Momentum<=FitRange[WhichSyst][kf]);
     //loop over all systems that may need to have their source size adjusted
@@ -1228,7 +1323,6 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 //printf(" uPotential=%u; uPar=%u;  --> %e\n",uPotential,uPar,Pars[ParentPotential[uPotential]*NumPar+p_pot0+uPar]);
         }
     }
-
 
 //usleep(2e6);
 
