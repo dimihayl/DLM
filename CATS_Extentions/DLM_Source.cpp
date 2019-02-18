@@ -19,6 +19,7 @@ double GaussSourceTF1(double* x, double* Pars){
     return GaussSource(Pars);
 }
 
+//2-particle
 double GaussSource(double* Pars){
     //double& Momentum = Pars[0];
     double& Radius = Pars[1];
@@ -35,12 +36,13 @@ double GaussSourceTheta(double* Pars){
 }
 
 //double CauchySource(const double& Radius, const double& Size){
+//single particle
 double CauchySource(double* Pars){
     //double& Momentum = Pars[0];
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double& Size = Pars[3];
-    return 2.97*2.*Size*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.5*2.97*2.97*Size*Size,-2.);
+    return 2.97*Size*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.125*2.97*2.97*Size*Size,-2.);
 }
 
 double CauchySource_v2(double* Pars){
@@ -91,7 +93,7 @@ double GaussCauchySource(double* Pars){
 }
 
 
-double LevyIntegral3D(double* Pars){
+double LevyIntegral3D_2particle(double* Pars){
     //just a dummy, we do not expect angular dependence, but need the memory for the integration variable
     double& IntVar = Pars[2];
     double& Radius = Pars[1];
@@ -114,15 +116,16 @@ double LevyIntegral3D(double* Pars){
 //"Multivariate stable densities and distribution functions: general and elliptical case", equation 10
 //the normalization is properly done, however for whatever reason if I simulate R=sqrt(X2+Y2+Z2) with X,Y,Z being Levy,
 //and they are simulated as according to Wikipedia, I do get some difference, which is corrected for by
-//dividing the Scale /= sqrt(Stability).
-//Another funny thing I noticed, if I make R=sqrt((X1-X2)^2+(Y1-Y2)^2+(Z1-Z2)^2), than the resulting distribution can
-//always be modeled by another Levy3D, where Scale *= 2.*pow(Stability,1.5).
-//Effectively to modify this function we need to only make Scale *= 2.*Stability
+//dividing the Scale /= sqrt(Stability) (of equation 10).
+//Another funny thing I noticed, if you simulate R=sqrt(X2+Y2+Z2) and correct with Scale *= 2./sqrt(Stability),
+//you end up with the distribution of R=sqrt((X1-X2)^2+(Y1-Y2)^2+(Z1-Z2)^2).
+//Effectively to modify this function we need to only make Scale *= 2./Stability
 //THIS IS ALL IMPLEMENTED IN HERE, SO THAT WE GET THE DISTRIBUTION CORRESPONDING TO R=sqrt((X1-X2)^2+(Y1-Y2)^2+(Z1-Z2)^2)
 double LevySource3D_2particle(double* Pars){
     double& Radius = Pars[1];
     //double& Scale = Pars[3];
     const double Dim = 3;
+    double& Scale = Pars[3];
     double& Stability = Pars[4];
 //static unsigned NumFunctionCalls=0;
 //NumFunctionCalls++;
@@ -133,13 +136,13 @@ double LevySource3D_2particle(double* Pars){
 //}
 
     if(Stability==1){
-        return CauchySource(Pars);
+        return 2.97*2.*Scale*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.5*2.97*2.97*Scale*Scale,-2.);
     }
     else if(Stability==2){
-        return GaussSource(Pars);
+        return 4.*PI*Radius*Radius*pow(4.*PI*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(4.*Scale*Scale));
     }
 
-    DLM_INT_SetFunction(LevyIntegral3D,Pars,2);
+    DLM_INT_SetFunction(LevyIntegral3D_2particle,Pars,2);
     if(Radius==0) return 0;
     //return DLM_INT_aSimpsonWiki(0.,16.+Radius,1e-8,128)*pow(2.*PI*pow(Scale*Scale/3.,3.),-1.5)*4.*PI*Radius*Radius;
     unsigned NSteps;
@@ -156,6 +159,83 @@ double LevySource3D_2particle(double* Pars){
 //printf("ReturnVal=%f\n",ReturnVal);
     return ReturnVal;
 }
+
+double LevyIntegral3D_single(double* Pars){
+    //just a dummy, we do not expect angular dependence, but need the memory for the integration variable
+    double& IntVar = Pars[2];
+    double& Radius = Pars[1];
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+    const double Dim = 3;
+    if(Radius==0) return 0;
+    if(IntVar==0) return 0;
+    return pow(Radius*IntVar,Dim*0.5)*DLM_Bessel1(Dim*0.5-1.,Radius*IntVar)*exp(-pow(Scale/sqrt(Stability)*IntVar,Stability));
+}
+//using this function, we get the 3D Levy distribution (single particle)
+double LevySource3D_single(double* Pars){
+    double& Radius = Pars[1];
+    const double Dim = 3;
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+
+    if(Stability==1){
+        return 2.97*Scale*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.125*2.97*2.97*Scale*Scale,-2.);
+    }
+    else if(Stability==2){
+        return 4.*PI*Radius*Radius*pow(2.*PI*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(2.*Scale*Scale));
+    }
+
+    DLM_INT_SetFunction(LevyIntegral3D_single,Pars,2);
+    if(Radius==0) return 0;
+    unsigned NSteps;
+    if(Radius>108) NSteps = 1024;
+    else if(Radius>36) NSteps = 512;
+    else if(Radius>12) NSteps = 256;
+    else if(Radius>4) NSteps = 128;
+    else NSteps = 64;
+
+    double ReturnVal = DLM_INT_SimpsonWiki(0.,16.,NSteps)*2./(pow(2.,Dim*0.5)*exp(gammln(Dim*0.5)));
+    return ReturnVal;
+}
+
+double LevyIntegral3D(double* Pars){
+    //just a dummy, we do not expect angular dependence, but need the memory for the integration variable
+    double& IntVar = Pars[2];
+    double& Radius = Pars[1];
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+    const double Dim = 3;
+    if(Radius==0) return 0;
+    if(IntVar==0) return 0;
+    return pow(Radius*IntVar,Dim*0.5)*DLM_Bessel1(Dim*0.5-1.,Radius*IntVar)*exp(-pow(Scale*IntVar,Stability));
+}
+//using this function, we get the 3D Levy distribution (single particle)
+double LevySource3D(double* Pars){
+    double& Radius = Pars[1];
+    const double Dim = 3;
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+
+    if(Stability==1){
+        return 2.97*Scale*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.125*2.97*2.97*Scale*Scale,-2.);
+    }
+    else if(Stability==2){
+        return 4.*PI*Radius*Radius*pow(4.*PI*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(4.*Scale*Scale));
+    }
+
+    DLM_INT_SetFunction(LevyIntegral3D,Pars,2);
+    if(Radius==0) return 0;
+    unsigned NSteps;
+    if(Radius>108) NSteps = 1024;
+    else if(Radius>36) NSteps = 512;
+    else if(Radius>12) NSteps = 256;
+    else if(Radius>4) NSteps = 128;
+    else NSteps = 64;
+
+    double ReturnVal = DLM_INT_SimpsonWiki(0.,16.,NSteps)*2./(pow(2.,Dim*0.5)*exp(gammln(Dim*0.5)));
+    return ReturnVal;
+}
+
 /*
 double LevySource_A(double* Pars){
     const unsigned MaxIter = 64;
@@ -903,6 +983,7 @@ DLM_CleverLevy::DLM_CleverLevy(){
     MinRad = 0;
     MaxRad = 64;
     Histo = NULL;
+    Type = 1;
 }
 DLM_CleverLevy::~DLM_CleverLevy(){
     if(Histo) {delete Histo;Histo=NULL;}
@@ -924,6 +1005,17 @@ void DLM_CleverLevy::InitRad(const unsigned& numPts, const double& minVal, const
     NumPtsRad=numPts;
     MinRad=minVal;
     MaxRad=maxVal;
+}
+void DLM_CleverLevy::InitType(const int& type){
+    if(type<0 || type>1) Type = 1;
+    Type = type;
+}
+double DLM_CleverLevy::RootEval(double* x, double* Pars){
+    double PARS[5];
+    PARS[1] = *x;
+    PARS[3] = Pars[0];
+    PARS[4] = Pars[1];
+    return Eval(PARS);
 }
 double DLM_CleverLevy::Eval(double* Pars){
     if(!Histo) {Init();}
@@ -955,7 +1047,9 @@ double DLM_CleverLevy::Eval(double* Pars){
                     #pragma omp critical
                     {
 //printf("   Setting up bin %i %i %i\n",iBin0,iBin1,iBin2);
-                    Histo->SetBinContent(WhichBin,LevySource3D_2particle(BIN_PARS));
+                    if(Type==0) {Histo->SetBinContent(WhichBin,LevySource3D_single(BIN_PARS));}
+                    else if(Type==1) {Histo->SetBinContent(WhichBin,LevySource3D_2particle(BIN_PARS));}
+                    else {Histo->SetBinContent(WhichBin,LevySource3D(BIN_PARS));}
                     }
                 }
             }
@@ -981,10 +1075,10 @@ printf("  The Eval value is: %f\n",Histo->Eval(RSS));
 printf("---------------------------------------------------\n");
 */
 
-static unsigned NumFunctionCalls=0;
-NumFunctionCalls++;
-if(NumFunctionCalls%10000==0)
-printf("Function call Nr. %u\n",NumFunctionCalls);
+//static unsigned NumFunctionCalls=0;
+//NumFunctionCalls++;
+//if(NumFunctionCalls%10000==0)
+//printf("Function call Nr. %u\n",NumFunctionCalls);
 
     return Histo->Eval(RSS);
 }

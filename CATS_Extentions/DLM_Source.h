@@ -16,6 +16,8 @@ double DoubleGaussSource(double* Pars);
 double GaussCauchySource(double* Pars);
 //double LevyIntegral1D(double* Pars);
 double LevySource3D_2particle(double* Pars);
+double LevySource3D_single(double* Pars);
+double LevySource3D(double* Pars);
 //double LevySource_A(double* Pars);
 //a monte-carlo out-side-long Gaussian source. Works very slowly!
 double GaussOSL_MC(double* Pars);
@@ -112,10 +114,16 @@ public:
     DLM_CleverLevy();
     ~DLM_CleverLevy();
     double Eval(double* Pars);
+    double RootEval(double* x, double* Pars);
     void InitStability(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitScale(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitRad(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitType(const int& type);
 private:
+    //0 = single particle
+    //1 = pair
+    //2 = Nolan notation
+    int Type;
     unsigned NumPtsStability;
     unsigned NumPtsScale;
     unsigned NumPtsRad;

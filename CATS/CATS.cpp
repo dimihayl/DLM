@@ -2708,6 +2708,10 @@ void CATS::FoldSourceAndWF(){
             //here this is corrected for
             if(SourceInt>1+1e-4){
                 printf("\033[1;33mWARNING:\033[0m The source had to be renormalized, please check the validity of your input function!\n");
+if(AnaSourcePar)
+printf("AnaSourcePar: p0=%e; p1=%e",AnaSourcePar->GetParameter(0),AnaSourcePar->GetParameter(1));
+if(ForwardedSourcePar)
+printf("ForwardedSourcePar: p0=%e; p1=%e",ForwardedSourcePar->GetParameter(0),ForwardedSourcePar->GetParameter(1));
                 kbCorrFun[uMomBin][uIpBin] /= SourceInt;
                 kbCorrFunErr[uMomBin][uIpBin] = sqrt(kbCorrFunErr[uMomBin][uIpBin])/SourceInt;
                 SourceIntCut/=SourceInt;
@@ -2767,6 +2771,10 @@ void CATS::FoldSourceAndWF(){
                 if(SourceInt>1+1e-4){
                     printf("\033[1;33mWARNING:\033[0m The source had to be renormalized, please check the validity of your input function!\n");
 printf(" SourceInt=%f\n",SourceInt);
+if(AnaSourcePar)
+printf("AnaSourcePar: p0=%e; p1=%e\n",AnaSourcePar->GetParameter(0),AnaSourcePar->GetParameter(1));
+if(ForwardedSourcePar)
+printf("ForwardedSourcePar: p0=%e; p1=%e\n",ForwardedSourcePar->GetParameter(0),ForwardedSourcePar->GetParameter(1));
                     kCorrFun[uMomBin] /= SourceInt;
                     kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])/SourceInt;
                     SourceIntCut/=SourceInt;

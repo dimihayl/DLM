@@ -563,7 +563,7 @@ double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
 
     const double mpihal = 146.;
     const double hcbar = 197.3;
-    const double mpihalfm = mpihal/hcbar;
+    double mpihalfm = mpihal/hcbar;
 
     double B1;
     double B2;
@@ -599,12 +599,35 @@ double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
           B3 = -272.0;
           B4 = 0.76;
             break;
+        //potential I
+        case 121 :
+            B1 = -248.198;
+            B2 = 150.475;
+            B3 = -157.83;
+            B4 = 2.89924;
+            mpihalfm = 1.6;
+            break;
+        //should be same as 12, it is not!!?? (potential II)
+        case 122 :
+            B1 = -248.198;
+            B2 = 150.475;
+            B3 = -157.83;
+            B4 = 2.89924;
+            mpihalfm = 1.09929;
+            break;
+        //potential III (most binding)
+        case 123 :
+            B1 = -248.198;
+            B2 = 150.475;
+            B3 = -157.83;
+            B4 = 2.89924;
+            mpihalfm = 0.6;
+            break;
         default :
             return 0;
         }
  //f(x) = (x > 0 ? a*exp(-b*x*x)+c*(1-exp(-d*x*x))**1*(exp(-e*x)/x)**1 : a) #  for 1S0 effective
         Result = B1*exp(-B2*rad2)+B3*(1.-exp(-B4*rad2))*exp(-2.0*mpihalfm*rad)/rad2;
-
         return Result;
 }
 

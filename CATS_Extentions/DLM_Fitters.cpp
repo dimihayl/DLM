@@ -1261,6 +1261,9 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     //we make sure ALL Pars are set to a meaningful value (i.e. in case there is a parent, we substitute the value)
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         for(unsigned uPar=0; uPar<NumPar; uPar++){
+            if(FixPar[uSyst][uPar]){
+                Pars[uSyst*NumPar+uPar]=ParValue[uSyst][uPar];
+            }
             int uParentParameter = GetBaseParameter(uSyst,uPar);
             Pars[uSyst*NumPar+uPar]=Pars[uParentParameter];
         }
