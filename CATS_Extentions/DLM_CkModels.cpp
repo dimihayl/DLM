@@ -459,7 +459,6 @@ double Lednicky_SingletTriplet(const double& Momentum, const double* SourcePar, 
     const Double_t mass_sigmaplus = 1.189377;
     const Double_t mass_sigma0 = 1.192642;
 
-
     Double_t mu1 = mass_proton*mass_sigma0/(mass_proton+mass_sigma0);
     Double_t mu2 = mass_neutron*mass_sigmaplus/(mass_neutron+mass_sigmaplus);
     //*****************************************
@@ -512,11 +511,11 @@ double Lednicky_SingletTriplet(const double& Momentum, const double* SourcePar, 
 
   //elastic part of the correlation function(1 -> 1):
   //*********************************************
-    Double_t corr_1s0 = 0.5*f11_1s0.Rho2()/(RG*RG)* + 2.*f11_1s0.Re()/(TMath::Sqrt(TMath::Pi())*RG)*fF1 - f11_1s0.Im()/RG * fF2;
+    Double_t corr_1s0 = 0.5*f11_1s0.Rho2()/(RG*RG) + 2.*f11_1s0.Re()/(TMath::Sqrt(TMath::Pi())*RG)*fF1 - f11_1s0.Im()/RG * fF2;
     corr_1s0 *= 0.25;
 
 
-    Double_t corr_3s1 = 0.5*f11_3s1.Rho2()/(RG*RG)* + 2.*f11_3s1.Re()/(TMath::Sqrt(TMath::Pi())*RG)*fF1 - f11_3s1.Im()/RG * fF2;
+    Double_t corr_3s1 = 0.5*f11_3s1.Rho2()/(RG*RG) + 2.*f11_3s1.Re()/(TMath::Sqrt(TMath::Pi())*RG)*fF1 - f11_3s1.Im()/RG * fF2;
     corr_3s1 *= 0.75;
     //*********************************************
 
