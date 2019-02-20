@@ -291,10 +291,10 @@ public:
         CleanUp();
 
         Dim = dim;
-        BinRange = new Type* [Dim];
+        BinRange = new double* [Dim];
         BinValue = NULL;
         BinError = NULL;
-        BinCenter = new Type* [Dim];
+        BinCenter = new double* [Dim];
         NumBins = new unsigned [Dim];
         //xValue = new Type* [Dim];
         //xBin = new unsigned* [Dim];
@@ -313,7 +313,7 @@ public:
         }
         InitPER();
     }
-    void SetUp(const unsigned short& sDim, const unsigned& numbins, const Type* bins){
+    void SetUp(const unsigned short& sDim, const unsigned& numbins, const double* bins){
         if(sDim>=Dim) return;
         if(!numbins){
             printf("\033[1;31mERROR:\033[0m DLM_Histo cannot have 0 bins (holds true for each axis)!\n");
@@ -331,15 +331,15 @@ public:
         if(NumBins[sDim]!=numbins){
             CleanUp(sDim);
         }
-        if(!BinRange[sDim]) BinRange[sDim] = new Type[numbins+1];
-        if(!BinCenter[sDim]) BinCenter[sDim] = new Type[numbins];
+        if(!BinRange[sDim]) BinRange[sDim] = new double[numbins+1];
+        if(!BinCenter[sDim]) BinCenter[sDim] = new double[numbins];
         NumBins[sDim] = numbins;
         for(unsigned uBin=0; uBin<=NumBins[sDim]; uBin++){
             BinRange[sDim][uBin] = bins[uBin];
             if(uBin) BinCenter[sDim][uBin-1] = (bins[uBin-1]+bins[uBin])*0.5;
         }
     }
-    void SetUp(const unsigned short& sDim, const unsigned& numbins, const Type& xmin, const Type& xmax){
+    void SetUp(const unsigned short& sDim, const unsigned& numbins, const double& xmin, const double& xmax){
         if(sDim>=Dim) return;
         if(!numbins){
             printf("\033[1;31mERROR:\033[0m DLM_Histo cannot have 0 bins (holds true for each axis)!\n");
@@ -352,8 +352,8 @@ public:
         if(NumBins[sDim]!=numbins){
             CleanUp(sDim);
         }
-        if(!BinRange[sDim]) BinRange[sDim] = new Type[numbins+1];
-        if(!BinCenter[sDim]) BinCenter[sDim] = new Type[numbins];
+        if(!BinRange[sDim]) BinRange[sDim] = new double[numbins+1];
+        if(!BinCenter[sDim]) BinCenter[sDim] = new double[numbins];
         NumBins[sDim] = numbins;
         if(NumBins[sDim]==1){
             BinRange[sDim][0] = xmin;
@@ -361,9 +361,9 @@ public:
             BinCenter[sDim][0] = (xmin+xmax)*0.5;
         }
         else{
-            Type BinWidth = (xmax-xmin)/Type(NumBins[sDim]);
+            double BinWidth = (xmax-xmin)/double(NumBins[sDim]);
             for(unsigned uBin=0; uBin<=NumBins[sDim]; uBin++){
-                BinRange[sDim][uBin] = xmin + Type(uBin)*BinWidth;
+                BinRange[sDim][uBin] = xmin + double(uBin)*BinWidth;
                 if(uBin) BinCenter[sDim][uBin-1] = (BinRange[sDim][uBin-1]+BinRange[sDim][uBin])*0.5;
             }
         }
@@ -487,7 +487,7 @@ public:
             BinError[uBin] /= BinSize;
         }
     }
-    void RescaleAxis(const unsigned short& sDim, const Type& scale, const bool& binwidth){
+    void RescaleAxis(const unsigned short& sDim, const double& scale, const bool& binwidth){
         if(!Initialized) {InitWarning(); return;}
         if(sDim>=Dim) return;
         if(!scale) return;
@@ -529,7 +529,7 @@ public:
         BinValue[WhichTotBin]+=Val;
         BinError[WhichTotBin]=Type(sqrt(double(BinError[WhichTotBin]*BinError[WhichTotBin])+double(Err*Err)));
     }
-    void AddAt(const Type* AxisValue, const Type& Val=1){
+    void AddAt(const double* AxisValue, const Type& Val=1){
         if(!Initialized) {InitWarning(); return;}
         unsigned* WhichBin = new unsigned [Dim];
         for(unsigned short sDim=0; sDim<Dim; sDim++){
@@ -554,7 +554,7 @@ public:
         }
     }
 
-    void SetBinCenter(const unsigned short& sDim, const unsigned& WhichBin, const Type& Val){
+    void SetBinCenter(const unsigned short& sDim, const unsigned& WhichBin, const double& Val){
         if(!Initialized) {InitWarning(); return;}
         if(sDim>=Dim)return;
         if(WhichBin>=NumBins[sDim])return;
@@ -563,7 +563,7 @@ public:
         BinCenter[sDim][WhichBin] = Val;
     }
 
-    Type GetBinCenter(const unsigned short& sDim, const unsigned& WhichBin) const{
+    double GetBinCenter(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim)return 0;
         if(WhichBin>=NumBins[sDim])return 0;
@@ -592,27 +592,27 @@ public:
     //}
 
 
-    Type GetBinLowEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
+    double GetBinLowEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
         if(WhichBin>=NumBins[sDim]) return 0;
         return BinRange[sDim][WhichBin];
     }
-    Type GetBinUpEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
+    double GetBinUpEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
         if(WhichBin>=NumBins[sDim]) return 0;
         return BinRange[sDim][WhichBin+1];
     }
-    Type GetBinSize(const unsigned short& sDim, const unsigned& WhichBin) const{
+    double GetBinSize(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
         if(WhichBin>=NumBins[sDim]) return 0;
 //printf("sDim=%u; WhichBin=%u; BR1=%f; BR0=%f\n",sDim,WhichBin,BinRange[sDim][WhichBin+1],BinRange[sDim][WhichBin]);
         return (BinRange[sDim][WhichBin+1]-BinRange[sDim][WhichBin]);
     }
-    Type GetBinSize(const unsigned& WhichTotBin){
-        Type BinSize = 1;
+    double GetBinSize(const unsigned& WhichTotBin){
+        double BinSize = 1;
         unsigned* WhichBin = new unsigned [Dim];
         GetBinCoordinates(WhichTotBin,WhichBin);
         for(unsigned short sDim=0; sDim<Dim; sDim++){
@@ -622,7 +622,7 @@ public:
         return BinSize;
     }
 
-    unsigned GetBin(const unsigned short& sDim, const Type& xVal) const{
+    unsigned GetBin(const unsigned short& sDim, const double& xVal) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
         if(NumBins[sDim]<=1) return 0;
@@ -651,13 +651,13 @@ public:
         }
     }
 
-    Type Eval(const Type* xVal) const{
+    Type Eval(const double* xVal) const{
         if(!Initialized) {InitWarning(); return 0;}
         //this is here to make it thread-safe, but maybe hinders performance???
-        Type* xValue1 = new Type [Dim];
-        Type* xValue2 = new Type [Dim];
-        Type* DeltaX1 = new Type [Dim];
-        Type* DeltaX2 = new Type [Dim];
+        double* xValue1 = new double [Dim];
+        double* xValue2 = new double [Dim];
+        double* DeltaX1 = new double [Dim];
+        double* DeltaX2 = new double [Dim];
         unsigned* xBin1 = new unsigned [Dim];
         unsigned* xBin2 = new unsigned [Dim];
         //Type* FunctionValue1 = new Type [Dim];
@@ -974,11 +974,11 @@ protected:
     unsigned short Dim;
     unsigned TotNumBins;
     unsigned* NumBins;
-    Type** BinRange;
+    double** BinRange;
     //the last two bins are under/overflow
     Type* BinValue;
     Type* BinError;
-    Type** BinCenter;
+    double** BinCenter;
 
     unsigned NumPermutations;
     char** PER;

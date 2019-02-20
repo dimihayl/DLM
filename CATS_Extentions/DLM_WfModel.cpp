@@ -4,6 +4,7 @@
 #include <math.h>
 #include "DLM_WfModel.h"
 #include "CATS.h"
+#include "DLM_Histo.h"
 
 //for testing
 //#include <unistd.h>
@@ -1616,7 +1617,7 @@ void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, comp
 
 
 //! WE SHOULD SET UP KITTY AT SOME POINT
-void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
+void InitESC16(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
 
 
     //double kMin = Kitty.GetMomBinLowEdge(0);
@@ -1745,7 +1746,7 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
             }
             MomBin = Kitty.GetMomBin(fMomentum);
             if(MomBin!=uFile%(NumMomBins)){
-                printf("\033[1;31mERROR:\033[0m Bug in InitESC08\n");
+                printf("\033[1;31mERROR:\033[0m Bug in InitESC16\n");
                 break;
             }
             // mom/ch/pw/rad
@@ -1776,8 +1777,8 @@ void InitESC08(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFu
 
 
 //! WE SHOULD SET UP KITTY AT SOME POINT
-void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
-//void InitESC08_v2(const double& MaxMomentum){
+void InitESC16_v2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins, const double& MaxMomentum){
+//void InitESC16_v2(const double& MaxMomentum){
     const unsigned short NumChannels = 4;
     const unsigned short NumPwPerCh = 1;
     unsigned short NumMomBins = 36;
@@ -1931,7 +1932,7 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
             }
             MomBin = Kitty.GetMomBin(fMomentum);
             if(MomBin!=uFile%(NumMomBins)){
-                printf("\033[1;31mERROR:\033[0m Bug in InitESC08\n");
+                printf("\033[1;31mERROR:\033[0m Bug in InitESC16\n");
                 break;
             }
             // mom/ch/pw/rad
@@ -1964,6 +1965,192 @@ void InitESC08_v2(const char* InputFolder, CATS& Kitty, complex<double>***** Wav
 //printf("hhhhhhhhhhhh\n");
 
 }
+
+void InitESC16_IS(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double** RadBins, unsigned& NumRadBins){
+
+    const unsigned short NumChannels = 4;
+    const unsigned short NumPwPerCh = 1;
+
+    const unsigned NumTomMomBins = 21;
+    double* TomMomentum = new double [NumTomMomBins];
+    double* TomMomentumBins = new double [NumTomMomBins+1];
+
+    double* pLab = new double [NumTomMomBins];
+    pLab[0] = 5;
+    pLab[1] = 50;
+    for(unsigned uBin=2; uBin<NumTomMomBins; uBin++){
+        pLab[uBin] = pLab[uBin-1]+50;
+    }
+
+    //we assume the proton is at rest?
+    const double Mass_p = 938.272;
+    const double Mass_Xim = 1321.7;
+    for(unsigned uBin=0; uBin<NumTomMomBins; uBin++){
+        TomMomentum[uBin] = sqrt(pow(Mass_p*pLab[uBin],2)/(pow(Mass_p,2)+pow(Mass_Xim,2)+2*Mass_p*sqrt(pow(Mass_Xim,2)+pow(pLab[uBin],2))));
+    }
+    TomMomentumBins[0]=0;
+    for(unsigned short uBin=0; uBin<NumTomMomBins-1; uBin++){
+        TomMomentumBins[uBin+1] = (TomMomentum[uBin]+TomMomentum[uBin+1])*0.5;
+    }
+    TomMomentumBins[NumTomMomBins] = TomMomentum[NumTomMomBins-1]+(TomMomentum[NumTomMomBins-1]-TomMomentumBins[NumTomMomBins-1]);
+
+    const unsigned NumRadiusBins = 300;
+    DLM_Histo<double> DimiHisto[NumChannels];
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        DimiHisto[uCh].SetUp(2);
+        //Dim = 0 => r
+        //Dim = 1 => k
+        DimiHisto[uCh].SetUp(0,NumRadiusBins,-0.025,14.975);
+        DimiHisto[uCh].SetUp(1,NumTomMomBins,TomMomentumBins);
+        DimiHisto[uCh].Initialize();
+        for(unsigned short uBin=0; uBin<NumTomMomBins; uBin++){
+            DimiHisto[uCh].SetBinCenter(1,uBin,TomMomentum[uBin]);
+        }
+    }
+
+    const unsigned NumDummyLines=32;
+    const unsigned NumBufferLines=2;
+    const unsigned NumCol=10;
+    const unsigned NumRow=29;
+    const unsigned NumFuckedUpEntriesAtTheEnd=1;
+
+    const unsigned NumSpinChannels = 2;
+    const unsigned NumFiles = 2;
+
+    char** InputFileName = new char* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char [512];
+        strcpy(InputFileName[0],InputFolder);
+    }
+
+    strcat(InputFileName[0],"xnwave.ich=0.ic=0.l=0.s=0-1");
+    strcat(InputFileName[1],"xnwave.ich=1.ic=0.l=0.s=0-1");
+
+    unsigned WhichSpin=0;
+    unsigned WhichIsospin=0;
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        WhichIsospin = uFile;
+        FILE *InFile;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            return;
+        }
+        fseek ( InFile , 0 , SEEK_END );
+        fseek ( InFile , 0 , SEEK_SET );
+        char* cdummy = new char [512];
+        //Read the header lines
+        for(unsigned short us=0; us<NumDummyLines; us++){
+            if(!fgets(cdummy, 511, InFile)) continue;
+        }
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return;
+        }
+
+        double Values[NumCol];
+        unsigned WhichBin[2];
+        WhichBin[0]=0;
+        WhichBin[1]=0;
+        while(!feof(InFile)){
+            if(WhichBin[1]>=NumTomMomBins) {WhichBin[1]=0; WhichSpin=1;}
+            for(unsigned uBuffer=0; uBuffer<NumBufferLines; uBuffer++){
+                fgets(cdummy, 511, InFile);
+            }
+            for(unsigned uRow=0; uRow<NumRow; uRow++){
+                fgets(cdummy, 511, InFile);
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f",
+                   &Values[0],&Values[1],Values[2],Values[3],Values[4],
+                   &Values[5],&Values[6],Values[7],Values[8],Values[9]);
+                for(unsigned uCol=0; uCol<NumCol; uCol++){
+                    WhichBin[0] = uRow*NumCol+uCol;
+                    DimiHisto[WhichIsospin*NumSpinChannels+WhichSpin].SetBinContent(WhichBin,Values[uCol]);
+                }
+            }
+            WhichBin[1]++;
+        }
+        delete [] cdummy;
+    }
+
+
+    unsigned NumMomBins = Kitty.GetNumMomBins();
+
+    double* Momentum = new double [NumMomBins];
+    double* MomentumBins = new double [NumMomBins+1];
+
+    for(unsigned uMomBin=0; uMomBin<=NumMomBins; uMomBin++){
+        if(uMomBin!=NumMomBins){
+            Momentum[uMomBin] = Kitty.GetMomentum(uMomBin);
+            MomentumBins[uMomBin] = Kitty.GetMomBinLowEdge(uMomBin);
+        }
+        else{
+            MomentumBins[uMomBin] = Kitty.GetMomBinUpEdge(NumMomBins-1);
+        }
+    }
+
+    NumRadBins = NumRadiusBins;
+    RadBins[0] = new double [NumRadBins+1];
+    for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+        if(uRad!=NumRadBins){RadBins[0][uRad] = DimiHisto[0].GetBinLowEdge(0,uRad);}
+        else{RadBins[0][uRad] = DimiHisto[0].GetBinUpEdge(0,NumRadBins-1);}
+    }
+
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
+    double RadMom[2];
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
+        for(unsigned usCh=0; usCh<NumChannels; usCh++){
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
+            for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
+                for(unsigned uRad=0; uRad<NumRadBins; uRad++){
+                    RadMom[0] = DimiHisto[0].GetBinCenter(0,uRad);
+                    RadMom[1] = Momentum[uMomBin];
+                    WaveFunctionU[0][uMomBin][usCh][usPw][uRad] = RadMom[0]*DimiHisto[usCh].Eval(RadMom);
+                }
+            }
+        }
+    }
+    Kitty.SetNumChannels(NumChannels);
+    //0 = I0S0
+    //1 = I0S1
+    //2 = I1S0
+    //3 = I1S1
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        Kitty.SetNumPW(uCh,1);
+        Kitty.SetChannelWeight(uCh,uCh%2==0?1./8.:3./8.);
+        Kitty.SetSpin(uCh,uCh%2==0?0:1);
+    }
+
+    Kitty.SetQ1Q2(-1);
+    Kitty.SetPdgId(2212, 3312);
+    Kitty.SetRedMass( Mass_p*Mass_Xim/(Mass_p+Mass_Xim) );
+
+    for(unsigned uMomBin=0; uMomBin<=NumMomBins; uMomBin++){
+        Kitty.UseExternalWaveFunction(uMomBin,0,0,WaveFunctionU[0][uMomBin][0][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uMomBin,1,0,WaveFunctionU[0][uMomBin][1][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uMomBin,2,0,WaveFunctionU[0][uMomBin][2][0], NumRadBins, RadBins[0]);
+        Kitty.UseExternalWaveFunction(uMomBin,3,0,WaveFunctionU[0][uMomBin][3][0], NumRadBins, RadBins[0]);
+    }
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] InputFileName[uFile];
+    }
+    delete [] InputFileName;
+    delete [] Momentum;
+    delete [] MomentumBins;
+    delete [] pLab;
+
+    delete [] TomMomentum;
+    delete [] TomMomentumBins;
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile];
+    }
+    delete [] InputFileName;
+
+}
+
 
 void CleanHaidenbauer(CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins){
     unsigned NumMomBins = Kitty.GetNumMomBins();
