@@ -273,4 +273,11 @@ double CoulombEuler(const double& eta);
 double CoulombPenetrationFactor(const double& eta);
 std::complex<double> GamowCorrection(const double& Momentum, const double& RedMass, const double& Q1Q2);
 
+//pLab to pCm, Mass2 is the mass of the particle at rest
+double pLab_pCm(const double& pLab, const double& Mass1, const double& Mass2);
+//tLab to kCm, Mass2 is the mass of the particle at rest
+double tLab_pCm(const double& tLab, const double& Mass1, const double& Mass2);
+double pCm_pLab(const double& pCm, const double& Mass1, const double& Mass2);
+double pCm_tLab(const double& pCm, const double& Mass1, const double& Mass2);
+
 #endif // CATSTOOLS_H

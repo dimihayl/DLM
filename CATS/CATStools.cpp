@@ -1126,3 +1126,21 @@ complex<double> GamowCorrection(const double& Momentum, const double& RedMass, c
     gsl_sf_lngamma_complex_e(1.,eta,&lnr,&arg);
     return eta?exp(i*arg.val)*sqrt(CoulombPenetrationFactor(eta)):1;
 }
+
+//pLab to pCm, Mass2 is the mass of the particle at rest
+double pLab_pCm(const double& pLab, const double& Mass1, const double& Mass2){
+    return sqrt(pow(Mass2*pLab,2)/(pow(Mass2,2)+pow(Mass1,2)+2*Mass2*sqrt(pow(Mass1,2)+pow(pLab,2))));
+}
+
+//tLab to kCm, Mass2 is the mass of the particle at rest
+double tLab_pCm(const double& tLab, const double& Mass1, const double& Mass2){
+    return pLab_pCm(sqrt(tLab*tLab+2*tLab*Mass1), Mass1, Mass2);
+}
+
+double pCm_pLab(const double& pCm, const double& Mass1, const double& Mass2){
+    return pCm/Mass2*(sqrt(Mass2*Mass2+pCm*pCm)+sqrt(Mass1*Mass1+pCm*pCm));
+}
+
+double pCm_tLab(const double& pCm, const double& Mass1, const double& Mass2){
+    return sqrt(Mass1*Mass1+pow(pCm_pLab(pCm, Mass1, Mass2),2))-Mass1;
+}

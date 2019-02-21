@@ -48,6 +48,7 @@ void DLM_WfModels::Init(const CATS& Kitty, const char* inFileName){
 
 }
 
+
 //_0 = rotated WF onto the real axis (as done originally)
 //_1 = using the complex WF
 //0_ = NLO
@@ -162,7 +163,7 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
         float fDummy;
         float fPhaseShift;
 
-        unsigned RadBin=0;
+        unsigned RadBin;
         unsigned LastRadBin;
         unsigned MomBin;
         //!---Iteration over all events---
@@ -254,6 +255,297 @@ void InitHaidenbauerNLO(const char* InputFolder, CATS& Kitty, complex<double>***
 
     delete [] RadBinLoaded;
 //printf("hhhhhhhhhhhh\n");
+}
+
+//TYPE = 0 is LO
+//TYPE = 1 is NLO
+//TYPE = 2 is NLO+Coupling
+void InitInterpolHaide_pL(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE, const int& CUTOFF){
+
+    double RadiusStepSize;
+    double RadiusMinimum;
+    double RadiusMaximum;
+    unsigned NumRadiusBins;
+
+    if(CUTOFF!=500&&CUTOFF!=600){
+        printf("Problem with the CUTOFF in InitInterpolHaide_pL\n");
+        return;
+    }
+
+    unsigned short NumChannels;
+    unsigned short NumPwPerCh;
+    unsigned short NumFiles;
+
+    if(TYPE==0){
+        RadiusStepSize = 0.1;
+        RadiusMinimum = 0.1;
+        RadiusMaximum = 10.;
+        NumChannels = 2;
+        NumPwPerCh = 1;
+        NumFiles = 2;
+    }
+    else if(TYPE==1&&CUTOFF==600){
+        RadiusStepSize = 0.1;
+        RadiusMinimum = 0.2;
+        RadiusMaximum = 16.1;
+        NumChannels = 4;
+        NumPwPerCh = 2;
+        NumFiles = 6;
+    }
+    else if(TYPE==1&&CUTOFF==500){
+        RadiusStepSize = 0.1;
+        RadiusMinimum = 0.1;
+        RadiusMaximum = 10.;
+        NumChannels = 2;
+        NumPwPerCh = 1;
+        NumFiles = 2;
+    }
+    else if(TYPE==2){
+        RadiusStepSize = 0.1;
+        RadiusMinimum = 0.1;
+        RadiusMaximum = 10.;
+        NumChannels = 2;
+        NumPwPerCh = 1;
+        NumFiles = 2;
+    }
+    else{
+        printf("YOU BROKE SOMETHING in InitInterpolHaide_pL\n");
+        return;
+    }
+    //we always add 1 bin at zero, so if we have e.g. 0.1 to 0.3, these are 3 bins + 1 extra
+    NumRadiusBins = round((RadiusMaximum-RadiusMinimum)/RadiusStepSize)+1+1;
+    double* RadiusBins = new double [NumRadiusBins+1];
+    for(unsigned uRad=1; uRad<=NumRadiusBins; uRad++){
+        //uRad-1 as we have special treatment of the zeroth bin
+        RadiusBins[uRad] = RadiusMinimum+double(uRad-1)*RadiusStepSize;
+    }
+    //we want to have the very first bin (center) exactly at zero!
+    RadiusBins[0] = -RadiusBins[1];
+
+    const unsigned MaxNumMomentumBin = 1000;
+
+    double* MomentumBins = new double [MaxNumMomentumBin];
+
+
+
+
+
+    enum HaideFiles {f1S0, f3S1, f1P1, f3P0, f3P1, f3P2};
+    char** InputFileName = new char* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char[256];
+        strcpy(InputFileName[uFile],InputFolder);
+    }
+
+    if(TYPE==1 && CUTOFF==600){
+        strcat(InputFileName[f1S0], "N1s0.data");
+        strcat(InputFileName[f1P1], "N1p1.data");
+        strcat(InputFileName[f3S1], "N3s1.data");
+        strcat(InputFileName[f3P0], "N3p0.data");
+        strcat(InputFileName[f3P1], "N3p1.data");
+        strcat(InputFileName[f3P2], "N3p2.data");
+    }
+    else if(TYPE==1 && CUTOFF==500){
+        strcat(InputFileName[f1S0], "Y1s05.data");
+        strcat(InputFileName[f3S1], "Y3s15.data");
+    }
+    else if(TYPE==0 && CUTOFF==600){
+        strcat(InputFileName[f1S0], "W1s06.data");
+        strcat(InputFileName[f3S1], "W3s16.data");
+    }
+    else if(TYPE==2 && CUTOFF==600){
+        strcat(InputFileName[f1S0], "fort.10");
+        strcat(InputFileName[f3S1], "fort.11");
+    }
+    else{
+        printf("YOU BROKE SOMETHING in InitInterpolHaide_pL\n");
+    }
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        FILE *InFile;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            return;
+        }
+        //we have the p-waves only for NLO with cutoff of 600 MeV
+        if(uFile!=f1S0 && uFile!=f3S1 && (TYPE!=1 || CUTOFF!=600)) {printf("Possible bug in InitInterpolHaide_pL\n"); continue;}
+
+        fseek ( InFile , 0 , SEEK_END );
+        fseek ( InFile , 0 , SEEK_SET );
+
+        char* cdummy = new char [512];
+
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return;
+        }
+
+        float fRadius;
+        float fMomentum;
+        float fReWf;
+        float fImWf;
+        float fReAsWf;
+        float fImAsWf;
+        float fCatsWf;
+        float fDummy;
+        float fPhaseShift;
+
+        int RadBin=-1;
+        //!---Iteration over all events---
+        while(!feof(InFile)){
+
+            if(!fgets(cdummy, 511, InFile)) continue;
+            //the first line contains info about
+            if(RadBin<0) {RadBin++; continue;}
+
+
+            if(TYPE==0||TYPE==1){
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
+                       &fRadius,&fMomentum,&fReWf,&fImWf,&fReAsWf,&fImAsWf,&fCatsWf,&fDummy,&fPhaseShift);
+            }
+            else if(TYPE==2){
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
+                       &fRadius,&fMomentum,&fReWf,&fImWf,&fReAsWf,&fImAsWf,&fCatsWf,&fDummy,&fPhaseShift);
+            }
+            else{
+                printf("WTF from InitInterpolHaide_pL\n");
+            }
+
+
+
+             /*
+
+
+
+
+
+            LastRadBin = RadBin;
+            RadBin = Kitty.GetBin(fRadius,RadBins[0],NumRadBins+1);
+            //we filled up all rad bins
+            if(RadBin<=LastRadBin){
+                for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+                    RadBinLoaded[uRad]=false;
+                }
+
+            }
+            if(RadBin>=NumRadBins) continue;
+            if(RadBinLoaded[RadBin]){
+                printf("\033[1;33mWARNING:\033[0m Trying to load RadBin #%u twice!\n", RadBin);
+                continue;
+            }
+            MomBin = Kitty.GetMomBin(fMomentum);
+            if(MomBin>=NumMomBins) continue;
+
+            //skip momentum bins that we do not have in the CATS object
+            if(fabs(fMomentum-Kitty.GetMomentum(MomBin))>0.1){
+//printf("fMomentum=%f <> Kitty.GetMomentum(MomBin)=%f\n",fMomentum,Kitty.GetMomentum(MomBin));
+
+                continue;
+            }
+//printf("!!!!\n");
+            switch(uFile){
+            case f1S0:
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][0][0][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][0][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                PhaseShifts[0][MomBin][0][0] = fPhaseShift*3.14159/180.;
+//printf("MomBin=%u; RadBin=%u; WaveFunctionU[0][MomBin][0][0][RadBin]=%f\n",MomBin,RadBin,WaveFunctionU[0][MomBin][0][0][RadBin]);
+                break;
+            case f1P1:
+                WaveFunctionU[0][MomBin][0][1][RadBin] = fCatsWf*fRadius;
+                PhaseShifts[0][MomBin][0][1] = fPhaseShift*3.14159/180.;
+                break;
+            case f3S1:
+                if(TYPE/10==0){
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][2][0][RadBin] = fCatsWf*fRadius;
+                    WaveFunctionU[0][MomBin][3][0][RadBin] = fCatsWf*fRadius;
+                }
+                else{
+                    WaveFunctionU[0][MomBin][1][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][2][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                    WaveFunctionU[0][MomBin][3][0][RadBin] = (fReWf+i*fImWf)*fRadius;
+                }
+                PhaseShifts[0][MomBin][1][0] = fPhaseShift*3.14159/180.;
+                PhaseShifts[0][MomBin][2][0] = fPhaseShift*3.14159/180.;
+                PhaseShifts[0][MomBin][3][0] = fPhaseShift*3.14159/180.;
+                break;
+            case f3P0:
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][1][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
+                PhaseShifts[0][MomBin][1][1] = fPhaseShift*3.14159/180.;
+                break;
+            case f3P1:
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][2][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
+                PhaseShifts[0][MomBin][2][1] = fPhaseShift*3.14159/180.;
+                break;
+            case f3P2:
+                if(TYPE/10==0) WaveFunctionU[0][MomBin][3][1][RadBin] = fCatsWf*fRadius;
+                else WaveFunctionU[0][MomBin][3][1][RadBin] = (fReWf+i*fImWf)*fRadius;
+                PhaseShifts[0][MomBin][3][1] = fPhaseShift*3.14159/180.;
+                break;
+            default:
+                printf("\033[1;31mERROR:\033[0m SWITCH CHANNELS AND PWS\n");
+                break;
+            }
+
+
+            RadBin++;
+            //if we have are passed the last radius bin in this momentum bin => we start over.
+            //the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
+            if(RadBin==NumRadiusBins-1){RadBin=-1;}
+        */
+        }
+        delete [] cdummy;
+        fclose(InFile);
+
+    }//uFile
+
+
+
+    //DLM_Histo<complex<double>> DimiHisto[NumFiles];
+    //for(unsigned uFile=0; uFile<NumFiles; uFile++){
+    //    DimiHisto[uFile].SetUp(2);
+    //}
+
+
+    delete [] RadiusBins;
+    delete [] MomentumBins;
+
+
+/*
+    WaveFunctionU[0] = new complex<double>*** [NumMomBins];
+    PhaseShifts[0] = new double** [NumMomBins];
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        WaveFunctionU[0][uMomBin] = new complex<double>** [NumChannels];
+        PhaseShifts[0][uMomBin] = new double* [NumChannels];
+        for(unsigned usCh=0; usCh<NumChannels; usCh++){
+            WaveFunctionU[0][uMomBin][usCh] = new complex<double>* [NumPwPerCh];
+            PhaseShifts[0][uMomBin][usCh] = new double [NumPwPerCh];
+            for(unsigned usPw=0; usPw<NumPwPerCh; usPw++){
+                WaveFunctionU[0][uMomBin][usCh][usPw] = new complex<double> [NumRadBins];
+                PhaseShifts[0][uMomBin][usCh][usPw] = 0;
+            }
+        }
+    }
+
+    RadBins[0] = new double [NumRadBins+1];
+    for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
+        RadBins[0][uRad] = MinRad-RadStep*0.5 + RadStep*double(uRad);
+        RadBinLoaded[uRad] = false;
+    }
+
+
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] InputFileName[uFile];
+    }
+    delete [] InputFileName;
+
+    delete [] RadBinLoaded;
+//printf("hhhhhhhhhhhh\n");
+*/
 }
 
 
