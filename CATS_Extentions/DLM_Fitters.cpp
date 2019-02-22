@@ -704,7 +704,7 @@ void DLM_Fitter1::GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph){
         OutGraph.SetPoint(uBin,Momentum,FitGlobal->Eval(xGlobal));
     }
 }
-/*
+
 void DLM_Fitter1::GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph){
     if(WhichSyst>=MaxNumSyst) return;
     OutGraph.Set(SystemToFit[WhichSyst]->GetCk()->GetNbins());
@@ -714,7 +714,7 @@ void DLM_Fitter1::GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph){
         OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->EvalCk(Momentum));
     }
 }
-*/
+
 void DLM_Fitter1::GetCkTheoryGraph(const unsigned& WhichSyst, TGraph& OutGraph){
     if(WhichSyst>=MaxNumSyst) return;
     OutGraph.Set(SystemToFit[WhichSyst]->GetCk()->GetNbins());
