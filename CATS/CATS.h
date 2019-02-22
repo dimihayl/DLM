@@ -608,6 +608,10 @@ protected:
     void DelMom();
     //delete all variables that depend only on the number of momentum and b-bins
     void DelMomIp();
+    //delete the potential parameters associated with a particular PW
+    void DelPotPw(const unsigned short& usCh, const unsigned short& usPW);
+    //delete the potential parameters associated with a particular channel
+    void DelPotCh(const unsigned short& usCh);
 
     //delete all variables that depend on the number of momentum bins
     void DelAllMom();

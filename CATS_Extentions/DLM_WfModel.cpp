@@ -327,9 +327,6 @@ void InitInterpolHaide_pL(const char* InputFolder, CATS& Kitty, complex<double>*
     double* MomentumBins = new double [MaxNumMomentumBin];
 
 
-
-
-
     enum HaideFiles {f1S0, f3S1, f1P1, f3P0, f3P1, f3P2};
     char** InputFileName = new char* [NumFiles];
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
@@ -399,26 +396,19 @@ void InitInterpolHaide_pL(const char* InputFolder, CATS& Kitty, complex<double>*
             //the first line contains info about
             if(RadBin<0) {RadBin++; continue;}
 
-
             if(TYPE==0||TYPE==1){
                 sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
                        &fRadius,&fMomentum,&fReWf,&fImWf,&fReAsWf,&fImAsWf,&fCatsWf,&fDummy,&fPhaseShift);
             }
             else if(TYPE==2){
-                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f",
-                       &fRadius,&fMomentum,&fReWf,&fImWf,&fReAsWf,&fImAsWf,&fCatsWf,&fDummy,&fPhaseShift);
+                sscanf(cdummy, " %f %f %f %f %f %f",
+                       &fRadius,&fDummy,&fReWf,&fImWf,&fReAsWf,&fImAsWf);
             }
             else{
                 printf("WTF from InitInterpolHaide_pL\n");
             }
 
-
-
              /*
-
-
-
-
 
             LastRadBin = RadBin;
             RadBin = Kitty.GetBin(fRadius,RadBins[0],NumRadBins+1);
@@ -427,7 +417,6 @@ void InitInterpolHaide_pL(const char* InputFolder, CATS& Kitty, complex<double>*
                 for(unsigned uRad=0; uRad<=NumRadBins; uRad++){
                     RadBinLoaded[uRad]=false;
                 }
-
             }
             if(RadBin>=NumRadBins) continue;
             if(RadBinLoaded[RadBin]){
@@ -502,8 +491,6 @@ void InitInterpolHaide_pL(const char* InputFolder, CATS& Kitty, complex<double>*
 
     }//uFile
 
-
-
     //DLM_Histo<complex<double>> DimiHisto[NumFiles];
     //for(unsigned uFile=0; uFile<NumFiles; uFile++){
     //    DimiHisto[uFile].SetUp(2);
@@ -512,7 +499,6 @@ void InitInterpolHaide_pL(const char* InputFolder, CATS& Kitty, complex<double>*
 
     delete [] RadiusBins;
     delete [] MomentumBins;
-
 
 /*
     WaveFunctionU[0] = new complex<double>*** [NumMomBins];

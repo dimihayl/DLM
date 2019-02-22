@@ -25,6 +25,13 @@ CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const
         Parameter[uThr] = new double [TotNumPars];
     }
 }
+CATSparameters::CATSparameters(const CATSparameters& other):CATSparameters(other.NumVars,other.NumPars,other.ThreadSafe){
+    for(unsigned uThr=0; uThr<NumThreads; uThr++){
+        for(unsigned uTotPar=0; uTotPar<TotNumPars; uTotPar++){
+            Parameter[uThr][uTotPar] = other.Parameter[uThr][uTotPar];
+        }
+    }
+}
 CATSparameters::~CATSparameters(){
     for(unsigned uThr=0; uThr<NumThreads; uThr++){
         delete [] Parameter[uThr];
@@ -89,7 +96,7 @@ void CATSparameters::SetVariable(const unsigned& WhichVar, const double& Value, 
         }
     }
 }
-double CATSparameters::GetParameter(const unsigned& WhichPar){
+double CATSparameters::GetParameter(const unsigned& WhichPar) const{
     if(WhichPar>=NumPars){
         printf("\033[1;33mWARNING:\033[0m CATSparameters::GetParameter got an non-existing parameter (%u) as an input\n",WhichPar);
         return 0;
@@ -103,7 +110,7 @@ double CATSparameters::GetParameter(const unsigned& WhichPar){
 //printf(" Parameter[WhichThread]=%p\n",Parameter[WhichThread]);
     return Parameter[WhichThread][NumVars+WhichPar];
 }
-double CATSparameters::GetVariable(const unsigned& WhichVar){
+double CATSparameters::GetVariable(const unsigned& WhichVar) const{
     if(WhichVar>=NumVars){
         printf("\033[1;33mWARNING:\033[0m CATSparameters::GetVariable got an non-existing variable (%u) as an input\n",WhichVar);
         return 0;
@@ -113,13 +120,25 @@ double CATSparameters::GetVariable(const unsigned& WhichVar){
     //WhichThread = 0;
     return Parameter[WhichThread][WhichVar];
 }
-unsigned CATSparameters::GetNumPars(){
+unsigned CATSparameters::GetNumPars() const{
     return NumPars;
 }
-unsigned CATSparameters::GetTotNumPars(){
+unsigned CATSparameters::GetTotNumPars() const{
     return TotNumPars;
 }
-
+bool CATSparameters::operator ==(const CATSparameters &other) const{
+    if(NumVars!=other.NumVars) return false;
+    if(NumPars!=other.NumPars) return false;
+    if(TotNumPars!=other.TotNumPars) return false;
+    if(ThreadSafe!=other.ThreadSafe) return false;
+    if(NumThreads!=other.NumThreads) return false;
+    for(unsigned uThr=0; uThr<NumThreads; uThr++){
+        for(unsigned uPar=0; uPar<NumPars; uPar++){
+            if(GetParameter(uPar)!=other.GetParameter(uPar)) return false;
+        }
+    }
+    return true;
+}
 CatsLorentzVector::CatsLorentzVector(){
     FourSpace[0]=0;
     FourSpace[1]=0;

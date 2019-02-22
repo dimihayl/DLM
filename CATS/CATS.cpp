@@ -142,26 +142,12 @@ CATS::~CATS(){
     if(IpBin) {delete[]IpBin; IpBin=NULL;}
     if(ChannelWeight) {delete[]ChannelWeight; ChannelWeight=NULL;}
     if(InputFileName) {delete[]InputFileName; InputFileName=NULL;}
-    if(ShortRangePotential){
-        for(unsigned short usCh=0; usCh<NumCh; usCh++){
-            if(ShortRangePotential[usCh]){
-                delete[]ShortRangePotential[usCh];
-                ShortRangePotential[usCh] = NULL;
-                delete[]PotPar[usCh];
-                PotPar[usCh] = NULL;
-                //delete[]PotParArray[usCh];
-                //PotParArray[usCh] = NULL;
-            }
-        }
-        delete[]ShortRangePotential; ShortRangePotential=NULL;
-        delete[]PotPar; PotPar=NULL;
-        //delete[]PotParArray; PotParArray=NULL;
-    }
     if(BaseSourceGrid){delete BaseSourceGrid; BaseSourceGrid=NULL;}
     if(RefPartWave){delete[]RefPartWave; RefPartWave=NULL;}
     if(SolvedPartWave){delete[]SolvedPartWave; SolvedPartWave=NULL;}
     if(LegPol){delete[]LegPol; LegPol=NULL;}
     if(CPF){delete[]CPF; CPF=NULL;}
+    if(AnaSourcePar){delete AnaSourcePar; AnaSourcePar=NULL;}
     if(ForwardedSourcePar){delete ForwardedSourcePar;ForwardedSourcePar=NULL;}
 }
 
@@ -296,6 +282,40 @@ void CATS::DelMomIp(){
     }
 }
 
+//this only deletes whatever is related to a single partial wave, including the potential
+void CATS::DelPotPw(const unsigned short& usCh, const unsigned short& usPW){
+    if(usCh>=NumCh){
+        return;
+    }
+    if(usPW>=NumPW[usCh]){
+        return;
+    }
+    if(ShortRangePotential&&ShortRangePotential[usCh]&&ShortRangePotential[usCh][usPW]){
+        ShortRangePotential[usCh][usPW] = NULL;
+    }
+    if(PotPar&&PotPar[usCh]&&PotPar[usCh][usPW]){
+        delete PotPar[usCh][usPW];
+        PotPar[usCh][usPW] = NULL;
+    }
+}
+
+void CATS::DelPotCh(const unsigned short& usCh){
+    if(usCh>=NumCh){
+        return;
+    }
+    for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+        DelPotPw(usCh,usPW);
+    }
+    if(ShortRangePotential&&ShortRangePotential[usCh]){
+        delete[]ShortRangePotential[usCh];
+        ShortRangePotential[usCh] = NULL;
+    }
+    if(PotPar&&PotPar[usCh]){
+        delete[]PotPar[usCh];
+        PotPar[usCh] = NULL;
+    }
+}
+
 void CATS::DelAllMom(){
     DelMomIpMp();
     DelMomChPw();
@@ -311,6 +331,7 @@ void CATS::DelAllIp(){
 }
 
 void CATS::DelAll(){
+    for(unsigned short usCh=0; usCh<NumCh; usCh++){DelPotCh(usCh);}
     DelAllMom();
     DelAllIp();
 }
@@ -379,26 +400,18 @@ void CATS::SetNumChannels(const unsigned short& numCh){
     if(NumPW) {delete[]NumPW; NumPW=NULL;}
     NumPW = new unsigned short [numCh];
 
-    if(ShortRangePotential){
-        for(unsigned short usCh=0; usCh<NumCh; usCh++){
-            if(ShortRangePotential[usCh]){
-                delete [] ShortRangePotential[usCh];
-                delete [] PotPar[usCh];
-                //delete [] PotParArray[usCh];
-            }
-        }
-        delete[]ShortRangePotential; ShortRangePotential=NULL;
-        delete[]PotPar; PotPar=NULL;
-        //delete[]PotParArray; PotParArray=NULL;
+    DelMomChPw();
+    for(unsigned short usCh=0; usCh<numCh; usCh++){
+        DelPotCh(usCh);
     }
-    ShortRangePotential = new CatsPotential* [numCh];
+    if(ShortRangePotential){delete[]ShortRangePotential;}
 
+    ShortRangePotential = new CatsPotential* [numCh];
     PotPar = new CATSparameters** [numCh];
-    //PotParArray = new double** [numCh];
+
     for(unsigned short usCh=0; usCh<numCh; usCh++){
         ShortRangePotential[usCh] = NULL;
         PotPar[usCh] = NULL;
-        //PotParArray[usCh] = NULL;
     }
 
     if(ChannelWeight) {delete[]ChannelWeight; ChannelWeight=NULL;}
@@ -409,7 +422,6 @@ void CATS::SetNumChannels(const unsigned short& numCh){
         ChannelWeight[usCh] = 0;
     }
 
-    DelMomChPw();
     NumCh = numCh;
 
     ComputedWaveFunction = false;
@@ -427,18 +439,17 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     }
     if(NumPW[usCh]==numPW) return;
     DelMomChPw();
+    for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+        DelPotPw(usCh,usPW);
+    }
     NumPW[usCh] = numPW;
 
-    if(ShortRangePotential[usCh]) delete[]ShortRangePotential[usCh];
     ShortRangePotential[usCh] = new CatsPotential [numPW];
+    PotPar[usCh] = new CATSparameters* [numPW];
     for(unsigned short usPW=0; usPW<numPW; usPW++){
         ShortRangePotential[usCh][usPW] = 0;
+        PotPar[usCh][usPW] = NULL;
     }
-
-    if(PotPar[usCh]) delete[]PotPar[usCh];
-    PotPar[usCh] = new CATSparameters* [numPW];
-    //if(PotParArray[usCh]) delete[]PotParArray[usCh];
-    //PotParArray[usCh] = new double* [numPW];
 
     //Reserve memory for the output
     SavedWaveFunBins = new unsigned** [NumMomBins];
@@ -1276,6 +1287,7 @@ void CATS::RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW)
     if(!ShortRangePotential) return;
     if(!ShortRangePotential[usCh]) return;
     ShortRangePotential[usCh][usPW] = 0;
+    if(PotPar[usCh][usPW]) delete PotPar[usCh][usPW];
     PotPar[usCh][usPW] = NULL;
     //PotParArray[usCh][usPW] = NULL;
     ComputedWaveFunction = false;
@@ -1298,7 +1310,10 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
     }
 
     ShortRangePotential[usCh][usPW] = pot;
-    PotPar[usCh][usPW] = &Pars;
+    if(PotPar[usCh][usPW]){
+        delete PotPar[usCh][usPW];
+    }
+    PotPar[usCh][usPW] = new CATSparameters(Pars);
     //PotParArray[usCh][usPW] = NULL;
 
     ComputedWaveFunction = false;
@@ -1361,14 +1376,18 @@ void CATS::RemoveAnaSource(){
     ComputedCorrFunction = false;
 }
 void CATS::SetAnaSource(double (*AS)(double*), CATSparameters& Pars){
-    if(AnalyticSource==AS && AnaSourcePar==&Pars) return;
+    if(AnalyticSource==AS && *AnaSourcePar==Pars) return;
     //if(!Pars){
     //    if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source parameters!\n");
     //    return;
     //}
     AnalyticSource = AS;
     ForwardedSource = NULL;
-    AnaSourcePar = &Pars;
+    if(AnaSourcePar){
+        delete AnaSourcePar;
+    }
+    AnaSourcePar = new CATSparameters(Pars);
+
     //AnaSourceParArray = NULL;
     SourceGridReady = false;
     SourceUpdated = false;

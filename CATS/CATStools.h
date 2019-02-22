@@ -13,6 +13,7 @@ friend class CATSelder;
 public:
     enum Type {tSource=3,tPotential=2};
     CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe);
+    CATSparameters(const CATSparameters& other);
     ~CATSparameters();
     double* GetParameters() const;
     //the parameter is set the same for all threads!
@@ -20,10 +21,11 @@ public:
     void SetParameters(const double* pars, const bool& CurrentThread=false);
     //the variable is set only for the current thread!
     void SetVariable(const unsigned& WhichVar, const double& Value, const bool& CurrentThread);
-    double GetParameter(const unsigned& WhichPar);
-    double GetVariable(const unsigned& WhichVar);
-    unsigned GetNumPars();
-    unsigned GetTotNumPars();
+    double GetParameter(const unsigned& WhichPar) const;
+    double GetVariable(const unsigned& WhichVar) const;
+    unsigned GetNumPars() const;
+    unsigned GetTotNumPars() const;
+    bool operator ==(const CATSparameters &other) const;
 protected:
     //the number of dummy parameters (variables)
     const unsigned NumVars;
