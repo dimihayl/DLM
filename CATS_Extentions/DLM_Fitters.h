@@ -71,6 +71,7 @@ public:
     double GetPval();
     //double Eval(const unsigned& WhichSyst, const double& Momentum);
     void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph);
+    void GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph);
 
     void SetOutputDir(const TString& outdirname);
     void SetSeparateBL(const unsigned& WhichSyst, const bool& yesno);
