@@ -117,6 +117,11 @@ public:
     void SetMaxPw(const unsigned short& maxpw);
     unsigned short GetMaxPw() const;
 
+    //if true, the total wave function is computed ONLY by adding the available numerical partial waves
+    //this was implemented with the idea to be used whenever the WF for a coupled channel is available
+    void SetOnlyNumericalPw(const unsigned short& usCh, const bool& val);
+    bool GetOnlyNumericalPw(const unsigned short& usCh) const;
+
     void SetMaxNumThreads(const unsigned short& maxnumthreads);
     unsigned short GetMaxNumThreads() const;
 
@@ -257,7 +262,9 @@ public:
     unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
                        const unsigned short& usCh, const unsigned short& usPW) const;
     double EvaluateTheSource(CATSparameters* Pars) const;
+    unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
+    unsigned GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const;
     CATSelder* GetTheElder(const double& Momentum);
     //convert fm to 1/MeV
     const double& FmNu() const;
@@ -331,10 +338,9 @@ void test_ad5(){
     //void SetPotPar(const unsigned& WhichPar, const double& Value);
     double GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar) const;
 
-    //if RadWF==NULL => do not use external wave function. The input should be in u_l = r*R_l
-    void UseExternalWaveFunction(const unsigned& uMomBin, const unsigned& usCh, const unsigned& usPW,
-                                 const complex<double>* RadWF=NULL, const unsigned& NumRadBins=0, const double* RadBins=NULL, const double& PHASESHIFT=0);
-
+    //The input should be in u_l = r*R_l
+    void SetExternalWaveFunction(const unsigned& usCh, const unsigned& usPW, const DLM_Histo<complex<double>>& histWF, const DLM_Histo<complex<double>>& histPS);
+    void RemoveExternalWaveFunction(const unsigned& usCh, const unsigned& usPW);
     //!------------------------------------------------
 
     //!Running the analysis
@@ -352,7 +358,7 @@ void test_ad5(){
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
 //DLM_Histo<double> SourceHistoTemp;
-protected:
+//protected:
 
     enum PrevNext { kNext=1, kPrevious=-1 };
 
@@ -459,6 +465,7 @@ protected:
     double MaxRho;
     //the max. 'l' to be computed by CATS
     unsigned short MaxPw;
+    bool* OnlyNumPw;
     unsigned short MaxNumThreads;
 
     bool ExcludeFailedConvergence;
@@ -648,10 +655,13 @@ protected:
     double* kCorrFunErr;
 
     //!further input variables
-    //bool*** UseExternalWF;//in bins of mom/pol/pw
-    const complex<double>**** ExternalWF;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user). If ExternalWF[x][y][z]=NULL => Do not use ext. wf.
-    unsigned*** NumExtWfRadBins;//in bins of mom/pol/pw
-    const double**** ExtWfRadBins;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user).
+    ////bool*** UseExternalWF;//in bins of mom/pol/pw
+    //const complex<double>**** ExternalWF;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user). If ExternalWF[x][y][z]=NULL => Do not use ext. wf.
+    //unsigned*** NumExtWfRadBins;//in bins of mom/pol/pw
+    //const double**** ExtWfRadBins;//in bins of mom/pol/pw (reserved mem) / rad (provided by the user -> BinRanges).
+    //[usCh][usPW]
+    DLM_Histo<complex<double>>*** ExternalWF;
+    DLM_Histo<complex<double>>*** ExternalPS;
 
     //these are used as buffers when it comes to computing the Reference Partial Waves and the Legendre Polynomials
     //in particular, when we loop over all PWs twice, we actually evaluate the same functions multiple times => save them in an array to save CPU time

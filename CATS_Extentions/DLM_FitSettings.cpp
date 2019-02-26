@@ -303,7 +303,7 @@ FemtoExpPair::FemtoExpPair(const FemtoPair& ppair, const FemtoExperiment& experi
 }
 
 FemtoExpPair::~FemtoExpPair(){
-    if(NumRadBins) CleanHaidenbauer(*Kitty,&WaveFunctionU,&PhaseShifts,&RadBins);
+    //if(NumRadBins) CleanHaidenbauer(*Kitty,&WaveFunctionU,&PhaseShifts,&RadBins);
     if(Kitty){delete Kitty; Kitty=NULL;}
     if(CorrelationModel){delete CorrelationModel; CorrelationModel=NULL;}
     //if(hFeedDown){delete [] hFeedDown; hFeedDown=NULL;}
@@ -482,8 +482,8 @@ void FemtoExpPair::SetStandardInteraction(const TString& Inter, TH1F* TemplateDa
             printf("Please keep in mind that InitHaidenbauerNLO works only for specific binning configurations!\n");
 
             for(unsigned uBin=0; uBin<NumMomBins; uBin++){
-                Kitty->UseExternalWaveFunction(uBin,0,0,WaveFunctionU[uBin][0][0], NumRadBins, RadBins, PhaseShifts[uBin][0][0]);
-                Kitty->UseExternalWaveFunction(uBin,1,0,WaveFunctionU[uBin][1][0], NumRadBins, RadBins, PhaseShifts[uBin][1][0]);
+                //Kitty->UseExternalWaveFunction(uBin,0,0,WaveFunctionU[uBin][0][0], NumRadBins, RadBins, PhaseShifts[uBin][0][0]);
+                //Kitty->UseExternalWaveFunction(uBin,1,0,WaveFunctionU[uBin][1][0], NumRadBins, RadBins, PhaseShifts[uBin][1][0]);
             }
 
             Kitty->KillTheCat();

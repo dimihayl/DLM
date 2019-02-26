@@ -132,7 +132,8 @@ public:
         return BinValue[WhichBin];
     }
     Type GetBinLowEdge(const unsigned& WhichBin) const{
-        if(WhichBin>=NumBins) return 0;
+        //i.e. GetBinLowEdge(NumBins) will return the most upper limit
+        if(WhichBin>=NumBins+1) return 0;
         return BinRange[WhichBin];
     }
     Type GetBinUpEdge(const unsigned& WhichBin) const{
@@ -595,7 +596,8 @@ public:
     double GetBinLowEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
-        if(WhichBin>=NumBins[sDim]) return 0;
+        //i.e. GetBinLowEdge(NumBins) will return the most upper limit
+        if(WhichBin>=NumBins[sDim]+1) return 0;
         return BinRange[sDim][WhichBin];
     }
     double GetBinUpEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
@@ -734,6 +736,7 @@ public:
             else{
                 printf("This should not happen, unless there is a bug in DLM_Histo::Eval()\n");
             }
+//if(TEMP){
 //printf("sDim=%u\n",sDim);
 //printf(" xVal=%f\n",xVal[sDim]);
 //printf(" xBin1=%u\n",xBin1[sDim]);
@@ -742,6 +745,7 @@ public:
 //printf(" xValue2=%f\n",xValue2[sDim]);
 //printf(" DeltaX1=%f\n",DeltaX1[sDim]);
 //printf(" DeltaX2=%f\n",DeltaX2[sDim]);
+//}
         }
         Type Result=0;
         unsigned* BinArray = new unsigned [Dim];
@@ -763,7 +767,12 @@ public:
             Norm += Weight;
         }
         Result /= Norm;
-
+//if(TEMP){
+//unsigned BINARRAY[Dim];
+//BINARRAY[0] = GetBin(0,xVal[0]);
+//BINARRAY[1] = GetBin(1,xVal[1]);
+//printf(" --> RESULT=%f (%f); NORM=%f\n",abs(Result),abs(GetBinContent(BINARRAY)),abs(Norm));
+//}
         delete [] xValue1;
         delete [] xValue2;
         delete [] xBin1;
@@ -799,6 +808,7 @@ public:
         }
         BinValue[TotNumBins] = other.BinValue[TotNumBins];
         BinValue[TotNumBins+1] = other.BinValue[TotNumBins+1];
+        return true;
     }
 //! FOR DIVISION/MULT:
 //http://www.stat.cmu.edu/~hseltman/files/ratio.pdf

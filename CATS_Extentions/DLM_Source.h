@@ -33,6 +33,7 @@ double GaussExpTotSimple_2body(double* Pars);
 double MemberSourceForwarder(void* context, double* Pars);
 class MemberSource{
 public:
+    //virtual ~MemberSource();
     virtual double Eval(double* Pars);
     virtual void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(const double& Momentum, const double Radius, const double& Angle);
@@ -42,6 +43,8 @@ private:
 
 class MS_Gauss:public MemberSource{
 public:
+    //MS_Gauss(){}
+    //~MS_Gauss(){}
     double Size;
     void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
