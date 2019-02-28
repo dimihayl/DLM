@@ -7,7 +7,7 @@
 
 #include "TH2F.h"
 
-class DLM_Ck : public DLM_Histo1D<double>{
+class DLM_Ck : public DLM_Histo<double>{
 
 public:
     DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat);
@@ -87,8 +87,8 @@ public:
     unsigned GetNumChildren();
     DLM_CkDecomposition* GetChild(const unsigned& WhichChild);
     DLM_CkDecomposition* GetContribution(const char* name);
-    DLM_Histo1D<double>* GetChildContribution(const unsigned& WhichChild, const bool& WithLambda=false);
-    DLM_Histo1D<double>* GetChildContribution(const char* name, const bool& WithLambda=false);
+    DLM_Histo<double>* GetChildContribution(const unsigned& WhichChild, const bool& WithLambda=false);
+    DLM_Histo<double>* GetChildContribution(const char* name, const bool& WithLambda=false);
     DLM_Ck* GetCk();
 
     void GetName(char* name);
@@ -113,13 +113,13 @@ private:
     //the main C(k)
     DLM_Ck* CkMain;
     //the smeared main C(k)
-    DLM_Histo1D<double>* CkMainSmeared;
+    DLM_Histo<double>* CkMainSmeared;
     //the C(k) containing the main and feed-down contributions
-    DLM_Histo1D<double>* CkMainFeed;
+    DLM_Histo<double>* CkMainFeed;
     //the smeared Main+FeedDown C(k)
-    DLM_Histo1D<double>* CkSmearedMainFeed;
+    DLM_Histo<double>* CkSmearedMainFeed;
     //the residual C(k) (corrected with the residual matrix) stemming from the CkMainFeed of the children
-    DLM_Histo1D<double>** CkChildMainFeed;
+    DLM_Histo<double>** CkChildMainFeed;
 
     //N.B. I assume that the MomResolution is only taken into account if you look into that particular C(k) or the feed-down contributions.
     //For the children which are of type fake, the Sigma matrix is taken from their definition.
@@ -135,7 +135,8 @@ private:
     bool UniqueName(const char* name);
     //bool CheckStatus();
 
-    void Smear(const DLM_Histo1D<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo1D<double>* CkSmeared);
+    //void SmearOLD(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared);
+    void Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared);
 };
 
 

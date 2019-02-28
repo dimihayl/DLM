@@ -710,7 +710,7 @@ void DLM_Fitter1::GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph){
     OutGraph.Set(SystemToFit[WhichSyst]->GetCk()->GetNbins());
     double Momentum;
     for(unsigned uBin=0; uBin<SystemToFit[WhichSyst]->GetCk()->GetNbins(); uBin++){
-        Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(uBin);
+        Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(0,uBin);
         OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->EvalCk(Momentum));
     }
 }
@@ -720,7 +720,7 @@ void DLM_Fitter1::GetCkTheoryGraph(const unsigned& WhichSyst, TGraph& OutGraph){
     OutGraph.Set(SystemToFit[WhichSyst]->GetCk()->GetNbins());
     double Momentum;
     for(unsigned uBin=0; uBin<SystemToFit[WhichSyst]->GetCk()->GetNbins(); uBin++){
-        Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(uBin);
+        Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(0,uBin);
         OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->GetCk()->GetBinContent(uBin));
     }
 }

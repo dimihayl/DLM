@@ -294,7 +294,7 @@ public:
     //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
     CATSparameters* AnaSourcePar;
     //double* AnaSourceParArray;
-    CATSparameters* ForwardedSourcePar;
+    //CATSparameters* ForwardedSourcePar;
 
     void SetAnaSource(double (*AS)(double*), CATSparameters& Pars);
     //void SetAnaSource(double (*AS)(double*), double* Pars);
@@ -305,6 +305,7 @@ public:
     //2) define a source function as double SOURCE(double (*fptr)(void*, double*), void* context, double* Pars){return fptr(context,Pars);}
     //3) pass to your CATS object the source by calling .SetAnaSource(FORWARDER,OBJ);
     void SetAnaSource(double (*FS)(void*, double*), void* context, const unsigned& numparameters=0);
+    //void SetAnaSource(const CatsSource& SOURCE);
 /*
 ///////////////////////////////////////////////////////////////////////////////////////////
 double test_ad5_function(double (*fptr)(void*, const double*), void* context, const double* Pars){
@@ -339,7 +340,8 @@ void test_ad5(){
     double GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar) const;
 
     //The input should be in u_l = r*R_l
-    void SetExternalWaveFunction(const unsigned& usCh, const unsigned& usPW, const DLM_Histo<complex<double>>& histWF, const DLM_Histo<complex<double>>& histPS);
+    void SetExternalWaveFunction(const unsigned& usCh, const unsigned& usPW, DLM_Histo<complex<double>>& histWF, DLM_Histo<complex<double>>& histPS);
+    void SetExternalWaveFunction(DLM_Histo<complex<double>>*** ExternalWF);
     void RemoveExternalWaveFunction(const unsigned& usCh, const unsigned& usPW);
     //!------------------------------------------------
 
@@ -535,6 +537,7 @@ void test_ad5(){
     double (*AnalyticSource)(double*);
     double (*ForwardedSource)(void*, double*);
     void* SourceContext;
+    //CatsSource* MemberSource;
     //!------------------------------------------------
 
     //!Any other variables or functions used at runtime internally by CATS
@@ -600,6 +603,7 @@ void test_ad5(){
 
     //double SourceFunction(const double* Pars, const double& GridSize);
     void UpdateCPF();
+    void UpdateExternalPhaseShifts(const unsigned& usCh, const unsigned& usPW);
 
     //delete all variables that depend only on the number of momentum bins, b-bins and MaxPairs
     void DelMomIpMp();

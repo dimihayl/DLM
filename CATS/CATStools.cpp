@@ -1103,6 +1103,27 @@ double CATSelder::SourceFunction(void* context){
     return static_cast<CATS*>(context)->EvaluateTheSource(SourcePars);
 }
 
+double CatsSourceForwarder(void* context, double* Pars){return static_cast<CatsSource*>(context)->Eval(Pars);}
+
+CatsSource::~CatsSource(){
+
+}
+void CatsSource::SetParameter(const unsigned& WhichPar, const double& Value){
+    return;
+}
+unsigned CatsSource::GetNumPars(){
+    return 0;
+}
+double CatsSource::Eval(double* Pars){
+    return 0;
+}
+double CatsSource::Eval(const double& Momentum, const double Radius, const double& Angle){
+        PARS[0] = Momentum;
+        PARS[1] = Radius;
+        PARS[2] = Angle;
+        return Eval(PARS);
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

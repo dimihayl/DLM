@@ -270,6 +270,18 @@ protected:
     //CATS* Kitty;
 };
 
+double CatsSourceForwarder(void* context, double* Pars);
+class CatsSource{
+public:
+    virtual ~CatsSource();
+    virtual double Eval(double* Pars);
+    virtual void SetParameter(const unsigned& WhichPar, const double& Value);
+    virtual unsigned GetNumPars();
+    double Eval(const double& Momentum, const double Radius, const double& Angle);
+private:
+    double PARS[3];
+};
+
 double CoulombEta(const double& Momentum, const double& RedMass, const double& Q1Q2);
 double CoulombEuler(const double& eta);
 double CoulombPenetrationFactor(const double& eta);

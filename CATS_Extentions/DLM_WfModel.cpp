@@ -14,7 +14,7 @@ const complex<float>i(0,1);
 //ch2 and ch2 are the SN->LN in the S-wave (1S0 and 3S1), however we ONLY add to the total correlation function the s-wave
 //to obtain the total correlation we need to add 1/4*ch0+3/4*ch1+1/4*ch2+3/4*ch3. As the ch2 and ch3 are just "corrections" to
 //the primary channels (0 and 1) it is completely fine that our weights do not sum up to 1
-DLM_Histo<complex<double>>** Init_pL_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF){
+DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF){
     double RadiusStepSize;
     double RadiusMinimum;
     double RadiusMaximum;
@@ -171,26 +171,28 @@ DLM_Histo<complex<double>>** Init_pL_Haidenbauer(const char* InputFolder, CATS& 
     MomentumBins[NumMomBins] = 2.*Momentum[NumMomBins-1]-MomentumBins[NumMomBins-1];
 
     //the first one is WF, second is PS
-    DLM_Histo<complex<double>>** Histo = new DLM_Histo<complex<double>>* [2];
-    DLM_Histo<complex<double>>*& HistoWF = Histo[0];
-    DLM_Histo<complex<double>>*& HistoPS = Histo[1];
+    DLM_Histo<complex<double>>*** Histo = new DLM_Histo<complex<double>>** [2];
 
+    DLM_Histo<complex<double>>**& HistoWF = Histo[0];
+    DLM_Histo<complex<double>>**& HistoPS = Histo[1];
     //DLM_Histo<complex<double>> HistoWF[NumChannels];
-    HistoWF = new DLM_Histo<complex<double>> [NumChannels];
+    HistoWF = new DLM_Histo<complex<double>>* [NumChannels];
 //printf("NumChannels = %u\n",NumChannels);
     for(unsigned uCh=0; uCh<NumChannels; uCh++){
-        HistoWF[uCh].SetUp(2);
-        HistoWF[uCh].SetUp(0,NumMomBins,MomentumBins);
-        HistoWF[uCh].SetUp(1,NumRadBins,RadBins);
-        HistoWF[uCh].Initialize();
+        HistoWF[uCh] = new DLM_Histo<complex<double>> [1];
+        HistoWF[uCh][0].SetUp(2);
+        HistoWF[uCh][0].SetUp(0,NumMomBins,MomentumBins);
+        HistoWF[uCh][0].SetUp(1,NumRadBins,RadBins);
+        HistoWF[uCh][0].Initialize();
     }
 
     //DLM_Histo<complex<double>> HistoPS[NumChannels];
-    HistoPS = new DLM_Histo<complex<double>> [NumChannels];
+    HistoPS = new DLM_Histo<complex<double>>* [NumChannels];
     for(unsigned uCh=0; uCh<NumChannels; uCh++){
-        HistoPS[uCh].SetUp(1);
-        HistoPS[uCh].SetUp(0,NumMomBins,MomentumBins);
-        HistoPS[uCh].Initialize();
+        HistoPS[uCh] = new DLM_Histo<complex<double>> [1];
+        HistoPS[uCh][0].SetUp(1);
+        HistoPS[uCh][0].SetUp(0,NumMomBins,MomentumBins);
+        HistoPS[uCh][0].Initialize();
     }
 
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
@@ -291,21 +293,21 @@ DLM_Histo<complex<double>>** Init_pL_Haidenbauer(const char* InputFolder, CATS& 
             WhichBin[1] = RadBin+1;
 
             if(TYPE==0){
-                HistoWF[uFile].SetBinContent(WhichBin,fCatsWf*fRadius);
-                HistoPS[uFile].SetBinContent(WhichBin,fPhaseShift);
+                HistoWF[uFile][0].SetBinContent(WhichBin,fCatsWf*fRadius);
+                HistoPS[uFile][0].SetBinContent(WhichBin,fPhaseShift);
             }
             else if(TYPE==1 && CUTOFF==600){
-                HistoWF[uFile].SetBinContent(WhichBin,fCatsWf*fRadius);
+                HistoWF[uFile][0].SetBinContent(WhichBin,fCatsWf*fRadius);
                 //HistoWF[uFile].SetBinContent(WhichBin,(fReWf+i*fImWf)*fRadius);
-                HistoPS[uFile].SetBinContent(WhichBin,fPhaseShift);
+                HistoPS[uFile][0].SetBinContent(WhichBin,fPhaseShift);
             }
             else if(TYPE==1 && CUTOFF==500){
-                HistoWF[uFile].SetBinContent(WhichBin,fCatsWf*fRadius);
-                HistoPS[uFile].SetBinContent(WhichBin,fPhaseShift);
+                HistoWF[uFile][0].SetBinContent(WhichBin,fCatsWf*fRadius);
+                HistoPS[uFile][0].SetBinContent(WhichBin,fPhaseShift);
             }
             else if(TYPE==2 && CUTOFF==600){
-                HistoWF[uFile].SetBinContent(WhichBin,(fReWf_LNLN_SS+i*fImWf_LNLN_SS)*fRadius);
-                HistoWF[uFile+2].SetBinContent(WhichBin,(fReWf_SNLN_SS+i*fImWf_SNLN_SS)*fRadius);
+                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_LNLN_SS+i*fImWf_LNLN_SS)*fRadius);
+                HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_SNLN_SS+i*fImWf_SNLN_SS)*fRadius);
 
                 //HistoWF[uFile].SetBinContent(WhichBin,(fReWf_LNLN_DS+i*fImWf_LNLN_DS)*fRadius);
                 //HistoWF[uFile+2].SetBinContent(WhichBin,(fReWf_SNLN_DS+i*fImWf_SNLN_DS)*fRadius);
@@ -315,8 +317,8 @@ DLM_Histo<complex<double>>** Init_pL_Haidenbauer(const char* InputFolder, CATS& 
 //printf("uFile=%u; fMomentum=%.1f; fReWf=%.4f(%.4f); fImWf=%.4f(%.4f)\n",uFile,fMomentum,
 //       fReWf_LNLN_SS,fReWf_SNLN_SS,fImWf_LNLN_SS,fImWf_SNLN_SS);
 //}
-                HistoPS[uFile].SetBinContent(WhichBin,0);
-                HistoPS[uFile+2].SetBinContent(WhichBin,0);
+                HistoPS[uFile][0].SetBinContent(WhichBin,0);
+                HistoPS[uFile+2][0].SetBinContent(WhichBin,0);
             }
             else{
 
@@ -342,4 +344,25 @@ DLM_Histo<complex<double>>** Init_pL_Haidenbauer(const char* InputFolder, CATS& 
     delete [] RadBins;
 
     return Histo;
+}
+
+void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo){
+//printf("NumChannels=%u\n",NumChannels);
+//printf(" Histo=%p\n",Histo);
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){
+//printf("  usCh=%u\n",usCh);
+        if(Histo&&Histo[0]&&Histo[0][usCh]){delete[]Histo[0][usCh];Histo[0][usCh]=NULL;}
+        if(Histo&&Histo[1]&&Histo[1][usCh]){delete[]Histo[1][usCh];Histo[1][usCh]=NULL;}
+    }
+//printf(" The first round is done!\n");
+    if(Histo&&Histo[0]){delete[]Histo[0];Histo[0]=NULL;}
+//printf(" 0 is done\n");
+    if(Histo&&Histo[1]){delete[]Histo[1];Histo[1]=NULL;}
+//printf(" 1 is done\n");
+    if(Histo){delete[]Histo;Histo=NULL;}
+//printf(" ALL is done\n");
+}
+void CleanUpWfHisto(const CATS& Kitty, DLM_Histo<complex<double>>***& Histo){
+//printf("Called with Kitty\n");
+    CleanUpWfHisto(Kitty.GetNumChannels(),Histo);
 }

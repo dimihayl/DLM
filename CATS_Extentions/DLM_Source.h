@@ -3,6 +3,7 @@
 #define DLM_SOURCE_H
 
 #include "DLM_Histo.h"
+#include "CATStools.h"
 
 class DLM_Random;
 
@@ -30,18 +31,8 @@ double GaussExpTotIdenticalSimple(double* Pars);
 double GaussExpTotIdenticalSimple_2body(double* Pars);
 double GaussExpTotSimple_2body(double* Pars);
 
-double MemberSourceForwarder(void* context, double* Pars);
-class MemberSource{
-public:
-    //virtual ~MemberSource();
-    virtual double Eval(double* Pars);
-    virtual void SetParameter(const unsigned& WhichPar, const double& Value);
-    double Eval(const double& Momentum, const double Radius, const double& Angle);
-private:
-    double PARS[3];
-};
-
-class MS_Gauss:public MemberSource{
+/*
+class MS_Gauss:public CatsSource{
 public:
     //MS_Gauss(){}
     //~MS_Gauss(){}
@@ -49,10 +40,11 @@ public:
     void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
 };
+*/
 
 //A source taking into account resonances and mT scaling. The Simple part is that resonances are back to back
 //and in case of two resonances, the t*p/m are just added up. Also we use the approximate relation for small t*p/m
-class MS_GaussExp_mT_Simple:public MemberSource{
+class MS_GaussExp_mT_Simple:public CatsSource{
 public:
     MS_GaussExp_mT_Simple();
     ~MS_GaussExp_mT_Simple();
@@ -70,6 +62,7 @@ public:
 
     void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
+    unsigned GetNumPars();
 private:
     unsigned Num_mT;//number of mT bins (common for the particle pair)
     //[mT]
@@ -87,7 +80,7 @@ private:
     double* Parameters;
 };
 
-class DLM_StableDistribution:public MemberSource{
+class DLM_StableDistribution:public CatsSource{
 public:
     DLM_StableDistribution(const unsigned& numgridpts=512*2);
     ~DLM_StableDistribution();
@@ -98,6 +91,7 @@ public:
     void SetNumIter(const unsigned& val);
     void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
+    unsigned GetNumPars();
 private:
     const unsigned NumGridPts;
     double Stability;
@@ -112,7 +106,7 @@ private:
 };
 
 
-class DLM_CleverLevy:public MemberSource{
+class DLM_CleverLevy:public CatsSource{
 public:
     DLM_CleverLevy();
     ~DLM_CleverLevy();
@@ -122,6 +116,7 @@ public:
     void InitScale(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitRad(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitType(const int& type);
+    unsigned GetNumPars();
 private:
     //0 = single particle
     //1 = pair

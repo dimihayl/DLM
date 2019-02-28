@@ -678,20 +678,7 @@ double GaussExpTotSimple_2body(double* Pars){
 
 //}
 
-double MemberSourceForwarder(void* context, double* Pars){return static_cast<MemberSource*>(context)->Eval(Pars);}
-
-void MemberSource::SetParameter(const unsigned& WhichPar, const double& Value){
-    return;
-}
-double MemberSource::Eval(double* Pars){
-    return 0;
-}
-double MemberSource::Eval(const double& Momentum, const double Radius, const double& Angle){
-        PARS[0] = Momentum;
-        PARS[1] = Radius;
-        PARS[2] = Angle;
-        return Eval(PARS);
-}
+/*
 void MS_Gauss::SetParameter(const unsigned& WhichPar, const double& Value){
     printf("MS_Gauss::SetParameter is a DUMMY at the moment!\n");
 }
@@ -699,6 +686,7 @@ double MS_Gauss::Eval(double* Pars){
     double& Radius = Pars[1];
     return 4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
+*/
 
 MS_GaussExp_mT_Simple::MS_GaussExp_mT_Simple(){
     Num_mT = 0;
@@ -865,6 +853,9 @@ if(Result!=Result || Result>1 || Result<0){
 
     return Result;
 }
+unsigned MS_GaussExp_mT_Simple::GetNumPars(){
+    return 14;
+}
 
 DLM_StableDistribution::DLM_StableDistribution(const unsigned& numgridpts):NumGridPts(numgridpts){
     Histo = NULL;
@@ -970,7 +961,9 @@ double DLM_StableDistribution::Eval(double* Pars){
 //printf( "rVal=%f Histo->Eval(rVal)=%f\n",rVal,Histo->Eval(rVal));
     return Histo->Eval(rVal);
 }
-
+unsigned DLM_StableDistribution::GetNumPars(){
+    return 4;
+}
 
 DLM_CleverLevy::DLM_CleverLevy(){
     NumPtsStability = 64;
@@ -1081,6 +1074,9 @@ printf("---------------------------------------------------\n");
 //printf("Function call Nr. %u\n",NumFunctionCalls);
 
     return Histo->Eval(RSS);
+}
+unsigned DLM_CleverLevy::GetNumPars(){
+    return 2;
 }
 void DLM_CleverLevy::Reset(){
     if(Histo) {delete Histo;Histo=NULL;}

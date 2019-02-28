@@ -265,6 +265,7 @@ public:
         TotNumBins=0;
         PER = NULL;
         Initialized=false;
+        Dim = 0;
 //printf("BinValue=%p\n",BinValue);
         //xValue = NULL;
         //xBin = NULL;
@@ -290,7 +291,6 @@ public:
         if(Dim==dim) return;
 
         CleanUp();
-
         Dim = dim;
         BinRange = new double* [Dim];
         BinValue = NULL;
@@ -406,7 +406,7 @@ public:
         return TotBin;
     }
     //BinIdPerAxis[sDim] -> saves for each dim the bin number
-    void GetBinCoordinates(const unsigned& WhichTotBin, unsigned* BinIdPerAxis){
+    void GetBinCoordinates(const unsigned& WhichTotBin, unsigned* BinIdPerAxis) const{
         if(!Initialized) {InitWarning(); return;}
         //unsigned Division;
         //unsigned Reminder=WhichTotBin;
@@ -613,7 +613,7 @@ public:
 //printf("sDim=%u; WhichBin=%u; BR1=%f; BR0=%f\n",sDim,WhichBin,BinRange[sDim][WhichBin+1],BinRange[sDim][WhichBin]);
         return (BinRange[sDim][WhichBin+1]-BinRange[sDim][WhichBin]);
     }
-    double GetBinSize(const unsigned& WhichTotBin){
+    double GetBinSize(const unsigned& WhichTotBin) const{
         double BinSize = 1;
         unsigned* WhichBin = new unsigned [Dim];
         GetBinCoordinates(WhichTotBin,WhichBin);

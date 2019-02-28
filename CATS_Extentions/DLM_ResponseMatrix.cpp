@@ -72,14 +72,16 @@ void DLM_ResponseMatrix::DefaultConstructor(){
 DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ab.GetNumMomBins()){
     double* BINS = ab.CopyMomBin();
-    CatHisto = new DLM_Histo1D<double> (ab.GetNumMomBins(), BINS);
+    CatHisto = new DLM_Histo<double> ();
+    CatHisto->SetUp(1);
+    CatHisto->SetUp(0,ab.GetNumMomBins(), BINS);
     CatHistoIsMyOwn = true;
     delete [] BINS;
 
     DefaultConstructor();
 }
 
-DLM_ResponseMatrix::DLM_ResponseMatrix(DLM_Histo1D<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia):
+DLM_ResponseMatrix::DLM_ResponseMatrix(DLM_Histo<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ch.GetNbins()){
 
     CatHisto = &ch;
@@ -207,9 +209,12 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
     int NumOldBinsX;
     int NumOldBinsY;
     const int MaxBufferSize = 256;
+    //these guys are used to see what fraction of all counts in the bin we should take
+    //important when the binning is different in the cats object and in the matrix
+    //in the end we end up with a matrix containing the number of entries in a specific momenta ranges,
+    //which we normalize to 1 and eventually to the size of the 2D bin
     double* WeightX = new double [MaxBufferSize];
     double* WeightY = new double [MaxBufferSize];
-    double* WeightXY = new double [MaxBufferSize];
 
     //if the axis are inverted
     const TAxis* Xaxis = InvAxis?input->GetYaxis():input->GetXaxis();
@@ -224,8 +229,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
     //iterate over the Ck bins (X)
     for(int iBinX=0; iBinX<NumMomBins; iBinX++){
         //the k values at the low/up bin edge
-        MomLowEdgeX = CatHisto->GetBinLowEdge(iBinX);
-        MomUpEdgeX = CatHisto->GetBinUpEdge(iBinX);
+        MomLowEdgeX = CatHisto->GetBinLowEdge(0,iBinX);
+        MomUpEdgeX = CatHisto->GetBinUpEdge(0,iBinX);
         //the corresponding bin numbers in the smear histogram
         WhichBinAtLowEdgeX = Xaxis->FindFixBin(MomLowEdgeX);
         WhichBinAtUpEdgeX = Xaxis->FindFixBin(MomUpEdgeX);
@@ -242,8 +247,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
         }
         //iterate over the Ck bins (Y)
         for(int iBinY=0; iBinY<NumMomBins; iBinY++){
-            MomLowEdgeY = CatHisto->GetBinLowEdge(iBinY);
-            MomUpEdgeY = CatHisto->GetBinUpEdge(iBinY);
+            MomLowEdgeY = CatHisto->GetBinLowEdge(0,iBinY);
+            MomUpEdgeY = CatHisto->GetBinUpEdge(0,iBinY);
             WhichBinAtLowEdgeY = Xaxis->FindFixBin(MomLowEdgeY);
             WhichBinAtUpEdgeY = Xaxis->FindFixBin(MomUpEdgeY);
             NumOldBinsY = WhichBinAtUpEdgeY - WhichBinAtLowEdgeY + 1;
@@ -266,7 +271,6 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
             if(NumOldBinsY>1){
                 WeightY[NumOldBinsY-1] = (MomUpEdgeY-Yaxis->GetBinLowEdge(WhichBinAtUpEdgeY))/Yaxis->GetBinWidth(WhichBinAtUpEdgeY);
             }
-
             Matrix[iBinY][iBinX] = 0;
             for(int iOldBinX=0; iOldBinX<NumOldBinsX; iOldBinX++){
                 for(int iOldBinY=0; iOldBinY<NumOldBinsY; iOldBinY++){
@@ -294,7 +298,6 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
 
     delete [] WeightX;
     delete [] WeightY;
-    delete [] WeightXY;
 }
 
 double DLM_ResponseMatrix::BilinearInterpolation(const double& x0, const double& y0,
@@ -305,6 +308,8 @@ double DLM_ResponseMatrix::BilinearInterpolation(const double& x0, const double&
 }
 
 
+//we normalize the probability to one, but also divide by the bin width
+//actually as we deal with a 2D matrix, we divide by the bin "area"
 void DLM_ResponseMatrix::NormalizeMatrix(const int& WhichMatr){
 
     int** Sparse = GetSparse(WhichMatr);
@@ -321,7 +326,7 @@ void DLM_ResponseMatrix::NormalizeMatrix(const int& WhichMatr){
 
     for(int iBinY=0; iBinY<NumMomBins; iBinY++){
         for(int iBinX=Sparse[iBinY][xAxisFirst]; iBinX<=Sparse[iBinY][xAxisLast]; iBinX++){
-            if(Norm[iBinY]) Matrix[iBinY][iBinX] /= Norm[iBinY];
+            if(Norm[iBinY]) Matrix[iBinY][iBinX] /= (Norm[iBinY]*CatHisto->GetBinSize(iBinX)*CatHisto->GetBinSize(iBinY));
             else Matrix[iBinY][iBinX]=0;
         }
     }

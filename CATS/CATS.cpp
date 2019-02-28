@@ -116,7 +116,7 @@ CATS::CATS():
     //PotParArray = NULL;
     AnaSourcePar = NULL;
     //AnaSourceParArray = NULL;
-    ForwardedSourcePar = new CATSparameters(CATSparameters::tSource,0,true);
+    //ForwardedSourcePar = new CATSparameters(CATSparameters::tSource,0,true);
 
     ExternalWF = NULL;
     ExternalPS = NULL;
@@ -152,7 +152,7 @@ CATS::~CATS(){
     if(LegPol){delete[]LegPol; LegPol=NULL;}
     if(CPF){delete[]CPF; CPF=NULL;}
     if(AnaSourcePar){delete AnaSourcePar; AnaSourcePar=NULL;}
-    if(ForwardedSourcePar){delete ForwardedSourcePar;ForwardedSourcePar=NULL;}
+    //if(ForwardedSourcePar){delete ForwardedSourcePar;ForwardedSourcePar=NULL;}
     if(PotPar){delete[]PotPar;PotPar=NULL;}
     if(ExternalWF){delete[]ExternalWF;ExternalWF=NULL;}
     if(ExternalPS){delete[]ExternalPS;ExternalPS=NULL;}
@@ -521,6 +521,12 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
             for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
                 PhaseShiftF[usCh][usPW][uMomBin] = 0;
             }
+        }
+    }
+
+    for(unsigned short usCh=0; usCh<NumCh; usCh++){
+        for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+            UpdateExternalPhaseShifts(usCh,usPW);
         }
     }
 
@@ -1455,10 +1461,11 @@ void CATS::SetAnaSource(double (*AS)(double*), double* Pars){
     ComputedCorrFunction = false;
 }
 */
+
 void CATS::SetAnaSource(double (*FS)(void*, double*), void* context, const unsigned& numparameters){
-    if(ForwardedSource==FS&&ForwardedSourcePar->GetNumPars()==numparameters) return;
-    delete ForwardedSourcePar;
-    ForwardedSourcePar = new CATSparameters(CATSparameters::tSource,numparameters,true);
+    if(ForwardedSource==FS&&AnaSourcePar->GetNumPars()==numparameters) return;
+    delete AnaSourcePar;
+    AnaSourcePar = new CATSparameters(CATSparameters::tSource,numparameters,true);
     if(!FS){
         if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m NULL pointer to the source function!\n");
         return;
@@ -1469,7 +1476,7 @@ void CATS::SetAnaSource(double (*FS)(void*, double*), void* context, const unsig
     }
     AnalyticSource = NULL;
     ForwardedSource = FS;
-    AnaSourcePar = ForwardedSourcePar;
+    //AnaSourcePar = ForwardedSourcePar;
 //printf("AnaSourcePar = ForwardedSourcePar\n");
 //printf(" npar=%u\n",AnaSourcePar->GetNumPars());
 //usleep(1e6);
@@ -1478,7 +1485,20 @@ void CATS::SetAnaSource(double (*FS)(void*, double*), void* context, const unsig
     SourceUpdated = false;
     ComputedCorrFunction = false;
 }
-
+/*
+void CATS::SetAnaSource(const CatsSource& SOURCE){
+    if(&SOURCE==MemberSource) return;
+    delete AnaSourcePar;
+    AnaSourcePar = new CATSparameters(CATSparameters::tSource,SOURCE.GetNumPars(),true);
+    AnalyticSource = NULL;
+    if(MemberSource) {delete MemberSource;}
+    MemberSource = new
+    *MemberSource = Source;
+    SourceGridReady = false;
+    SourceUpdated = false;
+    ComputedCorrFunction = false;
+}
+*/
 void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange){
     //if(!AnaSourcePar && !AnaSourceParArray) return;
     if(!AnaSourcePar) return;
@@ -1531,21 +1551,31 @@ double CATS::GetPotPar(const unsigned& usCh, const unsigned& usPW, const unsigne
     else return 0;
 }
 
-void CATS::SetExternalWaveFunction(const unsigned& usCh, const unsigned& usPW, const DLM_Histo<complex<double>>& histWF, const DLM_Histo<complex<double>>& histPS){
-
+void CATS::SetExternalWaveFunction(const unsigned& usCh, const unsigned& usPW, DLM_Histo<complex<double>>& histWF, DLM_Histo<complex<double>>& histPS){
     if(NumCh<=usCh || NumPW[usCh]<=usPW){
         if(Notifications>=nError)
-            printf("\033[1;31mERROR:\033[0m Bad input in CATS::UseExternalWaveFunction(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetExternalWaveFunction(...)\n");
         return;
     }
-
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
-
     if(!ExternalWF[usCh][usPW]){ExternalWF[usCh][usPW] = new DLM_Histo<complex<double>> ();}
     *ExternalWF[usCh][usPW] = histWF;
     if(!ExternalPS[usCh][usPW]){ExternalPS[usCh][usPW] = new DLM_Histo<complex<double>> ();}
     *ExternalPS[usCh][usPW] = histPS;
+    UpdateExternalPhaseShifts(usCh, usPW);
+}
+void CATS::SetExternalWaveFunction(DLM_Histo<complex<double>>*** ExternalWF){
+    if(!ExternalWF){
+        if(Notifications>=nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetExternalWaveFunction(...)\n");
+        return;
+    }
+    for(unsigned short usCh=0; usCh<NumCh; usCh++){
+        for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+            SetExternalWaveFunction(usCh,usPW,ExternalWF[0][usCh][usPW],ExternalWF[1][usCh][usPW]);
+        }
+    }
 }
 void CATS::RemoveExternalWaveFunction(const unsigned& usCh, const unsigned& usPW){
     if(NumCh<=usCh || NumPW[usCh]<=usPW){
@@ -1559,6 +1589,14 @@ void CATS::RemoveExternalWaveFunction(const unsigned& usCh, const unsigned& usPW
         {delete ExternalWF[usCh][usPW]; ExternalWF[usCh][usPW]= NULL;}
     if(ExternalPS&&ExternalPS[usCh]&&ExternalPS[usCh][usPW])
         {delete ExternalPS[usCh][usPW]; ExternalPS[usCh][usPW]= NULL;}
+}
+void CATS::UpdateExternalPhaseShifts(const unsigned& usCh, const unsigned& usPW){
+    if(!ExternalPS||!ExternalPS[usCh]||!ExternalPS[usCh][usPW]) return;
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+//! IN FUTURE UPDATES, WHEN WE INCLUDE COMPLEX POTENTIALS, THIS SHOULD BE CHANGED !
+        PhaseShift[uMomBin][usCh][usPW] = real(ExternalPS[usCh][usPW]->Eval(&MomBinCenter[uMomBin]));
+        PhaseShiftF[usCh][usPW][uMomBin] = real(PhaseShift[uMomBin][usCh][usPW]);
+    }
 }
 
 //!Running the analysis
@@ -3524,15 +3562,15 @@ double CATS::EvaluateTheSource(CATSparameters* Pars) const{
         return 0;
     }
 //printf("test\n");
-    return ForwardedSource(SourceContext,Pars->GetParameters());
+    return CatsSourceForwarder(SourceContext,Pars->GetParameters());
 }
 unsigned CATS::GetNumSourcePars() const{
     if(AnaSourcePar){
         return AnaSourcePar->GetNumPars();
     }
-    if(ForwardedSourcePar){
-        return ForwardedSourcePar->GetNumPars();
-    }
+    //if(ForwardedSourcePar){
+    //    return ForwardedSourcePar->GetNumPars();
+    //}
     return 0;
 }
 double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const{
