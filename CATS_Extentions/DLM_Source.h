@@ -64,7 +64,7 @@ public:
 
     void SetParameter(const unsigned& WhichPar, const double& Value);
     double Eval(double* Pars);
-    double Eval(double* x, double* Pars);
+    double EvalROOT(double* x, double* Pars);
     unsigned GetNumPars();
 private:
     unsigned Num_mT;//number of mT bins (common for the particle pair)

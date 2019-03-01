@@ -874,7 +874,7 @@ double MS_GaussExp_mT_Simple::Eval(double* Pars){
 
     return Result;
 }
-double MS_GaussExp_mT_Simple::Eval(double* x, double* Pars){
+double MS_GaussExp_mT_Simple::EvalROOT(double* x, double* Pars){
     double Result=0;
     Parameters[1] = x[0];
     Parameters[4] = Tau[0];
