@@ -54,6 +54,8 @@ public:
     void SetWeight_mT(const unsigned& umt, const double& wmt);
     void SetLinear_mT(const double& lin);
     void SetSlope_mT(const double& slope);
+    void SetCustomFunction(const unsigned& umt, const double& value);
+    void RemoveCustomFunction();
     void SetMass(const unsigned short& particle, const double& mass);
     void SetMassR(const unsigned short& particle, const double& mass);
     void SetMassD(const unsigned short& particle, const double& mass);
@@ -70,6 +72,8 @@ private:
     double* Weight_mT;//the weight of each mT bin
     double Linear_mT;//a+b*mT = r, linear is a, slope is b
     double Slope_mT;
+    //it this is not NULL, we use the values here instead of a linear function
+    double* FunctionValue;
     //[particle 1,2]
     double* Mass;//mass of the main particles we investigate
     double* MassR;//mass of the resonance from which each particles comes from

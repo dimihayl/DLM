@@ -694,6 +694,7 @@ MS_GaussExp_mT_Simple::MS_GaussExp_mT_Simple(){
     Weight_mT = NULL;
     Linear_mT = 0;
     Slope_mT = 0;
+    FunctionValue = NULL;
     Mass = new double [2];
     MassR = new double [2];
     MassD = new double [2];
@@ -708,6 +709,9 @@ MS_GaussExp_mT_Simple::~MS_GaussExp_mT_Simple(){
     delete[]Tau; Tau=NULL;
     delete[]Weight_R; Weight_R=NULL;
     delete[]Parameters; Parameters=NULL;
+    if(FunctionValue)delete[]FunctionValue;FunctionValue=NULL;
+    if(Mean_mT)delete[]Mean_mT;Mean_mT=NULL;
+    if(Weight_mT)delete[]Weight_mT;Weight_mT=NULL;
 }
 
 void MS_GaussExp_mT_Simple::SetNum_mT(const unsigned& nmt){
@@ -720,6 +724,7 @@ void MS_GaussExp_mT_Simple::SetNum_mT(const unsigned& nmt){
 
     if(Mean_mT)delete[]Mean_mT;Mean_mT=new double [nmt];
     if(Weight_mT)delete[]Weight_mT;Weight_mT=new double [nmt];
+    if(FunctionValue)delete[]FunctionValue;FunctionValue=NULL;
 }
 void MS_GaussExp_mT_Simple::SetMean_mT(const unsigned& umt, const double& mmt){
     if(umt>=Num_mT){
@@ -740,6 +745,22 @@ void MS_GaussExp_mT_Simple::SetLinear_mT(const double& lin){
 }
 void MS_GaussExp_mT_Simple::SetSlope_mT(const double& slope){
     Slope_mT = slope;
+}
+void MS_GaussExp_mT_Simple::SetCustomFunction(const unsigned& umt, const double& value){
+    if(umt>=Num_mT){
+        printf("\033[1;33mWARNING:\033[0m Current number of mT bins is %u and you attempt to set bin nr. %u\n",Num_mT,umt);
+        return;
+    }
+    if(!FunctionValue){
+        FunctionValue = new double [Num_mT];
+    }
+    FunctionValue[umt] = value;
+}
+void MS_GaussExp_mT_Simple::RemoveCustomFunction(){
+    if(FunctionValue){
+        delete[]FunctionValue;
+        FunctionValue=NULL;
+    }
 }
 void MS_GaussExp_mT_Simple::SetMass(const unsigned short& particle, const double& mass){
     if(particle>1){
@@ -833,11 +854,11 @@ double MS_GaussExp_mT_Simple::Eval(double* Pars){
     Parameters[11] = MassR[1];
     Parameters[12] = Mass[1];
     Parameters[13] = MassD[1];
-    double Rad_mT;
+    double& Rad_mT = Parameters[3];
     for(unsigned umt=0; umt<Num_mT; umt++){
         if(!Weight_mT[umt]) continue;
-        Rad_mT = Linear_mT+Slope_mT*Mean_mT[umt];
-        Parameters[3] = Rad_mT;
+        if(FunctionValue) Rad_mT = FunctionValue[umt];
+        else Rad_mT = Linear_mT+Slope_mT*Mean_mT[umt];
         Result += Weight_mT[umt]*GaussExpTotSimple_2body(Parameters);
     }
 if(Result!=Result || Result>1 || Result<0){

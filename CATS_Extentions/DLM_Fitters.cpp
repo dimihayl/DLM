@@ -611,7 +611,7 @@ void DLM_Fitter1::SetParameter(const TString& WhichSyst, const unsigned& WhichPa
             }
         }
     }
-    printf("WARNING: SetParameter says that the system '%s' does not exist!\n", WhichSyst.Data());
+    printf("\033[1;33mWARNING:\033[0m SetParameter says that the system '%s' does not exist!\n", WhichSyst.Data());
     delete [] buffer;
 }
 void DLM_Fitter1::FixParameter(const unsigned& WhichSyst, const unsigned& WhichPar, const double& Value){
@@ -791,7 +791,9 @@ const TH1F* DLM_Fitter1::GetGlobalHisto() const{
     return HistoGlobal;
 }
 
-void DLM_Fitter1::GoBabyGo(){
+void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
+
+    ShowFitInfo = show_fit_info;
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!SystemToFit[uSyst]){
@@ -813,8 +815,8 @@ void DLM_Fitter1::GoBabyGo(){
         else{FitBL[uSyst]->SetParameter(1, ParValue[uSyst][p_b]); FitBL[uSyst]->SetParLimits(1, ParDownLimit[uSyst][p_b], ParUpLimit[uSyst][p_b]);}
         if(FixPar[uSyst][p_c]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_c]);}
         else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_c]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_c], ParUpLimit[uSyst][p_c]);}
-        //HistoToFit[uSyst]->Fit(FitBL[uSyst],"S, N, R, M");
-        HistoToFit[uSyst]->Fit(FitBL[uSyst],"Q, S, N, R, M");
+        if(ShowFitInfo) HistoToFit[uSyst]->Fit(FitBL[uSyst],"S, N, R, M");
+        else HistoToFit[uSyst]->Fit(FitBL[uSyst],"Q, S, N, R, M");
         FixParameter(uSyst,p_a,FitBL[uSyst]->GetParameter(0));
         FixParameter(uSyst,p_b,FitBL[uSyst]->GetParameter(1));
         FixParameter(uSyst,p_c,FitBL[uSyst]->GetParameter(2));
@@ -1196,8 +1198,8 @@ void DLM_Fitter1::GoBabyGo(){
     }
 
     //HistoGlobal->Fit(FitGlobal,"V, S, N, R, M");
-    HistoGlobal->Fit(FitGlobal,"S, N, R, M");
-    //HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
+    if(ShowFitInfo) HistoGlobal->Fit(FitGlobal,"S, N, R, M");
+    else HistoGlobal->Fit(FitGlobal,"Q, S, N, R, M");
     //HistoGlobal->Fit(FitGlobal,"Q, N, R, M");
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){

@@ -88,7 +88,7 @@ public:
 
 
     //set up the global histogram and perform the fit
-    void GoBabyGo();
+    void GoBabyGo(const bool& show_fit_info=false);
 
 //void TEST1(const unsigned& WhichSyst, TH1F* histo, const double& FromMeV ,
 //                   DLM_CkDecomposition* decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
@@ -152,6 +152,8 @@ private:
     double* GlobalToMomentum;
     unsigned* NumBinsSyst;
     unsigned* CumulativeNumBinsSyst;
+
+    bool ShowFitInfo;
 
     //unsigned SourceAnchoredTo(const);
 
