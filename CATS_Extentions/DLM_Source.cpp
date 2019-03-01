@@ -861,16 +861,48 @@ double MS_GaussExp_mT_Simple::Eval(double* Pars){
         else Rad_mT = Linear_mT+Slope_mT*Mean_mT[umt];
         Result += Weight_mT[umt]*GaussExpTotSimple_2body(Parameters);
     }
-if(Result!=Result || Result>1 || Result<0){
-    /*
-    printf("Result=%e\n",Result);
-    for(unsigned uPar=0; uPar<14; uPar++){
-        printf("   Parameters[%u]=%f\n",uPar,Parameters[uPar]);
+    if(Result!=Result || Result>1 || Result<0){
+        /*
+        printf("Result=%e\n",Result);
+        for(unsigned uPar=0; uPar<14; uPar++){
+            printf("   Parameters[%u]=%f\n",uPar,Parameters[uPar]);
+        }
+        */
+        Result = 0;
     }
-    */
-    Result = 0;
-}
 
+
+    return Result;
+}
+double MS_GaussExp_mT_Simple::Eval(double* x, double* Pars){
+    double Result=0;
+    Parameters[1] = x[0];
+    Parameters[4] = Tau[0];
+    Parameters[5] = 1.-Weight_R[0];
+    Parameters[6] = MassR[0];
+    Parameters[7] = Mass[0];
+    Parameters[8] = MassD[0];
+    Parameters[9] = Tau[1];
+    Parameters[10] = 1.-Weight_R[1];
+    Parameters[11] = MassR[1];
+    Parameters[12] = Mass[1];
+    Parameters[13] = MassD[1];
+    double& Rad_mT = Parameters[3];
+    for(unsigned umt=0; umt<Num_mT; umt++){
+        if(!Weight_mT[umt]) continue;
+        if(FunctionValue) Rad_mT = FunctionValue[umt];
+        else Rad_mT = Linear_mT+Slope_mT*Mean_mT[umt];
+        Result += Weight_mT[umt]*GaussExpTotSimple_2body(Parameters);
+    }
+    if(Result!=Result || Result>1 || Result<0){
+        /*
+        printf("Result=%e\n",Result);
+        for(unsigned uPar=0; uPar<14; uPar++){
+            printf("   Parameters[%u]=%f\n",uPar,Parameters[uPar]);
+        }
+        */
+        Result = 0;
+    }
 
     return Result;
 }
