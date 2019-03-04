@@ -685,24 +685,34 @@ double DLM_Fitter1::Eval(const unsigned& WhichSyst, const double& Momentum)(){
     return FitGlobal->Eval();
 }
 */
-void DLM_Fitter1::GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph){
+
+void DLM_Fitter1::GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning){
 //printf(" HEY -> GetFitGraph!\n");
     if(WhichSyst>=MaxNumSyst) return;
 //printf(" HEY2 -> GetFitGraph!\n");
     OutGraph.Set(NumBinsSyst[WhichSyst]);
     double Momentum;
-    double xGlobal;
-    unsigned GlobalBinShift=0;
-    for(unsigned uSyst=0; uSyst<WhichSyst; uSyst++){
-        GlobalBinShift += NumBinsSyst[uSyst];
+    if(DataBinning){
+        double xGlobal;
+        unsigned GlobalBinShift=0;
+        for(unsigned uSyst=0; uSyst<WhichSyst; uSyst++){
+            GlobalBinShift += NumBinsSyst[uSyst];
+        }
+    //printf("GlobalBinShift=%u\n",GlobalBinShift);
+        for(unsigned uBin=0; uBin<NumBinsSyst[WhichSyst]; uBin++){
+            Momentum = GlobalToMomentum[GlobalBinShift+uBin];
+            xGlobal = HistoGlobal->GetBinCenter(GlobalBinShift+uBin+1);
+    //printf(" k=%.2f; xVal=%.2f\n",Momentum,xGlobal);
+            OutGraph.SetPoint(uBin,Momentum,FitGlobal->Eval(xGlobal));
+        }
     }
-//printf("GlobalBinShift=%u\n",GlobalBinShift);
-    for(unsigned uBin=0; uBin<NumBinsSyst[WhichSyst]; uBin++){
-        Momentum = GlobalToMomentum[GlobalBinShift+uBin];
-        xGlobal = HistoGlobal->GetBinCenter(GlobalBinShift+uBin+1);
-//printf(" k=%.2f; xVal=%.2f\n",Momentum,xGlobal);
-        OutGraph.SetPoint(uBin,Momentum,FitGlobal->Eval(xGlobal));
+    else{
+        for(unsigned uBin=0; uBin<SystemToFit[WhichSyst]->GetCk()->GetNbins(); uBin++){
+            Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(0,uBin);
+            OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->EvalCk(Momentum));
+        }
     }
+
 }
 
 void DLM_Fitter1::GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph){
@@ -711,7 +721,7 @@ void DLM_Fitter1::GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph){
     double Momentum;
     for(unsigned uBin=0; uBin<SystemToFit[WhichSyst]->GetCk()->GetNbins(); uBin++){
         Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(0,uBin);
-        OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->EvalCk(Momentum));
+        OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->EvalSmearedMain(Momentum));
     }
 }
 

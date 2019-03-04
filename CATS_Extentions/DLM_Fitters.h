@@ -70,7 +70,7 @@ public:
     double GetChi2Ndf();
     double GetPval();
     //double Eval(const unsigned& WhichSyst, const double& Momentum);
-    void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph);
+    void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning=true);
     void GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph);
     void GetCkTheoryGraph(const unsigned& WhichSyst, TGraph& OutGraph);
 

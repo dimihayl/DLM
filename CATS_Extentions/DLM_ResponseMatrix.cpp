@@ -184,7 +184,7 @@ void DLM_ResponseMatrix::MakeUnitMatrix(const int& WhichMatr){
     double** Matrix = GetMatrix(WhichMatr);
     for(int iBinX=0; iBinX<NumMomBins; iBinX++){
         for(int iBinY=0; iBinY<NumMomBins; iBinY++){
-            Matrix[iBinY][iBinX] = (iBinX==iBinY);
+            Matrix[iBinY][iBinX] = double(iBinX==iBinY)/(CatHisto->GetBinSize(0,iBinX)*CatHisto->GetBinSize(0,iBinY));
         }
         Sparse[iBinX][xAxisFirst] = iBinX;
         Sparse[iBinX][xAxisLast] = iBinX;

@@ -289,6 +289,8 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
 
 void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child,
                                           const TH2F* hResidualMatrix, const bool& InvertedAxis){
+//printf("hResidualMatrix=%p\n",hResidualMatrix);
+
     if(ERROR_STATE) return;
 
     if(WhichCk>=NumChildren){
@@ -324,6 +326,7 @@ void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double&
     if(RM_Child[WhichCk]) {delete RM_Child[WhichCk]; RM_Child[WhichCk]=NULL;}
     if(child && hResidualMatrix){
         RM_Child[WhichCk] = new DLM_ResponseMatrix(*child->CkMain, NULL, hResidualMatrix, InvertedAxis);
+//printf("RM_Child[%u]=%p\n",WhichCk,RM_Child[WhichCk]);
     }
 
     if(CkChildMainFeed[WhichCk]) {delete CkChildMainFeed[WhichCk]; CkChildMainFeed[WhichCk]=NULL;}
@@ -574,6 +577,7 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
                     //}
                 }
                 //CkMainFeed->Add(CkChildMainFeed[uChild][0],LambdaPar[uChild]/MuPar);
+//printf("Last point: CkMainFeed=%.2f\n",CkMainFeed->GetBinContent(CkMainFeed->GetNbins()-1));
 
                 //if(!CkMainFeed->Add(CkChildMainFeed[uChild][0],LambdaPar[uChild]/MuPar)){
                 //printf("BIG TROUBLE!\n");
@@ -588,9 +592,10 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
             }
 //SHOWSTUFF=false;
         }
-
+//printf("Last point: CkMainFeed=%.2f\n",CkMainFeed->GetBinContent(CkMainFeed->GetNbins()-1));
         //Smear(CkMain, RM_MomResolution, CkMainSmeared);
         Smear(CkMainFeed, RM_MomResolution, CkSmearedMainFeed);
+//printf("Last point: CkSmearedMainFeed=%.2f\n",CkSmearedMainFeed->GetBinContent(CkSmearedMainFeed->GetNbins()-1));
 //if(strcmp("pp",Name)==0) printf("         A: CkMainFeed=%f\n", CkMainFeed->Eval(50));
 //if(strcmp("pp",Name)==0) printf("         A: CkSmearedMainFeed=%f\n", CkSmearedMainFeed->Eval(50));
     }
@@ -630,9 +635,20 @@ void DLM_CkDecomposition::SmearOLD(const DLM_Histo<double>* CkToSmear, const DLM
     }
 }
 */
+
 void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
+//printf("SmearMatrix=%p\n",SmearMatrix);
+//printf(" SmearMatrix->ResponseMatrix=%p\n",SmearMatrix->ResponseMatrix);
      if(!SmearMatrix){
         CkSmeared[0] = CkToSmear[0];
+
+//printf("Smear:\n");
+//if(CkSmeared[0].GetNbins()!=CkToSmear[0].GetNbins()) printf("WTF1\n");
+//if(CkSmeared[0].GetDim()!=CkToSmear[0].GetDim()) printf("WTF2\n");
+//for(unsigned uBin=0; uBin<CkToSmear[0].GetNbins(); uBin++){
+//    if(CkSmeared[0].GetBinContent(uBin)!=CkToSmear[0].GetBinContent(uBin)) printf("WTF_at_%u\n",uBin);
+//}
+
     }
     else{
         for(unsigned uBinSmear=0; uBinSmear<CkToSmear->GetNbins(); uBinSmear++){

@@ -504,6 +504,9 @@ public:
             }
         }
     }
+    unsigned short GetDim() const{
+        return Dim;
+    }
     unsigned GetNbins() const{
         if(!Initialized) {InitWarning(); return 0;}
         return TotNumBins;
