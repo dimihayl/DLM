@@ -131,7 +131,6 @@ private:
     bool* CurrentStatusChild;
     bool DecompositionStatus;
 
-
     bool UniqueName(const char* name);
     //bool CheckStatus();
 
