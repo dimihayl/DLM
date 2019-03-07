@@ -110,7 +110,6 @@ private:
     DLM_Random* RanGen;
 };
 
-
 class DLM_CleverLevy:public CatsSource{
 public:
     DLM_CleverLevy();
@@ -136,6 +135,51 @@ private:
     double MaxScale;
     double MinRad;
     double MaxRad;
+    DLM_Histo<double>* Histo;
+    void Reset();
+    void Init();
+};
+
+class DLM_CleverMcLevyReso:public CatsSource{
+public:
+    DLM_CleverMcLevyReso();
+    ~DLM_CleverMcLevyReso();
+    double Eval(double* Pars);
+    double RootEval(double* x, double* Pars);
+    void InitStability(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitScale(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitRad(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitType(const int& type);
+    //this should be called individually for both of the particles in the pair
+    void InitReso(const unsigned& whichparticle, const unsigned& numreso);
+    void SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1);
+    void InitNumMcIter(const unsigned& numiter);
+    unsigned GetNumPars();
+private:
+    //0 = single particle
+    //1 = pair
+    //2 = Nolan notation
+    int Type;
+    unsigned NumPtsStability;
+    unsigned NumPtsScale;
+    unsigned NumPtsRad;
+    double MinStability;
+    double MaxStability;
+    double MinScale;
+    double MaxScale;
+    double MinRad;
+    double MaxRad;
+    unsigned* NumResonances;
+    double** ResoWeight;
+    double** ResoMass;
+    double** ResoTau;
+    //ChildMass0 is the 'primary' particle of interest
+    //we assume that the decay is two-body and that the final k* is zero. Base on that we can get an estimate for the
+    //momentum of the resonance, which we will use
+    double** ChildMass0;
+    double** ChildMass1;
+    //the number of MC iterations with which each source is to be initialized
+    unsigned NumMcIter;
     DLM_Histo<double>* Histo;
     void Reset();
     void Init();

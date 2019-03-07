@@ -5,10 +5,9 @@
 #include "DLM_Bessel.h"
 #include "DLM_MathFunctions.h"
 #include "DLM_Histo.h"
+#include "CATSconstants.h"
 
 #include "math.h"
-
-const double PI = 3.141592653589793;
 
 //!TEST
 //#include <fstream>
@@ -25,8 +24,8 @@ double GaussSource(double* Pars){
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double& Size = Pars[3];
-//printf(" G-> r=%.2f, s=%.2f => %.2f\n",Radius,Size,4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size)));
-    return 4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+//printf(" G-> r=%.2f, s=%.2f => %.2f\n",Radius,Size,4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size)));
+    return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 //same as GaussSource, but we assume that the user calls the function wanting to sample from theta as well.
 //since Integral(dTheta) = 2 for a flat theta distribution and the whole Source function needs to be normalized to 1,
@@ -42,7 +41,7 @@ double CauchySource(double* Pars){
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double& Size = Pars[3];
-    return 2.97*Size*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.125*2.97*2.97*Size*Size,-2.);
+    return 2.97*Size*sqrt(2)*Radius*Radius/Pi*pow(Radius*Radius+0.125*2.97*2.97*Size*Size,-2.);
 }
 
 double CauchySource_v2(double* Pars){
@@ -50,7 +49,7 @@ double CauchySource_v2(double* Pars){
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double& Size = Pars[3];
-    return 12.*Radius*Size*sqrt(2)/(PI*PI*sqrt(Radius*Radius+4.*Size*Size)*(Radius*Radius+6.*Size*Size))*
+    return 12.*Radius*Size*sqrt(2)/(Pi*Pi*sqrt(Radius*Radius+4.*Size*Size)*(Radius*Radius+6.*Size*Size))*
             atan(sqrt(2.+0.5*pow(Radius/Size,2.))*Radius/Size/sqrt(2));
 }
 
@@ -67,11 +66,11 @@ double DoubleGaussSource(double* Pars){
     double& Size2 = Pars[4];
     double& Weight1 = Pars[5];
 
-//printf(" G1=%.1f x %e\n",Weight1, 4.*PI*Radius*Radius*pow(4.*PI*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1)));
-//printf(" G2=%.1f x %e\n",1.-Weight1, 4.*PI*Radius*Radius*pow(4.*PI*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2)));
+//printf(" G1=%.1f x %e\n",Weight1, 4.*Pi*Radius*Radius*pow(4.*Pi*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1)));
+//printf(" G2=%.1f x %e\n",1.-Weight1, 4.*Pi*Radius*Radius*pow(4.*Pi*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2)));
 
-    return      Weight1 *4.*PI*Radius*Radius*pow(4.*PI*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1))+
-            (1.-Weight1)*4.*PI*Radius*Radius*pow(4.*PI*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2));
+    return      Weight1 *4.*Pi*Radius*Radius*pow(4.*Pi*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1))+
+            (1.-Weight1)*4.*Pi*Radius*Radius*pow(4.*Pi*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2));
 
 }
 
@@ -84,11 +83,11 @@ double GaussCauchySource(double* Pars){
     double& Size2 = Pars[4];
     double& Weight1 = Pars[5];
 
-//printf(" G1=%.1f x %e\n",Weight1, 4.*PI*Radius*Radius*pow(4.*PI*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1)));
-//printf(" G2=%.1f x %e\n",1.-Weight1, 4.*PI*Radius*Radius*pow(4.*PI*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2)));
+//printf(" G1=%.1f x %e\n",Weight1, 4.*Pi*Radius*Radius*pow(4.*Pi*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1)));
+//printf(" G2=%.1f x %e\n",1.-Weight1, 4.*Pi*Radius*Radius*pow(4.*Pi*Size2*Size2,-1.5)*exp(-(Radius*Radius)/(4.*Size2*Size2)));
 
-    return      Weight1 *4.*PI*Radius*Radius*pow(4.*PI*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1))+
-            (1.-Weight1)*2.*Size2*Radius*Radius/PI*pow(Radius*Radius+0.25*Size2*Size2,-2.);
+    return      Weight1 *4.*Pi*Radius*Radius*pow(4.*Pi*Size1*Size1,-1.5)*exp(-(Radius*Radius)/(4.*Size1*Size1))+
+            (1.-Weight1)*2.*Size2*Radius*Radius/Pi*pow(Radius*Radius+0.25*Size2*Size2,-2.);
 
 }
 
@@ -136,15 +135,15 @@ double LevySource3D_2particle(double* Pars){
 //}
 
     if(Stability==1){
-        return 2.97*2.*Scale*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.5*2.97*2.97*Scale*Scale,-2.);
+        return 2.97*2.*Scale*sqrt(2)*Radius*Radius/Pi*pow(Radius*Radius+0.5*2.97*2.97*Scale*Scale,-2.);
     }
     else if(Stability==2){
-        return 4.*PI*Radius*Radius*pow(4.*PI*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(4.*Scale*Scale));
+        return 4.*Pi*Radius*Radius*pow(4.*Pi*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(4.*Scale*Scale));
     }
 
     DLM_INT_SetFunction(LevyIntegral3D_2particle,Pars,2);
     if(Radius==0) return 0;
-    //return DLM_INT_aSimpsonWiki(0.,16.+Radius,1e-8,128)*pow(2.*PI*pow(Scale*Scale/3.,3.),-1.5)*4.*PI*Radius*Radius;
+    //return DLM_INT_aSimpsonWiki(0.,16.+Radius,1e-8,128)*pow(2.*Pi*pow(Scale*Scale/3.,3.),-1.5)*4.*Pi*Radius*Radius;
     unsigned NSteps;
     if(Radius>108) NSteps = 1024;
     else if(Radius>36) NSteps = 512;
@@ -153,7 +152,7 @@ double LevySource3D_2particle(double* Pars){
     else NSteps = 64;
 
     //x2+y2+z2=r2 => r2=3x2 x2=r2/3 x2y2z2=r6/27 = r2
-    //return DLM_INT_SimpsonWiki(0.,16.,NSteps)*pow(2.*PI*pow(Scale*Scale/3.,3.),-1.5)*4.*PI*Radius*Radius;
+    //return DLM_INT_SimpsonWiki(0.,16.,NSteps)*pow(2.*Pi*pow(Scale*Scale/3.,3.),-1.5)*4.*Pi*Radius*Radius;
     double ReturnVal = DLM_INT_SimpsonWiki(0.,16.,NSteps)*2./(pow(2.,Dim*0.5)*exp(gammln(Dim*0.5)));
 //if(ReturnVal!=ReturnVal)
 //printf("ReturnVal=%f\n",ReturnVal);
@@ -179,10 +178,10 @@ double LevySource3D_single(double* Pars){
     double& Stability = Pars[4];
 
     if(Stability==1){
-        return 2.97*Scale*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.125*2.97*2.97*Scale*Scale,-2.);
+        return 2.97*Scale*sqrt(2)*Radius*Radius/Pi*pow(Radius*Radius+0.125*2.97*2.97*Scale*Scale,-2.);
     }
     else if(Stability==2){
-        return 4.*PI*Radius*Radius*pow(2.*PI*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(2.*Scale*Scale));
+        return 4.*Pi*Radius*Radius*pow(2.*Pi*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(2.*Scale*Scale));
     }
 
     DLM_INT_SetFunction(LevyIntegral3D_single,Pars,2);
@@ -210,6 +209,8 @@ double LevyIntegral3D(double* Pars){
     return pow(Radius*IntVar,Dim*0.5)*DLM_Bessel1(Dim*0.5-1.,Radius*IntVar)*exp(-pow(Scale*IntVar,Stability));
 }
 //using this function, we get the 3D Levy distribution (single particle)
+//what is a bit worrying is that this guy give slightly different results compared to my DLM_Random::Stable, but whatever
+//This implementation over here is written to be numerically unstable, so maybe that is the reason...
 double LevySource3D(double* Pars){
     double& Radius = Pars[1];
     const double Dim = 3;
@@ -217,10 +218,10 @@ double LevySource3D(double* Pars){
     double& Stability = Pars[4];
 
     if(Stability==1){
-        return 2.97*Scale*sqrt(2)*Radius*Radius/PI*pow(Radius*Radius+0.125*2.97*2.97*Scale*Scale,-2.);
+        return 2.97*Scale*sqrt(2)*Radius*Radius/Pi*pow(Radius*Radius+0.125*2.97*2.97*Scale*Scale,-2.);
     }
     else if(Stability==2){
-        return 4.*PI*Radius*Radius*pow(4.*PI*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(4.*Scale*Scale));
+        return 4.*Pi*Radius*Radius*pow(4.*Pi*Scale*Scale,-1.5)*exp(-(Radius*Radius)/(4.*Scale*Scale));
     }
 
     DLM_INT_SetFunction(LevyIntegral3D,Pars,2);
@@ -253,8 +254,8 @@ double LevySource_A(double* Pars){
 
     if(Stability<=0 || Stability>2) return 0;
     else if(Radius/Size>3){
-        double k1 = pow(2.,Stability)*sin(PI*Stability*0.5)*exp(gammln((Stability+2.)*0.5))*exp(gammln((Stability+Dim)*0.5))/
-                    (exp(gammln(Dim*0.5))*PI*Stability*0.5);
+        double k1 = pow(2.,Stability)*sin(Pi*Stability*0.5)*exp(gammln((Stability+2.)*0.5))*exp(gammln((Stability+Dim)*0.5))/
+                    (exp(gammln(Dim*0.5))*Pi*Stability*0.5);
         Result = Stability*k1*pow(Size/Radius,Stability)/Radius;
     }
     else if(Stability<1){
@@ -365,7 +366,7 @@ if(rLong>0.5){
 //printf("For r=%.2f, NOW=%.2f; OLD=%.2f\n", Radius, PM1->GetIntegratedSource(0)->GetBinContent(PM1->GetIntegratedSource(0)->FindBin(Radius), GaussSource(Pars)));
 
 //printf("For r=%.2f, NOW=%.2f; OLD=%.2f\n", Radius, PM1->GetIntegratedSource(0)->GetBinContent(PM1->GetIntegratedSource(0)->FindBin(Radius)), GaussSource(Pars));
-//4.*PI*Radius*Radius*pow(4.*PI*rOut*rOut,-1.5)*exp(-(Radius*Radius)/(4.*rOut*rOut))
+//4.*Pi*Radius*Radius*pow(4.*Pi*rOut*rOut,-1.5)*exp(-(Radius*Radius)/(4.*rOut*rOut))
 //printf(" rOut=%.2f; rSide=%.2f; rLong=%.2f\n\n",rOut,rSide,rLong);
 }
 
@@ -415,7 +416,7 @@ double Gauss_Exp_Approx(double* Pars){
         oldTKM = TKM;
         oldMASS = MASS;
     }
-    RAD = TKM?log(RAD*TKM/80.+1.)*80./TKM-TKM*atan(1.5*RAD/TKM)*2./PI:RAD;
+    RAD = TKM?log(RAD*TKM/80.+1.)*80./TKM-TKM*atan(1.5*RAD/TKM)*2./Pi:RAD;
     if(RAD<0) RAD=0;
     if(MASS<=0) {printf("\033[1;33mWARNING:\033[0m Gauss_Exp_Approx got MASS=0\n"); return 0;}
     double Result = NORM!=1.23456789?GaussSource(Pars)/NORM:GaussSource(Pars);
@@ -443,14 +444,14 @@ double Gauss_Exp_Exact(double* Pars){
     else if(TKM1==0){
         return (pow(E,-pow(RAD,2)/(4.*pow(SIG,2)) - RAD/TKM2)*(4*pow(E,RAD/TKM2)*SIG*TKM2*(pow(SIG,2) + pow(TKM2,2)) -
                2*pow(E,pow(RAD,2)/(4.*pow(SIG,2)))*SIG*TKM2*(2*pow(SIG,2) + TKM2*(-RAD + 2*TKM2)) +
-               pow(E,pow(RAD,2)/(4.*pow(SIG,2)) + pow(SIG,2)/pow(TKM2,2))*sqrt(PI)*(-4*pow(SIG,4) + 2*pow(SIG,2)*(RAD - 3*TKM2)*TKM2 + RAD*pow(TKM2,3))*
-                (erf(RAD/(2.*SIG) - SIG/TKM2) + erf(SIG/TKM2))))/(sqrt(PI)*pow(TKM2,5));
+               pow(E,pow(RAD,2)/(4.*pow(SIG,2)) + pow(SIG,2)/pow(TKM2,2))*sqrt(Pi)*(-4*pow(SIG,4) + 2*pow(SIG,2)*(RAD - 3*TKM2)*TKM2 + RAD*pow(TKM2,3))*
+                (erf(RAD/(2.*SIG) - SIG/TKM2) + erf(SIG/TKM2))))/(sqrt(Pi)*pow(TKM2,5));
     }
     else if(TKM2==0){
         return (pow(E,-pow(RAD,2)/(4.*pow(SIG,2)) - RAD/TKM1)*(4*pow(E,RAD/TKM1)*SIG*TKM1*(pow(SIG,2) + pow(TKM1,2)) -
                2*pow(E,pow(RAD,2)/(4.*pow(SIG,2)))*SIG*TKM1*(2*pow(SIG,2) + TKM1*(-RAD + 2*TKM1)) +
-               pow(E,pow(RAD,2)/(4.*pow(SIG,2)) + pow(SIG,2)/pow(TKM1,2))*sqrt(PI)*(-4*pow(SIG,4) + 2*pow(SIG,2)*(RAD - 3*TKM1)*TKM1 + RAD*pow(TKM1,3))*
-                (erf(RAD/(2.*SIG) - SIG/TKM1) + erf(SIG/TKM1))))/(sqrt(PI)*pow(TKM1,5));
+               pow(E,pow(RAD,2)/(4.*pow(SIG,2)) + pow(SIG,2)/pow(TKM1,2))*sqrt(Pi)*(-4*pow(SIG,4) + 2*pow(SIG,2)*(RAD - 3*TKM1)*TKM1 + RAD*pow(TKM1,3))*
+                (erf(RAD/(2.*SIG) - SIG/TKM1) + erf(SIG/TKM1))))/(sqrt(Pi)*pow(TKM1,5));
     }
 //!shouldn't I take TKM=TKM1+TKM2 for the computation, verify!
     else if(TKM1==TKM2){
@@ -458,25 +459,25 @@ static bool WARNING = true;
 if(WARNING) printf("WARNING: shouldn't I take TKM=TKM1+TKM2 for the computation, verify!\n");
 WARNING=false;
         return (pow(E,(pow(SIG,2) - RAD*TKM1)/pow(TKM1,2))*((-2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM1,2))*TKM1) + (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM1,2)))*pow(SIG,3))/TKM1 -
-               (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2))))*pow(SIG,3))/TKM1 + sqrt(PI)*pow(SIG,2)*erf(SIG/TKM1) +
-               (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM1))/pow(TKM1,2) - (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM1)*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1)))/
+               (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2))))*pow(SIG,3))/TKM1 + sqrt(Pi)*pow(SIG,2)*erf(SIG/TKM1) +
+               (2*sqrt(Pi)*pow(SIG,4)*erf(SIG/TKM1))/pow(TKM1,2) - (sqrt(Pi)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM1)*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1)))/
                 (pow(TKM1,3)*abs(-RAD/(2.*SIG) + SIG/TKM1)) - (pow(2*pow(SIG,2) - RAD*TKM1,3)*
-                  (-abs(-2*pow(SIG,2) + RAD*TKM1) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*sqrt(PI)*SIG*TKM1*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1))))/
-                (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*pow(SIG,2)*pow(TKM1,4)*pow(abs(-RAD/(2.*SIG) + SIG/TKM1),3))))/(sqrt(PI)*pow(SIG,2)*TKM1);
+                  (-abs(-2*pow(SIG,2) + RAD*TKM1) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*sqrt(Pi)*SIG*TKM1*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1))))/
+                (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*pow(SIG,2)*pow(TKM1,4)*pow(abs(-RAD/(2.*SIG) + SIG/TKM1),3))))/(sqrt(Pi)*pow(SIG,2)*TKM1);
     }
     else{
         return (pow(E,(pow(SIG,2) - RAD*TKM1)/pow(TKM1,2))*((-2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM1,2))*TKM1) + (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM1,2)))*pow(SIG,3))/TKM1 -
-        (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2))))*pow(SIG,3))/TKM1 + sqrt(PI)*pow(SIG,2)*erf(SIG/TKM1) +
-        (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM1))/pow(TKM1,2) - (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM1)*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1)))/
+        (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2))))*pow(SIG,3))/TKM1 + sqrt(Pi)*pow(SIG,2)*erf(SIG/TKM1) +
+        (2*sqrt(Pi)*pow(SIG,4)*erf(SIG/TKM1))/pow(TKM1,2) - (sqrt(Pi)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM1)*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1)))/
          (pow(TKM1,3)*abs(RAD/(2.*SIG) - SIG/TKM1)) - (pow(2*pow(SIG,2) - RAD*TKM1,3)*
-           (-abs(-2*pow(SIG,2) + RAD*TKM1) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*sqrt(PI)*SIG*TKM1*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1))))/
+           (-abs(-2*pow(SIG,2) + RAD*TKM1) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*sqrt(Pi)*SIG*TKM1*erf(abs(-2*pow(SIG,2) + RAD*TKM1)/(2.*SIG*TKM1))))/
          (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM1,2)/(4.*pow(SIG,2)*pow(TKM1,2)))*pow(SIG,2)*pow(TKM1,4)*pow(abs(RAD/(2.*SIG) - SIG/TKM1),3))) +
      pow(E,(pow(SIG,2) - RAD*TKM2)/pow(TKM2,2))*((2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM2,2))*TKM2) - (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM2,2)))*pow(SIG,3))/TKM2 +
-        (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2))))*pow(SIG,3))/TKM2 - sqrt(PI)*pow(SIG,2)*erf(SIG/TKM2) -
-        (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM2))/pow(TKM2,2) + (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM2)*erf(abs(-2*pow(SIG,2) + RAD*TKM2)/(2.*SIG*TKM2)))/
+        (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2))))*pow(SIG,3))/TKM2 - sqrt(Pi)*pow(SIG,2)*erf(SIG/TKM2) -
+        (2*sqrt(Pi)*pow(SIG,4)*erf(SIG/TKM2))/pow(TKM2,2) + (sqrt(Pi)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM2)*erf(abs(-2*pow(SIG,2) + RAD*TKM2)/(2.*SIG*TKM2)))/
          (pow(TKM2,3)*abs(RAD/(2.*SIG) - SIG/TKM2)) + (pow(2*pow(SIG,2) - RAD*TKM2,3)*
-           (-abs(-2*pow(SIG,2) + RAD*TKM2) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2)))*sqrt(PI)*SIG*TKM2*erf(abs(-2*pow(SIG,2) + RAD*TKM2)/(2.*SIG*TKM2))))/
-         (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2)))*pow(SIG,2)*pow(TKM2,4)*pow(abs(RAD/(2.*SIG) - SIG/TKM2),3))))/(sqrt(PI)*pow(SIG,2)*(TKM1 - TKM2));
+           (-abs(-2*pow(SIG,2) + RAD*TKM2) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2)))*sqrt(Pi)*SIG*TKM2*erf(abs(-2*pow(SIG,2) + RAD*TKM2)/(2.*SIG*TKM2))))/
+         (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM2,2)/(4.*pow(SIG,2)*pow(TKM2,2)))*pow(SIG,2)*pow(TKM2,4)*pow(abs(RAD/(2.*SIG) - SIG/TKM2),3))))/(sqrt(Pi)*pow(SIG,2)*(TKM1 - TKM2));
     }
 }
 
@@ -526,7 +527,7 @@ double GaussExpSimple_Approx(double* Pars){
         oldTKM = TKM;
 //printf("NORMALIZING! NORM=%.2e\n",NORM);
     }
-    RAD = TKM?log(RAD*TKM/80.+1.)*80./TKM-TKM*atan(1.5*RAD/TKM)*2./PI:RAD;
+    RAD = TKM?log(RAD*TKM/80.+1.)*80./TKM-TKM*atan(1.5*RAD/TKM)*2./Pi:RAD;
     if(RAD<0) RAD=0;
     double Result = NORM!=1.23456789?GaussSource(Pars)/NORM:GaussSource(Pars);
     RAD = OldRad;
@@ -544,11 +545,11 @@ double GaussExpSimple_Exact(double* Pars){
     }
     else{
         return (pow(E,(pow(SIG,2) - RAD*TKM)/pow(TKM,2))*((-2*pow(SIG,3))/(pow(E,pow(SIG,2)/pow(TKM,2))*TKM) + (4*(-1 + pow(E,-pow(SIG,2)/pow(TKM,2)))*pow(SIG,3))/TKM -
-               (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2))))*pow(SIG,3))/TKM + sqrt(PI)*pow(SIG,2)*erf(SIG/TKM) +
-               (2*sqrt(PI)*pow(SIG,4)*erf(SIG/TKM))/pow(TKM,2) - (sqrt(PI)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM)*erf(abs(-2*pow(SIG,2) + RAD*TKM)/(2.*SIG*TKM)))/
+               (4*(-1 + pow(E,-pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2))))*pow(SIG,3))/TKM + sqrt(Pi)*pow(SIG,2)*erf(SIG/TKM) +
+               (2*sqrt(Pi)*pow(SIG,4)*erf(SIG/TKM))/pow(TKM,2) - (sqrt(Pi)*pow(SIG,3)*(2*pow(SIG,2) - RAD*TKM)*erf(abs(-2*pow(SIG,2) + RAD*TKM)/(2.*SIG*TKM)))/
                 (pow(TKM,3)*abs(-RAD/(2.*SIG) + SIG/TKM)) - (pow(2*pow(SIG,2) - RAD*TKM,3)*
-                  (-abs(-2*pow(SIG,2) + RAD*TKM) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2)))*sqrt(PI)*SIG*TKM*erf(abs(-2*pow(SIG,2) + RAD*TKM)/(2.*SIG*TKM))))/
-                (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2)))*pow(SIG,2)*pow(TKM,4)*pow(abs(-RAD/(2.*SIG) + SIG/TKM),3))))/(sqrt(PI)*pow(SIG,2)*TKM);
+                  (-abs(-2*pow(SIG,2) + RAD*TKM) + pow(E,pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2)))*sqrt(Pi)*SIG*TKM*erf(abs(-2*pow(SIG,2) + RAD*TKM)/(2.*SIG*TKM))))/
+                (8.*pow(E,pow(-2*pow(SIG,2) + RAD*TKM,2)/(4.*pow(SIG,2)*pow(TKM,2)))*pow(SIG,2)*pow(TKM,4)*pow(abs(-RAD/(2.*SIG) + SIG/TKM),3))))/(sqrt(Pi)*pow(SIG,2)*TKM);
     }
 }
 double GaussExpSimple(double* Pars){
@@ -684,7 +685,7 @@ void MS_Gauss::SetParameter(const unsigned& WhichPar, const double& Value){
 }
 double MS_Gauss::Eval(double* Pars){
     double& Radius = Pars[1];
-    return 4.*PI*Radius*Radius*pow(4.*PI*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+    return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 */
 
@@ -1135,6 +1136,250 @@ void DLM_CleverLevy::Reset(){
     if(Histo) {delete Histo;Histo=NULL;}
 }
 void DLM_CleverLevy::Init(){
+    Reset();
+    Histo  = new DLM_Histo<double>();
+    Histo->SetUp(3);
+    if(NumPtsRad==1) {Histo->SetUp(0,NumPtsRad,MinRad,MaxRad);}
+    else{
+        double BinWidth = (MaxRad-MinRad)/double(NumPtsRad-1);
+        Histo->SetUp(0,NumPtsRad,MinRad-BinWidth*0.5,MaxRad+BinWidth*0.5);
+    }
+    if(NumPtsScale==1) {Histo->SetUp(1,NumPtsScale,MinScale,MaxScale);}
+    else{
+        double BinWidth = (MaxScale-MinScale)/double(NumPtsScale-1);
+        Histo->SetUp(1,NumPtsScale,MinScale-BinWidth*0.5,MaxScale+BinWidth*0.5);
+    }
+    if(NumPtsStability==1) {Histo->SetUp(2,NumPtsStability,MinStability,MaxStability);}
+    else{
+        double BinWidth = (MaxStability-MinStability)/double(NumPtsStability-1);
+        Histo->SetUp(2,NumPtsStability,MinStability-BinWidth*0.5,MaxStability+BinWidth*0.5);
+    }
+    Histo->Initialize();
+    Histo->AddToAll(1e6);
+}
+
+
+
+
+DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
+    NumPtsStability = 64;
+    MinStability=1;
+    MaxStability=2;
+    NumPtsScale = 128;
+    MinScale=0.25;
+    MaxScale=4;
+    NumPtsRad = 512;
+    MinRad = 0;
+    MaxRad = 64;
+    Histo = NULL;
+    Type = 1;
+    NumResonances = new unsigned [2];
+    ResoWeight = new double* [2];
+    ResoMass = new double* [2];
+    ResoTau = new double* [2];
+    ChildMass0 = new double* [2];
+    ChildMass1 = new double* [2];
+    for(unsigned uParticle=0; uParticle<2; uParticle++){
+        NumResonances[uParticle]=0;
+        ResoWeight[uParticle]=NULL;
+        ResoMass[uParticle]=NULL;
+        ResoTau[uParticle]=NULL;
+        ChildMass0[uParticle]=NULL;
+        ChildMass1[uParticle]=NULL;
+    }
+    NumMcIter = 1000000;
+}
+DLM_CleverMcLevyReso::~DLM_CleverMcLevyReso(){
+    if(Histo) {delete Histo;Histo=NULL;}
+}
+void DLM_CleverMcLevyReso::InitStability(const unsigned& numPts, const double& minVal, const double& maxVal){
+    Reset();
+    NumPtsStability=numPts;
+    MinStability=minVal;
+    MaxStability=maxVal;
+}
+void DLM_CleverMcLevyReso::InitScale(const unsigned& numPts, const double& minVal, const double& maxVal){
+    Reset();
+    NumPtsScale=numPts;
+    MinScale=minVal;
+    MaxScale=maxVal;
+}
+void DLM_CleverMcLevyReso::InitRad(const unsigned& numPts, const double& minVal, const double& maxVal){
+    Reset();
+    NumPtsRad=numPts;
+    MinRad=minVal;
+    MaxRad=maxVal;
+}
+void DLM_CleverMcLevyReso::InitType(const int& type){
+    if(type<0 || type>1) Type = 1;
+    Type = type;
+}
+void DLM_CleverMcLevyReso::InitReso(const unsigned& whichparticle, const unsigned& numreso){
+    if(whichparticle>=2) {printf("\033[1;33mWARNING:\033[0m You can call InitReso only for particle 0 or 1\n"); return;}
+    if(NumResonances[whichparticle]==numreso) return;
+    NumResonances[whichparticle] = numreso;
+    if(ResoWeight[whichparticle]){delete[]ResoWeight[whichparticle];ResoWeight[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(ResoMass[whichparticle]){delete[]ResoMass[whichparticle];ResoMass[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(ResoTau[whichparticle]){delete[]ResoTau[whichparticle];ResoTau[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(ChildMass0[whichparticle]){delete[]ChildMass0[whichparticle];ChildMass0[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(ChildMass1[whichparticle]){delete[]ChildMass1[whichparticle];ChildMass1[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(Histo) Histo->SetBinContentAll(1e6);
+}
+void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1){
+    if(whichparticle>=2) {printf("\033[1;33mWARNING:\033[0m You can call SetUpReso only for particle 0 or 1\n"); return;}
+    if(whichreso>=NumResonances[whichparticle]) {printf("\033[1;33mWARNING:\033[0m Only %u number of resonances are currently allowed. Change using InitReso\n",NumResonances[whichparticle]); return;}
+    if(!ResoWeight[whichparticle]){ResoWeight[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(!ResoMass[whichparticle]){ResoMass[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(!ResoTau[whichparticle]){ResoTau[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(!ChildMass0[whichparticle]){ChildMass0[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(!ChildMass1[whichparticle]){ChildMass1[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(ResoWeight[whichparticle][whichreso]==weight&&ResoMass[whichparticle][whichreso]==mass&&ResoTau[whichparticle][whichreso]==tau&&
+       ChildMass0[whichparticle][whichreso]==mass0&&ChildMass1[whichparticle][whichreso]==mass1){return;}
+    if(Histo) Histo->SetBinContentAll(1e6);
+    ResoWeight[whichparticle][whichreso] = weight;
+    ResoMass[whichparticle][whichreso] = mass;
+    ResoTau[whichparticle][whichreso] = tau*FmToNu;
+    ChildMass0[whichparticle][whichreso] = mass0;
+    ChildMass1[whichparticle][whichreso] = mass1;
+//printf("ResoWeight=%f\n",ResoWeight[whichparticle][whichreso]);
+}
+void DLM_CleverMcLevyReso::InitNumMcIter(const unsigned& numiter){
+    if(NumMcIter==numiter) return;
+    if(Histo) Histo->SetBinContentAll(1e6);
+    NumMcIter=numiter;
+}
+
+double DLM_CleverMcLevyReso::RootEval(double* x, double* Pars){
+    double PARS[5];
+    PARS[1] = *x;
+    PARS[3] = Pars[0];
+    PARS[4] = Pars[1];
+    return Eval(PARS);
+}
+double DLM_CleverMcLevyReso::Eval(double* Pars){
+    if(!Histo) {Init();}
+    if(!Histo) return -1;
+    double& Radius = Pars[1];
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+    const double RSS[3] = {Radius,Scale,Stability};
+    //int RadBin = Histo->GetBin(0,Radius);
+    int ScaleBin = Histo->GetBin(1,Scale);
+    int StabilityBin = Histo->GetBin(2,Stability);
+    unsigned WhichBin[3];
+    double par_stability;
+    double par_scale;
+
+    WhichBin[0] = 0;
+    for(int iBin1=ScaleBin-1; iBin1<=ScaleBin+1; iBin1++){
+        if(iBin1<0||iBin1>=int(Histo->GetNbins(1))) continue;
+        WhichBin[1] = iBin1;
+        par_scale = Histo->GetBinCenter(1,iBin1);
+        for(int iBin2=StabilityBin-1; iBin2<=StabilityBin+1; iBin2++){
+            if(iBin2<0||iBin2>=int(Histo->GetNbins(2))) continue;
+            WhichBin[2] = iBin2;
+            par_stability = Histo->GetBinCenter(2,iBin2);
+            if(Histo->GetBinContent(WhichBin)>=0.99e6){
+                for(unsigned iBin0=0; iBin0<Histo->GetNbins(0); iBin0++){
+                    WhichBin[0] = iBin0;
+                    #pragma omp critical
+                    {
+                    Histo->SetBinContent(WhichBin,0);
+                    }
+                }
+                double RAD;
+                //this spares us a renormalization of the whole histogram
+                double DiffVal = 1./double(NumMcIter);
+                //the size of the r-bin
+                double BinSize;
+                unsigned TotBin;
+                //we use the same seed every time to make our fake function as smooth as possible
+                //between the different stability-scale bins
+                DLM_Random RanGen(11);
+                double RanVal;
+                double ResoMomentum;
+                double TKM;
+                for(unsigned uIter=0; uIter<NumMcIter; uIter++){
+                    //we simulate random 'core' distance RAD
+                    if(Type==0) {RAD = RanGen.StableR(3,par_stability,0,par_scale,0);}
+                    else if(Type==1) {RAD = RanGen.StableDiffR(3,par_stability,0,par_scale,0);}
+                    else {RAD = RanGen.StableNolan(3,par_stability,0,par_scale,0);}
+//printf("par_scale=%f\n",par_scale);
+//printf("par_stability=%f\n",par_stability);
+//printf("RAD = %f\n",RAD);
+//static unsigned RESO=0;
+//static unsigned ATTEMPTS=0;
+                    //after that we throw a random dice to decide IF each particle is primary or not
+                    for(unsigned uParticle=0; uParticle<2; uParticle++){
+                        if(!ResoWeight||!ResoWeight[uParticle]) continue;
+                        RanVal = RanGen.Uniform(0,1);
+                        double CummulativeWeight=0;
+                        int WhichReso = -1;
+                        for(unsigned uReso=0; uReso<NumResonances[uParticle]; uReso++){
+//printf(" RanVal=%f; CW=%f; CW+RW=%f\n",RanVal,CummulativeWeight,CummulativeWeight+ResoWeight[uParticle][uReso]);
+                            if(RanVal>=CummulativeWeight&&RanVal<CummulativeWeight+ResoWeight[uParticle][uReso]){
+                                WhichReso = int(uReso);
+//printf("WhichReso=%i from %.2f<%.2f<%.2f\n",WhichReso,CummulativeWeight,RanVal,CummulativeWeight+ResoWeight[uParticle][uReso]);
+//RESO++;
+//ATTEMPTS++;
+                                break;
+                            }
+//if(uReso==NumResonances[uParticle]-1){
+//ATTEMPTS++;
+//printf("WhichReso=%i from %.2f>%.2f\n",WhichReso,RanVal,CummulativeWeight+ResoWeight[uParticle][uReso]);
+//}
+
+
+                            CummulativeWeight+=ResoWeight[uParticle][uReso];
+                        }
+//printf("RESO/ATTAMPTS = %.3f\n",double(RESO)/double(ATTEMPTS));
+                        //if we have a primary particle, we do nothing
+                        if(WhichReso==-1) continue;
+                        //we make the radius bigger, according to an exponential decay law, in case we have a resonance
+
+                        //we compute the effective momentum of the resonance
+                        ResoMomentum = sqrt(pow(ResoMass[uParticle][WhichReso],4.)-2.*pow(ResoMass[uParticle][WhichReso]*ChildMass0[uParticle][WhichReso],2.)+
+                                            pow(ChildMass0[uParticle][WhichReso],4.)-2.*pow(ResoMass[uParticle][WhichReso]*ChildMass1[uParticle][WhichReso],2.)-
+                                            2.*pow(ChildMass0[uParticle][WhichReso]*ChildMass1[uParticle][WhichReso],2.)+
+                                            pow(ChildMass1[uParticle][WhichReso],4.))/(2.*ChildMass0[uParticle][WhichReso]);
+                        //! is this the correct def. or should it be 1/TKM???
+                        //! I think it should be M/(p*tau), which is the opposite as done before??????? Check for consistency!!!
+                        //! also make sure that the ResoTau gets here with the correct units (natural, i.e. 1/MeV)
+//printf("Do not trust the results before you resolve this issue!\n");
+//printf("ResoTau[uParticle][WhichReso] = %f\n",ResoTau[uParticle][WhichReso]);
+                        //TKM = ResoTau[uParticle][WhichReso]*ResoMomentum/ResoMass[uParticle][WhichReso];
+                        TKM = ResoMass[uParticle][WhichReso]/(ResoTau[uParticle][WhichReso]*ResoMomentum);
+                        //we increase RAD following an exponential
+//printf(" TKM = %f\n",TKM);
+                        RAD += RanGen.Exponential(TKM)*NuToFm;
+//printf(" eRAD = %f\n",RAD);
+                    }
+
+                    WhichBin[0] = Histo->GetBin(0,RAD);
+                    TotBin = Histo->GetTotBin(WhichBin);
+                    BinSize = Histo->GetBinSize(0,WhichBin[0]);
+                    //we also normalize to the bin size of the radius, so that we get a
+                    //pdf (for these particular stability and scale) that is properly normalized
+                    if(Histo->GetBinContent(TotBin)>0.99e6){
+                        Histo->SetBinContent(TotBin,0);
+                    }
+                    Histo->Add(TotBin,DiffVal/BinSize);
+//printf(" fdsojhvkjfdshbgvkjsfdbgvjkds\n");
+                }
+            }
+        }
+    }
+    double RETVAL = Histo->Eval(RSS);
+    //if(RETVAL>0.99e6) return 0;//this happens in case we lack statistics, so most likely in a bin that should be zero
+    return RETVAL;
+}
+unsigned DLM_CleverMcLevyReso::GetNumPars(){
+    return 2;
+}
+void DLM_CleverMcLevyReso::Reset(){
+    if(Histo) {delete Histo;Histo=NULL;}
+}
+void DLM_CleverMcLevyReso::Init(){
     Reset();
     Histo  = new DLM_Histo<double>();
     Histo->SetUp(3);

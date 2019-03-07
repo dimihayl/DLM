@@ -523,10 +523,23 @@ public:
         BinValue[WhichTotBin]=Val;
     }
      void SetBinError(const unsigned& WhichTotBin, const Type& Val){
-         if(!Initialized) {InitWarning(); return;}
+        if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins) return;
         BinError[WhichTotBin]=Val;
     }
+    void SetBinContentAll(const Type& Val){
+        if(!Initialized) {InitWarning(); return;}
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            BinValue[uBin]=Val;
+        }
+    }
+     void SetBinErrorAll(const Type& Val){
+        if(!Initialized) {InitWarning(); return;}
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            BinError[uBin]=Val;
+        }
+    }
+
     void Add(const unsigned& WhichTotBin, const Type& Val, const Type& Err=0){
         if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins) return;

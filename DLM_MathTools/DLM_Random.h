@@ -11,6 +11,7 @@ public:
     double Uniform(const double& from=0, const double& to=1);
     double Gauss(const double& mean, const double& sigma);
     double Cauchy(const double& mean, const double& sigma);
+    double Exponential(const double& lambda);
     double Stable(const double& stability=2, const double& location=0, const double& scale=1, const double& skewness=0);
     double GaussR(const unsigned short& dim, const double& mean, const double& sigma);
     double CauchyR(const unsigned short& dim, const double& mean, const double& sigma);
@@ -22,6 +23,7 @@ public:
     double GaussDiffR(const unsigned short& dim, const double& mean=0, const double& sigma=1);
     double CauchyDiffR(const unsigned short& dim, const double& mean=0, const double& sigma=1);
     double StableDiffR(const unsigned short& dim,const double& stability=2, const double& location=0, const double& scale=1, const double& skewness=0);
+    double StableNolan(const unsigned short& dim,const double& stability=2, const double& location=0, const double& scale=1, const double& skewness=0);
     double GaussDiffR(  const unsigned short& dim,
                         const double& mean1, const double& sigma1,
                         const double& mean2, const double& sigma2);

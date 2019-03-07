@@ -35,13 +35,16 @@ double DLM_Random::Gauss(const double& mean, const double& sigma){
 double DLM_Random::Cauchy(const double& mean, const double& sigma){
     return (CauchyDist[0](*MT_RanGen))*sigma/sqrt(2.)+mean;
 }
+double DLM_Random::Exponential(const double& lambda){
+    return (ExpDist[0](*MT_RanGen))/lambda;
+}
 double DLM_Random::Stable(const double& stability, const double& location, const double& scale, const double& skewness){
     if(stability<=0||stability>2){
         printf("\033[1;33mWARNING:\033[0m Bad 'stability' parameter in DLM_Random::Stable\n");
         return 0;
     }
     if(skewness<-1||skewness>1){
-        printf("\033[1;33mWARNING:\033[0m Bad 'skewness' parameter in DLM_Random::Stable\n");
+        printf("\033[1;33mWARNING:\033[0m Bad 'skewness' parameter (%e) in DLM_Random::Stable\n",skewness);
         return 0;
     }
 
@@ -121,7 +124,14 @@ double DLM_Random::CauchyDiffR(const unsigned short& dim, const double& mean, co
     return StableDiffR(dim,1,mean,sigma,0);
 }
 double DLM_Random::StableDiffR(const unsigned short& dim,const double& stability, const double& location, const double& scale, const double& skewness){
+//printf("stability=%f\n",stability);
+//printf("location=%f\n",location);
+//printf("scale=%f\n",scale);
+//printf("skewness=%f\n",skewness);
     return StableDiffR(dim,stability,location,scale,skewness,stability,location,scale,skewness);
+}
+double DLM_Random::StableNolan(const unsigned short& dim,const double& stability, const double& location, const double& scale, const double& skewness){
+    return StableDiffR(dim,stability,location,scale*0.5*stability,skewness,stability,location,scale*0.5*stability,skewness);
 }
 double DLM_Random::GaussDiffR(const unsigned short& dim,
                               const double& mean1, const double& sigma1,
@@ -136,6 +146,14 @@ double DLM_Random::CauchyDiffR(const unsigned short& dim,
 double DLM_Random::StableDiffR( const unsigned short& dim,
                                 const double& stability1, const double& location1, const double& scale1, const double& skewness1,
                                 const double& stability2, const double& location2, const double& scale2, const double& skewness2){
+if(skewness1||skewness2){
+printf("stability1=%f; stability2=%f\n",stability1,stability2);
+printf("location1=%f; location2=%f\n",location1,location2);
+printf("scale1=%f; scale2=%f\n",scale1,scale2);
+printf("skewness1=%f; skewness2=%f\n",skewness1,skewness2);
+}
+
+
     if(!dim) return 0;
     double Result=0;
     for(unsigned short us=0; us<dim; us++){
