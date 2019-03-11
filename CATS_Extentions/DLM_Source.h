@@ -184,5 +184,51 @@ private:
     void Reset();
     void Init();
 };
+/*
+//use DLM_CleverMcLevyReso as the baseline for a differential analysis
+class DLM_CleverMcLevyReso_Diff:public DLM_CleverMcLevyReso{
+public:
+    DLM_CleverMcLevyReso_Diff();
+    ~DLM_CleverMcLevyReso_Diff();
+    enum DiffType { dtConst, dtLiniar, dtSquare, dtExp };
 
+    double Eval(double* Pars);
+    double RootEval(double* x, double* Pars);
+    void InitNumDiffBins(const unsigned& numbins);//!
+    //The type of computation:
+    //0 is the case where the fit is done independently for each bin
+    //else we use two digit number, the first describing the scale parameter, the second the stability, where:
+    // 1 is linear scaling; 2 is pol2;
+    void InitDiffType(const int& type);//!
+    unsigned GetNumPars();
+private:
+    //0 = single particle
+    //1 = pair
+    //2 = Nolan notation
+    int Type;
+    unsigned NumPtsStability;
+    unsigned NumPtsScale;
+    unsigned NumPtsRad;
+    double MinStability;
+    double MaxStability;
+    double MinScale;
+    double MaxScale;
+    double MinRad;
+    double MaxRad;
+    unsigned* NumResonances;
+    double** ResoWeight;
+    double** ResoMass;
+    double** ResoTau;
+    //ChildMass0 is the 'primary' particle of interest
+    //we assume that the decay is two-body and that the final k* is zero. Base on that we can get an estimate for the
+    //momentum of the resonance, which we will use
+    double** ChildMass0;
+    double** ChildMass1;
+    //the number of MC iterations with which each source is to be initialized
+    unsigned NumMcIter;
+    DLM_Histo<double>* Histo;
+    void Reset();
+    void Init();
+}
+*/
 #endif

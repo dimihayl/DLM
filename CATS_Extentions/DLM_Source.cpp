@@ -1328,8 +1328,6 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
 //ATTEMPTS++;
 //printf("WhichReso=%i from %.2f>%.2f\n",WhichReso,RanVal,CummulativeWeight+ResoWeight[uParticle][uReso]);
 //}
-
-
                             CummulativeWeight+=ResoWeight[uParticle][uReso];
                         }
 //printf("RESO/ATTAMPTS = %.3f\n",double(RESO)/double(ATTEMPTS));
