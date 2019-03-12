@@ -3145,7 +3145,7 @@ double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, co
     double Overflow=0;
     double Result;
     if(Rho==0) return 0;
-    gsl_sf_coulomb_wave_F_array (usPW, 1, Eta, fabs(Rho), &Result, &Overflow);
+    gsl_sf_coulomb_wave_F_array (usPW, 0, Eta, fabs(Rho), &Result, &Overflow);
 
     Result /= Momentum;
 
