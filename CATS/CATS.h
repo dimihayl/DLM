@@ -262,6 +262,7 @@ public:
     unsigned GetRadBin(const double& Radius, const unsigned& uMomBin,
                        const unsigned short& usCh, const unsigned short& usPW) const;
     double EvaluateTheSource(CATSparameters* Pars) const;
+    double EvaluateTheSource(const double& Momentum, const double& Radius, const double& CosTheta) const;
     unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
     unsigned GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const;
@@ -271,12 +272,6 @@ public:
     //convert 1/MeV to fm
     const double& NuFm() const;
 
-    //[0]-[2] reserved for CATS ([0] is Momentum, [1] is Radius (fm), [2] is CosTheta)
-    //n.b. for the time being CATS assumes radial symmetric potential, thus [2] is actually never used,
-    //i.e. please always use only radial symmetric potential
-    //[usCh][usPW][...]
-    CATSparameters*** PotPar;
-    //double*** PotParArray;
 
     void RemoveShortRangePotential();
     void RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW);
@@ -291,10 +286,7 @@ public:
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value);
 
     void RemoveAnaSource();
-    //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
-    CATSparameters* AnaSourcePar;
-    //double* AnaSourceParArray;
-    //CATSparameters* ForwardedSourcePar;
+
 
     void SetAnaSource(double (*AS)(double*), CATSparameters& Pars);
     //void SetAnaSource(double (*AS)(double*), double* Pars);
@@ -360,7 +352,7 @@ void test_ad5(){
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
 //DLM_Histo<double> SourceHistoTemp;
-//protected:
+protected:
 
     enum PrevNext { kNext=1, kPrevious=-1 };
 
@@ -538,6 +530,20 @@ void test_ad5(){
     double (*ForwardedSource)(void*, double*);
     void* SourceContext;
     //CatsSource* MemberSource;
+
+
+    //[0]-[2] reserved for CATS ([0] is Momentum, [1] is Radius (fm), [2] is CosTheta)
+    //n.b. for the time being CATS assumes radial symmetric potential, thus [2] is actually never used,
+    //i.e. please always use only radial symmetric potential
+    //[usCh][usPW][...]
+    CATSparameters*** PotPar;
+    //double*** PotParArray;
+
+    //input vars: [0] should always be the momentum (MeV), [1] the radius (fm) and [2] 'cosθ'
+    CATSparameters* AnaSourcePar;
+    //double* AnaSourceParArray;
+    //CATSparameters* ForwardedSourcePar;
+
     //!------------------------------------------------
 
     //!Any other variables or functions used at runtime internally by CATS

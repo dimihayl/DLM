@@ -3564,6 +3564,41 @@ double CATS::EvaluateTheSource(CATSparameters* Pars) const{
 //printf("test\n");
     return CatsSourceForwarder(SourceContext,Pars->GetParameters());
 }
+double CATS::EvaluateTheSource(const double& Momentum, const double& Radius, const double& CosTheta) const{
+    if(!AnalyticSource && !ForwardedSource){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! The source is not defined!\n");
+        }
+        return 0;
+    }
+    if(AnalyticSource && ForwardedSource){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported multiple definitions of the source!\n");
+            printf("         This is a bug, please contact the developers!\n");
+        }
+        return 0;
+    }
+
+    AnaSourcePar->SetVariable(0,Momentum,true);
+    AnaSourcePar->SetVariable(1,Radius,true);
+    AnaSourcePar->SetVariable(2,CosTheta,true);
+
+    if(AnalyticSource){
+        return AnalyticSource(AnaSourcePar->GetParameters());
+    }
+    //this is the case of ForwardedSource
+    if(!SourceContext){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m EvaluateTheSource reported a crash! This is most likely a bug!\n");
+            printf("         Please contact the developers, reporting that SourceContext=NULL\n");
+        }
+        return 0;
+    }
+//printf("test\n");
+    return CatsSourceForwarder(SourceContext,AnaSourcePar->GetParameters());
+}
+
+
 unsigned CATS::GetNumSourcePars() const{
     if(AnaSourcePar){
         return AnaSourcePar->GetNumPars();
