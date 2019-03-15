@@ -400,6 +400,7 @@ public:
         unsigned TotBin=0;
         unsigned Base=1;
         for(unsigned short sDim=0; sDim<Dim; sDim++){
+            if(WhichBin[sDim]>=NumBins[sDim]) return TotNumBins;
             TotBin+=Base*WhichBin[sDim];
             Base*=NumBins[sDim];
         }

@@ -1361,7 +1361,15 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                     if(Histo->GetBinContent(TotBin)>0.99e6){
                         Histo->SetBinContent(TotBin,0);
                     }
-                    Histo->Add(TotBin,DiffVal/BinSize);
+                    //BinSize==0, happens when we are on the edges, i.e. outside of our histo
+                    if(BinSize!=0) Histo->Add(TotBin,DiffVal/BinSize);
+//if(Histo->GetBinContent(TotBin)>1e6){
+//if(BinSize==0){
+//printf("We have problem with BinSize --> WhichBin[0]=%u (DiffVal=%f, GetBinContent=%f)\n",WhichBin[0],DiffVal,Histo->GetBinContent(TotBin));
+//}
+//if(DiffVal!=DiffVal){
+//printf("We have problem with DiffVal\n");
+//}
 //printf(" fdsojhvkjfdshbgvkjsfdbgvjkds\n");
                 }
             }
@@ -1369,6 +1377,28 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
     }
     double RETVAL = Histo->Eval(RSS);
     //if(RETVAL>0.99e6) return 0;//this happens in case we lack statistics, so most likely in a bin that should be zero
+
+    //if(RETVAL>0.99e6){
+    //    printf("RETVAL>0.99e6 = %e\n",RETVAL);
+    //    printf(" At: %f; %f; %f\n",RSS[0],RSS[1],RSS[2]);
+        //for(int iBin1=ScaleBin-1; iBin1<=ScaleBin+1; iBin1++){
+        //    if(iBin1<0||iBin1>=int(Histo->GetNbins(1))) continue;
+        //    WhichBin[1] = iBin1;
+        //    par_scale = Histo->GetBinCenter(1,iBin1);
+        //    for(int iBin2=StabilityBin-1; iBin2<=StabilityBin+1; iBin2++){
+        //        WhichBin[0] = Histo->GetBin(0,RSS[0]);
+        //        unsigned TotBin = Histo->GetTotBin(WhichBin);
+        //        double BinSize = Histo->GetBinSize(0,WhichBin[0]);
+        //        printf("TotBin=%u\n",TotBin);
+        //        printf("BinSize=%f\n",BinSize);
+        //        printf("BC=%f\n",Histo->GetBinContent(TotBin));
+        //    }
+        //}
+    //}
+    //if(RETVAL!=RETVAL){
+    //    printf("What happened!?\n");
+    //}
+
     return RETVAL;
 }
 unsigned DLM_CleverMcLevyReso::GetNumPars(){
