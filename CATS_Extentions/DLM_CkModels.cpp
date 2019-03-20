@@ -570,5 +570,72 @@ double pXi_pheno(const double &Momentum, const double* SourcePar, const double* 
 
     //very easy definition for a CF that peaks for k->0
     return 1. + exp(-MomentumGeV*RG/hbarc)/(MomentumGeV*RG/hbarc);
+}
 
+// This implementation of Lednicky takes as input a parametrization of phase
+// shift and elasticity coefficient. It uses a pol2 to model the real part of
+// the phase shift, and a combination of exp and pol2 for the imaginary part
+// PotPar[0] - [2] -> phase shift
+// PotPar[3] - [5] -> elasticity coefficient
+double LednickySingletScatAmplitude(const double& kStar,
+                                    const double* SourcePar,
+                                    const double* PotPar) {
+  // Parametrization of the elasticity coefficient
+  auto eta = [](const double kStar, const double* PotPar) {
+    return std::exp(PotPar[3] * kStar) + PotPar[4] * kStar +
+           PotPar[5] * kStar * kStar;
+  };
+
+  // Parametrization of the phase shift
+  auto delta = [](const double kStar, const double* PotPar) {
+    return PotPar[0] + PotPar[1] * kStar + PotPar[2] * kStar * kStar;
+  };
+
+  // Compute the scattering amplitude
+  auto ScatteringAmplitude = [&delta, &eta](const double& kStar,
+                                            const double* PotPar) {
+    double etaVal = eta(kStar, PotPar);
+    double deltaVal = delta(kStar, PotPar);
+    std::complex<double> exponent(0., 2. * deltaVal);
+    std::complex<double> exp(std::exp(exponent));
+    std::complex<double> nominator(etaVal * exp - 1.);
+    std::complex<double> denominator(0, 2. * kStar);
+    return nominator / denominator;
+  };
+
+  // Compute 1/K for the second derivative
+  auto OneOverK = [&delta, &eta](const double& kStar, const double* PotPar) {
+    const double etaVal = eta(kStar, PotPar);
+    const double etaValSq = etaVal * etaVal;
+    const double deltaVal = delta(kStar, PotPar);
+    std::complex<double> nominator(2 * etaVal * std::sin(2. * deltaVal),
+                                   -(1. - etaValSq));
+    return nominator * kStar /
+           (1 + etaVal * etaVal - 2. * etaValSq * std::cos(2. * deltaVal));
+  };
+
+  const double radius = SourcePar[0] * FmToNu;
+
+  // Precision with which the second derivative is conducted
+  const double precision = 1.;
+
+  std::complex<double> ScatAmpl = ScatteringAmplitude(kStar, PotPar);
+
+  const double oneOverKSecondDerivative = std::real(
+      ((OneOverK(kStar + precision, PotPar) - OneOverK(kStar, PotPar)) -
+       (OneOverK(kStar, PotPar) - OneOverK(kStar - precision, PotPar))) /
+      (precision * precision));
+
+  double F1 = gsl_sf_dawson(2. * kStar * radius) / (2. * kStar * radius);
+  double F2 = (1. - std::exp(-4. * kStar * kStar * radius * radius)) /
+              (2. * kStar * radius);
+
+  double CkValue =
+      0.5 * std::pow(std::abs(ScatAmpl) / radius, 2) *
+          (1. -
+           (oneOverKSecondDerivative) / (2 * std::sqrt(TMath::Pi()) * radius)) +
+      2 * std::real(ScatAmpl) * F1 / (std::sqrt(TMath::Pi()) * radius) -
+      std::imag(ScatAmpl) * F2 / radius;
+
+  return CkValue + 1;
 }
