@@ -1066,6 +1066,7 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
         case pKm_Tetsuo : return Tetsuo_pKm(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
         case pOmega_Lattice : return LatticePots_pOmega(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         case pOmega_Tetsuo : return Tetsuo_pOmega(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
+        //case pXim_ESC16 : return ESC16_pXim(DlmPot,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius,OtherPars);
         default : return 0;
     }
 }

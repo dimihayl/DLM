@@ -662,6 +662,10 @@ double GaussExpTotSimple_2body(double* Pars){
     TKMB = rTAU_2*sqrt(pow(rMASS_2,4.)-2.*pow(rMASS_2*p1MASS_2,2.)+pow(p1MASS_2,4.)-2.*pow(rMASS_2*p2MASS_2,2.)-2.*pow(p1MASS_2*p2MASS_2,2.)+pow(p2MASS_2,4.))/(2.*p1MASS_2)/rMASS_2;
     PARS[0] = Pars[0]; PARS[1] = Pars[1]; PARS[2] = Pars[2]; PARS[3] = Pars[3];
     PARS[4] = TKMA; PARS[5] = TKMB; PARS[6] = prim; PARS[7] = prim_2;
+printf("r=%f -> %f\n",Pars[1],GaussExpTotSimple(PARS));
+for(int i=0; i<14; i++){
+    printf(" Pars[%i]=%f\n",i,Pars[i]);
+}
     return GaussExpTotSimple(PARS);
 }
 
@@ -842,6 +846,8 @@ double GaussExpTotSimple_2body(double* Pars){
     double& p1MASS_2 = Pars[12];
     double& p2MASS_2 = Pars[13];
 */
+
+//note that the radius cannot be fitted, as it is taken from the mT slope
 double MS_GaussExp_mT_Simple::Eval(double* Pars){
     double Result=0;
     Parameters[1] = Pars[1];
@@ -1257,6 +1263,12 @@ double DLM_CleverMcLevyReso::RootEval(double* x, double* Pars){
     return Eval(PARS);
 }
 double DLM_CleverMcLevyReso::Eval(double* Pars){
+
+//static unsigned NumFunctionCalls=0;
+//NumFunctionCalls++;
+//if(NumFunctionCalls%100==0)
+//printf("DLM_CleverMcLevyReso::Eval: Function call Nr. %u\n",NumFunctionCalls);
+
     if(!Histo) {Init();}
     if(!Histo) return -1;
     double& Radius = Pars[1];

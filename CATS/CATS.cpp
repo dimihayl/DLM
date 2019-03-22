@@ -2817,7 +2817,7 @@ void CATS::FoldSourceAndWF(){
             //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
             //here this is corrected for
             if(SourceInt>1+1e-4){
-                printf("\033[1;33mWARNING:\033[0m The source had to be renormalized (Integrated value=%.2e), please check the validity of your input function!\n",SourceInt);
+                printf("\033[1;33mWARNING:\033[0m The source had to be renormalized (Integrated value=%.4e), please check the validity of your input function!\n",SourceInt);
 //if(AnaSourcePar)
 //printf("AnaSourcePar: p0=%e; p1=%e",AnaSourcePar->GetParameter(0),AnaSourcePar->GetParameter(1));
 //if(ForwardedSourcePar)
@@ -2879,7 +2879,7 @@ void CATS::FoldSourceAndWF(){
                 //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
                 //here this is corrected for
                 if(SourceInt>1+1e-4){
-                    printf("\033[1;33mWARNING:\033[0m The source had to be renormalized (Integrated value=%.2e), please check the validity of your input function!\n",SourceInt);
+                    printf("\033[1;33mWARNING:\033[0m The source had to be renormalized (Integrated value=%.4e), please check the validity of your input function!\n",SourceInt);
 //printf(" SourceInt=%f\n",SourceInt);
 //if(AnaSourcePar)
 //printf("AnaSourcePar: p0=%e; p1=%e\n",AnaSourcePar->GetParameter(0),AnaSourcePar->GetParameter(1));

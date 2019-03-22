@@ -61,8 +61,8 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         FixPar[uSyst][p_sor0]=true; FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
         ParValue[uSyst][p_Cl] = 1; ParDownLimit[uSyst][p_Cl] = 0.75; ParUpLimit[uSyst][p_Cl] = 1.25;
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
-        ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0;
-        FixPar[uSyst][p_pot0]=true; FixPar[uSyst][p_pot1]=true; FixPar[uSyst][p_pot2]=true; FixPar[uSyst][p_pot3]=true;
+        ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0; ParValue[uSyst][p_pot4]=0; ParValue[uSyst][p_pot5]=0;
+        FixPar[uSyst][p_pot0]=true; FixPar[uSyst][p_pot1]=true; FixPar[uSyst][p_pot2]=true; FixPar[uSyst][p_pot3]=true; FixPar[uSyst][p_pot4]=true; FixPar[uSyst][p_pot5]=true;
         //FitBL[uSyst] = new TF1(TString::Format("FitBL%u",uSyst),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
         FitBL[uSyst] = NULL;
     }
@@ -1168,7 +1168,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
             }
 //printf("uSyst=%u; ParentPotential[uSyst]=%u\n",uSyst,ParentPotential[uSyst]);
             //if the potential should be taken from a parent -> fix the potential pars to dummy values
-            if(int(uPar)>=p_pot0 && int(uPar)<=p_pot3 && ParentPotential[uSyst]!=int(uSyst)){
+            if(int(uPar)>=p_pot0 && int(uPar)<=p_pot5 && ParentPotential[uSyst]!=int(uSyst)){
                 FitGlobal->FixParameter(uSyst*NumPar+uPar, -1e6);
                 //FitGlobal->FixParameter(uSyst*NumPar+p_pot1, -1e6);
                 //FitGlobal->FixParameter(uSyst*NumPar+p_pot2, -1e6);
@@ -1276,6 +1276,13 @@ printf("\n");
 
 double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 //printf("CALLING EVALGLOBAL\n");
+
+//static unsigned NUM_FUN_CALLS = 0;
+//NUM_FUN_CALLS++;
+//if(NUM_FUN_CALLS%10==0){
+//printf("FUNCTION CALL %u\n",NUM_FUN_CALLS);
+//}
+
     unsigned GlobalBin = HistoGlobal->FindBin(*xVal)-1;
     double Momentum = GlobalToMomentum[GlobalBin];
     unsigned WhichSyst=0;
