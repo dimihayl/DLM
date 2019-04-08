@@ -1416,6 +1416,7 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             }
             if(Clin<1 && CkVal>1) CkVal=1;
             if(Clin>1 && CkVal<1) CkVal=1;
+//printf("CkVal = %.3f\n",CkVal);
         }
     }
 

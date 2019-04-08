@@ -1042,18 +1042,21 @@ DLM_CleverLevy::~DLM_CleverLevy(){
     if(Histo) {delete Histo;Histo=NULL;}
 }
 void DLM_CleverLevy::InitStability(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsStability==numPts&&MinStability==minVal&&MaxStability==maxVal) return;
     Reset();
     NumPtsStability=numPts;
     MinStability=minVal;
     MaxStability=maxVal;
 }
 void DLM_CleverLevy::InitScale(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsScale==numPts&&MinScale==minVal&&MaxScale==maxVal) return;
     Reset();
     NumPtsScale=numPts;
     MinScale=minVal;
     MaxScale=maxVal;
 }
 void DLM_CleverLevy::InitRad(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsRad==numPts&&MinRad==minVal&&MaxRad==maxVal) return;
     Reset();
     NumPtsRad=numPts;
     MinRad=minVal;
@@ -1199,18 +1202,21 @@ DLM_CleverMcLevyReso::~DLM_CleverMcLevyReso(){
     if(Histo) {delete Histo;Histo=NULL;}
 }
 void DLM_CleverMcLevyReso::InitStability(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsStability==numPts&&MinStability==minVal&&MaxStability==maxVal) return;
     Reset();
     NumPtsStability=numPts;
     MinStability=minVal;
     MaxStability=maxVal;
 }
 void DLM_CleverMcLevyReso::InitScale(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsScale==numPts&&MinScale==minVal&&MaxScale==maxVal) return;
     Reset();
     NumPtsScale=numPts;
     MinScale=minVal;
     MaxScale=maxVal;
 }
 void DLM_CleverMcLevyReso::InitRad(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsRad==numPts&&MinRad==minVal&&MaxStability==MaxRad) return;
     Reset();
     NumPtsRad=numPts;
     MinRad=minVal;
@@ -1311,6 +1317,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                 double RanVal;
                 double ResoMomentum;
                 double TKM;
+                //#pragma omp for
                 for(unsigned uIter=0; uIter<NumMcIter; uIter++){
                     //we simulate random 'core' distance RAD
                     if(Type==0) {RAD = RanGen.StableR(3,par_stability,0,par_scale,0);}
@@ -1374,7 +1381,11 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         Histo->SetBinContent(TotBin,0);
                     }
                     //BinSize==0, happens when we are on the edges, i.e. outside of our histo
+                    //#pragma omp critical
+                    {
                     if(BinSize!=0) Histo->Add(TotBin,DiffVal/BinSize);
+                    }
+
 //if(Histo->GetBinContent(TotBin)>1e6){
 //if(BinSize==0){
 //printf("We have problem with BinSize --> WhichBin[0]=%u (DiffVal=%f, GetBinContent=%f)\n",WhichBin[0],DiffVal,Histo->GetBinContent(TotBin));
