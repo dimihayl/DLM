@@ -23,6 +23,9 @@ double DoubleGaussSum(double* Pars);
 //V0*exp(-r^2/β0^2)+V1*exp(-r^2/β1^2)+V2*exp(-r^2/β2^2)
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2
 double TripleGaussSum(double* Pars);
+
+double RepulsiveCore(double* Pars);
+
 double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars);
