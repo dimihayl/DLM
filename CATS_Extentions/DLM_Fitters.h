@@ -76,6 +76,10 @@ public:
 
     void SetOutputDir(const TString& outdirname);
     void SetSeparateBL(const unsigned& WhichSyst, const bool& yesno);
+    //if true, there is not really a baseline region, in a sense that Ck is evaluated fully in the baseline region as well.
+    //this was build in case a region of the fit needs to be cut-off, e.g. a peak
+    //N.B. if set to yes, it overrides the SeparateBL!
+    void SetFullCkForBaseline(const unsigned& WhichSyst, const bool& yesno);
 
     void RemoveNegativeCk(const bool& yesno);
     bool CheckNegativeCk();
@@ -144,6 +148,7 @@ private:
     double** ParUpLimit;
     bool** FixPar;
     bool* SeparateBaseLineFit;
+    bool* FullCkForBaseline;
 
     TH1F* HistoGlobal;
     TF1* FitGlobal;

@@ -41,6 +41,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
     ParUpLimit = new double* [MaxNumSyst];
     FixPar = new bool* [MaxNumSyst];
     SeparateBaseLineFit = new bool [MaxNumSyst];
+    FullCkForBaseline = new bool [MaxNumSyst];
     FitBL = new TF1* [MaxNumSyst];
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         ParValue[uSyst] = new double [NumPar];
@@ -52,6 +53,7 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
             FixPar[uSyst][uPar] = false;
         }
         SeparateBaseLineFit[uSyst] = true;
+        FullCkForBaseline[uSyst] = false;
         ParValue[uSyst][p_a] = 1; ParDownLimit[uSyst][p_a] = 0.5; ParUpLimit[uSyst][p_a] = 2;
         ParValue[uSyst][p_b] = 1e-3; ParDownLimit[uSyst][p_b] = 1e-5; ParUpLimit[uSyst][p_b] = 1;
         ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
@@ -120,6 +122,7 @@ DLM_Fitter1::~DLM_Fitter1(){
     delete [] ParUpLimit; ParUpLimit=NULL;
     delete [] FixPar; FixPar=NULL;
     delete [] SeparateBaseLineFit; SeparateBaseLineFit=NULL;
+    delete [] FullCkForBaseline; FullCkForBaseline=NULL;
     delete FitBL; FitBL=NULL;
 
     if(HistoGlobal){delete HistoGlobal; HistoGlobal=NULL;}
@@ -773,6 +776,10 @@ void DLM_Fitter1::SetSeparateBL(const unsigned& WhichSyst, const bool& yesno){
     if(WhichSyst>=MaxNumSyst) return;
     SeparateBaseLineFit[WhichSyst] = yesno;
 }
+void DLM_Fitter1::SetFullCkForBaseline(const unsigned& WhichSyst, const bool& yesno){
+    if(WhichSyst>=MaxNumSyst) return;
+    FullCkForBaseline[WhichSyst] = yesno;
+}
 void DLM_Fitter1::RemoveNegativeCk(const bool& yesno){
     RemoveNegCk = yesno;
 }
@@ -814,7 +821,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
 
     //the separate fit thing
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
-        if(!SeparateBaseLineFit[uSyst] || !HistoToFit[uSyst]) continue;
+        if( !SeparateBaseLineFit[uSyst] || !HistoToFit[uSyst] || FullCkForBaseline[uSyst] ) continue;
         if(!HistoToFit[uSyst]) continue;
 
         if(FitBL[uSyst]) delete FitBL[uSyst];
@@ -1133,7 +1140,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
             //exclude bins above the fit range
             else if(Momentum>FitRange[uSyst][kmax]) TakeThisBin=false;
             //exclude bins above the femto region, in case we do perform a separate fit in the high-k region
-            else if(SeparateBaseLineFit[uSyst] && Momentum>FitRange[uSyst][kf]) TakeThisBin=false;
+            else if(SeparateBaseLineFit[uSyst] && Momentum>FitRange[uSyst][kf] && FullCkForBaseline[uSyst]==false ) TakeThisBin=false;
 
             if(!TakeThisBin) continue;
             GlobalToMomentum[uBinGlob] = Momentum;
@@ -1385,7 +1392,7 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 
     double Clin;
     //Oli's way
-    if(SeparateBaseLineFit[WhichSyst]){
+    if(SeparateBaseLineFit[WhichSyst] && FullCkForBaseline[WhichSyst]==false ){
         if(FemtoRegion){
             CkVal = SystemToFit[WhichSyst]->EvalCk(Momentum)/fabs(Pars[WhichSyst*NumPar+p_Cl]);
         }
@@ -1394,7 +1401,7 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
         }
     }
     else{
-        if(FemtoRegion){
+        if(FemtoRegion || FullCkForBaseline[WhichSyst]==true){
             CkVal = SystemToFit[WhichSyst]->EvalCk(Momentum);
         }
         else{
