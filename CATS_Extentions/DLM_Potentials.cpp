@@ -1015,7 +1015,7 @@ double UsmaniPotentialOli(const int& Spin, double* Radius)
 //[3] is the range
 //[4] is the slope
 double RepulsiveCore(double* Pars){
-    return Pars[2]/(1+exp((r-Pars[3])/Pars[4]));
+    return Pars[2]/(1+exp((Pars[0]-Pars[3])/Pars[4]));
 }
 
 double ppDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
