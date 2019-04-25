@@ -423,7 +423,7 @@ public:
         }
     }
     bool Copy(const DLM_Histo& other){
-        if(!Initialized) {InitWarning(); return false;}
+        //if(!Initialized) {InitWarning(); return false;}
         return operator=(other);
     }
     bool AddHisto(const DLM_Histo& other, const bool witherror=true, const Type& scale=1){
@@ -605,6 +605,10 @@ public:
         if(WhichTotBin>=TotNumBins) return 0;
         return BinError[WhichTotBin];
     }
+    Type GetBinError(const unsigned* WhichBin) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        return GetBinError(GetTotBin(WhichBin));
+    }
     //Type GetBinError(const unsigned short& sDim, const unsigned& WhichBin) const{
     //    return GetBinError(sDim,GetBin(sDim,WhichBin));
     //}
@@ -670,7 +674,7 @@ public:
         }
     }
 
-    Type Eval(const double* xVal) const{
+    Type Eval(const double* xVal, const bool& EvalTheError=false) const{
         if(!Initialized) {InitWarning(); return 0;}
         //this is here to make it thread-safe, but maybe hinders performance???
         double* xValue1 = new double [Dim];
@@ -780,7 +784,8 @@ public:
                     Weight*=DeltaX1[sDim];
                 }
             }
-            Result += GetBinContent(BinArray)*Weight;
+            if(EvalTheError){Result += GetBinError(BinArray)*Weight;}
+            else{Result += GetBinContent(BinArray)*Weight;}
             Norm += Weight;
         }
         Result /= Norm;
@@ -799,6 +804,10 @@ public:
         delete [] BinArray;
 
         return Result;
+    }
+
+    Type EvalError(const double* xVal) const{
+        return Eval(xVal,true);
     }
 
     bool operator=(const DLM_Histo& other){
