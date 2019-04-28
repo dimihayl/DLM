@@ -10,6 +10,8 @@ public:
     ~DLM_Random();
     double Uniform(const double& from=0, const double& to=1);
     double Gauss(const double& mean, const double& sigma);
+    //N.B. the sigma here is defined such that compared to a BW resonance sigma = Gamma/sqrt(2),
+    //or compared to the def. in Wikipedia, sigma = sqrt(2)*gamma
     double Cauchy(const double& mean, const double& sigma);
     double Exponential(const double& lambda);
     double Stable(const double& stability=2, const double& location=0, const double& scale=1, const double& skewness=0);

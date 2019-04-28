@@ -1188,6 +1188,8 @@ DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
     ResoTau = new double* [2];
     ChildMass0 = new double* [2];
     ChildMass1 = new double* [2];
+    SmearResoMomentum = new double* [2];
+    SmearResoMass = new bool* [2];
     for(unsigned uParticle=0; uParticle<2; uParticle++){
         NumResonances[uParticle]=0;
         ResoWeight[uParticle]=NULL;
@@ -1195,6 +1197,8 @@ DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
         ResoTau[uParticle]=NULL;
         ChildMass0[uParticle]=NULL;
         ChildMass1[uParticle]=NULL;
+        SmearResoMomentum[uParticle]=NULL;
+        SmearResoMass[uParticle]=NULL;
     }
     NumMcIter = 1000000;
 }
@@ -1235,9 +1239,11 @@ void DLM_CleverMcLevyReso::InitReso(const unsigned& whichparticle, const unsigne
     if(ResoTau[whichparticle]){delete[]ResoTau[whichparticle];ResoTau[whichparticle]=new double[NumResonances[whichparticle]];}
     if(ChildMass0[whichparticle]){delete[]ChildMass0[whichparticle];ChildMass0[whichparticle]=new double[NumResonances[whichparticle]];}
     if(ChildMass1[whichparticle]){delete[]ChildMass1[whichparticle];ChildMass1[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(SmearResoMomentum[whichparticle]){delete[]SmearResoMomentum[whichparticle];SmearResoMomentum[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(SmearResoMass[whichparticle]){delete[]SmearResoMass[whichparticle];SmearResoMass[whichparticle]=new bool[NumResonances[whichparticle]];}
     if(Histo) Histo->SetBinContentAll(1e6);
 }
-void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1){
+void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1, const double& momSmear, const bool& massSmear){
     if(whichparticle>=2) {printf("\033[1;33mWARNING:\033[0m You can call SetUpReso only for particle 0 or 1\n"); return;}
     if(whichreso>=NumResonances[whichparticle]) {printf("\033[1;33mWARNING:\033[0m Only %u number of resonances are currently allowed. Change using InitReso\n",NumResonances[whichparticle]); return;}
     if(!ResoWeight[whichparticle]){ResoWeight[whichparticle]=new double[NumResonances[whichparticle]];}
@@ -1245,14 +1251,19 @@ void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsign
     if(!ResoTau[whichparticle]){ResoTau[whichparticle]=new double[NumResonances[whichparticle]];}
     if(!ChildMass0[whichparticle]){ChildMass0[whichparticle]=new double[NumResonances[whichparticle]];}
     if(!ChildMass1[whichparticle]){ChildMass1[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(!SmearResoMomentum[whichparticle]){SmearResoMomentum[whichparticle]=new double[NumResonances[whichparticle]];}
+    if(!SmearResoMass[whichparticle]){SmearResoMass[whichparticle]=new bool[NumResonances[whichparticle]];}
     if(ResoWeight[whichparticle][whichreso]==weight&&ResoMass[whichparticle][whichreso]==mass&&ResoTau[whichparticle][whichreso]==tau&&
-       ChildMass0[whichparticle][whichreso]==mass0&&ChildMass1[whichparticle][whichreso]==mass1){return;}
+       ChildMass0[whichparticle][whichreso]==mass0&&ChildMass1[whichparticle][whichreso]==mass1&&
+       SmearResoMomentum[whichparticle][whichreso]==momSmear&&SmearResoMass[whichparticle][whichreso]==massSmear){return;}
     if(Histo) Histo->SetBinContentAll(1e6);
     ResoWeight[whichparticle][whichreso] = weight;
     ResoMass[whichparticle][whichreso] = mass;
     ResoTau[whichparticle][whichreso] = tau*FmToNu;
     ChildMass0[whichparticle][whichreso] = mass0;
     ChildMass1[whichparticle][whichreso] = mass1;
+    SmearResoMomentum[whichparticle][whichreso] = momSmear;
+    SmearResoMass[whichparticle][whichreso] = massSmear;
 //printf("ResoWeight=%f\n",ResoWeight[whichparticle][whichreso]);
 }
 void DLM_CleverMcLevyReso::InitNumMcIter(const unsigned& numiter){
@@ -1354,18 +1365,37 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         if(WhichReso==-1) continue;
                         //we make the radius bigger, according to an exponential decay law, in case we have a resonance
 
+
+                        double SmearedResoMass = ResoMass[uParticle][WhichReso];
+                        if(SmearResoMass[uParticle][WhichReso]&&ResoTau[uParticle][WhichReso]){
+                            double Gamma = 1./ResoTau[uParticle][WhichReso];
+                            do{
+                                SmearedResoMass = RanGen.Cauchy(ResoMass[uParticle][WhichReso],Gamma/sqrt(2));
+                            }
+                            while(SmearedResoMass<ChildMass0[uParticle][WhichReso]+ChildMass1[uParticle][WhichReso]);
+                        }
+
                         //we compute the effective momentum of the resonance
-                        ResoMomentum = sqrt(pow(ResoMass[uParticle][WhichReso],4.)-2.*pow(ResoMass[uParticle][WhichReso]*ChildMass0[uParticle][WhichReso],2.)+
-                                            pow(ChildMass0[uParticle][WhichReso],4.)-2.*pow(ResoMass[uParticle][WhichReso]*ChildMass1[uParticle][WhichReso],2.)-
+                        ResoMomentum = sqrt(pow(SmearedResoMass,4.)-2.*pow(SmearedResoMass*ChildMass0[uParticle][WhichReso],2.)+
+                                            pow(ChildMass0[uParticle][WhichReso],4.)-2.*pow(SmearedResoMass*ChildMass1[uParticle][WhichReso],2.)-
                                             2.*pow(ChildMass0[uParticle][WhichReso]*ChildMass1[uParticle][WhichReso],2.)+
                                             pow(ChildMass1[uParticle][WhichReso],4.))/(2.*ChildMass0[uParticle][WhichReso]);
+
+                        double SmearedResoMomentum = ResoMomentum;
+                        if(SmearResoMomentum[uParticle][WhichReso]>0){
+                            do{
+                                SmearedResoMomentum = RanGen.Gauss(ResoMomentum,ResoMomentum*SmearResoMomentum[uParticle][WhichReso]);
+                            }
+                            while(SmearedResoMomentum>=0);
+                        }
+
                         //! is this the correct def. or should it be 1/TKM???
                         //! I think it should be M/(p*tau), which is the opposite as done before??????? Check for consistency!!!
                         //! also make sure that the ResoTau gets here with the correct units (natural, i.e. 1/MeV)
 //printf("Do not trust the results before you resolve this issue!\n");
 //printf("ResoTau[uParticle][WhichReso] = %f\n",ResoTau[uParticle][WhichReso]);
-                        //TKM = ResoTau[uParticle][WhichReso]*ResoMomentum/ResoMass[uParticle][WhichReso];
-                        TKM = ResoMass[uParticle][WhichReso]/(ResoTau[uParticle][WhichReso]*ResoMomentum);
+                        //TKM = ResoTau[uParticle][WhichReso]*SmearedResoMomentum/ResoMass[uParticle][WhichReso];
+                        TKM = SmearedResoMass/(ResoTau[uParticle][WhichReso]*SmearedResoMomentum+1e-64);
                         //we increase RAD following an exponential
 //printf(" TKM = %f\n",TKM);
                         RAD += RanGen.Exponential(TKM)*NuToFm;

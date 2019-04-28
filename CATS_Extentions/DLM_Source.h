@@ -152,7 +152,9 @@ public:
     void InitType(const int& type);
     //this should be called individually for both of the particles in the pair
     void InitReso(const unsigned& whichparticle, const unsigned& numreso);
-    void SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1);
+    //momSmear is in percent
+    //the smearing is ONLY applied to the original resonance
+    void SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1, const double& momSmear=0, const bool& massSmear=false);
     void InitNumMcIter(const unsigned& numiter);
     unsigned GetNumPars();
 private:
@@ -178,6 +180,8 @@ private:
     //momentum of the resonance, which we will use
     double** ChildMass0;
     double** ChildMass1;
+    double** SmearResoMomentum;
+    bool** SmearResoMass;
     //the number of MC iterations with which each source is to be initialized
     unsigned NumMcIter;
     DLM_Histo<double>* Histo;
