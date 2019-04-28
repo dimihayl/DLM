@@ -556,10 +556,10 @@ double LatticePots_pXi_SqrtAvg(const int& WhichPot, const int& DlmPotFlag,
 }
 
 //B1*exp(-B2*r*r)+B3*(1-exp(-b4*r*r))(exp(-2*mpi*r)/(r*r))
+//OtherPars[0] is a cut-off
 double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
-
 
     const double mpihal = 146.;
     const double hcbar = 197.3;
@@ -572,6 +572,8 @@ double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
     double Result;
     const double& rad=Radius[0];
     const double rad2=rad*rad;
+
+    if(rad<OtherPars[0]) return 0;
 
     //I=1/2; 5S2
         switch(DlmPotFlag){
@@ -1054,6 +1056,7 @@ double pLambdaDlmPot3S1(double* Pars){
 }
 
 //t2p1 - 2xIsospin of particle 1, t2p2 same for particle 2
+//in other pars, the 0-th par is assumed to be a cut-off parameter (i.e. V=0 below certain r)
 double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
                const int& IsoSpin, const int& t2p1, const int& t2p2, const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
     //printf("V=%f\n",fV18potential(9,Spin,AngMom,TotMom,Radius)) ;
