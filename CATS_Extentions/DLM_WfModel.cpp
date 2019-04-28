@@ -1617,7 +1617,9 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
 
     return Histo;
 }
-
+DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS* Kitty, const int& TYPE=0){
+    return Init_pS0_ESC08(InputFolder,*Kitty,TYPE);
+}
 
 
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo){
