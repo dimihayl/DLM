@@ -1385,8 +1385,9 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         if(SmearResoMomentum[uParticle][WhichReso]>0){
                             do{
                                 SmearedResoMomentum = RanGen.Gauss(ResoMomentum,ResoMomentum*SmearResoMomentum[uParticle][WhichReso]);
+//printf("Smear %.2f%% from %.3f to %.3f\n",SmearResoMomentum[uParticle][WhichReso]*100,ResoMomentum,SmearedResoMomentum);
                             }
-                            while(SmearedResoMomentum>=0);
+                            while(SmearedResoMomentum<0);
                         }
 
                         //! is this the correct def. or should it be 1/TKM???
