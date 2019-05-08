@@ -3,10 +3,12 @@
 
 //#include "DLM_WfModel.h"
 #include "CATS.h"
+//#include "CATSconstants.h"
 
 //#include <unistd.h>
 
-const complex<float>i(0,1);
+const complex<float>fi(0,1);
+const double Pi(3.141592653589793);
 
 //TYPE = 00 is LO
 //TYPE = 01 is LO+Coupling
@@ -361,8 +363,8 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
                 HistoPS[uFile][0].SetBinContent(WhichBin,fPhaseShift);
             }
             else if(TYPE==1 && CUTOFF==600){
-                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_LNLN_SS+i*fImWf_LNLN_SS)*fRadius);
-                HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_SNLN_SS+i*fImWf_SNLN_SS)*fRadius);
+                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_LNLN_SS+fi*fImWf_LNLN_SS)*fRadius);
+                HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_SNLN_SS+fi*fImWf_SNLN_SS)*fRadius);
 
                 HistoPS[uFile][0].SetBinContent(WhichBin,0);
                 HistoPS[uFile+2][0].SetBinContent(WhichBin,0);
@@ -377,8 +379,8 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
                 HistoPS[uFile][0].SetBinContent(WhichBin,fPhaseShift);
             }
             else if(TYPE==11 && CUTOFF==600){
-                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_LNLN_SS+i*fImWf_LNLN_SS)*fRadius);
-                HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_SNLN_SS+i*fImWf_SNLN_SS)*fRadius);
+                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_LNLN_SS+fi*fImWf_LNLN_SS)*fRadius);
+                HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_SNLN_SS+fi*fImWf_SNLN_SS)*fRadius);
 
                 //HistoWF[uFile].SetBinContent(WhichBin,(fReWf_LNLN_DS+i*fImWf_LNLN_DS)*fRadius);
                 //HistoWF[uFile+2].SetBinContent(WhichBin,(fReWf_SNLN_DS+i*fImWf_SNLN_DS)*fRadius);
@@ -644,9 +646,9 @@ DLM_Histo<complex<double>>*** Init_pSigma0_Haidenbauer(const char* InputFolder, 
             //we fill up the radius bins with and offset of 1, due to the special zeroth bin
             WhichBin[1] = RadBin+1;
 
-            HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_S0p_S0p+i*fImWf_S0p_S0p)*fRadius);
-            HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_Lp_S0p+i*fImWf_Lp_S0p)*fRadius);
-            HistoWF[uFile+4][0].SetBinContent(WhichBin,(fReWf_Sn_S0p+i*fImWf_Sn_S0p)*fRadius);
+            HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_S0p_S0p+fi*fImWf_S0p_S0p)*fRadius);
+            HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_Lp_S0p+fi*fImWf_Lp_S0p)*fRadius);
+            HistoWF[uFile+4][0].SetBinContent(WhichBin,(fReWf_Sn_S0p+fi*fImWf_Sn_S0p)*fRadius);
 
             HistoPS[uFile][0].SetBinContent(WhichBin,0);
             HistoPS[uFile+2][0].SetBinContent(WhichBin,0);
@@ -884,7 +886,7 @@ DLM_Histo<complex<double>>*** Init_pXi_Haidenbauer(const char* InputFolder, CATS
             WhichBin[1] = RadBin+1;
 
             if(TYPE==0){
-                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf+i*fImWf)*fRadius);
+                HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf+fi*fImWf)*fRadius);
                 HistoPS[uFile][0].SetBinContent(WhichBin,0);
             }
             else{
@@ -1078,6 +1080,7 @@ DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS& K
         }
 
         float Values[NumCol];
+        float fRadius;
 
         //int RadBin=-1;
         unsigned WhichBin[2];
@@ -1108,7 +1111,9 @@ DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS& K
 
                 for(unsigned uCol=0; uCol<NumCol; uCol++){
                     WhichBin[1] = uRow*NumCol+uCol;
-                    HistoWF[WhichIsospin*NumSpinChannels+WhichSpin]->SetBinContent(WhichBin,Values[uCol]);
+                    fRadius = HistoWF[WhichIsospin*NumSpinChannels+WhichSpin]->GetBinCenter(1,WhichBin[1]);
+//printf("fRadius=%f\n",fRadius);
+                    HistoWF[WhichIsospin*NumSpinChannels+WhichSpin]->SetBinContent(WhichBin,Values[uCol]*fRadius);
                 }
             }
             HistoPS[WhichIsospin*NumSpinChannels+WhichSpin]->SetBinContent(WhichBin,0);
@@ -1328,6 +1333,7 @@ DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolde
 
         //int RadBin=-1;
         unsigned WhichBin[2];
+        float fRadius;
         WhichBin[0]=0;
         WhichBin[1]=0;
         unsigned TotNumMomBins=0;
@@ -1359,7 +1365,9 @@ DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolde
 
                 for(unsigned uCol=0; uCol<NumCol; uCol++){
                     WhichBin[1] = uRow*NumCol+uCol;
-                    HistoWF[WhichSpin]->SetBinContent(WhichBin,Values[uCol]);
+                    fRadius = HistoWF[WhichSpin]->GetBinCenter(1,WhichBin[1]);
+//printf("fRadius=%f\n",fRadius);
+                    HistoWF[WhichSpin]->SetBinContent(WhichBin,Values[uCol]*fRadius);
                 }
             }
 
@@ -1486,14 +1494,19 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
 
     enum TomFiles {fS0, fS1};
     char** InputFileName = new char* [NumFiles];
+    char** InputFileNamePhases = new char* [NumFiles];
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         InputFileName[uFile] = new char[512];
         strcpy(InputFileName[uFile],InputFolder);
+        InputFileNamePhases[uFile] = new char[512];
+        strcpy(InputFileNamePhases[uFile],InputFolder);
     }
 
     if(TYPE==0){
         strcat(InputFileName[fS0], "ynwave.si0-prot.lsj=000");
         strcat(InputFileName[fS1], "ynwave.si0-prot.lsj=011");
+        strcat(InputFileNamePhases[fS0], "phases.si0-prot.jsj=000");
+        strcat(InputFileNamePhases[fS1], "phases.si0-prot.jsj=011");
     }
     else{
         printf("YOU BROKE SOMETHING in Init_pS0_ESC08\n");
@@ -1528,14 +1541,66 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
     }
 
     char* cdummy = new char [512];
+    char* buffer = new char [512];
 
     unsigned WhichSpin=0;
     //unsigned WhichIsospin=0;
 
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         WhichSpin = uFile;
+
+        //int RadBin=-1;
+        unsigned WhichBin[2];
+        WhichBin[0]=0;
+        WhichBin[1]=0;
+        unsigned TotNumMomBins=0;
+
         //int WhichMomBin=-1;
         FILE *InFile;
+
+
+        InFile = fopen(InputFileNamePhases[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileNamePhases[uFile]);
+            return Histo;
+        }
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileNamePhases[uFile]);
+            return Histo;
+        }
+        float PhaseShiftRe;
+        float PhaseShiftIm;
+        float pLab;
+        complex<float> PhaseShift;
+
+        //!---Iteration over all events---
+        WhichBin[0]=0;
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if(uFile==0) sscanf(cdummy,"%s %f %s %s %f %s %f %s",buffer,&pLab,buffer,buffer,&PhaseShiftRe,buffer,&PhaseShiftIm,buffer);
+            else{
+                //imagine: the last line has different format due to a space missing
+                if(WhichBin[0]==NumTomMomBins-1){
+                    sscanf(cdummy,"%s %s %s %s %s %f %s %f %s %f",buffer,buffer,buffer,buffer,buffer,&PhaseShiftRe,buffer,&PhaseShiftIm,buffer,&PhaseShiftIm);
+                }
+                else{
+                    sscanf(cdummy,"%s %s %s %f %s %s %f %s %f %s %f",buffer,buffer,buffer,&pLab,buffer,buffer,&PhaseShiftRe,buffer,&PhaseShiftIm,buffer,&PhaseShiftIm);
+                }
+
+                PhaseShiftIm=0;
+            }
+//if(uFile==1) {printf("%s; %f\n",cdummy,PhaseShiftRe);}
+            PhaseShiftRe *= (Pi/180.);
+            PhaseShiftIm *= (Pi/180.);
+            PhaseShift.real(PhaseShiftRe);
+            PhaseShift.imag(PhaseShiftIm);
+            HistoPS[WhichSpin]->SetBinContent(WhichBin,PhaseShift);
+            WhichBin[0]++;
+        }
+
+        fclose(InFile);
+
+
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){
             printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
@@ -1556,12 +1621,12 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
         }
 
         float Values[NumCol];
-
-        //int RadBin=-1;
-        unsigned WhichBin[2];
+        complex<float> PsVal;
+        complex<float> Smatrix;
+        complex<float> WfVal;
+        float RealPrefactor = 2;
+        float fRadius;
         WhichBin[0]=0;
-        WhichBin[1]=0;
-        unsigned TotNumMomBins=0;
         //!---Iteration over all events---
         while(!feof(InFile)){
             //if(WhichBin[0]>=NumTomMomBins) {WhichBin[0]=0; WhichSpin=1;}
@@ -1590,7 +1655,16 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
 
                 for(unsigned uCol=0; uCol<NumCol; uCol++){
                     WhichBin[1] = uRow*NumCol+uCol;
-                    HistoWF[WhichSpin]->SetBinContent(WhichBin,Values[uCol]);
+                    PsVal = HistoPS[WhichSpin]->GetBinContent(WhichBin);
+                    Smatrix = exp(RealPrefactor*fi*PsVal);
+                    Smatrix += 1.;
+                    fRadius = HistoWF[WhichSpin]->GetBinCenter(1,WhichBin[1]);
+//printf("fRadius=%f\n",fRadius);
+                    WfVal = Smatrix*Values[uCol]*fRadius;
+                    //WfVal = Values[uCol];
+//if(uFile==0)
+//printf("k = %.3f; Wf = %.3f * (%.3f + i*%.3f)\n",HistoWF[WhichSpin]->GetBinCenter(0,WhichBin[0]),Values[uCol],Smatrix.real(),Smatrix.imag());
+                    HistoWF[WhichSpin]->SetBinContent(WhichBin,WfVal);
                 }
             }
 
@@ -1598,11 +1672,14 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
             else if(uFile==1&&(TotNumMomBins%3!=0)) {TotNumMomBins++;continue;}
             else TotNumMomBins++;
 
-            HistoPS[WhichSpin]->SetBinContent(WhichBin,0);
+            //HistoPS[WhichSpin]->SetBinContent(WhichBin,0);
             WhichBin[0]++;
         }
 
         fclose(InFile);
+
+
+
         if(WhichBin[0]-1!=NumTomMomBins){
             printf("\033[1;31mERROR:\033[0m WhichBin[0]!=NumTomMomBins (%u vs %u)\n",WhichBin[0],NumTomMomBins);
         }
@@ -1610,10 +1687,18 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
 
     delete [] RadBinLoaded;
     delete [] cdummy;
+    delete [] buffer;
     delete [] RadBins;
     delete [] TomMomentum;
     delete [] TomMomentumBins;
     delete [] pLab;
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] InputFileName[uFile];
+        delete [] InputFileNamePhases[uFile];
+    }
+    delete [] InputFileName;
+    delete [] InputFileNamePhases;
 
     return Histo;
 }

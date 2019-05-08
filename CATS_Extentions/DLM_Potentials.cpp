@@ -251,7 +251,7 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
             break;
         case 112 :
             ShiftedRad = Radius[0]+OtherPars[0];
-            return fDlmPot(NN_AV18,v18_Coupled3P2,1,1,1,1,1,1,&ShiftedRad);
+            return fDlmPot(NN_AV18,v18_Coupled3P2,1,1,1,1,1,1,&ShiftedRad,0);
         default :
             return 0;
         }
@@ -316,7 +316,7 @@ double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
             parG = 1.10268;
             break;
         case 112 :
-            return fDlmPot(NN_AV18,v18_Coupled3P2,1,1,1,1,1,1,&ShiftedRad);
+            return fDlmPot(NN_AV18,v18_Coupled3P2,1,1,1,1,1,1,&ShiftedRad,0);
         default :
             return 0;
         }
@@ -572,8 +572,6 @@ double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
     double Result;
     const double& rad=Radius[0];
     const double rad2=rad*rad;
-
-    if(rad<OtherPars[0]) return 0;
 
     //I=1/2; 5S2
         switch(DlmPotFlag){
@@ -1021,7 +1019,7 @@ double RepulsiveCore(double* Pars){
 }
 
 double ppDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
-    return fDlmPot(DlmPot,DlmFlag,1,1,1,Spin,AngMom,TotMom,Radius);
+    return fDlmPot(DlmPot,DlmFlag,1,1,1,Spin,AngMom,TotMom,Radius,0);
 }
 
 //[2] = DlmPot, [3] = DlmFlag
@@ -1045,7 +1043,7 @@ double ppDlmPot3P(double* Pars){
 }
 
 double pLambdaDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
-    return fDlmPot(DlmPot,DlmFlag,0,0,0,Spin,AngMom,TotMom,Radius);
+    return fDlmPot(DlmPot,DlmFlag,0,0,0,Spin,AngMom,TotMom,Radius,0);
 }
 //[2] is Pot Type, 3 is [3] is PotFlag
 double pLambdaDlmPot1S0(double* Pars){
@@ -1058,8 +1056,9 @@ double pLambdaDlmPot3S1(double* Pars){
 //t2p1 - 2xIsospin of particle 1, t2p2 same for particle 2
 //in other pars, the 0-th par is assumed to be a cut-off parameter (i.e. V=0 below certain r)
 double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
-               const int& IsoSpin, const int& t2p1, const int& t2p2, const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
+               const int& IsoSpin, const int& t2p1, const int& t2p2, const int& Spin, const int& AngMom, const int& TotMom, double* Radius, const double& CutOff, double* OtherPars){
     //printf("V=%f\n",fV18potential(9,Spin,AngMom,TotMom,Radius)) ;
+    if(Radius[0]<CutOff) return 0;
     switch(DlmPot){
         case NN_AV18 : return fV18potential(9,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
         case NN_ReidV8 : return fV18potential(2,DlmPotFlag,IsoSpin,t2p1,t2p2,Spin,AngMom,TotMom,Radius);
@@ -1088,7 +1087,18 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag,
 double fDlmPot(double* Parameters){
     //printf(" fDlmPot called with %p\n",Parameters);
     return fDlmPot(round(Parameters[2]),round(Parameters[3]),round(Parameters[4]),round(Parameters[5]),
-                   round(Parameters[6]),round(Parameters[7]),round(Parameters[8]),round(Parameters[9]),Parameters,&Parameters[10]);
+                   round(Parameters[6]),round(Parameters[7]),round(Parameters[8]),round(Parameters[9]),Parameters,0,&Parameters[10]);
+}
+//[0] radius, [1] momentum
+//[2] PotentialType, [3] PotentialFlag,
+//[4] IsoSpin, [5] ParticleType1 (1 proton, -1 neutron), [6] ParticleType2
+//[7] Spin (s), [8] AngMom (l), [9] TotMom (j)
+//![10] CutOff, i.e. V(r)=0 below this point
+//[11] - optional stuff
+double fDlmPotVer2(double* Parameters){
+    //printf(" fDlmPot called with %p\n",Parameters);
+    return fDlmPot(round(Parameters[2]),round(Parameters[3]),round(Parameters[4]),round(Parameters[5]),
+                   round(Parameters[6]),round(Parameters[7]),round(Parameters[8]),round(Parameters[9]),Parameters,Parameters[10],&Parameters[11]);
 }
 
 

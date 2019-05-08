@@ -75,8 +75,9 @@ double pLambdaDlmPot1S0(double* Pars);
 double pLambdaDlmPot3S1(double* Pars);
 
 double fDlmPot(const int& DlmPot, const int& DlmPotFlag, const int& IsoSpin, const int& t2p1, const int& t2p2, const int& Spin, const int& AngMom, const int& TotMom,
-               double* Radius, double* OtherPars=NULL);
+               double* Radius, const double& CutOff, double* OtherPars=NULL);
 double fDlmPot(double* Parameters);
+double fDlmPotVer2(double* Parameters);
 
 void GetDlmPotName(const int& potid, const int& potflag, char* name);
 
