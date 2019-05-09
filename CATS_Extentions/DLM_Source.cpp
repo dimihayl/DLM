@@ -1100,7 +1100,7 @@ double DLM_CleverLevy::Eval(double* Pars){
                 WhichBin[2] = iBin2;
                 BIN_PARS[4] = Histo->GetBinCenter(2,iBin2);
                 if(Histo->GetBinContent(WhichBin)>=0.99e6){
-                    #pragma omp critical
+                    //#pragma omp critical
                     {
 //printf("   Setting up bin %i %i %i\n",iBin0,iBin1,iBin2);
                     if(Type==0) {Histo->SetBinContent(WhichBin,LevySource3D_single(BIN_PARS));}
@@ -1311,7 +1311,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
             if(Histo->GetBinContent(WhichBin)>=0.99e6){
                 for(unsigned iBin0=0; iBin0<Histo->GetNbins(0); iBin0++){
                     WhichBin[0] = iBin0;
-                    #pragma omp critical
+                    //#pragma omp critical
                     {
                     Histo->SetBinContent(WhichBin,0);
                     }
@@ -1328,7 +1328,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                 double RanVal;
                 double ResoMomentum;
                 double TKM;
-                //#pragma omp for
+                ////#pragma omp for
                 for(unsigned uIter=0; uIter<NumMcIter; uIter++){
                     //we simulate random 'core' distance RAD
                     if(Type==0) {RAD = RanGen.StableR(3,par_stability,0,par_scale,0);}
@@ -1412,7 +1412,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         Histo->SetBinContent(TotBin,0);
                     }
                     //BinSize==0, happens when we are on the edges, i.e. outside of our histo
-                    //#pragma omp critical
+                    ////#pragma omp critical
                     {
                     if(BinSize!=0) Histo->Add(TotBin,DiffVal/BinSize);
                     }

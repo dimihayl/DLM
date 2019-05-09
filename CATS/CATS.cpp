@@ -14,7 +14,7 @@
 #include "DLM_Histo.h"
 #include "CATSconstants.h"
 
-#include <omp.h>
+//#include <omp.h>
 #include <unistd.h>
 
 using namespace std;
@@ -1792,9 +1792,9 @@ void CATS::ComputeWaveFunction(){
     //the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
     //this is however difficult as currently I only pass a single pointer as PotPar, and I do not know how many arguments there are
     //the same problem should occur for the source
-    unsigned short NumThreads = omp_get_num_procs();
+    unsigned short NumThreads = int(int(1));
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
-    #pragma omp parallel for private(uMomBin,usCh,usPW) num_threads(NumThreads)
+    //#pragma omp parallel for private(uMomBin,usCh,usPW) num_threads(NumThreads)
     for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++){
         //compute to which MomBin, Polarization and PW corresponds this MPP,
         //i.e. map uMomBin, usCh and usPW to uMPP
@@ -1961,10 +1961,10 @@ void CATS::ComputeWaveFunction(){
                 BufferWaveFunction[NumComputedPoints] = WaveFun[kNew];
 if(NumComputedPoints<32 && NumComputedPoints%1==0 && uMomBin==0 && uMPP==0 && false){
 printf("Momentum=%f\n",Momentum);
-DEBUG=omp_get_thread_num();
+DEBUG=int(int(0));
 }
 else{
-    #pragma omp critical
+    //#pragma omp critical
     {
     DEBUG=-1;
     }
@@ -1983,7 +1983,7 @@ else{
                 }
 
                 BufferRad[NumComputedPoints] = PosRad[kNew];
-if(DEBUG==omp_get_thread_num()){
+if(DEBUG==int(int(0))){
 printf("Stuff: \n");
 printf(" PropFunWithoutSI[%u]=%.15e\n",kNew,PropFunWithoutSI[kNew]);
 printf(" PropFunVal[%u]=%.15e\n",kNew,PropFunVal[kNew]);
@@ -2201,9 +2201,9 @@ DEBUG=-1;
             }
         }
 
-        #pragma omp atomic
+        //#pragma omp atomic
         CurrentStep++;
-        #pragma omp critical
+        //#pragma omp critical
         {
             Progress = double(CurrentStep)/TotalSteps;
             pTotal = int(Progress*100);
@@ -2260,9 +2260,9 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     double TotalSteps = double(NumMomBins)*double(NumGridPts);
     long long CurrentStep=0;
     DLM_Timer dlmTimer;
-    unsigned short NumThreads = omp_get_num_procs();
+    unsigned short NumThreads = int(int(1));
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
-    #pragma omp parallel for private(Radius,CosTheta) num_threads(NumThreads)
+    //#pragma omp parallel for private(Radius,CosTheta) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         //Momentum = GetMomentum(uMomBin);
         for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
@@ -2275,9 +2275,9 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                                                         EffectiveFunction(uMomBin, Radius, usCh);
             }
 
-            #pragma omp atomic
+            //#pragma omp atomic
             CurrentStep++;
-            #pragma omp critical
+            //#pragma omp critical
             {
                 Progress = double(CurrentStep)/TotalSteps;
                 pTotal = int(Progress*100);
@@ -2774,10 +2774,10 @@ void CATS::FoldSourceAndWF(){
     double Integrand;
     double SourceInt;
     double SourceIntCut;
-    unsigned short NumThreads = omp_get_num_procs();
+    unsigned short NumThreads = int(int(1));
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
     unsigned uMomBinSource;
-    #pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
+    //#pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         uMomBinSource = MomDepSource?uMomBin:0;
         kCorrFun[uMomBin] = 0;
@@ -3114,7 +3114,7 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     else{
         return;
     }
-if(DEBUG==omp_get_thread_num())
+if(DEBUG==int(int(0)))
 {
 printf("  Basic=%.15e\n",Basic);
 printf("  ShortRangePotential[%u][%u]=%.15e\n",usCh,usPW,ShortRangePotential[usCh][usPW](Parameters));

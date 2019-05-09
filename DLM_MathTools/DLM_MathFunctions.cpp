@@ -26,12 +26,12 @@ double gammln(const double xx) {
 double factrl(const unsigned n) {
     if(n>170) return 0;
     if(!factrl_array){
-        factrl_array = new double* [omp_get_num_procs()];
-        for(int uThr=0; uThr<omp_get_num_procs(); uThr++){
+        factrl_array = new double* [int(int(1))];
+        for(int uThr=0; uThr<int(int(1)); uThr++){
             factrl_array[uThr] = NULL;
         }
     }
-    const int WhichThread = omp_get_thread_num();
+    const int WhichThread = int(int(0));
     if(!factrl_array[WhichThread]){
         factrl_array[WhichThread] = new double [171];
         factrl_array[WhichThread][0] = 1.;

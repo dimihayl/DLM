@@ -9,16 +9,16 @@
 #include "CATSconstants.h"
 #include "CATS.h"
 
-#include <omp.h>
+//#include <omp.h>
 
 //!Needed only for testing (contains usleep)
 //#include <unistd.h>
 
 using namespace std;
 
-//omp_get_num_procs()
-//CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(omp_get_num_procs()){
-CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(ThreadSafe?omp_get_num_procs():1){
+//int(int(1))
+//CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(int(int(1))){
+CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(ThreadSafe?int(int(1)):1){
 //CATSparameters::CATSparameters(const unsigned type, const unsigned numpar, const bool threadsafe):NumVars(type),NumPars(numpar),TotNumPars(type+numpar),ThreadSafe(threadsafe),NumThreads(1){
     Parameter = new double* [NumThreads];
     for(unsigned uThr=0; uThr<NumThreads; uThr++){
@@ -45,7 +45,7 @@ double* CATSparameters::GetParameters() const{
     //    return NULL;
     //}
     unsigned WhichThread = 0;
-    WhichThread = ThreadSafe?omp_get_thread_num():0;
+    WhichThread = ThreadSafe?int(int(0)):0;
     //WhichThread = 0;
 //if(NumVars==2)printf("GetParameters[%u] -> %p\n", WhichThread, Parameter[WhichThread]);
     return Parameter[WhichThread];
@@ -57,13 +57,13 @@ void CATSparameters::SetParameter(const unsigned& WhichPar, const double& Value,
     }
     if(CurrentThread){
         unsigned WhichThread = 0;
-        WhichThread = ThreadSafe?omp_get_thread_num():0;
+        WhichThread = ThreadSafe?int(int(0)):0;
         //WhichThread = 0;
         Parameter[WhichThread][NumVars+WhichPar]=Value;
     }
     else{
         for(unsigned uThr=0; uThr<NumThreads; uThr++){
-            #pragma omp critical
+            //#pragma omp critical
             {
             Parameter[uThr][NumVars+WhichPar]=Value;
             }
@@ -83,13 +83,13 @@ void CATSparameters::SetVariable(const unsigned& WhichVar, const double& Value, 
     }
     if(CurrentThread){
         unsigned WhichThread = 0;
-        WhichThread = ThreadSafe?omp_get_thread_num():0;
+        WhichThread = ThreadSafe?int(int(0)):0;
         //WhichThread = 0;
         Parameter[WhichThread][WhichVar]=Value;
     }
     else{
         for(unsigned uThr=0; uThr<NumThreads; uThr++){
-            #pragma omp critical
+            //#pragma omp critical
             {
             Parameter[uThr][WhichVar]=Value;
             }
@@ -102,7 +102,7 @@ double CATSparameters::GetParameter(const unsigned& WhichPar) const{
         return 0;
     }
     unsigned WhichThread = 0;
-    WhichThread = ThreadSafe?omp_get_thread_num():0;
+    WhichThread = ThreadSafe?int(int(0)):0;
     //WhichThread = 0;
 //printf("I do what I am told to do\n");
 //printf(" tid=%u\n",WhichThread);
@@ -116,7 +116,7 @@ double CATSparameters::GetVariable(const unsigned& WhichVar) const{
         return 0;
     }
     unsigned WhichThread = 0;
-    WhichThread = ThreadSafe?omp_get_thread_num():0;
+    WhichThread = ThreadSafe?int(int(0)):0;
     //WhichThread = 0;
     return Parameter[WhichThread][WhichVar];
 }
