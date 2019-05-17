@@ -34,8 +34,10 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
 
     unsigned short NumChannels;
     unsigned short NumPwPerCh;
-    unsigned short NumFiles;
+    //unsigned short NumFiles;
     unsigned NumMomBins = 0;
+    unsigned short NumFiles = 10; // (to cover all s,p,d, waves)
+    bool* TakeThisFile = new bool [NumFiles];
 
     if(TYPE==0){
         RadiusStepSize = 0.1;
@@ -52,7 +54,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
         RadiusMaximum = 10.;
         NumChannels = 4;
         NumPwPerCh = 1;
-        NumFiles = 2;
+        NumFiles = 3;
         //NumMomBins = 43;
     }
 //! p-waves not yet implemented!
@@ -149,7 +151,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
     RadBins[0] = -RadBins[1];
     RadBinLoaded[0] = false;
 
-    enum HaideFiles {f1S0, f3S1, f1P1, f3P0, f3P1, f3P2};
+    enum HaideFiles {f1S0, f3S1, f1P1, f3P0, f3P1, f3P2, f1D2, f3D1, f3D2, f3D3};
     char** InputFileName = new char* [NumFiles];
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         InputFileName[uFile] = new char[256];
@@ -178,6 +180,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
     }
     else if(TYPE==1 && CUTOFF==600){
         strcat(InputFileName[f1S0], "fort.13");
+        strcat(InputFileName[f3S1], "fort.14");
         strcat(InputFileName[f3S1], "fort.14");
     }
     else if(TYPE==12 && CUTOFF==600){
@@ -436,6 +439,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
     delete [] Momentum;
     delete [] cdummy;
     delete [] RadBins;
+    delete [] TakeThisFile;
 
     return Histo;
 }
@@ -1706,6 +1710,175 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS* Kitt
     return Init_pS0_ESC08(InputFolder,*Kitty,TYPE);
 }
 
+
+
+DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS& Kitty, const int& TYPE){
+
+    const unsigned NumFiles=2;
+    const unsigned NumChannels=2;
+    char** FileNames = new char* [NumFiles];
+    if(TYPE==0){
+        for(unsigned uFile=0; uFile<NumFiles; uFile++){
+            FileNames[uFile] = new char [512];
+        }
+        strcpy(FileNames[0],InputFolder);
+        strcat(FileNames[0],"lsj000.dat");
+
+        strcpy(FileNames[1],InputFolder);
+        strcat(FileNames[1],"lsj011.dat");
+    }
+    else{
+        printf("\033[1;31mERROR:\033[0m Init_pS0_ESC16 says you used a wrong TYPE\n");
+        return NULL;
+    }
+
+    const double Mass_p = 938.272;
+    const double Mass_S0 = 1192.642;
+
+    Kitty.SetNumChannels(NumChannels);
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        Kitty.SetNumPW(uCh,1);
+        Kitty.SetChannelWeight(uCh,uCh%2==0?0.25:0.75);
+        Kitty.SetSpin(uCh,uCh%2==0?0:1);
+    }
+    Kitty.SetQ1Q2(0);
+    Kitty.SetPdgId(2212, 3212);
+
+    Kitty.SetRedMass((Mass_p*Mass_S0)/(Mass_p+Mass_S0));
+
+    DLM_Histo<complex<double>>*** Histo = new DLM_Histo<complex<double>>** [2];
+    DLM_Histo<complex<double>>**& HistoWF = Histo[0];
+    DLM_Histo<complex<double>>**& HistoPS = Histo[1];
+
+    HistoWF = new DLM_Histo<complex<double>>* [NumChannels];
+    HistoPS = new DLM_Histo<complex<double>>* [NumChannels];
+
+    char* cdummy = new char [512];
+
+    float fMomentum;
+    float fMomentumOld=-1000;
+    float fRadius;
+    float fRadiusOld=-1000;
+    float fNormRe;
+    float fNormIm;
+    float fWfRe;
+    float fWfIm;
+
+    FILE *InFile;
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        unsigned MaxNumMomBins = 1000;
+        unsigned NumMomBins = 0;
+        double* MomBins = new double [MaxNumMomBins+1];
+        double* MomBinsCenter = new double [MaxNumMomBins];
+
+        unsigned MaxNumRadBins = 1000;
+        unsigned NumRadBins = 0;
+        double* RadBins = new double [MaxNumRadBins+1];
+        double* RadBinsCenter = new double [MaxNumRadBins];
+
+        InFile = fopen(FileNames[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", FileNames[uFile]);
+            abort();
+        }
+        MomBins[0] = 0;
+        //we iterate only to get the binning
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            sscanf(cdummy, "%f %f %f %f %f %f",&fMomentum,&fRadius,&fNormRe,&fNormIm,&fWfRe,&fWfIm);
+            if(fMomentum!=fMomentumOld){
+                if(NumMomBins==0){
+                    fMomentumOld = fMomentum;
+                    MomBinsCenter[NumMomBins] = fMomentum;
+                    NumMomBins++;
+                }
+                else{
+                    MomBins[NumMomBins] = (fMomentumOld+fMomentum)*0.5;
+                    MomBinsCenter[NumMomBins] = fMomentum;
+                    fMomentumOld = fMomentum;
+                    NumMomBins++;
+                }
+            }
+
+            if(NumRadBins==0){
+                fRadiusOld = fRadius;
+                RadBinsCenter[NumRadBins] = fRadius;
+                NumRadBins++;
+            }
+            else if(NumMomBins<=1){
+                RadBins[NumRadBins] = (fRadiusOld+fRadius)*0.5;
+                RadBinsCenter[NumRadBins] = fRadius;
+                fRadiusOld = fRadius;
+                NumRadBins++;
+            }
+
+        }
+        fclose(InFile);
+
+        MomBins[NumMomBins] = MomBins[NumMomBins-1] + 2.*(MomBinsCenter[NumMomBins-1]-MomBins[NumMomBins-1]);
+        RadBins[NumRadBins] = RadBins[NumRadBins-1] + 2.*(RadBinsCenter[NumRadBins-1]-RadBins[NumRadBins-1]);
+
+        HistoWF[uFile] = new DLM_Histo<complex<double>> [1];
+        HistoWF[uFile][0].SetUp(2);
+        HistoWF[uFile][0].SetUp(0,NumMomBins,MomBins);
+        HistoWF[uFile][0].SetUp(1,NumRadBins,RadBins);
+        HistoWF[uFile][0].Initialize();
+
+        HistoPS[uFile] = new DLM_Histo<complex<double>> [1];
+        HistoPS[uFile][0].SetUp(1);
+        HistoPS[uFile][0].SetUp(0,NumMomBins,MomBins);
+        HistoPS[uFile][0].Initialize();
+/*
+        if(uFile==0){
+            printf("NumMomBins=%u\n",NumMomBins);
+            for(unsigned uBin=0; uBin<NumMomBins; uBin++){
+                printf(" %.3f -> %.3f -> %.3f\n",MomBins[uBin],MomBinsCenter[uBin],MomBins[uBin+1]);
+            }
+            printf("NumRadBins=%u\n",NumRadBins);
+            for(unsigned uRad=0; uRad<NumRadBins; uRad++){
+                printf(" %.3f -> %.3f -> %.3f\n",RadBins[uRad],RadBinsCenter[uRad],RadBins[uRad+1]);
+            }
+        }
+*/
+
+
+        unsigned WhichBin[2];
+        complex<float> WfVal;
+        InFile = fopen(FileNames[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", FileNames[uFile]);
+            abort();
+        }
+        //we iterate a second time, in order to actually read the wave function
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            sscanf(cdummy, "%f %f %f %f %f %f",&fMomentum,&fRadius,&fNormRe,&fNormIm,&fWfRe,&fWfIm);
+            WfVal.real(fWfRe);
+            WfVal.imag(fWfIm);
+            WfVal *= fRadius;
+            WhichBin[0] = HistoWF[uFile][0].GetBin(0,fMomentum);
+            WhichBin[1] = HistoWF[uFile][0].GetBin(1,fRadius);
+            HistoWF[uFile][0].SetBinContent(WhichBin,WfVal);
+        }
+        fclose(InFile);
+
+        if(MomBins) delete [] MomBins;
+        if(MomBinsCenter) delete [] MomBinsCenter;
+        if(RadBins) delete [] RadBins;
+        if(RadBinsCenter) delete [] RadBinsCenter;
+    }
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(FileNames&&FileNames[uFile]) delete [] FileNames[uFile];
+    }
+    if(FileNames) delete [] FileNames;
+    delete [] cdummy;
+
+    return Histo;
+}
+DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS* Kitty, const int& TYPE=0){
+    return Init_pS0_ESC16(InputFolder,*Kitty,TYPE);
+}
 
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo){
     for(unsigned short usCh=0; usCh<NumChannels; usCh++){
