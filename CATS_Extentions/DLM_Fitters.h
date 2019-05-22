@@ -26,7 +26,7 @@ class DLM_Fitter1{
 
 public:
     //(a+b*x+c*x*x)*C(k)
-    enum fFitPar { p_a, p_b, p_c, p_Cl, p_kc, p_sor0, p_sor1, p_sor2, p_sor3, p_sor4, p_sor5, p_pot0, p_pot1, p_pot2, p_pot3, p_pot4, p_pot5  };
+    enum fFitPar { p_a, p_b, p_c, p_3, p_4, p_Cl, p_kc, p_sor0, p_sor1, p_sor2, p_sor3, p_sor4, p_sor5, p_pot0, p_pot1, p_pot2, p_pot3, p_pot4, p_pot5  };
     enum fFitRange { kmin, kf, kl, kmax };
 
     DLM_Fitter1(const unsigned& maxnumsyst=16);

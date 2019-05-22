@@ -10,7 +10,7 @@
 
 #include "DLM_CkDecomposition.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(17),NumRangePar(4){
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(19),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -57,6 +57,8 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_a] = 1; ParDownLimit[uSyst][p_a] = 0.5; ParUpLimit[uSyst][p_a] = 2;
         ParValue[uSyst][p_b] = 1e-3; ParDownLimit[uSyst][p_b] = 1e-5; ParUpLimit[uSyst][p_b] = 1;
         ParValue[uSyst][p_c] = 0; ParDownLimit[uSyst][p_c] = 0; ParUpLimit[uSyst][p_c] = 0;
+        ParValue[uSyst][p_3] = 0; ParDownLimit[uSyst][p_3] = 0; ParUpLimit[uSyst][p_3] = 0;
+        ParValue[uSyst][p_4] = 0; ParDownLimit[uSyst][p_4] = 0; ParUpLimit[uSyst][p_4] = 0;
         FixPar[uSyst][p_c] = true;
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
         ParValue[uSyst][p_sor1] = 0; ParValue[uSyst][p_sor2] = 0; ParValue[uSyst][p_sor3] = 0; ParValue[uSyst][p_sor4] = 0; ParValue[uSyst][p_sor5] = 0;
@@ -825,18 +827,25 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
         if(!HistoToFit[uSyst]) continue;
 
         if(FitBL[uSyst]) delete FitBL[uSyst];
-        FitBL[uSyst] = new TF1(TString::Format("FitBL%u_%p",uSyst,this),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
+        FitBL[uSyst] = new TF1(TString::Format("FitBL%u_%p",uSyst,this),"[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
         if(FixPar[uSyst][p_a]) {FitBL[uSyst]->FixParameter(0, ParValue[uSyst][p_a]);}
         else{FitBL[uSyst]->SetParameter(0, ParValue[uSyst][p_a]); FitBL[uSyst]->SetParLimits(0, ParDownLimit[uSyst][p_a], ParUpLimit[uSyst][p_a]);}
         if(FixPar[uSyst][p_b]) {FitBL[uSyst]->FixParameter(1, ParValue[uSyst][p_b]);}
         else{FitBL[uSyst]->SetParameter(1, ParValue[uSyst][p_b]); FitBL[uSyst]->SetParLimits(1, ParDownLimit[uSyst][p_b], ParUpLimit[uSyst][p_b]);}
         if(FixPar[uSyst][p_c]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_c]);}
         else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_c]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_c], ParUpLimit[uSyst][p_c]);}
+        if(FixPar[uSyst][p_3]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_3]);}
+        else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_3]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_3], ParUpLimit[uSyst][p_3]);}
+        if(FixPar[uSyst][p_4]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_4]);}
+        else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_4]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_4], ParUpLimit[uSyst][p_4]);}
         if(ShowFitInfo) HistoToFit[uSyst]->Fit(FitBL[uSyst],"S, N, R, M");
         else HistoToFit[uSyst]->Fit(FitBL[uSyst],"Q, S, N, R, M");
         FixParameter(uSyst,p_a,FitBL[uSyst]->GetParameter(0));
         FixParameter(uSyst,p_b,FitBL[uSyst]->GetParameter(1));
         FixParameter(uSyst,p_c,FitBL[uSyst]->GetParameter(2));
+        FixParameter(uSyst,p_3,FitBL[uSyst]->GetParameter(3));
+        FixParameter(uSyst,p_4,FitBL[uSyst]->GetParameter(4));
+
         FixParameter(uSyst,p_kc,0);
 
         /*
@@ -1388,7 +1397,8 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     }
 
     double CkVal;
-    double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum;
+    double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
+    Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.);
 
     double Clin;
     //Oli's way
