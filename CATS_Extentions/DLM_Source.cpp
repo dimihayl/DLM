@@ -1220,7 +1220,8 @@ void DLM_CleverMcLevyReso::InitScale(const unsigned& numPts, const double& minVa
     MaxScale=maxVal;
 }
 void DLM_CleverMcLevyReso::InitRad(const unsigned& numPts, const double& minVal, const double& maxVal){
-    if(NumPtsRad==numPts&&MinRad==minVal&&MaxStability==MaxRad) return;
+//printf(" NPR=%u(%u); MinR=%.3f(%.3f); MaxR=%.3f(%.3f)\n",numPts,NumPtsRad,minVal,MinRad,maxVal,MaxRad);
+    if(NumPtsRad==numPts&&MinRad==minVal&&MaxRad==maxVal) return;
     Reset();
     NumPtsRad=numPts;
     MinRad=minVal;
@@ -1283,8 +1284,9 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
 
 //static unsigned NumFunctionCalls=0;
 //NumFunctionCalls++;
-//if(NumFunctionCalls%100==0)
+//if(NumFunctionCalls%10000==0)
 //printf("DLM_CleverMcLevyReso::Eval: Function call Nr. %u\n",NumFunctionCalls);
+//printf("r=%.3f, R=%.3f, alpha=%.3f\n",Pars[1],Pars[3],Pars[4]);
 
     if(!Histo) {Init();}
     if(!Histo) return -1;
@@ -1330,6 +1332,8 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                 double TKM;
                 //#pragma omp for
                 for(unsigned uIter=0; uIter<NumMcIter; uIter++){
+//if(uIter%10000==0)
+//printf("   %u/%u\n",uIter,NumMcIter);
                     //we simulate random 'core' distance RAD
                     if(Type==0) {RAD = RanGen.StableR(3,par_stability,0,par_scale,0);}
                     else if(Type==1) {RAD = RanGen.StableDiffR(3,par_stability,0,par_scale,0);}
@@ -1453,15 +1457,19 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
     //    printf("What happened!?\n");
     //}
 
+//printf("RETVAL=%f\n",RETVAL);
+
     return RETVAL;
 }
 unsigned DLM_CleverMcLevyReso::GetNumPars(){
     return 2;
 }
 void DLM_CleverMcLevyReso::Reset(){
+//printf("RESET\n");
     if(Histo) {delete Histo;Histo=NULL;}
 }
 void DLM_CleverMcLevyReso::Init(){
+//printf(" Time to init new histo!\n");
     Reset();
     Histo  = new DLM_Histo<double>();
     Histo->SetUp(3);
