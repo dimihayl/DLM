@@ -331,7 +331,32 @@ double Lednicky_gauss_pAp(const double &Momentum, const double* SourcePar, const
   double c2 = -1.;
   double charge = abs(c1*c2);
 
-  return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redmass,charge);
+  double eta = CoulombEta(Momentum,redmass,charge);
+  double A_c = CoulombPenetrationFactor(eta);
+  double Momentum2 = Momentum*Momentum;
+
+//Need to trasform all the scattering parameters in MeV
+const std::complex<double> sLen = ScLenpAp*FmToNu;//(Real, Im)
+double eRan = effrangepAp*FmToNu;
+double rho = Momentum*radius;
+
+std::complex<double> ScattAmplCoul=pow(1./sLen+0.5*eRan*Momentum2-i*Momentum*A_c-2.*Momentum*eta*CoulombEuler(eta),-1.);
+
+double F1 = gsl_sf_dawson(2. * Momentum * radius) / (2. * Momentum * radius);
+double F2 = (1. - std::exp(-4. * Momentum * Momentum * radius * radius)) /
+            (2. * Momentum * radius);
+
+double CkValue = 0.;
+CkValue +=
+    0.5 * std::pow(std::abs(ScattAmplCoul) / radius, 2) *
+        (1. -
+         (eRan) / (2 * std::sqrt(TMath::Pi()) * radius)) +
+    2 * std::real(ScattAmplCoul) * F1 / (std::sqrt(TMath::Pi()) * radius) -
+    std::imag(ScattAmplCoul) * F2 / radius;
+
+return CkValue + 1;
+
+  // return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redmass,charge);
 }
 
 double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const double* PotPar){
@@ -345,7 +370,7 @@ double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const
   double c2 = +0.;
   double charge = abs(c1*c2);
 
-  return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAL,effrangepAL,false,redmass,charge);
+  return GeneralLednicky(Momentum,radius,ScLenpAL,effrangepAL,0,0,true,false);
 }
 
 double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const double* PotPar){
@@ -358,7 +383,7 @@ double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const
   double c2 = +0.;
   double charge = abs(c1*c2);
 
-  return GeneralCoulombLednickyAvg(Momentum,radius,ScLenLAL,effrangeLAL,false,redmass,charge);
+  return GeneralLednicky(Momentum,radius,ScLenLAL,effrangeLAL,0,0,true,false);
 }
 
 
