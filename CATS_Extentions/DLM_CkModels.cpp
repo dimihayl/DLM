@@ -320,8 +320,21 @@ double ComplexLednickyCoulomb_Averaged(const double& Momentum, const double* Sou
 }
 
 //Lednicky model for Baryon-Antibaryon analysis with APPROX Coulomb
+double Lednicky_gauss_pAp_CATS(const double &Momentum, const double* SourcePar, const double* PotPar){
+  double radius = 1.188;
+  std::complex<double> ScLenpAp = -0.894+i*0.88;
+  double effrangepAp = 1.0;
+  double mprot = 938.;
+  double redmass = 0.5*mprot;
+  double c1 = +1.;
+  double c2 = -1.;
+  double charge = abs(c1*c2);
+return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redmass,charge);
+}
 
-double Lednicky_gauss_pAp(const double &Momentum, const double* SourcePar, const double* PotPar){
+
+
+double Lednicky_gauss_pAp_test(const double &Momentum, const double* SourcePar, const double* PotPar){
   double radius = 1.188;
   std::complex<double> ScLenpAp = -0.894+i*0.88;
   double effrangepAp = 1.0;
