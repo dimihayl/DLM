@@ -10,7 +10,7 @@
 
 #include "DLM_CkDecomposition.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(19),NumRangePar(4){
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(24),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -60,6 +60,18 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_3] = 0; ParDownLimit[uSyst][p_3] = 0; ParUpLimit[uSyst][p_3] = 0;
         ParValue[uSyst][p_4] = 0; ParDownLimit[uSyst][p_4] = 0; ParUpLimit[uSyst][p_4] = 0;
         FixPar[uSyst][p_c] = true;
+        FixPar[uSyst][p_3] = true;
+        FixPar[uSyst][p_4] = true;
+        ParValue[uSyst][p_ab_0] = 0; ParDownLimit[uSyst][p_ab_0] = 0; ParUpLimit[uSyst][p_ab_0] = 0;
+        ParValue[uSyst][p_ab_1] = 0; ParDownLimit[uSyst][p_ab_1] = 0; ParUpLimit[uSyst][p_ab_1] = 0;
+        ParValue[uSyst][p_ab_2] = 0; ParDownLimit[uSyst][p_ab_2] = 0; ParUpLimit[uSyst][p_ab_2] = 0;
+        ParValue[uSyst][p_ab_3] = 0; ParDownLimit[uSyst][p_ab_3] = 0; ParUpLimit[uSyst][p_ab_3] = 0;
+        ParValue[uSyst][p_ab_4] = 0; ParDownLimit[uSyst][p_ab_4] = 0; ParUpLimit[uSyst][p_ab_4] = 0;
+        FixPar[uSyst][p_ab_0] = true;
+        FixPar[uSyst][p_ab_1] = true;
+        FixPar[uSyst][p_ab_2] = true;
+        FixPar[uSyst][p_ab_3] = true;
+        FixPar[uSyst][p_ab_4] = true;
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
         ParValue[uSyst][p_sor1] = 0; ParValue[uSyst][p_sor2] = 0; ParValue[uSyst][p_sor3] = 0; ParValue[uSyst][p_sor4] = 0; ParValue[uSyst][p_sor5] = 0;
         FixPar[uSyst][p_sor0]=true; FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
@@ -482,7 +494,7 @@ void DLM_Fitter1::AddSameParameter(const TString& System, const unsigned& WhichP
     }
     //this guy is -1 if the system has no parent, else it is WhichParent*NumPar+ParentPar (i.e. the id of the parent parameter)
     ParentParameter[WhichSyst*NumPar+WhichPar] = WhichParent*NumPar+ParentPar;
-
+if(WhichPar>=NumPar) printf("AAA a\n");
     if(GetBaseParameter(System,WhichPar)==-2){
         printf("\033[1;33mWARNING:\033[0m You are making a closed circle without a base parameter for %s par%u\n", System.Data(), WhichPar);
         ParentParameter[WhichSyst*NumPar+WhichPar] = -1;
@@ -502,9 +514,11 @@ void DLM_Fitter1::RemoveSameParameter(const TString& System, const unsigned& Whi
 int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar){
     int sDUMMY;
     int uDUMMY;
+if(WhichPar>=NumPar) printf("AAA b\n");
     return GetBaseParameter(WhichSyst,WhichPar,sDUMMY,uDUMMY);
 }
 int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar, int& ParentSystem, int& ParentPar){
+if(WhichPar>=NumPar) printf("AAA c\n");
     return GetBaseParameter(WhichSyst,WhichPar,ParentSystem,ParentPar,WhichSyst,WhichPar);
 }
 //return -2 is error
@@ -531,6 +545,7 @@ int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar, int
         //StartSystem StartPar is the original configuration, if we reach that one, we are in a loop
         if(NextSystem==StartSystem && NextPar==StartPar) return -2;
         //check the next parent
+if(WhichPar>=NumPar) printf("AAA d\n");
         return GetBaseParameter(NextSystem,NextPar,ParentSystem,ParentPar,StartSystem,StartPar);
     }
 }
@@ -545,6 +560,7 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar){
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
         return -2;
     }
+if(WhichPar>=NumPar) printf("AAA e\n");
     return GetBaseParameter(WhichSyst,WhichPar);
 }
 int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar){
@@ -564,6 +580,7 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TS
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", ParentPar);
         return -2;
     }
+if(WhichPar>=NumPar) printf("AAA f\n");
     return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar);
 }
 //figure out which is the parent parameter (recursively, i.e. if the parent has a parent we return that one)
@@ -592,6 +609,7 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TS
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", StartPar);
         return -2;
     }
+if(WhichPar>=NumPar) printf("AAA g\n");
     return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar,WhichStart,StartPar);
 }
 
@@ -834,10 +852,10 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
         else{FitBL[uSyst]->SetParameter(1, ParValue[uSyst][p_b]); FitBL[uSyst]->SetParLimits(1, ParDownLimit[uSyst][p_b], ParUpLimit[uSyst][p_b]);}
         if(FixPar[uSyst][p_c]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_c]);}
         else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_c]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_c], ParUpLimit[uSyst][p_c]);}
-        if(FixPar[uSyst][p_3]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_3]);}
-        else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_3]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_3], ParUpLimit[uSyst][p_3]);}
-        if(FixPar[uSyst][p_4]) {FitBL[uSyst]->FixParameter(2, ParValue[uSyst][p_4]);}
-        else{FitBL[uSyst]->SetParameter(2, ParValue[uSyst][p_4]); FitBL[uSyst]->SetParLimits(2, ParDownLimit[uSyst][p_4], ParUpLimit[uSyst][p_4]);}
+        if(FixPar[uSyst][p_3]) {FitBL[uSyst]->FixParameter(3, ParValue[uSyst][p_3]);}
+        else{FitBL[uSyst]->SetParameter(3, ParValue[uSyst][p_3]); FitBL[uSyst]->SetParLimits(3, ParDownLimit[uSyst][p_3], ParUpLimit[uSyst][p_3]);}
+        if(FixPar[uSyst][p_4]) {FitBL[uSyst]->FixParameter(4, ParValue[uSyst][p_4]);}
+        else{FitBL[uSyst]->SetParameter(4, ParValue[uSyst][p_4]); FitBL[uSyst]->SetParLimits(4, ParDownLimit[uSyst][p_4], ParUpLimit[uSyst][p_4]);}
         if(ShowFitInfo) HistoToFit[uSyst]->Fit(FitBL[uSyst],"S, N, R, M");
         else HistoToFit[uSyst]->Fit(FitBL[uSyst],"Q, S, N, R, M");
         FixParameter(uSyst,p_a,FitBL[uSyst]->GetParameter(0));
@@ -845,6 +863,11 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
         FixParameter(uSyst,p_c,FitBL[uSyst]->GetParameter(2));
         FixParameter(uSyst,p_3,FitBL[uSyst]->GetParameter(3));
         FixParameter(uSyst,p_4,FitBL[uSyst]->GetParameter(4));
+        FixParameter(uSyst,p_ab_0,FitBL[uSyst]->GetParameter(5));
+        FixParameter(uSyst,p_ab_1,FitBL[uSyst]->GetParameter(6));
+        FixParameter(uSyst,p_ab_2,FitBL[uSyst]->GetParameter(7));
+        FixParameter(uSyst,p_ab_3,FitBL[uSyst]->GetParameter(8));
+        FixParameter(uSyst,p_ab_4,FitBL[uSyst]->GetParameter(9));
 
         FixParameter(uSyst,p_kc,0);
 
@@ -1319,6 +1342,7 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
             if(FixPar[uSyst][uPar]){
                 Pars[uSyst*NumPar+uPar]=ParValue[uSyst][uPar];
             }
+if(uPar>=NumPar) printf("AAA h\n");
             int uParentParameter = GetBaseParameter(uSyst,uPar);
             Pars[uSyst*NumPar+uPar]=Pars[uParentParameter];
         }
@@ -1399,6 +1423,8 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
     double CkVal;
     double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
     Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.);
+    double AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
+    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.);
 
     double Clin;
     //Oli's way
@@ -1449,5 +1475,5 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
         //printf("SystemToFit[WhichSyst]->EvalMain(%.3f)=%.3f\n", Momentum, SystemToFit[WhichSyst]->EvalMain(Momentum));
     }
 
-    return BlVal*CkVal;
+    return BlVal*CkVal+AddBlVal;
 }
