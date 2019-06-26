@@ -251,6 +251,7 @@ DEBUGFLAG=0;
         RM_Child = new DLM_ResponseMatrix* [NumChildren];
         CurrentStatusChild = new bool [NumChildren];
         CkChildMainFeed = new DLM_Histo<double>* [NumChildren];
+        CkSmearedChildMainFeed = new DLM_Histo<double>* [NumChildren];
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             Child[uChild] = NULL;
             LambdaPar[uChild] = 0;
@@ -258,6 +259,7 @@ DEBUGFLAG=0;
             RM_Child[uChild] = NULL;
             CurrentStatusChild[uChild] = false;
             CkChildMainFeed[uChild] = NULL;
+            CkSmearedChildMainFeed[uChild] = NULL;
         }
     }
 
@@ -276,9 +278,11 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             if(RM_Child[uChild]) delete RM_Child[uChild];
             if(CkChildMainFeed[uChild]) delete CkChildMainFeed[uChild];
+            if(CkSmearedChildMainFeed[uChild]) delete CkSmearedChildMainFeed[uChild];
         }
         delete [] RM_Child; RM_Child=NULL;
         delete [] CkChildMainFeed; CkChildMainFeed=NULL;
+        delete [] CkSmearedChildMainFeed; CkSmearedChildMainFeed=NULL;
     }
     if(Name) {delete [] Name; Name=NULL;}
     if(RM_MomResolution) {delete RM_MomResolution; RM_MomResolution=NULL;}
@@ -408,6 +412,15 @@ double DLM_CkDecomposition::EvalMainFeed(const double& Momentum){
 }
 double DLM_CkDecomposition::EvalSmearedMainFeed(const double& Momentum){
     return CkSmearedMainFeed->Eval(&Momentum);
+}
+double DLM_CkDecomposition::EvalSmearedFeed(const unsigned& WhichChild,const double& Momentum){
+    if(WhichChild>=NumChildren) return 0;
+    if(!CkSmearedChildMainFeed[WhichChild]&&Child[WhichChild]) {
+        CkSmearedChildMainFeed[WhichChild] = new DLM_Histo<double> (*Child[WhichChild]->CkMain);
+        Smear(CkChildMainFeed[WhichChild], RM_MomResolution, CkSmearedChildMainFeed[WhichChild]);
+    }
+    if(CkSmearedChildMainFeed[WhichChild]) return CkSmearedChildMainFeed[WhichChild]->Eval(&Momentum);
+    else return 0;
 }
 
 unsigned DLM_CkDecomposition::GetNumChildren(){

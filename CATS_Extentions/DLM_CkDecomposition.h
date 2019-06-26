@@ -70,6 +70,7 @@ public:
     double EvalSmearedMain(const double& Momentum);
     double EvalMainFeed(const double& Momentum);
     double EvalSmearedMainFeed(const double& Momentum);
+    double EvalSmearedFeed(const unsigned& WhichChild,const double& Momentum);
     //if(Renorm) -> spit out the C(k) normalized to 1
 /*
     //Only the main correlation
@@ -120,6 +121,7 @@ private:
     DLM_Histo<double>* CkSmearedMainFeed;
     //the residual C(k) (corrected with the residual matrix) stemming from the CkMainFeed of the children
     DLM_Histo<double>** CkChildMainFeed;
+    DLM_Histo<double>** CkSmearedChildMainFeed;
 
     //N.B. I assume that the MomResolution is only taken into account if you look into that particular C(k) or the feed-down contributions.
     //For the children which are of type fake, the Sigma matrix is taken from their definition.

@@ -78,6 +78,7 @@ double fDlmPot(const int& DlmPot, const int& DlmPotFlag, const int& IsoSpin, con
                double* Radius, const double& CutOff, double* OtherPars=NULL);
 double fDlmPot(double* Parameters);
 double fDlmPotVer2(double* Parameters);
+double LatticePots(double* Parameters);
 
 void GetDlmPotName(const int& potid, const int& potflag, char* name);
 

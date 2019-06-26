@@ -54,7 +54,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
         RadiusMaximum = 10.;
         NumChannels = 4;
         NumPwPerCh = 1;
-        NumFiles = 3;
+        NumFiles = 2;
         //NumMomBins = 43;
     }
 //! p-waves not yet implemented!
@@ -181,7 +181,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
     else if(TYPE==1 && CUTOFF==600){
         strcat(InputFileName[f1S0], "fort.13");
         strcat(InputFileName[f3S1], "fort.14");
-        strcat(InputFileName[f3S1], "fort.14");
+        //strcat(InputFileName[f3S1], "fort.14");
     }
     else if(TYPE==12 && CUTOFF==600){
         strcat(InputFileName[f1S0], "N1s0.data");
