@@ -25,9 +25,12 @@ public:
     double GetPotPar(const unsigned& WhichPar);
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
-    //the momentum value after which the correlation will be considered 1
+    //the momentum value after which the correlation will be interpolated
     //N.B. if we go outside the maximum momentum, the same is assumed
-    void SetFlatCutOff(const double& Momentum);
+    //the interpolation is done so, as the C(k) is linearly propagated between the final computed point and C(kc) = 1.
+    //If kc<maximum momentum C(k>maximum momentum) = C(maximum momentum)
+    //If kc<0, than outside the maximum momentum C(k) = |kc|
+    void SetCutOff(const double& Momentum=1e6, const double& kc=-1);
 
     bool Status();
     void Update(const bool& FORCE=false);
@@ -43,7 +46,8 @@ private:
     bool SourceUpToDate;
     double* PotPar;
     bool PotUpToDate;
-    double FlatCutOff;
+    double CutOff;
+    double CutOff_kc;
 
     void DefaultConstructor();
 };

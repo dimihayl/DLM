@@ -17,6 +17,12 @@ class TGraph;
 class TH1F;
 class TF1;
 
+//this typedef it used to save the functions for the
+//different baselines as an array of function pointers.
+typedef double (*FitterFunction)(double*,double*);
+
+double DLM_FITTER2_FUNCTION_POL(double* xVal, double* pars);
+double DLM_FITTER2_FUNCTION_SPLINE3(double* xVal, double* pars);
 
 //!FOR TEST!
 //#include "TCanvas.h"
@@ -26,7 +32,8 @@ class DLM_Fitter1{
 
 public:
     //(a+b*x+c*x*x)*C(k)
-    enum fFitPar { p_a, p_b, p_c, p_3, p_4, p_ab_0, p_ab_1, p_ab_2, p_ab_3, p_ab_4, p_Cl, p_kc, p_sor0, p_sor1, p_sor2, p_sor3, p_sor4, p_sor5, p_pot0, p_pot1, p_pot2, p_pot3, p_pot4, p_pot5  };
+    enum fFitPar { p_a, p_b, p_c, p_3, p_4, p_ab_0, p_ab_1, p_ab_2, p_ab_3, p_ab_4, p_Cl, p_kc,
+    p_sor0, p_sor1, p_sor2, p_sor3, p_sor4, p_sor5, p_pot0, p_pot1, p_pot2, p_pot3, p_pot4, p_pot5, p_spline  };
     enum fFitRange { kmin, kf, kl, kmax };
 
     DLM_Fitter1(const unsigned& maxnumsyst=16);
@@ -71,6 +78,7 @@ public:
     double GetPval();
     //double Eval(const unsigned& WhichSyst, const double& Momentum);
     void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning=true);
+    void GetMultBaselineGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning=true);
     void GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph);
     void GetCkTheoryGraph(const unsigned& WhichSyst, TGraph& OutGraph);
 
@@ -167,6 +175,119 @@ private:
     int GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar, const TString& StartSystem, const int& StartPar);
 
 };
+
+
+
+
+
+class DLM_Fitter2{
+
+public:
+    //AddBl(k)*C(k)+MultBl(k)
+    enum fFitPar { p_Ck, p_sor, p_pot, p_AddBl, p_MultBl };
+    enum fFitRange { kmin, kf, kl, kmax };
+    //Default functions for the baseline, information:
+    //f_pol:        Info = Order of the polynomial
+    //              [0] = Order of the polynomial (N) (SHOULD BE ALWAYS FIXED!!!)
+    //              [1...N+1] = the parameter for the 0...N order
+    //f_spline3:    Info = Number of knots in the spline
+    //              [0] = Number of knots in the spline (N)
+    //              [1...N] = the x-values of the knots
+    //              [N+1...2N] = the y-value of the knots
+    //              [2N+1] = the value of the derivative at the first knot
+    //              [2N+2] = the value of the derivative at the last knot
+    enum fBlFunction { f_pol, f_spline3, f_na=-1 };
+    enum fBlType { b_add, b_mult };
+
+    DLM_Fitter2(const int& maxnumsyst=16);
+    ~DLM_Fitter2();
+
+    int GetSystemID(const TString& WhichSyst);
+
+    //set up the baseline function, by passing a pointed
+    void SetUpAddBl(const TString& WhichSyst, double (*FUNCTION)(double*,double*),const int& numpars);
+    //setup the baseline function for the predefined type. Info is specific for each type and my have different meaning
+    void SetUpAddBl(const TString& WhichSyst, const fBlFunction& TYPE, const int& Info);
+    void SetUpMultBl(const TString& WhichSyst, double (*FUNCTION)(double*,double*),const int& numpars);
+    void SetUpMultBl(const TString& WhichSyst, const fBlFunction& TYPE, const int& Info);
+
+    void SetPolParX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value);
+    void FixPolParX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value);
+    void SetLimitPolParX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& down, const double& up);
+    void SetPolParY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value);
+    void FixPolParY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value);
+    void SetLimitPolParY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& down, const double& up);
+
+    void SetSplineKnotX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value);
+    void FixSplineKnotX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value);
+    void SetLimitSplineKnotX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& down, const double& up);
+    void SetSplineKnotY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value);
+    void FixSplineKnotY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value);
+    void SetLimitSplineKnotY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& down, const double& up);
+
+private:
+
+    const int MaxNumSyst;
+
+    //Number of parameters per system
+    int* NumPars;
+    int* NumCkPars;
+    int* NumSorPars;
+    int* NumPotPars;
+    int* NumAddBlPars;
+    int* NumMultBlPars;
+
+    //the position of the first parameter of the corresponding system, within the lists below
+    int* StartPars;
+    int* StartCkPars;
+    int* StartSorPars;
+    int* StartPotPars;
+    int* StartAddBlPars;
+    int* StartMultBlPars;
+
+    //all parameters. To get one associated with a particular system, use the StartPars above
+    int CurrentNumPars;
+    int MaxNumPars;
+    double* Pars;
+    double* ParsErr;
+    double* ParsDownLim;
+    double* ParsUpLim;
+    /*
+    double* Pars_Ck;
+    double* ParsErr_Ck;
+    double* ParsDownLim_Ck;
+    double* ParsUpLim_Ck;
+    double* Pars_Sor;
+    double* ParsErr_Sor;
+    double* ParsDownLim_Sor;
+    double* ParsUpLim_Sor;
+    double* Pars_Pot;
+    double* ParsErr_Pot;
+    double* ParsDownLim_Pot;
+    double* ParsUpLim_Pot;
+    double* Pars_AddBl;
+    double* ParsErr_AddBl;
+    double* ParsDownLim_AddBl;
+    double* ParsUpLim_AddBl;
+    double* Pars_MultBl;
+    double* ParsErr_MultBl;
+    double* ParsDownLim_MultBl;
+    double* ParsUpLim_MultBl;
+    */
+
+    //double (*Function_AddBl)(double* xVal, double* pars);
+    //double (*Function_MultBl)(double* xVal, double* pars);
+
+    FitterFunction* Function_AddBl;
+    FitterFunction* Function_MultBl;
+    fBlFunction* FunctionType_AddBl;
+    fBlFunction* FunctionType_MultBl;
+
+    DLM_CkDecomposition** SystemToFit;
+
+    void IncreaseMaxNumPars();
+};
+
 
 /*
 CATS* FIT_CATS1; CATS* FIT_CATS2; CATS* FIT_CATS3; CATS* FIT_CATS4;
