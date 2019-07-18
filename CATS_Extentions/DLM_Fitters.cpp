@@ -132,7 +132,8 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
 
     OutputDirName = "./";
     RemoveNegCk = false;
-
+    TypeMultBl = 0;
+    TypeAddBl = 0;
 }
 
 
@@ -652,6 +653,13 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TS
     }
 if(WhichPar>=int(NumPar)) printf("AAA g\n");
     return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar,WhichStart,StartPar);
+}
+
+void DLM_Fitter1::SetMultBaselineType(const int& TYPE){
+    TypeMultBl = TYPE;
+}
+void DLM_Fitter1::SetAddBaselineType(const int& TYPE){
+    TypeAddBl = TYPE;
 }
 
 void DLM_Fitter1::SetParameter(const unsigned& WhichSyst, const unsigned& WhichPar, const double& Value, const double& ValueDown, const double& ValueUp){
@@ -1509,14 +1517,30 @@ if(uPar>=NumPar) printf("AAA h\n");
     }
 
     double CkVal;
-    double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
-    Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.);
+    double BlVal;
+    if(TypeMultBl==0){
+        BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
+                Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.);
+    }
+    else{
+        BlVal = Pars[WhichSyst*NumPar+p_a]*(1.+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
+                Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.));
+    }
+
     //in case we are to use splines
     if(Pars[WhichSyst*NumPar+p_spline]!=0){
         BlVal *= DLM_FITTER2_FUNCTION_SPLINE3(&Momentum,&Pars[WhichSyst*NumPar+p_spline]);
     }
-    double AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
+    double AddBlVal;
+    if(TypeAddBl==0){
+        AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
     Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.);
+    }
+    else{
+        AddBlVal = Pars[WhichSyst*NumPar+p_ab_0](1.+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
+                    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.));
+    }
+
 
     double Clin;
     //Oli's way

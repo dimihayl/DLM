@@ -58,6 +58,11 @@ public:
     int GetBaseParameter(const TString& System, const int& WhichPar);
     int GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar);
 
+    //0 is a polynomial of type a+bx+...
+    //1 is a polynomial of type a*(1+bx+...)
+    void SetMultBaselineType(const int& TYPE);
+    void SetAddBaselineType(const int& TYPE);
+
     //
     //void SetSameSourceChildren(const TString& WhichSyst, const TString& EqualTo, const int& NumPars);
 
@@ -114,6 +119,8 @@ private:
     //const unsigned NumPotPar;
     const unsigned NumRangePar;
     bool RemoveNegCk;
+    int TypeMultBl;
+    int TypeAddBl;
 
     TString OutputDirName;
 
