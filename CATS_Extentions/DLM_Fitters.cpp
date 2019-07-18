@@ -1537,7 +1537,7 @@ if(uPar>=NumPar) printf("AAA h\n");
     Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.);
     }
     else{
-        AddBlVal = Pars[WhichSyst*NumPar+p_ab_0](1.+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
+        AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]*(1.+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
                     Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.));
     }
 
