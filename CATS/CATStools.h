@@ -109,6 +109,7 @@ public:
     int GetPid() const;
     double GetMass() const;
     void operator=(const CatsParticle& other);
+    void operator=(const CatsLorentzVector& other);
 protected:
     int Pid;
     double Mass;

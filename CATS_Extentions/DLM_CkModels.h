@@ -51,7 +51,7 @@ double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* S
 double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 
 double pXi_pheno(const double &Momentum, const double* SourcePar, const double* PotPar);
-double LednickySingletScatAmplitude(const double& kStar, const double* SourcePar, const double* PotPar);
+
 double Lednicky_gauss_pAp_test(const double &Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_gauss_pAp_CATS(const double &Momentum, const double* SourcePar, const double* PotPar);
 
@@ -68,5 +68,6 @@ double Lednicky_gauss_pAL_varlow(const double &Momentum, const double* SourcePar
 
  double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
  double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
+
 
 #endif

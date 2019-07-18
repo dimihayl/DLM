@@ -335,6 +335,7 @@ double ComplexLednickyCoulomb_Averaged(const double& Momentum, const double* Sou
 }
 
 //Lednicky model for Baryon-Antibaryon analysis with APPROX Coulomb
+
 double Lednicky_gauss_pAp_CATS(const double &Momentum, const double* SourcePar, const double* PotPar){
   double radius = 1.188;
   std::complex<double> ScLenpAp = -0.894+i*0.88;
@@ -350,6 +351,7 @@ return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redm
 
 
 double Lednicky_gauss_pAp_test(const double &Momentum, const double* SourcePar, const double* PotPar){
+
   double radius = 1.188;
   std::complex<double> ScLenpAp = -0.894+i*0.88;
   double effrangepAp = 1.0;
@@ -386,10 +388,12 @@ return CkValue + 1;
 
   // return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redmass,charge);
 }
+
  double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const double* PotPar){
 //  double Lednicky_gauss_pAL(const double &Momentum,  const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
   // double radius = 1.188;
+
   std::complex<double> ScLenpAL = -1.15+i*0.53;
   double effrangepAL = 3.06;
   double mprot = 938.;
@@ -398,6 +402,7 @@ return CkValue + 1;
   double c1 = +1.;
   double c2 = +0.;
   double charge = abs(c1*c2);
+
   // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
   return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
 }
@@ -407,6 +412,7 @@ double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const
 //double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
   // double radius = 1.188;
+
   std::complex<double> ScLenLAL = -0.9+i*0.4;
   double effrangeLAL = 2.76;
   double mlam = 1115.;
@@ -414,6 +420,7 @@ double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const
   double c1 = +0.;
   double c2 = +0.;
   double charge = abs(c1*c2);
+
   // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
   return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
 }

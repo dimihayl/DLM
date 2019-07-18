@@ -25,9 +25,12 @@ public:
     double GetPotPar(const unsigned& WhichPar);
     //double GetPotPar(const unsigned& WhichPar);
     unsigned GetNumPotPar();
-    //the momentum value after which the correlation will be considered 1
+    //the momentum value after which the correlation will be interpolated
     //N.B. if we go outside the maximum momentum, the same is assumed
-    void SetFlatCutOff(const double& Momentum);
+    //the interpolation is done so, as the C(k) is linearly propagated between the final computed point and C(kc) = 1.
+    //If kc<maximum momentum C(k>maximum momentum) = C(maximum momentum)
+    //If kc<0, than outside the maximum momentum C(k) = |kc|
+    void SetCutOff(const double& Momentum=1e6, const double& kc=-1);
 
     bool Status();
     void Update(const bool& FORCE=false);
@@ -43,7 +46,8 @@ private:
     bool SourceUpToDate;
     double* PotPar;
     bool PotUpToDate;
-    double FlatCutOff;
+    double CutOff;
+    double CutOff_kc;
 
     void DefaultConstructor();
 };
@@ -70,6 +74,7 @@ public:
     double EvalSmearedMain(const double& Momentum);
     double EvalMainFeed(const double& Momentum);
     double EvalSmearedMainFeed(const double& Momentum);
+    double EvalSmearedFeed(const unsigned& WhichChild,const double& Momentum);
     //if(Renorm) -> spit out the C(k) normalized to 1
 /*
     //Only the main correlation
@@ -120,6 +125,7 @@ private:
     DLM_Histo<double>* CkSmearedMainFeed;
     //the residual C(k) (corrected with the residual matrix) stemming from the CkMainFeed of the children
     DLM_Histo<double>** CkChildMainFeed;
+    DLM_Histo<double>** CkSmearedChildMainFeed;
 
     //N.B. I assume that the MomResolution is only taken into account if you look into that particular C(k) or the feed-down contributions.
     //For the children which are of type fake, the Sigma matrix is taken from their definition.

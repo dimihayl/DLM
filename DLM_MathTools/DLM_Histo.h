@@ -613,7 +613,12 @@ public:
     //    return GetBinError(sDim,GetBin(sDim,WhichBin));
     //}
 
-
+    double GetLowEdge(const unsigned short& sDim) const{
+        return GetBinLowEdge(sDim,0);
+    }
+    double GetUpEdge(const unsigned short& sDim) const{
+        return GetBinUpEdge(sDim,NumBins[sDim]-1);
+    }
     double GetBinLowEdge(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;

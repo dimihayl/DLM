@@ -14,8 +14,9 @@
 //#include <stdio.h>
 
 double GaussSourceTF1(double* x, double* Pars){
-    Pars[1] = *x;
-    return GaussSource(Pars);
+    double& Radius = *x;
+    double& Size = Pars[0];
+    return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 
 //2-particle
@@ -1384,7 +1385,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                                             pow(ChildMass0[uParticle][WhichReso],4.)-2.*pow(SmearedResoMass*ChildMass1[uParticle][WhichReso],2.)-
                                             2.*pow(ChildMass0[uParticle][WhichReso]*ChildMass1[uParticle][WhichReso],2.)+
                                             pow(ChildMass1[uParticle][WhichReso],4.))/(2.*ChildMass0[uParticle][WhichReso]);
-
+//printf("ResoMomentum=%f\n",ResoMomentum);
                         double SmearedResoMomentum = ResoMomentum;
                         if(SmearResoMomentum[uParticle][WhichReso]>0){
                             do{

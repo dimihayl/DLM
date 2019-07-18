@@ -1101,6 +1101,28 @@ double fDlmPotVer2(double* Parameters){
                    round(Parameters[6]),round(Parameters[7]),round(Parameters[8]),round(Parameters[9]),Parameters,Parameters[10],&Parameters[11]);
 }
 
+//[2,3,4,5] = B1,2,3,4
+//[6] = mpi (pion mass)
+//[7] = cutoff
+//to use in CATS:
+//Parameter 0,1,2,3 are B1,2,3,4 and Parameter 4 is the cutoff
+//B1*exp(-B2*r*r)+B3*(1-exp(-b4*r*r))(exp(-2*mpi*r)/(r*r))
+double LatticePots(double* Parameters){
+    if(Parameters[0]<Parameters[7]) return 0;
+    const double mpihalfm = Parameters[6]/197.3;
+    const double& B1 = Parameters[2];
+    const double& B2 = Parameters[3];
+    const double& B3 = Parameters[4];
+    const double& B4 = Parameters[5];
+
+    double Result=0;
+    const double& rad=Parameters[0];
+    const double rad2=rad*rad;
+ //f(x) = (x > 0 ? a*exp(-b*x*x)+c*(1-exp(-d*x*x))**1*(exp(-e*x)/x)**1 : a) #  for 1S0 effective
+    Result = B1*exp(-B2*rad2)+B3*(1.-exp(-B4*rad2))*exp(-2.0*mpihalfm*rad)/rad2;
+    return Result;
+}
+
 
 void GetDlmPotName(const int& potid, const int& potflag, char* name){
     double Radius=1;

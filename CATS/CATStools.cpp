@@ -381,7 +381,9 @@ void CatsParticle::operator=(const CatsParticle& other){
     Pid = other.Pid;
     Mass = other.Mass;
 }
-
+void CatsParticle::operator=(const CatsLorentzVector& other){
+    CatsLorentzVector::operator = (other);
+}
 CatsParticlePair::CatsParticlePair(){
 
 }

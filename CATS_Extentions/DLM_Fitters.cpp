@@ -4,13 +4,50 @@
 #include "TH1F.h"
 #include "TF1.h"
 #include "TGraph.h"
+#include "TMath.h"
+#include "TSpline.h"
 
 //for test only
 #include "TFile.h"
 
 #include "DLM_CkDecomposition.h"
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(24),NumRangePar(4){
+double DLM_FITTER2_FUNCTION_POL(double* xVal, double* pars){
+    const int Order = TMath::Nint(pars[0]);
+    double RESULT=0;
+    for(int iOrder=0; iOrder<=Order; iOrder++){
+        RESULT+=pow(pars[iOrder+1],iOrder);
+    }
+    return RESULT;
+}
+
+double* DLM_FITTER2_ARRAY_SPLINE3_X;
+double* DLM_FITTER2_ARRAY_SPLINE3_Y;
+double DLM_FITTER2_FUNCTION_SPLINE3(double* xVal, double* pars){
+    //[0] = NumKnots
+    //[1] = der at 0
+    //[2] = der at last
+    //[3]... posX
+    //[...]... poxY
+    const int MAX_KNOTS = 20;
+    int NumKnots = TMath::Nint(pars[0]);
+    if(NumKnots<2) NumKnots=2;
+    if(NumKnots>MAX_KNOTS) NumKnots=MAX_KNOTS;
+    if(!DLM_FITTER2_ARRAY_SPLINE3_X) DLM_FITTER2_ARRAY_SPLINE3_X = new double [MAX_KNOTS];
+    if(!DLM_FITTER2_ARRAY_SPLINE3_Y) DLM_FITTER2_ARRAY_SPLINE3_Y = new double [MAX_KNOTS];
+    for(int iKnot=0; iKnot<NumKnots; iKnot++){
+        DLM_FITTER2_ARRAY_SPLINE3_X[iKnot] = pars[3+iKnot];
+        DLM_FITTER2_ARRAY_SPLINE3_Y[iKnot] = pars[3+NumKnots+iKnot];
+        //fix to the previous one of the value is fixed to 1e6
+        if(DLM_FITTER2_ARRAY_SPLINE3_Y[iKnot]==1e6&&iKnot) DLM_FITTER2_ARRAY_SPLINE3_Y[iKnot] = pars[3+NumKnots+iKnot-1];
+    }
+    double& derStart = pars[1];
+    double& derEnd = pars[2];
+    TSpline3 sp3("sp3", DLM_FITTER2_ARRAY_SPLINE3_X, DLM_FITTER2_ARRAY_SPLINE3_Y, NumKnots, "b1e1", derStart, derEnd);
+    return sp3.Eval(*xVal);
+}
+
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(24+25),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -79,6 +116,10 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_kc] = 300; ParDownLimit[uSyst][p_kc] = 150; ParUpLimit[uSyst][p_kc] = 900;
         ParValue[uSyst][p_pot0]=0; ParValue[uSyst][p_pot1]=0; ParValue[uSyst][p_pot2]=0; ParValue[uSyst][p_pot3]=0; ParValue[uSyst][p_pot4]=0; ParValue[uSyst][p_pot5]=0;
         FixPar[uSyst][p_pot0]=true; FixPar[uSyst][p_pot1]=true; FixPar[uSyst][p_pot2]=true; FixPar[uSyst][p_pot3]=true; FixPar[uSyst][p_pot4]=true; FixPar[uSyst][p_pot5]=true;
+        for(int iSpline=0; iSpline<25; iSpline++){
+            ParValue[uSyst][p_spline+iSpline]=0;
+            FixPar[uSyst][p_spline+iSpline]=true;
+        }
         //FitBL[uSyst] = new TF1(TString::Format("FitBL%u",uSyst),"[0]+[1]*x+[2]*x*x",FitRange[uSyst][kl],FitRange[uSyst][kmax]);
         FitBL[uSyst] = NULL;
     }
@@ -91,7 +132,8 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
 
     OutputDirName = "./";
     RemoveNegCk = false;
-
+    TypeMultBl = 0;
+    TypeAddBl = 0;
 }
 
 
@@ -514,11 +556,11 @@ void DLM_Fitter1::RemoveSameParameter(const TString& System, const unsigned& Whi
 int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar){
     int sDUMMY;
     int uDUMMY;
-if(WhichPar>=NumPar) printf("AAA b\n");
+if(WhichPar>=int(NumPar)) printf("AAA b\n");
     return GetBaseParameter(WhichSyst,WhichPar,sDUMMY,uDUMMY);
 }
 int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar, int& ParentSystem, int& ParentPar){
-if(WhichPar>=NumPar) printf("AAA c\n");
+if(WhichPar>=int(NumPar)) printf("AAA c\n");
     return GetBaseParameter(WhichSyst,WhichPar,ParentSystem,ParentPar,WhichSyst,WhichPar);
 }
 //return -2 is error
@@ -545,7 +587,7 @@ int DLM_Fitter1::GetBaseParameter(const int& WhichSyst, const int& WhichPar, int
         //StartSystem StartPar is the original configuration, if we reach that one, we are in a loop
         if(NextSystem==StartSystem && NextPar==StartPar) return -2;
         //check the next parent
-if(WhichPar>=NumPar) printf("AAA d\n");
+if(WhichPar>=int(NumPar)) printf("AAA d\n");
         return GetBaseParameter(NextSystem,NextPar,ParentSystem,ParentPar,StartSystem,StartPar);
     }
 }
@@ -560,7 +602,7 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar){
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", WhichPar);
         return -2;
     }
-if(WhichPar>=NumPar) printf("AAA e\n");
+if(WhichPar>=int(NumPar)) printf("AAA e\n");
     return GetBaseParameter(WhichSyst,WhichPar);
 }
 int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TString& ParentSystem, int& ParentPar){
@@ -580,7 +622,7 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TS
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", ParentPar);
         return -2;
     }
-if(WhichPar>=NumPar) printf("AAA f\n");
+if(WhichPar>=int(NumPar)) printf("AAA f\n");
     return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar);
 }
 //figure out which is the parent parameter (recursively, i.e. if the parent has a parent we return that one)
@@ -609,8 +651,15 @@ int DLM_Fitter1::GetBaseParameter(const TString& System, const int& WhichPar, TS
         printf("\033[1;33mWARNING:\033[0m Non-existing parameter %u\n", StartPar);
         return -2;
     }
-if(WhichPar>=NumPar) printf("AAA g\n");
+if(WhichPar>=int(NumPar)) printf("AAA g\n");
     return GetBaseParameter(WhichSyst,WhichPar,WhichParent,ParentPar,WhichStart,StartPar);
+}
+
+void DLM_Fitter1::SetMultBaselineType(const int& TYPE){
+    TypeMultBl = TYPE;
+}
+void DLM_Fitter1::SetAddBaselineType(const int& TYPE){
+    TypeAddBl = TYPE;
 }
 
 void DLM_Fitter1::SetParameter(const unsigned& WhichSyst, const unsigned& WhichPar, const double& Value, const double& ValueDown, const double& ValueUp){
@@ -674,7 +723,10 @@ void DLM_Fitter1::FixParameter(const TString& WhichSyst, const unsigned& WhichPa
 double DLM_Fitter1::GetParameter(const unsigned& WhichSyst, const unsigned& WhichPar){
     if(WhichSyst>=MaxNumSyst) return 0;
     if(WhichPar>=NumPar) return 0;
-    return FitGlobal->GetParameter(WhichSyst*NumPar+WhichPar);
+    int WHICH_PAR;
+    int WHICH_SYS;
+    GetBaseParameter(WhichSyst,WhichPar,WHICH_SYS,WHICH_PAR);
+    return FitGlobal->GetParameter(WHICH_SYS*NumPar+WHICH_PAR);
 }
 double DLM_Fitter1::GetParError(const unsigned& WhichSyst, const unsigned& WhichPar){
     if(WhichSyst>=MaxNumSyst) return 0;
@@ -735,8 +787,52 @@ void DLM_Fitter1::GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph, const
             OutGraph.SetPoint(uBin,Momentum,SystemToFit[WhichSyst]->EvalCk(Momentum));
         }
     }
-
 }
+
+void DLM_Fitter1::GetMultBaselineGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning){
+    if(WhichSyst>=MaxNumSyst) return;
+    OutGraph.Set(NumBinsSyst[WhichSyst]);
+    double Momentum;
+    double* SPLINE_PARS = new double [25];
+    if(DataBinning){
+        //double xGlobal;
+        unsigned GlobalBinShift=0;
+        for(unsigned uSyst=0; uSyst<WhichSyst; uSyst++){
+            GlobalBinShift += NumBinsSyst[uSyst];
+        }
+    //printf("GlobalBinShift=%u\n",GlobalBinShift);
+        for(unsigned uBin=0; uBin<NumBinsSyst[WhichSyst]; uBin++){
+            Momentum = GlobalToMomentum[GlobalBinShift+uBin];
+            double BlVal = GetParameter(WhichSyst,p_a)+GetParameter(WhichSyst,p_b)*Momentum+GetParameter(WhichSyst,p_c)*Momentum*Momentum+
+            GetParameter(WhichSyst,p_3)*pow(Momentum,3.)+GetParameter(WhichSyst,p_4)*pow(Momentum,4.);
+            for(int iSpPar=0; iSpPar<25; iSpPar++){
+                SPLINE_PARS[iSpPar] = GetParameter(WhichSyst,p_spline+iSpPar);
+            }
+            //in case we are to use splines
+            if(GetParameter(WhichSyst,p_spline)!=0){
+                BlVal *= DLM_FITTER2_FUNCTION_SPLINE3(&Momentum,SPLINE_PARS);
+            }
+            OutGraph.SetPoint(uBin,Momentum,BlVal);
+        }
+    }
+    else{
+        for(unsigned uBin=0; uBin<SystemToFit[WhichSyst]->GetCk()->GetNbins(); uBin++){
+            Momentum = SystemToFit[WhichSyst]->GetCk()->GetBinCenter(0,uBin);
+            double BlVal = GetParameter(WhichSyst,p_a)+GetParameter(WhichSyst,p_b)*Momentum+GetParameter(WhichSyst,p_c)*Momentum*Momentum+
+            GetParameter(WhichSyst,p_3)*pow(Momentum,3.)+GetParameter(WhichSyst,p_4)*pow(Momentum,4.);
+            for(int iSpPar=0; iSpPar<25; iSpPar++){
+                SPLINE_PARS[iSpPar] = GetParameter(WhichSyst,p_spline+iSpPar);
+            }
+            //in case we are to use splines
+            if(GetParameter(WhichSyst,p_spline)!=0){
+                BlVal *= DLM_FITTER2_FUNCTION_SPLINE3(&Momentum,SPLINE_PARS);
+            }
+            OutGraph.SetPoint(uBin,Momentum,BlVal);
+        }
+    }
+    delete [] SPLINE_PARS;
+}
+
 
 void DLM_Fitter1::GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph){
     if(WhichSyst>=MaxNumSyst) return;
@@ -1421,10 +1517,30 @@ if(uPar>=NumPar) printf("AAA h\n");
     }
 
     double CkVal;
-    double BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
-    Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.);
-    double AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
+    double BlVal;
+    if(TypeMultBl==0){
+        BlVal = Pars[WhichSyst*NumPar+p_a]+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
+                Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.);
+    }
+    else{
+        BlVal = Pars[WhichSyst*NumPar+p_a]*(1.+Pars[WhichSyst*NumPar+p_b]*Momentum+Pars[WhichSyst*NumPar+p_c]*Momentum*Momentum+
+                Pars[WhichSyst*NumPar+p_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_4]*pow(Momentum,4.));
+    }
+
+    //in case we are to use splines
+    if(Pars[WhichSyst*NumPar+p_spline]!=0){
+        BlVal *= DLM_FITTER2_FUNCTION_SPLINE3(&Momentum,&Pars[WhichSyst*NumPar+p_spline]);
+    }
+    double AddBlVal;
+    if(TypeAddBl==0){
+        AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
     Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.);
+    }
+    else{
+        AddBlVal = Pars[WhichSyst*NumPar+p_ab_0](1.+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
+                    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.));
+    }
+
 
     double Clin;
     //Oli's way
@@ -1476,4 +1592,278 @@ if(uPar>=NumPar) printf("AAA h\n");
     }
 
     return BlVal*CkVal+AddBlVal;
+}
+
+
+DLM_Fitter2::DLM_Fitter2(const int& maxnumsyst):MaxNumSyst(maxnumsyst){
+    MaxNumPars = MaxNumSyst*10;
+    CurrentNumPars = 0;
+    Pars = new double [MaxNumPars];
+    ParsErr = new double [MaxNumPars];
+    ParsDownLim = new double [MaxNumPars];
+    ParsUpLim = new double [MaxNumPars];
+    /*
+    Pars_Ck = NULL;
+    ParsErr_Ck = NULL;
+    ParsDownLim_Ck = NULL;
+    ParsUpLim_Ck = NULL;
+    Pars_Sor = NULL;
+    ParsErr_Sor = NULL;
+    ParsDownLim_Sor = NULL;
+    ParsUpLim_Sor = NULL;
+    Pars_Pot = NULL;
+    ParsErr_Pot = NULL;
+    ParsDownLim_Pot = NULL;
+    ParsUpLim_Pot = NULL;
+    Pars_AddBl = NULL;
+    ParsErr_AddBl = NULL;
+    ParsDownLim_AddBl = NULL;
+    ParsUpLim_AddBl = NULL;
+    Pars_MultBl = NULL;
+    ParsErr_MultBl = NULL;
+    ParsDownLim_MultBl = NULL;
+    ParsUpLim_MultBl = NULL;
+    */
+    NumPars = new int [MaxNumSyst];
+    NumCkPars = new int [MaxNumSyst];
+    NumSorPars = new int [MaxNumSyst];
+    NumPotPars = new int [MaxNumSyst];
+    NumAddBlPars = new int [MaxNumSyst];
+    NumMultBlPars = new int [MaxNumSyst];
+    StartPars = new int [MaxNumSyst];
+    StartCkPars = new int [MaxNumSyst];
+    StartSorPars = new int [MaxNumSyst];
+    StartPotPars = new int [MaxNumSyst];
+    StartAddBlPars = new int [MaxNumSyst];
+    StartMultBlPars = new int [MaxNumSyst];
+    SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
+    Function_AddBl = new FitterFunction [MaxNumSyst];
+    Function_MultBl = new FitterFunction [MaxNumSyst];
+    FunctionType_AddBl = new  fBlFunction[MaxNumSyst];
+    FunctionType_MultBl = new fBlFunction [MaxNumSyst];
+    for(int iSyst=0; iSyst<MaxNumSyst; iSyst++){
+        NumPars[iSyst] = 0;
+        NumCkPars[iSyst] = 0;
+        NumSorPars[iSyst] = 0;
+        NumPotPars[iSyst] = 0;
+        NumAddBlPars[iSyst] = 0;
+        NumMultBlPars[iSyst] = 0;
+        StartPars[iSyst] = 0;
+        StartCkPars[iSyst] = 0;
+        StartSorPars[iSyst] = 0;
+        StartPotPars[iSyst] = 0;
+        StartAddBlPars[iSyst] = 0;
+        StartMultBlPars[iSyst] = 0;
+        SystemToFit[iSyst] = NULL;
+        Function_AddBl[iSyst] = 0;
+        Function_MultBl[iSyst] = 0;
+        FunctionType_AddBl[iSyst] = f_na;
+        FunctionType_MultBl[iSyst] = f_na;
+    }
+}
+
+DLM_Fitter2::~DLM_Fitter2(){
+    if(Pars){delete[]Pars;Pars=NULL;}
+    if(ParsErr){delete[]ParsErr;ParsErr=NULL;}
+    if(ParsDownLim){delete[]ParsDownLim;ParsDownLim=NULL;}
+    if(ParsUpLim){delete[]ParsUpLim;ParsUpLim=NULL;}
+    if(NumPars){delete[]NumPars;NumPars=NULL;}
+    if(NumCkPars){delete[]NumCkPars;NumCkPars=NULL;}
+    if(NumSorPars){delete[]NumSorPars;NumSorPars=NULL;}
+    if(NumPotPars){delete[]NumPotPars;NumPotPars=NULL;}
+    if(NumAddBlPars){delete[]NumAddBlPars;NumAddBlPars=NULL;}
+    if(NumMultBlPars){delete[]NumMultBlPars;NumMultBlPars=NULL;}
+    if(StartPars){delete[]StartPars;StartPars=NULL;}
+    if(StartCkPars){delete[]StartCkPars;StartCkPars=NULL;}
+    if(StartSorPars){delete[]StartSorPars;StartSorPars=NULL;}
+    if(StartPotPars){delete[]StartPotPars;StartPotPars=NULL;}
+    if(StartAddBlPars){delete[]StartAddBlPars;StartAddBlPars=NULL;}
+    if(StartMultBlPars){delete[]StartMultBlPars;StartMultBlPars=NULL;}
+}
+
+
+int DLM_Fitter2::GetSystemID(const TString& WhichSyst){
+    char* buffer = new char[128];
+    for(int iSyst=0; iSyst<MaxNumSyst; iSyst++){
+        if(SystemToFit[iSyst]){
+            SystemToFit[iSyst]->GetName(buffer);
+            if(strcmp(WhichSyst,buffer)==0){
+                delete [] buffer;
+                return iSyst;
+            }
+        }
+    }
+    printf("\033[1;33mWARNING:\033[0m SetParameter says that the system '%s' does not exist!\n", WhichSyst.Data());
+    delete [] buffer;
+    return -1;
+}
+
+void DLM_Fitter2::IncreaseMaxNumPars(){
+    int OldNumPars = MaxNumPars;
+    MaxNumPars += MaxNumSyst*10;
+    double* Pars_tmp = new double[MaxNumPars];
+    double* ParsErr_tmp = new double[MaxNumPars];
+    double* ParsDownLim_tmp = new double[MaxNumPars];
+    double* ParsUpLim_tmp = new double[MaxNumPars];
+    for(int iPar=0; iPar<OldNumPars; iPar++){
+        Pars_tmp[iPar] = Pars[iPar];
+        ParsErr_tmp[iPar] = ParsErr[iPar];
+        ParsDownLim_tmp[iPar] = ParsDownLim[iPar];
+        ParsUpLim_tmp[iPar] = ParsUpLim[iPar];
+    }
+    delete [] Pars;
+    delete [] ParsErr;
+    delete [] ParsDownLim;
+    delete [] ParsUpLim;
+    Pars = Pars_tmp;
+    ParsErr = ParsErr_tmp;
+    ParsDownLim = ParsDownLim_tmp;
+    ParsUpLim = ParsUpLim_tmp;
+}
+
+//set up the baseline function, by passing a pointed
+void DLM_Fitter2::SetUpAddBl(const TString& WhichSyst, double (*FUNCTION)(double*,double*),const int& numpars){
+    const int SystemID = GetSystemID(WhichSyst);
+    if(SystemID<0) return;
+    //update the number of parameters
+    CurrentNumPars -= NumAddBlPars[SystemID];
+    CurrentNumPars += numpars;
+    NumPars[SystemID] -= NumAddBlPars[SystemID];
+    NumPars[SystemID] += numpars;
+    NumAddBlPars[SystemID] = numpars;
+    //make sure that we get a meaningful number of parameters
+    if(CurrentNumPars<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that CurrentNumPars<0 \n");
+        return;
+    }
+    if(NumPars[SystemID]<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that NumPars[SystemID]<0 \n");
+        return;
+    }
+    //set the pointer to the function
+    Function_AddBl[SystemID] = FUNCTION;
+    FunctionType_AddBl[SystemID] = f_na;
+}
+//setup the baseline function for the predefined type. numpars is specific for each type and my have different meaning
+void DLM_Fitter2::SetUpAddBl(const TString& WhichSyst, const fBlFunction& TYPE, const int& Info){
+    const int SystemID = GetSystemID(WhichSyst);
+    if(SystemID<0) return;
+    int numpars;
+    switch(TYPE){
+        case f_pol : numpars = Info+2; break;
+        case f_spline3 : numpars = 2*Info+3; break;
+        default : printf("\033[1;33mWARNING:\033[0m The function TYPE passed to DLM_Fitter2 is unknown\n"); return;
+    }
+    //update the number of parameters
+    CurrentNumPars -= NumAddBlPars[SystemID];
+    CurrentNumPars += numpars;
+    NumPars[SystemID] -= NumAddBlPars[SystemID];
+    NumPars[SystemID] += numpars;
+    NumAddBlPars[SystemID] = numpars;
+    //make sure that we get a meaningful number of parameters
+    if(CurrentNumPars<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that CurrentNumPars<0 \n");
+        return;
+    }
+    if(NumPars[SystemID]<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that NumPars[SystemID]<0 \n");
+        return;
+    }
+    Function_AddBl[SystemID] = 0;
+    FunctionType_AddBl[SystemID] = TYPE;
+}
+void DLM_Fitter2::SetUpMultBl(const TString& WhichSyst, double (*FUNCTION)(double*,double*),const int& numpars){
+    const int SystemID = GetSystemID(WhichSyst);
+    if(SystemID<0) return;
+    //update the number of parameters
+    CurrentNumPars -= NumMultBlPars[SystemID];
+    CurrentNumPars += numpars;
+    NumPars[SystemID] -= NumMultBlPars[SystemID];
+    NumPars[SystemID] += numpars;
+    NumMultBlPars[SystemID] = numpars;
+    //make sure that we get a meaningful number of parameters
+    if(CurrentNumPars<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that CurrentNumPars<0 \n");
+        return;
+    }
+    if(NumPars[SystemID]<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that NumPars[SystemID]<0 \n");
+        return;
+    }
+    //set the pointer to the function
+    Function_MultBl[SystemID] = FUNCTION;
+    FunctionType_MultBl[SystemID] = f_na;
+}
+void DLM_Fitter2::SetUpMultBl(const TString& WhichSyst, const fBlFunction& TYPE, const int& Info){
+    const int SystemID = GetSystemID(WhichSyst);
+    if(SystemID<0) return;
+    int numpars;
+    switch(TYPE){
+        case f_pol : numpars = Info+2; break;
+        case f_spline3 : numpars = 2*Info+3; break;
+        default : printf("\033[1;33mWARNING:\033[0m The function TYPE passed to DLM_Fitter2 is unknown\n"); return;
+    }
+    //update the number of parameters
+    CurrentNumPars -= NumMultBlPars[SystemID];
+    CurrentNumPars += numpars;
+    NumPars[SystemID] -= NumMultBlPars[SystemID];
+    NumPars[SystemID] += numpars;
+    NumMultBlPars[SystemID] = numpars;
+    //make sure that we get a meaningful number of parameters
+    if(CurrentNumPars<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that CurrentNumPars<0 \n");
+        return;
+    }
+    if(NumPars[SystemID]<0){
+        printf("\033[1;31mERROR:\033[0m This is most likely a bug!\n");
+        printf("         Please contact the developers, reporting that NumPars[SystemID]<0 \n");
+        return;
+    }
+    Function_MultBl[SystemID] = 0;
+    FunctionType_MultBl[SystemID] = TYPE;
+}
+
+void DLM_Fitter2::SetPolParX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value){
+
+}
+void DLM_Fitter2::FixPolParX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value){
+
+}
+void DLM_Fitter2::SetLimitPolParX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& down, const double& up){
+
+}
+void DLM_Fitter2::SetPolParY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value){
+
+}
+void DLM_Fitter2::FixPolParY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& Value){
+
+}
+void DLM_Fitter2::SetLimitPolParY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichPar, const double& down, const double& up){
+
+}
+
+void DLM_Fitter2::SetSplineKnotX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value){
+
+}
+void DLM_Fitter2::FixSplineKnotX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value){
+
+}
+void DLM_Fitter2::SetLimitSplineKnotX(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& down, const double& up){
+
+}
+void DLM_Fitter2::SetSplineKnotY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value){
+
+}
+void DLM_Fitter2::FixSplineKnotY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& Value){
+
+}
+void DLM_Fitter2::SetLimitSplineKnotY(const TString& WhichSyst, const fBlType& WhichBl, const int& WhichKnot, const double& down, const double& up){
+
 }
