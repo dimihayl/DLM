@@ -193,6 +193,53 @@ double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
             +0.75*GeneralCoulombLednicky(Momentum,GaussR,ScattLenTri,EffRangeTri,QS,RedMass,Q1Q2);
 }
 
+// General Lednicky strong + Coulomb for spin averaged scattering parameters
+
+double GeneralCoulombLednickyAvg(const double& Momentum, const double& GaussR,
+                       const std::complex<double>& ScattLenSin, const double& EffRangeSin,
+                       const bool& QS, const double& RedMass, const double& Q1Q2){
+    //const double FmToNu=5.067731237e-3;
+    //const std::complex<double> i(0,1);
+    //const double Pi(3.141592653589793);
+
+    if(GaussR!=GaussR){
+        printf("\033[1;33mWARNING:\033[0m GeneralCoulombLednicky got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
+
+    const double Momentum2 = Momentum*Momentum;
+    const double Radius = GaussR*FmToNu;
+    //const double Radius2 = Radius*Radius;
+    const double Rho = Radius*Momentum;
+    const double Rho2 = Rho*Rho;
+    const complex<double> sLen1 = ScattLenSin*FmToNu;//(Real, Im)
+    const double eRan1 = EffRangeSin*FmToNu;
+
+    //double Dawson = gsl_sf_dawson(2.*Rho);
+    //double D_2 = (1.-exp(-4.*Rho2));
+    double eta = CoulombEta(Momentum,RedMass,Q1Q2);
+    double A_c = CoulombPenetrationFactor(eta);
+
+    complex<double> ScattAmplSin=pow(1./sLen1+0.5*eRan1*Momentum2-i*Momentum*A_c-2.*Momentum*eta*CoulombEuler(eta),-1.);
+
+    double CkValue =    0.5*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius)+0.5*pow(A_c-1.,2)*(1.-exp(-4.*Rho2)))
+                        +Momentum*real(ScattAmplSin)*gsl_sf_dawson(2.*Rho)/(2.*sqrt(Pi)*Rho2)
+                        -Momentum*imag(ScattAmplSin)*(0.25*(1.-exp(-4.*Rho2))/Rho2+(A_c-1.)*cos(Rho)*exp(-Rho2));
+    //double CkValue =    0.25*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius))
+    //                    +Momentum*real(ScattAmplSin)*gsl_sf_dawson(2.*Rho)/(2.*sqrt(Pi)*Rho2)
+    //                    -Momentum*imag(ScattAmplSin)*(0.25*(1.-exp(-4.*Rho2))/Rho2);
+
+    if(QS){
+        CkValue -= 0.5*exp(-4.*Rho2);
+    }
+    else{
+        CkValue *= 2.;
+        //CkValue += 0.5*exp(-4.*Rho2);
+    }
+
+    return A_c*(CkValue+1.);
+}
+
 //e.g. ΛΛ
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
@@ -260,6 +307,85 @@ double LednickyCoulomb_Identical_Singlet(const double& Momentum, const double* S
     //return Lednicky_Identical_Singlet(Momentum,SourcePar,PotPar);
     return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],true,PotPar[2],PotPar[3]);
 }
+//SourcePar[0] = Radius
+//PotPar[0] = Real a_avg
+//PotPar[1] = Imag a_avg
+//PotPar[2] = Reff (assumed Real for the moment!!!!!)
+//PotPar[3] = RedMass
+//PotPar[4] = Q1Q2
+
+double ComplexLednickyCoulomb_Averaged(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return GeneralCoulombLednickyAvg(Momentum,SourcePar[0],ScatLen,PotPar[2],false,PotPar[3],PotPar[4]);
+}
+
+//Lednicky model for Baryon-Antibaryon analysis with APPROX Coulomb
+
+double Lednicky_gauss_pAp(const double &Momentum, const double* SourcePar, const double* PotPar){
+  double radius = 1.188;
+  std::complex<double> ScLenpAp = -0.894+i*0.88;
+  double effrangepAp = 1.0;
+  double mprot = 938.;
+  double redmass = 0.5*mprot;
+  double c1 = +1.;
+  double c2 = -1.;
+  double charge = abs(c1*c2);
+
+  double eta = CoulombEta(Momentum,redmass,charge);
+  double A_c = CoulombPenetrationFactor(eta);
+  double Momentum2 = Momentum*Momentum;
+
+//Need to trasform all the scattering parameters in MeV
+const std::complex<double> sLen = ScLenpAp*FmToNu;//(Real, Im)
+double eRan = effrangepAp*FmToNu;
+double rho = Momentum*radius;
+
+std::complex<double> ScattAmplCoul=pow(1./sLen+0.5*eRan*Momentum2-i*Momentum*A_c-2.*Momentum*eta*CoulombEuler(eta),-1.);
+
+double F1 = gsl_sf_dawson(2. * Momentum * radius) / (2. * Momentum * radius);
+double F2 = (1. - std::exp(-4. * Momentum * Momentum * radius * radius)) /
+            (2. * Momentum * radius);
+
+double CkValue = 0.;
+CkValue +=
+    0.5 * std::pow(std::abs(ScattAmplCoul) / radius, 2) *
+        (1. -
+         (eRan) / (2 * std::sqrt(TMath::Pi()) * radius)) +
+    2 * std::real(ScattAmplCoul) * F1 / (std::sqrt(TMath::Pi()) * radius) -
+    std::imag(ScattAmplCoul) * F2 / radius;
+
+return CkValue + 1;
+
+  // return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redmass,charge);
+}
+
+double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const double* PotPar){
+  double radius = 1.188;
+  std::complex<double> ScLenpAL = -1.15+i*0.53;
+  double effrangepAL = 3.06;
+  double mprot = 938.;
+  double mlam = 1115.;
+  double redmass = (mprot*mlam)/(mprot+mlam);
+  double c1 = +1.;
+  double c2 = +0.;
+  double charge = abs(c1*c2);
+
+  return GeneralLednicky(Momentum,radius,ScLenpAL,effrangepAL,0,0,true,false);
+}
+
+double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const double* PotPar){
+  double radius = 1.188;
+  std::complex<double> ScLenLAL = -0.9+i*0.4;
+  double effrangeLAL = 2.76;
+  double mlam = 1115.;
+  double redmass = 0.5*mlam;
+  double c1 = +0.;
+  double c2 = +0.;
+  double charge = abs(c1*c2);
+
+  return GeneralLednicky(Momentum,radius,ScLenLAL,effrangeLAL,0,0,true,false);
+}
+
 
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
@@ -278,6 +404,7 @@ double LednickyCoulomb_Identical_Triplet(const double& Momentum, const double* S
     //return CoulombPenetrationFactor(Momentum,PotPar[4],PotPar[5])*Lednicky_Identical_Triplet(Momentum,SourcePar,PotPar);
     return GeneralCoulombLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],true,PotPar[4],PotPar[5]);
 }
+
 
 //e.g. pΛ
 //SourcePar[0] = Radius

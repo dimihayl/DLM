@@ -23,6 +23,13 @@ double GeneralCoulombLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenTri, const double& EffRangeTri,
                        const bool& QS, const double& RedMass, const double& Q1Q2);
 
+// Lednicky + Coulomb for complex scattering length and effective Range
+
+double GeneralCoulombLednickyAvg(const double& Momentum, const double& GaussR,
+                       const std::complex<double>& ScattLenSin, const double& EffRangeSin,
+                       const bool& QS, const double& RedMass, const double& Q1Q2);
+
+
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Identical_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double Lednicky_Identical_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
@@ -45,5 +52,8 @@ double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, 
 
 double pXi_pheno(const double &Momentum, const double* SourcePar, const double* PotPar);
 double LednickySingletScatAmplitude(const double& kStar, const double* SourcePar, const double* PotPar);
+double Lednicky_gauss_pAp(const double &Momentum, const double* SourcePar, const double* PotPar);
+double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const double* PotPar);
+double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const double* PotPar);
 
 #endif

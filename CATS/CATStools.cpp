@@ -1149,6 +1149,8 @@ double CoulombEuler(const double& eta){
     }
     RESULT *= eta2;
     RESULT -= log(eta2)+EulerConst;
+//Did the calculations based on LEdnicky nucl-th 0501065v3
+//    RESULT -= log(eta)+EulerConst;
     return RESULT;
 }
 
