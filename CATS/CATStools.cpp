@@ -2,12 +2,15 @@
 
 #include <iostream>
 #include <math.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "gsl_sf_gamma.h"
 
 #include "DLM_CppTools.h"
 #include "CATSconstants.h"
 #include "CATS.h"
+#include "DLM_Random.h"
 
 #include <omp.h>
 
@@ -446,7 +449,7 @@ const CatsParticle& CatsParticlePair::GetParticle(const int& WhichParticle) cons
     switch(WhichParticle){
         case 0 : return Particle1;
         case 1 : return Particle2;
-        default : printf("ERROR in CatsParticlePair::GetParticle: TRYING TO ACCESS A NON-EXISTENT ADDRESS!\n"); return Particle1;
+        default : printf("\033[1;31mERROR:\033[0m in CatsParticlePair::GetParticle: TRYING TO ACCESS A NON-EXISTENT ADDRESS!\n"); return Particle1;
     }
 }
 const CatsLorentzVector& CatsParticlePair::GetSum() const{
@@ -461,11 +464,13 @@ CatsEvent::CatsEvent(const int& pid1, const int& pid2):Pid1(pid1),Pid2(pid2){
     NumParticles1 = 0;
     NumParticles2 = 0;
     NumPairs = 0;
+    RanGen = NULL;
 }
 CatsEvent::~CatsEvent(){
     delete [] ParticleType1;
     delete [] ParticleType2;
     if(ParticlePair) {delete[]ParticlePair; ParticlePair=NULL;}
+    if(RanGen) {delete RanGen; RanGen=NULL;}
 }
 void CatsEvent::Reset(){
     NumParticles1 = 0;
@@ -506,7 +511,7 @@ void CatsEvent::AddParticle(const CatsParticle& Particle){
 void CatsEvent::ComputeParticlePairs(const bool& TauCorrection, const bool& BOOST){
     if(Pid1==Pid2){
         if(NumParticles2){
-            printf("WARNING in CatsEvent::ComputeParticlePairs: Potential bug detected! Please contact the developers!\n");
+            printf("\033[1;33mWARNING\033[0m in CatsEvent::ComputeParticlePairs: Potential bug detected! Please contact the developers!\n");
         }
         NumPairs = ( (NumParticles1-1)*NumParticles1 )/2;
     }
@@ -532,7 +537,7 @@ void CatsEvent::ComputeParticlePairs(const bool& TauCorrection, const bool& BOOS
     }
 
     if(uPair!=NumPairs){
-        printf("WARNING in CatsEvent::ComputeParticlePairs: Please contact the developers regarding uPair!=NumPairs\n");
+        printf("\033[1;33mWARNING\033[0m in CatsEvent::ComputeParticlePairs: Please contact the developers regarding uPair!=NumPairs\n");
     }
 
 }
@@ -541,7 +546,7 @@ unsigned CatsEvent::GetNumPairs() const{
 }
 CatsParticlePair& CatsEvent::GetParticlePair(const unsigned& WhichPair) const{
     if(WhichPair>=NumPairs){
-        printf("WARNING in CatsEvent::GetParticlePair: Pointing to a non-existing pair!\n");
+        printf("\033[1;33mWARNING\033[0m in CatsEvent::GetParticlePair: Pointing to a non-existing pair!\n");
     }
     return ParticlePair[WhichPair];
 }
@@ -553,18 +558,87 @@ unsigned CatsEvent::GetNumParticles2() const{
 }
 const CatsParticle& CatsEvent::GetParticleType1(const unsigned& WhichPart) const{
     if(WhichPart>=NumParticles1){
-        printf("WARNING in CatsEvent::GetParticleType1: Pointing to a non-existing pair!\n");
+        printf("\033[1;33mWARNING\033[0m in CatsEvent::GetParticleType1: Pointing to a non-existing pair!\n");
     }
     return ParticleType1[WhichPart];
 }
 const CatsParticle& CatsEvent::GetParticleType2(const unsigned& WhichPart) const{
     if(WhichPart>=GetNumParticles2()){
-        printf("WARNING in CatsEvent::GetParticleType2: Pointing to a non-existing pair!\n");
+        printf("\033[1;33mWARNING\033[0m in CatsEvent::GetParticleType2: Pointing to a non-existing pair!\n");
     }
     return Pid1==Pid2?ParticleType1[WhichPart]:ParticleType2[WhichPart];
 }
 bool CatsEvent::GetSameType() const{
     return Pid1==Pid2;
+}
+void CatsEvent::SetRandomSeed(const unsigned& SEED){
+    if(RanGen) delete RanGen;
+    RanGen = new DLM_Random(SEED);
+}
+void CatsEvent::RandomizeMomentumPhi(const double& smearValue, const char* option, const char* distribution){
+    if(smearValue<=0) return;
+    int Option;
+    int Distr;
+    if( strcmp(option,"")==0 ){
+        Option=0;
+    }
+    else if( strcmp(option,"EnergyConservation")==0 ){
+        Option=1;
+    }
+    else{
+        printf("\033[1;33mWARNING\033[0m in CatsEvent::RandomizeMomentumPhi: The option '%s' does not exist!\n",option);
+        return;
+    }
+    if( strcmp(distribution,"Gauss")==0 ){
+        Distr=0;
+    }
+    else if( strcmp(distribution,"Uniform")==0 ){
+        Distr=1;
+    }
+    else{
+        printf("\033[1;33mWARNING\033[0m in CatsEvent::RandomizeMomentumPhi: The distribution '%s' does not exist!\n",distribution);
+        return;
+    }
+    if(!NumParticles1&&!NumParticles2){
+        //printf("\033[1;33mWARNING\033[0m in CatsEvent::RandomizeMomentumPhi: No particle are loaded yet\n");
+        return;
+    }
+    if(!RanGen) RanGen = new DLM_Random(0);
+    double RotAngle;
+    //unsigned PartCounter=0;
+    CatsLorentzVector ParticleDiff;
+    CatsParticle* CurrentParticle;
+    unsigned TotNumPart = NumParticles1+NumParticles2;
+    for(unsigned uPart=0; uPart<TotNumPart; uPart++){
+        if(uPart<NumParticles1) {CurrentParticle=&ParticleType1[uPart];}
+        else {CurrentParticle=&ParticleType2[uPart-NumParticles1];}
+        //CatsParticle OriginalParticle = *CurrentParticle;
+        //PartCounter++;
+        if(Option==1){
+            if(uPart%2==0&&uPart!=TotNumPart-1){
+                //random rotation
+                if(Distr==0) RotAngle = RanGen->Gauss(0,smearValue);
+                else RotAngle = RanGen->Uniform(-smearValue,smearValue);
+                CatsParticle LastParticle;
+                LastParticle = *CurrentParticle;
+                CurrentParticle->RotateMomPhi(RotAngle);
+                ParticleDiff = *CurrentParticle-LastParticle;
+            }
+            else if(uPart%2==1){
+                //fixed rotation
+                *CurrentParticle = *CurrentParticle-ParticleDiff;
+            }
+            else{
+                // do nothing
+            }
+        }
+        else{
+            //random rotation
+            if(Distr==0) RotAngle = RanGen->Gauss(0,smearValue);
+            else RotAngle = RanGen->Uniform(-smearValue,smearValue);
+            CurrentParticle->RotateMomPhi(RotAngle);
+        }
+    }
 }
 
 CatsDataBuffer::CatsDataBuffer(const unsigned& bsize, const int& pid1, const int& pid2):NumEvents(bsize){
@@ -658,7 +732,7 @@ void CatsDataBuffer::GoBabyGo(const bool& TauCorrection, const bool& BOOST){
         }
     }
     if(uSePair!=NumSePairs){
-        printf("WARNING in CatsDataBuffer::GoBabyGo: Please contact the developers regarding uSePair!=NumSePairs\n");
+        printf("\033[1;33mWARNING\033[0m in CatsDataBuffer::GoBabyGo: Please contact the developers regarding uSePair!=NumSePairs\n");
     }
     if(MixedParticlePair) delete [] MixedParticlePair;
     MixedParticlePair = new CatsParticlePair [NumMePairs];
@@ -695,7 +769,7 @@ void CatsDataBuffer::GoBabyGo(const bool& TauCorrection, const bool& BOOST){
         }
     }
     if(uMePair!=NumMePairs){
-        printf("WARNING in CatsDataBuffer::GoBabyGo: Please contact the developers regarding uMePair!=NumMePairs\n");
+        printf("\033[1;33mWARNING\033[0m in CatsDataBuffer::GoBabyGo: Please contact the developers regarding uMePair!=NumMePairs\n");
     }
 }
 
@@ -882,7 +956,7 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSpa
         (!SourceContext && SourcePars) || (SourceContext && !SourcePars) ||
         (!GridBoxId && NumOfEl) || (GridBoxId && !NumOfEl)
        ){
-        printf("WARNING! CATSelder say that the input to the constructor makes no sense!\n");
+        printf("\033[1;33mWARNING!\033[0m CATSelder say that the input to the constructor makes no sense!\n");
         SourceContext = NULL;
         SourcePars = NULL;
         GridBoxId = NULL;
@@ -890,7 +964,7 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSpa
     StandardNodeInit(mean, len, TemplateElder);
 
     if(TemplateElder && NumEndNodes!=TemplateElder->NumEndNodes){
-        printf("WARNING! A potential huge bug in CATSelder::BaseConstructor, please contact the developers!\n");
+        printf("\033[1;33mWARNING!\033[0m A potential huge bug in CATSelder::BaseConstructor, please contact the developers!\n");
     }
 
     double Integral=0;
@@ -911,7 +985,7 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSpa
 
     //if(SourceRenormError>Epsilon*sqrt(double(NumEndNodes))){
     if(SourceRenormError>EffectiveEpsilon*double(NumEndNodes)){
-        printf("WARNING: CATSelder says that SourceRenormError=%.6f, which seems odd.\n", SourceRenormError);
+        printf("\033[1;33mWARNING:\033[0m CATSelder says that SourceRenormError=%.6f, which seems odd.\n", SourceRenormError);
         printf("         Either the source function is not properly normalized or there is a bug in CATS!\n");
         printf("         In case its the letter, please contact the developers!\n");
     }

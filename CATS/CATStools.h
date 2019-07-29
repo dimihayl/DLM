@@ -7,6 +7,7 @@
 #include <complex>
 
 class CatsParticle;
+class DLM_Random;
 
 class CATSparameters{
 friend class CATSelder;
@@ -146,10 +147,18 @@ public:
     const CatsParticle& GetParticleType1(const unsigned& WhichPart) const;
     const CatsParticle& GetParticleType2(const unsigned& WhichPart) const;
     bool GetSameType() const;
+    void SetRandomSeed(const unsigned& SEED);
+    //randomizes all particles in the event, according to their phi distribution
+    //distribution = "Gauss", "Uniform"
+    //option =
+    //      "" : each particle smeared independently
+    //      "EnergyConservation" : each second particle is rotated such, that E,p conservation is restored
+    void RandomizeMomentumPhi(const double& smearValue, const char* option = "", const char* distribution = "Uniform");
 private:
     CatsParticle* ParticleType1;
     CatsParticle* ParticleType2;
     CatsParticlePair* ParticlePair;
+    DLM_Random* RanGen;
 
     const int Pid1;
     const int Pid2;

@@ -352,141 +352,141 @@ return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redm
 
 double Lednicky_gauss_pAp_test(const double &Momentum, const double* SourcePar, const double* PotPar){
 
-  double radius = 1.188;
-  std::complex<double> ScLenpAp = -0.894+i*0.88;
-  double effrangepAp = 1.0;
-  double mprot = 938.;
-  double redmass = 0.5*mprot;
-  double c1 = +1.;
-  double c2 = -1.;
-  double charge = abs(c1*c2);
+    double radius = 1.188;
+    std::complex<double> ScLenpAp = -0.894+i*0.88;
+    double effrangepAp = 1.0;
+    double mprot = 938.;
+    double redmass = 0.5*mprot;
+    double c1 = +1.;
+    double c2 = -1.;
+    double charge = abs(c1*c2);
 
-  double eta = CoulombEta(Momentum,redmass,charge);
-  double A_c = CoulombPenetrationFactor(eta);
-  double Momentum2 = Momentum*Momentum;
+    double eta = CoulombEta(Momentum,redmass,charge);
+    double A_c = CoulombPenetrationFactor(eta);
+    double Momentum2 = Momentum*Momentum;
 
-//Need to trasform all the scattering parameters in MeV
-const std::complex<double> sLen = ScLenpAp*FmToNu;//(Real, Im)
-double eRan = effrangepAp*FmToNu;
-double rho = Momentum*radius;
+    //Need to trasform all the scattering parameters in MeV
+    const std::complex<double> sLen = ScLenpAp*FmToNu;//(Real, Im)
+    double eRan = effrangepAp*FmToNu;
+    //double rho = Momentum*radius;
 
-std::complex<double> ScattAmplCoul=pow(1./sLen+0.5*eRan*Momentum2-i*Momentum*A_c-2.*Momentum*eta*CoulombEuler(eta),-1.);
+    std::complex<double> ScattAmplCoul=pow(1./sLen+0.5*eRan*Momentum2-i*Momentum*A_c-2.*Momentum*eta*CoulombEuler(eta),-1.);
 
-double F1 = gsl_sf_dawson(2. * Momentum * radius) / (2. * Momentum * radius);
-double F2 = (1. - std::exp(-4. * Momentum * Momentum * radius * radius)) /
+    double F1 = gsl_sf_dawson(2. * Momentum * radius) / (2. * Momentum * radius);
+    double F2 = (1. - std::exp(-4. * Momentum * Momentum * radius * radius)) /
             (2. * Momentum * radius);
 
-double CkValue = 0.;
-CkValue +=
+    double CkValue = 0.;
+    CkValue +=
     0.5 * std::pow(std::abs(ScattAmplCoul) / radius, 2) *
         (1. -
          (eRan) / (2 * std::sqrt(TMath::Pi()) * radius)) +
     2 * std::real(ScattAmplCoul) * F1 / (std::sqrt(TMath::Pi()) * radius) -
     std::imag(ScattAmplCoul) * F2 / radius;
 
-return CkValue + 1;
+    return CkValue + 1;
 
   // return GeneralCoulombLednickyAvg(Momentum,radius,ScLenpAp,effrangepAp,false,redmass,charge);
 }
 
- double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const double* PotPar){
+double Lednicky_gauss_pAL(const double &Momentum, const double* SourcePar, const double* PotPar){
 //  double Lednicky_gauss_pAL(const double &Momentum,  const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
-  // double radius = 1.188;
+    // double radius = 1.188;
 
-  std::complex<double> ScLenpAL = -1.15+i*0.53;
-  double effrangepAL = 3.06;
-  double mprot = 938.;
-  double mlam = 1115.;
-  double redmass = (mprot*mlam)/(mprot+mlam);
-  double c1 = +1.;
-  double c2 = +0.;
-  double charge = abs(c1*c2);
+    std::complex<double> ScLenpAL = -1.15+i*0.53;
+    double effrangepAL = 3.06;
+    //double mprot = 938.;
+    //double mlam = 1115.;
+    //double redmass = (mprot*mlam)/(mprot+mlam);
+    //double c1 = +1.;
+    //double c2 = +0.;
+    //double charge = abs(c1*c2);
 
-  // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
-  return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
+    // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
 }
 
 
 double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const double* PotPar){
 //double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
-  // double radius = 1.188;
+    // double radius = 1.188;
 
-  std::complex<double> ScLenLAL = -0.9+i*0.4;
-  double effrangeLAL = 2.76;
-  double mlam = 1115.;
-  double redmass = 0.5*mlam;
-  double c1 = +0.;
-  double c2 = +0.;
-  double charge = abs(c1*c2);
+    std::complex<double> ScLenLAL = -0.9+i*0.4;
+    double effrangeLAL = 2.76;
+    //double mlam = 1115.;
+    //double redmass = 0.5*mlam;
+    //double c1 = +0.;
+    //double c2 = +0.;
+    //double charge = abs(c1*c2);
 
-  // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
-  return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
+    // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
 }
 
 
 double Lednicky_gauss_pAL_varup(const double &Momentum, const double* SourcePar, const double* PotPar){
 //  double Lednicky_gauss_pAL(const double &Momentum,  const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
- // double radius = 1.188;
- std::complex<double> ScLenpAL = -1.10+i*0.53;
- double effrangepAL = 3.06;
- double mprot = 938.;
- double mlam = 1115.;
- double redmass = (mprot*mlam)/(mprot+mlam);
- double c1 = +1.;
- double c2 = +0.;
- double charge = abs(c1*c2);
- // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
- return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
+    // double radius = 1.188;
+    std::complex<double> ScLenpAL = -1.10+i*0.53;
+    double effrangepAL = 3.06;
+    //double mprot = 938.;
+    //double mlam = 1115.;
+    //double redmass = (mprot*mlam)/(mprot+mlam);
+    //double c1 = +1.;
+    //double c2 = +0.;
+    //double charge = abs(c1*c2);
+    // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
 }
 
 double Lednicky_gauss_pAL_varlow(const double &Momentum, const double* SourcePar, const double* PotPar){
 //  double Lednicky_gauss_pAL(const double &Momentum,  const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
- // double radius = 1.188;
- std::complex<double> ScLenpAL = -1.20+i*0.53;
- double effrangepAL = 3.06;
- double mprot = 938.;
- double mlam = 1115.;
- double redmass = (mprot*mlam)/(mprot+mlam);
- double c1 = +1.;
- double c2 = +0.;
- double charge = abs(c1*c2);
- // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
- return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
+    // double radius = 1.188;
+    std::complex<double> ScLenpAL = -1.20+i*0.53;
+    double effrangepAL = 3.06;
+    //double mprot = 938.;
+    //double mlam = 1115.;
+    //double redmass = (mprot*mlam)/(mprot+mlam);
+    //double c1 = +1.;
+    //double c2 = +0.;
+    //double charge = abs(c1*c2);
+    // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScLenpAL,effrangepAL,0,0,true,false);
 }
 
 double Lednicky_gauss_LAL_varup(const double &Momentum, const double* SourcePar, const double* PotPar){
 //double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
-  // double radius = 1.188;
-  std::complex<double> ScLenLAL = -0.86+i*0.46;
-  double effrangeLAL = 2.48;
-  double mlam = 1115.;
-  double redmass = 0.5*mlam;
-  double c1 = +0.;
-  double c2 = +0.;
-  double charge = abs(c1*c2);
-  // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
-  return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
+    // double radius = 1.188;
+    std::complex<double> ScLenLAL = -0.86+i*0.46;
+    double effrangeLAL = 2.48;
+    //double mlam = 1115.;
+    //double redmass = 0.5*mlam;
+    //double c1 = +0.;
+    //double c2 = +0.;
+    //double charge = abs(c1*c2);
+    // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
 
 }
 
 double Lednicky_gauss_LAL_varlow(const double &Momentum, const double* SourcePar, const double* PotPar){
 //double Lednicky_gauss_LAL(const double &Momentum, const double* SourcePar, const std::complex<double>& ScattLenSin, const double& EffRangeSin){
 
-  // double radius = 1.188;
-  std::complex<double> ScLenLAL = -0.94+i*0.34;
-  double effrangeLAL = 3.05;
-  double mlam = 1115.;
-  double redmass = 0.5*mlam;
-  double c1 = +0.;
-  double c2 = +0.;
-  double charge = abs(c1*c2);
-  // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
-  return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
+    // double radius = 1.188;
+    std::complex<double> ScLenLAL = -0.94+i*0.34;
+    double effrangeLAL = 3.05;
+    //double mlam = 1115.;
+    //double redmass = 0.5*mlam;
+    //double c1 = +0.;
+    //double c2 = +0.;
+    //double charge = abs(c1*c2);
+    // return GeneralLednicky(Momentum,SourcePar[0],ScattLenSin,EffRangeSin,0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScLenLAL,effrangeLAL,0,0,true,false);
 
 }
 
