@@ -2827,7 +2827,7 @@ void CATS::FoldSourceAndWF(){
                 SourceIntCut/=SourceInt;
                 SourceInt=1.;
             }
-
+//printf("\033[1;36mDEBUG (1):\033[0m Integrated value=%.4e\n",SourceInt);
             //if the source is assumed normalized, any deviation below unity is considered to be an effect of a
             //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
             //a flat residual that is added to the correlation
@@ -2859,6 +2859,7 @@ void CATS::FoldSourceAndWF(){
                 NumGridPts = kSourceGrid[uMomBinSource]->GetNumEndNodes();
                 SourceInt = 0;
                 SourceIntCut = 0;
+//printf("\033[1;36m DEBUG (2):\033[0m NumGridPts=%u\n",NumGridPts);
                 for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
                     double Radius = kSourceGrid[uMomBinSource]->GetParValue(uGrid, 0)*FmToNu;
                     //this should return zero in case of !ThetaDependentSource,
@@ -2869,6 +2870,7 @@ void CATS::FoldSourceAndWF(){
                     SourceInt += SourceVal;
                     if(Radius<SourceMinRad || Radius>SourceMaxRad) {continue;}
                     SourceIntCut += SourceVal;
+//printf("\033[1;36m  DEBUG (2):\033[0m SourceVal=%.4e\n",SourceVal);
                     WaveFunVal=0;
                     for(unsigned usCh=0; usCh<NumCh; usCh++) WaveFunVal+=(WaveFunction2[uMomBin][uGrid][usCh])*ChannelWeight[usCh];
                     Integrand = SourceVal*WaveFunVal;
@@ -2890,7 +2892,7 @@ void CATS::FoldSourceAndWF(){
                     SourceIntCut/=SourceInt;
                     SourceInt=1.;
                 }
-
+//printf("\033[1;36mDEBUG (2):\033[0m Integrated value=%.4e\n",SourceInt);
                 //if the source is assumed normalized, any deviation below unity is considered to be an effect of a
                 //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
                 //a flat residual that is added to the correlation
@@ -3424,7 +3426,8 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
         }
         TotalResult += Result;
     }
-    return pow(abs(TotalResult),2);
+    //!!! There was a factor of x2 missing, no idea from where, could be the angle phi? Check it out!
+    return 2.*pow(abs(TotalResult),2);
 }
 
 double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta){

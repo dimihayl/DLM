@@ -973,6 +973,7 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSpa
     }
 
     SourceRenormError = Integral?1./Integral:1e64;
+//printf("\033[1;36m  DEBUG TOOLS (2):\033[0m SourceRenormError=%.4e\n",SourceRenormError);
     for(unsigned uNode=0; uNode<NumEndNodes; uNode++){
         EndNode[uNode]->SourceValue *= SourceRenormError;
     }
@@ -980,6 +981,7 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSpa
     if(SourceRenormError<1) SourceRenormError = SourceRenormError?1./SourceRenormError:1e64;
     SourceRenormError -= 1;
 
+    //! this does not work for ana source, thing about it?
     double EffectiveEpsilon = double(MinEntries)/double(NumOfEl);
     if(Epsilon>EffectiveEpsilon) EffectiveEpsilon=Epsilon;
 

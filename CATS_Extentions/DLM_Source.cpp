@@ -32,6 +32,11 @@ double GaussSource(double* Pars){
 //since Integral(dTheta) = 2 for a flat theta distribution and the whole Source function needs to be normalized to 1,
 //in order to preserve this we should divide the whole function by 2
 double GaussSourceTheta(double* Pars){
+//printf("HI\n");
+//printf("CosTheta=%f\n",Pars[2]);
+//if(Pars[2]>0.95) return GaussSource(Pars);
+//return 0;
+return GaussSource(Pars)*exp(-pow((Pars[2]-1)/(2.*0.4),2.));
     return 0.5*GaussSource(Pars);
 }
 
@@ -1191,6 +1196,7 @@ DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
     ChildMass1 = new double* [2];
     SmearResoMomentum = new double* [2];
     SmearResoMass = new bool* [2];
+    ResoDecayTopology = new RESO_DEC_TOP* [2];
     for(unsigned uParticle=0; uParticle<2; uParticle++){
         NumResonances[uParticle]=0;
         ResoWeight[uParticle]=NULL;
@@ -1200,6 +1206,7 @@ DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
         ChildMass1[uParticle]=NULL;
         SmearResoMomentum[uParticle]=NULL;
         SmearResoMass[uParticle]=NULL;
+        ResoDecayTopology[uParticle]=NULL;
     }
     NumMcIter = 1000000;
 }
@@ -1243,9 +1250,10 @@ void DLM_CleverMcLevyReso::InitReso(const unsigned& whichparticle, const unsigne
     if(ChildMass1[whichparticle]){delete[]ChildMass1[whichparticle];ChildMass1[whichparticle]=new double[NumResonances[whichparticle]];}
     if(SmearResoMomentum[whichparticle]){delete[]SmearResoMomentum[whichparticle];SmearResoMomentum[whichparticle]=new double[NumResonances[whichparticle]];}
     if(SmearResoMass[whichparticle]){delete[]SmearResoMass[whichparticle];SmearResoMass[whichparticle]=new bool[NumResonances[whichparticle]];}
+    if(ResoDecayTopology[whichparticle]){delete[]ResoDecayTopology[whichparticle];ResoDecayTopology[whichparticle]=new RESO_DEC_TOP[NumResonances[whichparticle]];}
     if(Histo) Histo->SetBinContentAll(1e6);
 }
-void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1, const double& momSmear, const bool& massSmear){
+void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1, const double& momSmear, const bool& massSmear, const RESO_DEC_TOP& rdt){
     if(whichparticle>=2) {printf("\033[1;33mWARNING:\033[0m You can call SetUpReso only for particle 0 or 1\n"); return;}
     if(whichreso>=NumResonances[whichparticle]) {printf("\033[1;33mWARNING:\033[0m Only %u number of resonances are currently allowed. Change using InitReso\n",NumResonances[whichparticle]); return;}
     if(!ResoWeight[whichparticle]){ResoWeight[whichparticle]=new double[NumResonances[whichparticle]];}
@@ -1255,9 +1263,11 @@ void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsign
     if(!ChildMass1[whichparticle]){ChildMass1[whichparticle]=new double[NumResonances[whichparticle]];}
     if(!SmearResoMomentum[whichparticle]){SmearResoMomentum[whichparticle]=new double[NumResonances[whichparticle]];}
     if(!SmearResoMass[whichparticle]){SmearResoMass[whichparticle]=new bool[NumResonances[whichparticle]];}
+    if(!ResoDecayTopology[whichparticle]){ResoDecayTopology[whichparticle]=new RESO_DEC_TOP[NumResonances[whichparticle]];}
     if(ResoWeight[whichparticle][whichreso]==weight&&ResoMass[whichparticle][whichreso]==mass&&ResoTau[whichparticle][whichreso]==tau&&
        ChildMass0[whichparticle][whichreso]==mass0&&ChildMass1[whichparticle][whichreso]==mass1&&
-       SmearResoMomentum[whichparticle][whichreso]==momSmear&&SmearResoMass[whichparticle][whichreso]==massSmear){return;}
+       SmearResoMomentum[whichparticle][whichreso]==momSmear&&SmearResoMass[whichparticle][whichreso]==massSmear&&
+       ResoDecayTopology[whichparticle][whichreso]==rdt){return;}
     if(Histo) Histo->SetBinContentAll(1e6);
     ResoWeight[whichparticle][whichreso] = weight;
     ResoMass[whichparticle][whichreso] = mass;
@@ -1266,6 +1276,7 @@ void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsign
     ChildMass1[whichparticle][whichreso] = mass1;
     SmearResoMomentum[whichparticle][whichreso] = momSmear;
     SmearResoMass[whichparticle][whichreso] = massSmear;
+    ResoDecayTopology[whichparticle][whichreso] = rdt;
 //printf("ResoWeight=%f\n",ResoWeight[whichparticle][whichreso]);
 }
 void DLM_CleverMcLevyReso::InitNumMcIter(const unsigned& numiter){
@@ -1320,6 +1331,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                     }
                 }
                 double RAD;
+//double OLDRAD;
                 //this spares us a renormalization of the whole histogram
                 double DiffVal = 1./double(NumMcIter);
                 //the size of the r-bin
@@ -1333,12 +1345,18 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                 double TKM;
                 //#pragma omp for
                 for(unsigned uIter=0; uIter<NumMcIter; uIter++){
+                    //vector coordinates for the flight path of the two resonances
+                    //double ResoPath0_X,ResoPath0_Y,ResoPath0_Z,ResoPath0_LEN,ResoPath0_THETA,ResoPath0_PHI;
+                    //double ResoPath1_X,ResoPath1_Y,ResoPath1_Z,ResoPath1_LEN,ResoPath1_THETA,ResoPath1_PHI;
+                    double ResoPathCartesian[2][3];
+                    double ResoPathSpherical[2][3];
 //if(uIter%10000==0)
 //printf("   %u/%u\n",uIter,NumMcIter);
                     //we simulate random 'core' distance RAD
                     if(Type==0) {RAD = RanGen.StableR(3,par_stability,0,par_scale,0);}
                     else if(Type==1) {RAD = RanGen.StableDiffR(3,par_stability,0,par_scale,0);}
                     else {RAD = RanGen.StableNolan(3,par_stability,0,par_scale,0);}
+//OLDRAD = RAD;
 //printf("par_scale=%f\n",par_scale);
 //printf("par_stability=%f\n",par_stability);
 //printf("RAD = %f\n",RAD);
@@ -1367,6 +1385,9 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         }
 //printf("RESO/ATTAMPTS = %.3f\n",double(RESO)/double(ATTEMPTS));
                         //if we have a primary particle, we do nothing
+                        ResoPathCartesian[uParticle][0] = 0;
+                        ResoPathCartesian[uParticle][1] = 0;
+                        ResoPathCartesian[uParticle][2] = 0;
                         if(WhichReso==-1) continue;
                         //we make the radius bigger, according to an exponential decay law, in case we have a resonance
 
@@ -1404,9 +1425,43 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         TKM = SmearedResoMass/(ResoTau[uParticle][WhichReso]*SmearedResoMomentum+1e-64);
                         //we increase RAD following an exponential
 //printf(" TKM = %f\n",TKM);
-                        RAD += RanGen.Exponential(TKM)*NuToFm;
+                        //compute the shift of the radius (in terms of length)
+                        ResoPathSpherical[uParticle][0] = RanGen.Exponential(TKM)*NuToFm;
+//ResoPathSpherical[uParticle][0] = 0;
+                        switch(ResoDecayTopology[uParticle][WhichReso]){
+                        case rdtBackwards :
+                            ResoPathSpherical[uParticle][1] = uParticle?0:Pi;
+                            ResoPathSpherical[uParticle][2] = 0;
+                            break;
+                        //random
+                        default :
+                            ResoPathSpherical[uParticle][1] = RanGen.Uniform(0,Pi);
+                            ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);
+                            break;
+                        }
+                        //RAD += RanGen.Exponential(TKM)*NuToFm;
+//OLDRAD += ResoPathSpherical[uParticle][0];
+                        ResoPathCartesian[uParticle][0] = ResoPathSpherical[uParticle][0]*sin(ResoPathSpherical[uParticle][1])*cos(ResoPathSpherical[uParticle][2]);
+                        ResoPathCartesian[uParticle][1] = ResoPathSpherical[uParticle][0]*sin(ResoPathSpherical[uParticle][1])*sin(ResoPathSpherical[uParticle][2]);
+                        ResoPathCartesian[uParticle][2] = ResoPathSpherical[uParticle][0]*cos(ResoPathSpherical[uParticle][1]);
+//printf(" up%u: x=%f, y=%f, z=%f\n",uParticle,ResoPathCartesian[uParticle][0],ResoPathCartesian[uParticle][1],ResoPathCartesian[uParticle][2]);
 //printf(" eRAD = %f\n",RAD);
                     }
+
+                    //in vectors, |R| = |R0-R1|, with R0 = (coordinates of path0), R1 = (coordinates of path1)
+                    //the initial position of R0 is 0,0,0, of R1 is 0,0,r_core
+//printf(" RAD = sqrt[(%.3f-%.3f)^2+(%.3f-%.3f)^2+(%.3f-%.3f-%.3f)^2]\n",
+//       ResoPathCartesian[0][0],ResoPathCartesian[1][0],
+//       ResoPathCartesian[0][1],ResoPathCartesian[1][1],
+//       ResoPathCartesian[0][2],ResoPathCartesian[1][2],RAD);
+//printf(" RAD=%f --> ",RAD);
+                    RAD = sqrt(
+                                pow(ResoPathCartesian[0][0]-ResoPathCartesian[1][0],2.)+
+                                pow(ResoPathCartesian[0][1]-ResoPathCartesian[1][1],2.)+
+                                pow(ResoPathCartesian[0][2]-ResoPathCartesian[1][2]-RAD,2.)
+                                );
+//printf(" %f (%f)\n",RAD,OLDRAD);
+
 
                     WhichBin[0] = Histo->GetBin(0,RAD);
                     TotBin = Histo->GetTotBin(WhichBin);
