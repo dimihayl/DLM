@@ -46,7 +46,7 @@ public:
     ~CatsLorentzVector();
 
     void Boost(const CatsLorentzVector& boostVec);
-    CatsLorentzVector GetBoost(const CatsLorentzVector& boostVec);
+    //CatsLorentzVector GetBoost(const CatsLorentzVector& boostVec);
 
     double GetR() const;
     double GetR2() const;

@@ -156,7 +156,9 @@ public:
     //the smearing is ONLY applied to the original resonance
     //additional information on the decay topology of the resonance
     enum RESO_DEC_TOP { rdtBackwards, rdtRandom };
-    void SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1, const double& momSmear=0, const bool& massSmear=false, const RESO_DEC_TOP& rdt=rdtBackwards);
+    void SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1,
+                   const double& momSmear=0, const bool& massSmear=false, const RESO_DEC_TOP& rdt=rdtBackwards);
+    void SetUpResoEmission(const unsigned& whichparticle, const unsigned& whichreso, const DLM_Histo<double>* Distr);
     void InitNumMcIter(const unsigned& numiter);
     unsigned GetNumPars();
 private:
@@ -186,6 +188,10 @@ private:
     double** SmearResoMomentum;
     bool** SmearResoMass;
     RESO_DEC_TOP** ResoDecayTopology;
+    //the angle between r and k of the resonance
+    //this should be the cumulative distribution of the probability of emission at a certain angle (in RAD between 0 and Pi),
+    //where the axis are inverted, i.e. y(x)
+    const DLM_Histo<double>*** ResoEmissionAngle;
     //the number of MC iterations with which each source is to be initialized
     unsigned NumMcIter;
     DLM_Histo<double>* Histo;

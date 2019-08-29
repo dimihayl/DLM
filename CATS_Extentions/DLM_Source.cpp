@@ -1197,6 +1197,7 @@ DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
     SmearResoMomentum = new double* [2];
     SmearResoMass = new bool* [2];
     ResoDecayTopology = new RESO_DEC_TOP* [2];
+    ResoEmissionAngle = new const DLM_Histo<double>** [2];
     for(unsigned uParticle=0; uParticle<2; uParticle++){
         NumResonances[uParticle]=0;
         ResoWeight[uParticle]=NULL;
@@ -1207,6 +1208,7 @@ DLM_CleverMcLevyReso::DLM_CleverMcLevyReso(){
         SmearResoMomentum[uParticle]=NULL;
         SmearResoMass[uParticle]=NULL;
         ResoDecayTopology[uParticle]=NULL;
+        ResoEmissionAngle[uParticle]=NULL;
     }
     NumMcIter = 1000000;
 }
@@ -1251,6 +1253,7 @@ void DLM_CleverMcLevyReso::InitReso(const unsigned& whichparticle, const unsigne
     if(SmearResoMomentum[whichparticle]){delete[]SmearResoMomentum[whichparticle];SmearResoMomentum[whichparticle]=new double[NumResonances[whichparticle]];}
     if(SmearResoMass[whichparticle]){delete[]SmearResoMass[whichparticle];SmearResoMass[whichparticle]=new bool[NumResonances[whichparticle]];}
     if(ResoDecayTopology[whichparticle]){delete[]ResoDecayTopology[whichparticle];ResoDecayTopology[whichparticle]=new RESO_DEC_TOP[NumResonances[whichparticle]];}
+    if(ResoEmissionAngle[whichparticle]){delete[]ResoEmissionAngle[whichparticle];ResoEmissionAngle[whichparticle]=new const DLM_Histo<double>*[NumResonances[whichparticle]];}
     if(Histo) Histo->SetBinContentAll(1e6);
 }
 void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1, const double& momSmear, const bool& massSmear, const RESO_DEC_TOP& rdt){
@@ -1278,6 +1281,14 @@ void DLM_CleverMcLevyReso::SetUpReso(const unsigned& whichparticle, const unsign
     SmearResoMass[whichparticle][whichreso] = massSmear;
     ResoDecayTopology[whichparticle][whichreso] = rdt;
 //printf("ResoWeight=%f\n",ResoWeight[whichparticle][whichreso]);
+}
+//in which direction is the resonance emitted
+//only used if ResoDecayTopology==rdtRandom
+void DLM_CleverMcLevyReso::SetUpResoEmission(const unsigned& whichparticle, const unsigned& whichreso, const DLM_Histo<double>* Distr){
+    if(whichparticle>=2) {printf("\033[1;33mWARNING:\033[0m You can call SetUpResoEmission only for particle 0 or 1\n"); return;}
+    if(whichreso>=NumResonances[whichparticle]) {printf("\033[1;33mWARNING:\033[0m Only %u number of resonances are currently allowed. Change using InitReso\n",NumResonances[whichparticle]); return;}
+    if(!ResoEmissionAngle[whichparticle]){ResoEmissionAngle[whichparticle]=new const DLM_Histo<double>*[NumResonances[whichparticle]];}
+    ResoEmissionAngle[whichparticle][whichreso] = Distr;
 }
 void DLM_CleverMcLevyReso::InitNumMcIter(const unsigned& numiter){
     if(NumMcIter==numiter) return;
@@ -1430,13 +1441,31 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
 //ResoPathSpherical[uParticle][0] = 0;
                         switch(ResoDecayTopology[uParticle][WhichReso]){
                         case rdtBackwards :
+                            //make sure that the direction is inverted for the second particle
                             ResoPathSpherical[uParticle][1] = uParticle?0:Pi;
                             ResoPathSpherical[uParticle][2] = 0;
                             break;
                         //random
                         default :
-                            ResoPathSpherical[uParticle][1] = RanGen.Uniform(0,Pi);
-                            ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);
+
+                            if(ResoEmissionAngle[uParticle][WhichReso]){
+                                //the theta angle we sample from the distribution we gave
+                                RanVal = RanGen.Uniform(1e-6,1-1e-6);
+                                ResoPathSpherical[uParticle][1] = ResoEmissionAngle[uParticle][WhichReso]->Eval(&RanVal);
+                                //make sure that the direction is inverted for the second particle
+                                if(uParticle) ResoPathSpherical[uParticle][1] = fabs(ResoPathSpherical[uParticle][1]-Pi);
+
+                                //the phi angle is still
+                                //this is probably not the most realistic thing, but should be rather conservative.
+                                ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);
+//ResoPathSpherical[uParticle][2] = 0;
+                            }
+                            else
+
+                            {
+                                ResoPathSpherical[uParticle][1] = RanGen.Uniform(0,Pi);//theta
+                                ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);//phi
+                            }
                             break;
                         }
                         //RAD += RanGen.Exponential(TKM)*NuToFm;

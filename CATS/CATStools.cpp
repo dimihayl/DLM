@@ -304,7 +304,7 @@ void CatsLorentzVector::ComputeBetaGamma(){
     beta = TotMom/FourMomentum[0];
     gamma = FourMomentum[0]/Magnitude;
 }
-
+/*
 CatsLorentzVector CatsLorentzVector::GetBoost(const CatsLorentzVector& boostVec){
     CatsLorentzVector RESULT=(*this);
     Boost(boostVec, FourSpace, RESULT.FourSpace);
@@ -312,7 +312,7 @@ CatsLorentzVector CatsLorentzVector::GetBoost(const CatsLorentzVector& boostVec)
     RESULT.ComputeBetaGamma();
     return RESULT;
 }
-
+*/
 double CatsLorentzVector::GetR() const{
     return Length;
 }
