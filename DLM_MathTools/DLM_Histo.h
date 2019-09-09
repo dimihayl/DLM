@@ -322,7 +322,7 @@ public:
         }
         for(unsigned uBin=0; uBin<numbins; uBin++){
             if(bins[uBin+1]<=bins[uBin]){
-//printf("\033[1;31msDim=%u; %f --> %f\033[0m\n",sDim,bins[uBin],bins[uBin+1]);
+//printf("\033[1;31msDim=%u; uBin=%u; %f --> %f\033[0m\n",sDim,uBin,bins[uBin],bins[uBin+1]);
                 printf("\033[1;31mERROR:\033[0m DLM_Histo: The bin ranges should be in ascending order and a bin-width of 0 is not allowed!\n");
                 return;
             }

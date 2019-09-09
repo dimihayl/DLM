@@ -1354,6 +1354,10 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                 double RanVal;
                 double ResoMomentum;
                 double TKM;
+//int SmallerHalf=0;
+//int BiggerHalf=0;
+//double Mean=0;
+//int MeanNorm=0;
                 //#pragma omp for
                 for(unsigned uIter=0; uIter<NumMcIter; uIter++){
                     //vector coordinates for the flight path of the two resonances
@@ -1399,6 +1403,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                         ResoPathCartesian[uParticle][0] = 0;
                         ResoPathCartesian[uParticle][1] = 0;
                         ResoPathCartesian[uParticle][2] = 0;
+//printf("WhichReso=%i\n",WhichReso);
                         if(WhichReso==-1) continue;
                         //we make the radius bigger, according to an exponential decay law, in case we have a resonance
 
@@ -1438,6 +1443,12 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
 //printf(" TKM = %f\n",TKM);
                         //compute the shift of the radius (in terms of length)
                         ResoPathSpherical[uParticle][0] = RanGen.Exponential(TKM)*NuToFm;
+//printf(" ResoTau = %f\n",ResoTau[uParticle][WhichReso]*NuToFm);
+//if(ResoPathSpherical[uParticle][0]>ResoTau[uParticle][WhichReso]*NuToFm*log(2)) BiggerHalf++;
+//else SmallerHalf++;
+//Mean+=ResoPathSpherical[uParticle][0];
+//MeanNorm++;
+//printf(" FlyPath = %f\n",ResoPathSpherical[uParticle][0]);
 //ResoPathSpherical[uParticle][0] = 0;
                         switch(ResoDecayTopology[uParticle][WhichReso]){
                         case rdtBackwards :
@@ -1447,10 +1458,9 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                             break;
                         //random
                         default :
-
-                            if(ResoEmissionAngle[uParticle][WhichReso]){
+                            if(ResoEmissionAngle&&ResoEmissionAngle[uParticle]&&ResoEmissionAngle[uParticle][WhichReso]){
                                 //the theta angle we sample from the distribution we gave
-                                RanVal = RanGen.Uniform(1e-6,1-1e-6);
+                                RanVal = RanGen.Uniform(1e-6,1-1e-6);//0-->1
                                 ResoPathSpherical[uParticle][1] = ResoEmissionAngle[uParticle][WhichReso]->Eval(&RanVal);
                                 //make sure that the direction is inverted for the second particle
                                 if(uParticle) ResoPathSpherical[uParticle][1] = fabs(ResoPathSpherical[uParticle][1]-Pi);
@@ -1458,12 +1468,15 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                                 //the phi angle is still
                                 //this is probably not the most realistic thing, but should be rather conservative.
                                 ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);
+
 //ResoPathSpherical[uParticle][2] = 0;
                             }
                             else
-
                             {
-                                ResoPathSpherical[uParticle][1] = RanGen.Uniform(0,Pi);//theta
+                                //ResoPathSpherical[uParticle][1] = RanGen.Uniform(0,Pi);//theta
+                                //the upper thing was wrong, as actually for theta it is the cosine that is random, now corrected
+                                RanVal = acos(RanGen.Uniform(-1.,1.));
+                                ResoPathSpherical[uParticle][1] = RanVal;
                                 ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);//phi
                             }
                             break;
@@ -1515,9 +1528,12 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
 //}
 //printf(" fdsojhvkjfdshbgvkjsfdbgvjkds\n");
                 }
+//printf("Small/Big = %f\n",double(SmallerHalf)/double(BiggerHalf));
+//printf(" Mean = %f\n",double(Mean)/double(MeanNorm));
             }
         }
     }
+
     double RETVAL = Histo->Eval(RSS);
     //if(RETVAL>0.99e6) return 0;//this happens in case we lack statistics, so most likely in a bin that should be zero
 

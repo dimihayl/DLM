@@ -146,6 +146,7 @@ public:
     ~DLM_CleverMcLevyReso();
     double Eval(double* Pars);
     double RootEval(double* x, double* Pars);
+
     void InitStability(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitScale(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitRad(const unsigned& numPts, const double& minVal, const double& maxVal);
