@@ -1382,6 +1382,10 @@ void InitCatForHaidenbauerKaonProton1(const char* InputFolder, CATS& Kitty, comp
 //TYPE 4 = Si0 pi0; //TYPE 5 = Si- pi+
 //Be careful, as due to the weird binning of the wave functions, we actually initialize pretty much everything about the object here
 //!? As this WF is w/o Coulomb, shouldn't we SetQ1Q2(0), and does it makes a difference?
+//so for the coupled channel, shared by our colleges from Japan, the way to proceed is the following:
+//we have to include the Gamow in ALL channels, even those without Coulomb, but in the following way:
+//the C(k) is corrected with sqrt(A1)*sqrt(A2), where A1 and A2 are the Gamow factors for the incoming and outgoing channel.
+//If the incoming channel is without coulomb, than clearly the corresponding A will be unity!
 void InitCatForHaidenbauerKaonProton2(const char* InputFolder, CATS& Kitty, complex<double>***** WaveFunctionU, double**** PhaseShifts, double** RadBins, unsigned& NumRadBins, const int& TYPE){
     const double BinCenters[] = {
         0.8145,6.0205,12.0126,18.8835,26.0830,
