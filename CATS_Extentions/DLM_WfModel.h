@@ -22,6 +22,8 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS* Kitt
 DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS& Kitty, const int& TYPE=0);
 DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS* Kitty, const int& TYPE=0);
 
+DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE);
+
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo);
 void CleanUpWfHisto(const CATS& Kitty, DLM_Histo<complex<double>>***& Histo);
 #endif
