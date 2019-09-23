@@ -1457,7 +1457,7 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                             ResoPathSpherical[uParticle][2] = 0;
                             break;
                         //random
-                        default :
+                        case rdtRandom :
                             if(ResoEmissionAngle&&ResoEmissionAngle[uParticle]&&ResoEmissionAngle[uParticle][WhichReso]){
                                 //the theta angle we sample from the distribution we gave
                                 RanVal = RanGen.Uniform(1e-6,1-1e-6);//0-->1
@@ -1479,6 +1479,14 @@ double DLM_CleverMcLevyReso::Eval(double* Pars){
                                 ResoPathSpherical[uParticle][1] = RanVal;
                                 ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);//phi
                             }
+                            break;
+                        //rdtRandomBackwards
+                        default :
+                            RanVal = acos(RanGen.Uniform(-1.,0));
+                            ResoPathSpherical[uParticle][1] = RanVal;
+                            //make sure that the direction is inverted for the second particle
+                            if(uParticle) ResoPathSpherical[uParticle][1] = fabs(ResoPathSpherical[uParticle][1]-Pi);
+                            ResoPathSpherical[uParticle][2] = RanGen.Uniform(0,2.*Pi);//phi
                             break;
                         }
                         //RAD += RanGen.Exponential(TKM)*NuToFm;

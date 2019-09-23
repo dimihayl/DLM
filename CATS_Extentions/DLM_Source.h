@@ -156,7 +156,10 @@ public:
     //momSmear is in percent
     //the smearing is ONLY applied to the original resonance
     //additional information on the decay topology of the resonance
-    enum RESO_DEC_TOP { rdtBackwards, rdtRandom };
+    //rdtBackwards = emission only of back-to-back particles (angle = 180 deg)
+    //rdtRandom = uniform emission of particles (0-180 deg)
+    //rdtRandomBackwards = uniform emission of particles, but particles are only allowed to move away from one another (90-180)
+    enum RESO_DEC_TOP { rdtBackwards, rdtRandom, rdtRandomBackwards };
     void SetUpReso(const unsigned& whichparticle, const unsigned& whichreso, const double& weight, const double& mass, const double& tau, const double& mass0, const double& mass1,
                    const double& momSmear=0, const bool& massSmear=false, const RESO_DEC_TOP& rdt=rdtBackwards);
     void SetUpResoEmission(const unsigned& whichparticle, const unsigned& whichreso, const DLM_Histo<double>* Distr);
