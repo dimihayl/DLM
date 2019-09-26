@@ -32,7 +32,7 @@ class DLM_Fitter1{
 
 public:
     //(a+b*x+c*x*x)*C(k)
-    enum fFitPar { p_a, p_b, p_c, p_3, p_4, p_ab_0, p_ab_1, p_ab_2, p_ab_3, p_ab_4, p_ab_5, p_Cl, p_kc,
+    enum fFitPar { p_a, p_b, p_c, p_3, p_4, p_ab_0, p_ab_1, p_ab_2, p_ab_3, p_ab_4, p_ab_5, p_ab_6, p_Cl, p_kc,
     p_sor0, p_sor1, p_sor2, p_sor3, p_sor4, p_sor5, p_pot0, p_pot1, p_pot2, p_pot3, p_pot4, p_pot5, p_spline  };
     enum fFitRange { kmin, kf, kl, kmax };
 
