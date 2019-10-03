@@ -61,7 +61,7 @@ CATS::CATS():
 //    MaxPairsToLoad = 4294967295;
     MixingDepth = 1;
     TauCorrection = false;
-    UseAnalyticSource = false;
+    UseAnalyticSource = true;
     ThetaDependentSource = false;
     TransportRenorm = 1;
     PoorManRenorm = 1;

@@ -314,7 +314,7 @@ public:
         }
         InitPER();
     }
-    void SetUp(const unsigned short& sDim, const unsigned& numbins, const double* bins){
+    void SetUp(const unsigned short& sDim, const unsigned& numbins, const double* bins, const double* bincenter=NULL){
         if(sDim>=Dim) return;
         if(!numbins){
             printf("\033[1;31mERROR:\033[0m DLM_Histo cannot have 0 bins (holds true for each axis)!\n");
@@ -337,7 +337,15 @@ public:
         NumBins[sDim] = numbins;
         for(unsigned uBin=0; uBin<=NumBins[sDim]; uBin++){
             BinRange[sDim][uBin] = bins[uBin];
-            if(uBin) BinCenter[sDim][uBin-1] = (bins[uBin-1]+bins[uBin])*0.5;
+            if(uBin){
+                if(bincenter){
+                    BinCenter[sDim][uBin-1] = bincenter[uBin-1];
+                }
+                else{
+                    BinCenter[sDim][uBin-1] = (bins[uBin-1]+bins[uBin])*0.5;
+                }
+            }
+
         }
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const double& xmin, const double& xmax){
@@ -677,6 +685,24 @@ public:
                 BinMod *= 2;
             }
         }
+    }
+    double* GetBinRange(const unsigned short& sDim) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        if(sDim>=Dim) return 0;
+        double* BINRANGE = new double [NumBins[sDim]+1];
+        for(unsigned uBin=0; uBin<=NumBins[sDim]; uBin++){
+            BINRANGE[uBin] = BinRange[sDim][uBin];
+        }
+        return BINRANGE;
+    }
+    double* GetBinCenters(const unsigned short& sDim) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        if(sDim>=Dim) return 0;
+        double* BINCENTER = new double [NumBins[sDim]+1];
+        for(unsigned uBin=0; uBin<=NumBins[sDim]; uBin++){
+            BINCENTER[uBin] = BinCenter[sDim][uBin];
+        }
+        return BINCENTER;
     }
 
     Type Eval(const double* xVal, const bool& EvalTheError=false) const{
