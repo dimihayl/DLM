@@ -47,7 +47,7 @@ double DLM_FITTER2_FUNCTION_SPLINE3(double* xVal, double* pars){
     return sp3.Eval(*xVal);
 }
 
-DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(25+25),NumRangePar(4){
+DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(26+25),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
     SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
@@ -105,12 +105,15 @@ DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumP
         ParValue[uSyst][p_ab_3] = 0; ParDownLimit[uSyst][p_ab_3] = 0; ParUpLimit[uSyst][p_ab_3] = 0;
         ParValue[uSyst][p_ab_4] = 0; ParDownLimit[uSyst][p_ab_4] = 0; ParUpLimit[uSyst][p_ab_4] = 0;
         ParValue[uSyst][p_ab_5] = 0; ParDownLimit[uSyst][p_ab_5] = 0; ParUpLimit[uSyst][p_ab_5] = 0;
+        ParValue[uSyst][p_ab_6] = 0; ParDownLimit[uSyst][p_ab_6] = 0; ParUpLimit[uSyst][p_ab_6] = 0;
         FixPar[uSyst][p_ab_0] = true;
         FixPar[uSyst][p_ab_1] = true;
         FixPar[uSyst][p_ab_2] = true;
         FixPar[uSyst][p_ab_3] = true;
         FixPar[uSyst][p_ab_4] = true;
         FixPar[uSyst][p_ab_5] = true;
+        FixPar[uSyst][p_ab_6] = true;
+
         ParValue[uSyst][p_sor0] = 1.5; ParDownLimit[uSyst][p_sor0] = 1; ParUpLimit[uSyst][p_sor0] = 2.5;
         ParValue[uSyst][p_sor1] = 0; ParValue[uSyst][p_sor2] = 0; ParValue[uSyst][p_sor3] = 0; ParValue[uSyst][p_sor4] = 0; ParValue[uSyst][p_sor5] = 0;
         FixPar[uSyst][p_sor0]=true; FixPar[uSyst][p_sor1]=true; FixPar[uSyst][p_sor2]=true; FixPar[uSyst][p_sor3]=true; FixPar[uSyst][p_sor4]=true; FixPar[uSyst][p_sor5]=true;
@@ -967,6 +970,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
         FixParameter(uSyst,p_ab_3,FitBL[uSyst]->GetParameter(8));
         FixParameter(uSyst,p_ab_4,FitBL[uSyst]->GetParameter(9));
         FixParameter(uSyst,p_ab_5,FitBL[uSyst]->GetParameter(10));
+        FixParameter(uSyst,p_ab_6,FitBL[uSyst]->GetParameter(11));
 
         FixParameter(uSyst,p_kc,0);
 
@@ -1537,11 +1541,13 @@ if(uPar>=NumPar) printf("AAA h\n");
     double AddBlVal;
     if(TypeAddBl==0){
         AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
-    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.)+Pars[WhichSyst*NumPar+p_ab_5]*pow(Momentum,5.);
+    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.)+Pars[WhichSyst*NumPar+p_ab_5]*pow(Momentum,5.)
+    +Pars[WhichSyst*NumPar+p_ab_6]*pow(Momentum,6.);
     }
     else{
         AddBlVal = Pars[WhichSyst*NumPar+p_ab_0]*(1.+Pars[WhichSyst*NumPar+p_ab_1]*Momentum+Pars[WhichSyst*NumPar+p_ab_2]*Momentum*Momentum+
-                    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.)+Pars[WhichSyst*NumPar+p_ab_5]*pow(Momentum,5.));
+                    Pars[WhichSyst*NumPar+p_ab_3]*pow(Momentum,3.)+Pars[WhichSyst*NumPar+p_ab_4]*pow(Momentum,4.)+Pars[WhichSyst*NumPar+p_ab_5]*pow(Momentum,5.)
+                    +Pars[WhichSyst*NumPar+p_ab_6]*pow(Momentum,6.));
     }
 
 
