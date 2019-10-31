@@ -202,6 +202,79 @@ private:
     void Reset();
     void Init();
 };
+
+//with input from transport model to evaluate modification in r
+class DLM_CleverMcLevyResoTM:public CatsSource{
+public:
+    DLM_CleverMcLevyResoTM();
+    ~DLM_CleverMcLevyResoTM();
+    double Eval(double* Pars);
+    double RootEval(double* x, double* Pars);
+
+    void InitStability(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitScale(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitRad(const unsigned& numPts, const double& minVal, const double& maxVal);
+    void InitType(const int& type);
+    void SetUpReso(const unsigned& whichparticle, const double& weight);
+    //EVERYTHING BELOW IS IN THE CM OF THE DAUGHTERS
+    //bgt = beta*gamma*tau
+    //a_cp = angle between the r_core and the momentum of the resonance
+    void AddBGT_PR(const float& bgt,const float& a_cp);
+    void AddBGT_RP(const float& bgt,const float& a_cp);
+    //the same quantities for both resonances, as well as the angle between the momenta of the two resonances.
+    void AddBGT_RR(const float& bgt0,const float& a_cp0,const float& bgt1,const float& a_cp1,const float& a_p0p1);
+    void InitNumMcIter(const unsigned& numiter);
+    unsigned GetNumPars();
+private:
+    //0 = single particle
+    //1 = pair
+    //2 = Nolan notation
+    int Type;
+    unsigned NumPtsStability;
+    unsigned NumPtsScale;
+    unsigned NumPtsRad;
+    double MinStability;
+    double MaxStability;
+    double MinScale;
+    double MaxScale;
+    double MinRad;
+    double MaxRad;
+
+    double* ResoWeight;
+    //const DLM_Histo<double>* ResoEmissionPR;
+    //const DLM_Histo<double>* ResoEmissionRP;
+    //const DLM_Histo<double>* ResoEmissionRR;
+
+    //a list of possible beta*gamma*tau
+    //for primordial(P), reso (R)
+    //[#entry number][0] = bgt0
+    //[#entry number][1] = bgt1
+    //[#entry number][2] = a_cp0
+    //[#entry number][3] = a_cp1
+    //[#entry number][4] = a_p0p1
+    //N.B. in case one particle is primordial and one reso, than the BGT of the reso is clear,
+    //i.e. beta*gamma*tau of the reso itself. An approximation that one could consider: set beta*gamma of the prim is lower
+    //then that of the reso (due to the lower momentum), hence we neglect this term and set it to 0
+    unsigned MaxBGT_PR;
+    unsigned NumBGT_PR;
+    float** BGT_PR;
+    //for particle0 reso, particle1 primordial
+    unsigned MaxBGT_RP;
+    unsigned NumBGT_RP;
+    float** BGT_RP;
+    //for particle0 reso, particle1 reso
+    unsigned MaxBGT_RR;
+    unsigned NumBGT_RR;
+    float** BGT_RR;
+
+    //the number of MC iterations with which each source is to be initialized
+    unsigned NumMcIter;
+    DLM_Histo<double>* Histo;
+    void Reset();
+    void Init();
+};
+
+
 /*
 //use DLM_CleverMcLevyReso as the baseline for a differential analysis
 class DLM_CleverMcLevyReso_Diff:public DLM_CleverMcLevyReso{

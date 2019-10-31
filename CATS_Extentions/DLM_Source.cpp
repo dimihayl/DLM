@@ -1600,3 +1600,325 @@ void DLM_CleverMcLevyReso::Init(){
     Histo->Initialize();
     Histo->AddToAll(1e6);
 }
+
+
+
+
+
+
+
+DLM_CleverMcLevyResoTM::DLM_CleverMcLevyResoTM(){
+    NumPtsStability = 64;
+    MinStability=1;
+    MaxStability=2;
+    NumPtsScale = 128;
+    MinScale=0.25;
+    MaxScale=4;
+    NumPtsRad = 512;
+    MinRad = 0;
+    MaxRad = 64;
+    Histo = NULL;
+    Type = 1;
+    ResoWeight = new double [2];
+    BGT_PR = NULL;
+    BGT_RP = NULL;
+    BGT_RR = NULL;
+    MaxBGT_PR = 0;
+    MaxBGT_RP = 0;
+    MaxBGT_RR = 0;
+    NumBGT_PR = 0;
+    NumBGT_RP = 0;
+    NumBGT_RR = 0;
+    NumMcIter = 1000000;
+}
+DLM_CleverMcLevyResoTM::~DLM_CleverMcLevyResoTM(){
+    if(Histo) {delete Histo;Histo=NULL;}
+    delete [] ResoWeight; ResoWeight=NULL;
+}
+void DLM_CleverMcLevyResoTM::InitStability(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsStability==numPts&&MinStability==minVal&&MaxStability==maxVal) return;
+    Reset();
+    NumPtsStability=numPts;
+    MinStability=minVal;
+    MaxStability=maxVal;
+}
+void DLM_CleverMcLevyResoTM::InitScale(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsScale==numPts&&MinScale==minVal&&MaxScale==maxVal) return;
+    Reset();
+    NumPtsScale=numPts;
+    MinScale=minVal;
+    MaxScale=maxVal;
+}
+void DLM_CleverMcLevyResoTM::InitRad(const unsigned& numPts, const double& minVal, const double& maxVal){
+    if(NumPtsRad==numPts&&MinRad==minVal&&MaxRad==maxVal) return;
+    Reset();
+    NumPtsRad=numPts;
+    MinRad=minVal;
+    MaxRad=maxVal;
+}
+void DLM_CleverMcLevyResoTM::InitType(const int& type){
+    if(type<0 || type>1) Type = 1;
+    Type = type;
+}
+void DLM_CleverMcLevyResoTM::SetUpReso(const unsigned& whichparticle, const double& weight){
+    if(whichparticle>=2) {printf("\033[1;33mWARNING:\033[0m You can call SetUpReso only for particle 0 or 1\n"); return;}
+    if(Histo) Histo->SetBinContentAll(1e6);
+    ResoWeight[whichparticle] = weight;
+}
+void DLM_CleverMcLevyResoTM::AddBGT_PR(const float& bgt,const float& a_cp){
+    if(NumBGT_PR>=MaxBGT_PR){
+        float** tempfloat = NULL;
+        //if(BGT_PR){
+        tempfloat = new float* [NumBGT_PR];
+        for(unsigned uEntry=0; uEntry<NumBGT_PR; uEntry++){
+            tempfloat[uEntry] = new float [2];
+            for(unsigned uBGT=0; uBGT<2; uBGT++){
+                tempfloat[uEntry][uBGT] = BGT_PR[uEntry][uBGT];
+            }
+        }
+        delete BGT_PR;
+        MaxBGT_PR += 100000;
+        BGT_PR = new float* [MaxBGT_PR];
+        for(unsigned uEntry=0; uEntry<MaxBGT_PR; uEntry++){
+            BGT_PR[uEntry] = new float [2];
+            if(uEntry>=NumBGT_PR) continue;
+            for(unsigned uBGT=0; uBGT<2; uBGT++){
+                BGT_PR[uEntry][uBGT] = tempfloat[uEntry][uBGT];
+            }
+        }
+        //}
+        //else{BGT_PR = new float* [MaxBGT_PR];for(unsigned uEntry=0; uEntry<MaxBGT_PR; uEntry++)BGT_PR[uEntry] = new float [2];}
+    }
+    BGT_PR[NumBGT_PR][0] = bgt;
+    BGT_PR[NumBGT_PR][1] = a_cp;
+    NumBGT_PR++;
+}
+void DLM_CleverMcLevyResoTM::AddBGT_RP(const float& bgt,const float& a_cp){
+    if(NumBGT_RP>=MaxBGT_RP){
+        float** tempfloat = NULL;
+        //if(BGT_RP){
+        tempfloat = new float* [NumBGT_RP];
+        for(unsigned uEntry=0; uEntry<NumBGT_RP; uEntry++){
+            tempfloat[uEntry] = new float [2];
+            for(unsigned uBGT=0; uBGT<2; uBGT++){
+                tempfloat[uEntry][uBGT] = BGT_RP[uEntry][uBGT];
+            }
+        }
+        delete BGT_RP;
+        MaxBGT_RP += 100000;
+        BGT_RP = new float* [MaxBGT_RP];
+        for(unsigned uEntry=0; uEntry<MaxBGT_RP; uEntry++){
+            BGT_RP[uEntry] = new float [2];
+            if(uEntry>=NumBGT_RP) continue;
+            for(unsigned uBGT=0; uBGT<2; uBGT++){
+                BGT_RP[uEntry][uBGT] = tempfloat[uEntry][uBGT];
+            }
+        }
+        //}
+        //else{BGT_RP = new float* [MaxBGT_RP];for(unsigned uEntry=0; uEntry<MaxBGT_RP; uEntry++)BGT_RP[uEntry] = new float [2];}
+    }
+    BGT_RP[NumBGT_RP][0] = bgt;
+    BGT_RP[NumBGT_RP][1] = a_cp;
+    NumBGT_RP++;
+}
+void DLM_CleverMcLevyResoTM::AddBGT_RR(const float& bgt0,const float& a_cp0,const float& bgt1,const float& a_cp1,const float& a_p0p1){
+    if(NumBGT_RR>=MaxBGT_RR){
+        float** tempfloat = NULL;
+        //if(BGT_RR){
+        tempfloat = new float* [NumBGT_RR];
+        for(unsigned uEntry=0; uEntry<NumBGT_RR; uEntry++){
+            tempfloat[uEntry] = new float [5];
+            for(unsigned uBGT=0; uBGT<5; uBGT++){
+                tempfloat[uEntry][uBGT] = BGT_RR[uEntry][uBGT];
+            }
+        }
+        delete BGT_RR;
+        MaxBGT_RR += 100000;
+        BGT_RR = new float* [MaxBGT_RR];
+        for(unsigned uEntry=0; uEntry<MaxBGT_RR; uEntry++){
+            BGT_RR[uEntry] = new float [5];
+            if(uEntry>=NumBGT_RR) continue;
+            for(unsigned uBGT=0; uBGT<5; uBGT++){
+                BGT_RR[uEntry][uBGT] = tempfloat[uEntry][uBGT];
+            }
+        }
+        //}
+        //else{BGT_RR = new float* [MaxBGT_RR];for(unsigned uEntry=0; uEntry<MaxBGT_RR; uEntry++)BGT_RR[uEntry] = new float [5];}
+    }
+    BGT_RR[NumBGT_RR][0] = bgt0;
+    BGT_RR[NumBGT_RR][1] = a_cp0;
+    BGT_RR[NumBGT_RR][2] = bgt1;
+    BGT_RR[NumBGT_RR][3] = a_cp1;
+    BGT_RR[NumBGT_RR][4] = a_p0p1;
+    NumBGT_RR++;
+}
+void DLM_CleverMcLevyResoTM::InitNumMcIter(const unsigned& numiter){
+    if(NumMcIter==numiter) return;
+    if(Histo) Histo->SetBinContentAll(1e6);
+    NumMcIter=numiter;
+}
+
+double DLM_CleverMcLevyResoTM::RootEval(double* x, double* Pars){
+    double PARS[5];
+    PARS[1] = *x;
+    PARS[3] = Pars[0];
+    PARS[4] = Pars[1];
+    return Eval(PARS);
+}
+double DLM_CleverMcLevyResoTM::Eval(double* Pars){
+    if(!Histo) {Init();}
+    if(!Histo) {return -1; printf("Possible problem in DLM_CleverMcLevyResoTM::Eval\n");}
+    double& Radius = Pars[1];
+    double& Scale = Pars[3];
+    double& Stability = Pars[4];
+    const double RSS[3] = {Radius,Scale,Stability};
+    //int RadBin = Histo->GetBin(0,Radius);
+    int ScaleBin = Histo->GetBin(1,Scale);
+    int StabilityBin = Histo->GetBin(2,Stability);
+    unsigned WhichBin[3];
+    double par_stability;
+    double par_scale;
+    WhichBin[0] = 0;
+    for(int iBin1=ScaleBin-1; iBin1<=ScaleBin+1; iBin1++){
+        if(iBin1<0||iBin1>=int(Histo->GetNbins(1))) continue;
+        WhichBin[1] = iBin1;
+        par_scale = Histo->GetBinCenter(1,iBin1);
+        for(int iBin2=StabilityBin-1; iBin2<=StabilityBin+1; iBin2++){
+            if(iBin2<0||iBin2>=int(Histo->GetNbins(2))) continue;
+            WhichBin[2] = iBin2;
+            par_stability = Histo->GetBinCenter(2,iBin2);
+            if(Histo->GetBinContent(WhichBin)>=0.99e6){
+                for(unsigned iBin0=0; iBin0<Histo->GetNbins(0); iBin0++){
+                    WhichBin[0] = iBin0;
+                    #pragma omp critical
+                    {
+                    Histo->SetBinContent(WhichBin,0);
+                    }
+                }
+                double RAD;
+
+                //this spares us a renormalization of the whole histogram
+                double DiffVal = 1./double(NumMcIter);
+                //the size of the r-bin
+                double BinSize;
+                unsigned TotBin;
+                //we use the same seed every time to make our fake function as smooth as possible
+                //between the different stability-scale bins
+                DLM_Random RanGen(11);
+                double RanVal;
+                //the beta*gamma*tau correction for each particle
+                double BGT[2];BGT[0]=0;BGT[1]=0;
+                double CosRcP0=0;
+                double CosRcP1=0;
+                double CosP0P1=0;
+
+                //#pragma omp for
+                for(unsigned uIter=0; uIter<NumMcIter; uIter++){
+                    //we simulate random 'core' distance RAD
+                    if(Type==0) {RAD = RanGen.StableR(3,par_stability,0,par_scale,0);}
+                    else if(Type==1) {RAD = RanGen.StableDiffR(3,par_stability,0,par_scale,0);}
+                    else {RAD = RanGen.StableNolan(3,par_stability,0,par_scale,0);}
+                    //after that we throw a random dice to decide IF each particle is primary or not
+
+                    bool IsReso[2];
+
+                    for(unsigned uParticle=0; uParticle<2; uParticle++){
+                        if(!ResoWeight||!ResoWeight[uParticle]) continue;
+                        RanVal = RanGen.Uniform(0,1);
+                        IsReso[uParticle] = RanVal<ResoWeight[uParticle];
+                    }
+
+                    int RanInt;
+
+                    if(IsReso[0]&&IsReso[1]){
+                        if(NumBGT_RR){
+                            RanInt = RanGen.Integer(0,NumBGT_RR);
+                            BGT[0] = BGT_RR[RanInt][0];
+                            CosRcP0 = BGT_RR[RanInt][1];
+                            BGT[1] = BGT_RR[RanInt][2];
+                            CosRcP1 = BGT_RR[RanInt][3];
+                            CosP0P1 = BGT_RR[RanInt][4];
+                        }
+                    }
+                    else if(IsReso[0]){
+                        if(NumBGT_RP){
+                            RanInt = RanGen.Integer(0,NumBGT_RP);
+                            BGT[0] = BGT_RP[RanInt][0];
+                            CosRcP0 = BGT_RP[RanInt][1];
+                            BGT[1] = 0;
+                            CosRcP1 = 0;
+                            CosP0P1 = 0;
+                        }
+                    }
+                    else if(IsReso[1]){
+                        if(NumBGT_PR){
+                            RanInt = RanGen.Integer(0,NumBGT_PR);
+                            BGT[0] = 0;
+                            CosRcP0 = 0;
+                            BGT[1] = BGT_PR[RanInt][0];
+                            CosRcP1 = BGT_PR[RanInt][1];
+                            CosP0P1 = 0;
+                        }
+                    }
+                    else{
+                        BGT[0] = 0;
+                        BGT[1] = 0;
+                        CosRcP0 = 0;
+                        CosRcP1 = 0;
+                        CosP0P1 = 0;
+                    }
+
+                    //the sign convention is such, that r_core = primary_1 - primary_0
+                    RAD = sqrt(RAD*RAD+BGT[0]*BGT[0]+BGT[1]*BGT[1]
+                               -2.*RAD*BGT[0]*CosRcP0+2.*RAD*BGT[1]*CosRcP1-2.*BGT[0]*BGT[1]*CosP0P1);
+                    WhichBin[0] = Histo->GetBin(0,RAD);
+                    TotBin = Histo->GetTotBin(WhichBin);
+                    BinSize = Histo->GetBinSize(0,WhichBin[0]);
+                    //we also normalize to the bin size of the radius, so that we get a
+                    //pdf (for these particular stability and scale) that is properly normalized
+                    if(Histo->GetBinContent(TotBin)>0.99e6){
+                        Histo->SetBinContent(TotBin,0);
+                    }
+                    //BinSize==0, happens when we are on the edges, i.e. outside of our histo
+                    //#pragma omp critical
+                    {
+                    if(BinSize!=0) Histo->Add(TotBin,DiffVal/BinSize);
+                    }
+                }
+            }
+        }
+    }
+    double RETVAL = Histo->Eval(RSS);
+    return RETVAL;
+
+}
+unsigned DLM_CleverMcLevyResoTM::GetNumPars(){
+    return 2;
+}
+void DLM_CleverMcLevyResoTM::Reset(){
+//printf("RESET\n");
+    if(Histo) {delete Histo;Histo=NULL;}
+}
+void DLM_CleverMcLevyResoTM::Init(){
+//printf(" Time to init new histo!\n");
+    Reset();
+    Histo  = new DLM_Histo<double>();
+    Histo->SetUp(3);
+    if(NumPtsRad==1) {Histo->SetUp(0,NumPtsRad,MinRad,MaxRad);}
+    else{
+        double BinWidth = (MaxRad-MinRad)/double(NumPtsRad-1);
+        Histo->SetUp(0,NumPtsRad,MinRad-BinWidth*0.5,MaxRad+BinWidth*0.5);
+    }
+    if(NumPtsScale==1) {Histo->SetUp(1,NumPtsScale,MinScale,MaxScale);}
+    else{
+        double BinWidth = (MaxScale-MinScale)/double(NumPtsScale-1);
+        Histo->SetUp(1,NumPtsScale,MinScale-BinWidth*0.5,MaxScale+BinWidth*0.5);
+    }
+    if(NumPtsStability==1) {Histo->SetUp(2,NumPtsStability,MinStability,MaxStability);}
+    else{
+        double BinWidth = (MaxStability-MinStability)/double(NumPtsStability-1);
+        Histo->SetUp(2,NumPtsStability,MinStability-BinWidth*0.5,MaxStability+BinWidth*0.5);
+    }
+    Histo->Initialize();
+    Histo->AddToAll(1e6);
+}

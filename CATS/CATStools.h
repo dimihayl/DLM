@@ -68,10 +68,14 @@ public:
     double GetX() const;
     double GetY() const;
     double GetZ() const;
+    double GetPhi() const;
+    double GetTheta() const;
     double GetE() const;
     double GetPx() const;
     double GetPy() const;
     double GetPz() const;
+    double GetPtheta() const;
+    double GetPphi() const;
     void Set(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd,
              const double& engy, const double& xMom, const double& yMom, const double& zMom);
     //rotates the Momentum vector in Phi
@@ -106,14 +110,17 @@ public:
     ~CatsParticle();
     void ReadFromOscarFile(FILE *InFile);
     void SetPid(const int& pid);
-    void SetMass(const int& mass);
+    void SetMass(const double& mass);
+    void SetWidth(const double& width);
     int GetPid() const;
     double GetMass() const;
+    double GetWidth() const;
     void operator=(const CatsParticle& other);
     void operator=(const CatsLorentzVector& other);
 protected:
     int Pid;
     double Mass;
+    double Width;
 };
 
 //contains all info about the particles in their CM system.

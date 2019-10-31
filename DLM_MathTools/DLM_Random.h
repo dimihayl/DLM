@@ -9,6 +9,8 @@ public:
     DLM_Random(const unsigned& seed);
     ~DLM_Random();
     double Uniform(const double& from=0, const double& to=1);
+    //from ---> to-1
+    int Integer(const int& from, const int& to);
     double Gauss(const double& mean, const double& sigma);
     //N.B. the sigma here is defined such that compared to a BW resonance sigma = Gamma/sqrt(2),
     //or compared to the def. in Wikipedia, sigma = sqrt(2)*gamma

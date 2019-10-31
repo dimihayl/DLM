@@ -265,6 +265,7 @@ public:
     double EvaluateTheSource(const double& Momentum, const double& Radius, const double& CosTheta) const;
     unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
+    double EvaluateCoulombPotential(const double& Radius) const;
     unsigned GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const;
     CATSelder* GetTheElder(const double& Momentum);
     //convert fm to 1/MeV
@@ -523,7 +524,7 @@ protected:
     //!THE OUTPUT SHOULD BE IN [MeV]
     CatsPotential** ShortRangePotential;
 
-    double CoulombPotential(const double& Radius);
+    double CoulombPotential(const double& Radius) const;
 
     //input vars: [0] should always be the momentum, [1] the radius and [2] 'cosθ'
     double (*AnalyticSource)(double*);

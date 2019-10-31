@@ -3090,7 +3090,7 @@ void CATS::UpdateSourceGrid(){
     SourceUpdated = true;
 }
 
-double CATS::CoulombPotential(const double& Radius){
+double CATS::CoulombPotential(const double& Radius) const{
     return Gamow?0:Q1Q2*AlphaFS/(fabs(Radius)+1e-64);
 }
 //the differential equation for the Schroedinger equation
@@ -3635,6 +3635,12 @@ double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned sho
     PotPar[usCh][usPW]->SetVariable(1,Momentum,true);
     double* Parameters =  PotPar[usCh][usPW]->GetParameters();
     return ShortRangePotential[usCh][usPW](Parameters);
+}
+double CATS::EvaluateCoulombPotential(const double& Radius) const{
+    if(Q1Q2==0){
+        return 0;
+    }
+    return CoulombPotential(Radius*FmToNu);
 }
 unsigned CATS::GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const{
     if(usCh>=NumCh){

@@ -179,6 +179,12 @@ double CatsLorentzVector::GetY() const{
 double CatsLorentzVector::GetZ() const{
     return FourSpace[3];
 }
+double CatsLorentzVector::GetTheta() const{
+    return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 && FourSpace[3] == 0.0 ? 0.0 : atan2(sqrt(FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]),FourSpace[3]);
+}
+double CatsLorentzVector::GetPhi() const{
+    return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 ? 0.0 : atan2(FourSpace[2],FourSpace[1]);
+}
 double CatsLorentzVector::GetE() const{
     return FourMomentum[0];
 }
@@ -190,6 +196,12 @@ double CatsLorentzVector::GetPy() const{
 }
 double CatsLorentzVector::GetPz() const{
     return FourMomentum[3];
+}
+double CatsLorentzVector::GetPtheta() const{
+    return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 && FourMomentum[3] == 0.0 ? 0.0 : atan2(sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]),FourMomentum[3]);
+}
+double CatsLorentzVector::GetPphi() const{
+    return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 ? 0.0 : atan2(FourMomentum[2],FourMomentum[1]);
 }
 void CatsLorentzVector::Set(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd,
              const double& engy, const double& xMom, const double& yMom, const double& zMom){
@@ -350,6 +362,7 @@ double CatsLorentzVector::GetCosScatAngle() const{
 CatsParticle::CatsParticle(){
     Pid=0;
     Mass=0;
+    Width=0;
 }
 CatsParticle::~CatsParticle(){
 
@@ -369,8 +382,11 @@ void CatsParticle::ReadFromOscarFile(FILE *InFile){
 void CatsParticle::SetPid(const int& pid){
     Pid=pid;
 }
-void CatsParticle::SetMass(const int& mass){
+void CatsParticle::SetMass(const double& mass){
     Mass=mass;
+}
+void CatsParticle::SetWidth(const double& width){
+    Width=width;
 }
 int CatsParticle::GetPid() const{
     return Pid;
@@ -378,11 +394,14 @@ int CatsParticle::GetPid() const{
 double CatsParticle::GetMass() const{
     return Mass;
 }
-
+double CatsParticle::GetWidth() const{
+    return Width;
+}
 void CatsParticle::operator=(const CatsParticle& other){
     CatsLorentzVector::operator = (other);
     Pid = other.Pid;
     Mass = other.Mass;
+    Width = other.Width;
 }
 void CatsParticle::operator=(const CatsLorentzVector& other){
     CatsLorentzVector::operator = (other);

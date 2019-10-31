@@ -29,6 +29,10 @@ double DLM_Random::Uniform(const double& from, const double& to){
     if(from>=to) return from;
     return (RealDist[0](*MT_RanGen))*(to-from)+from;
 }
+int DLM_Random::Integer(const int& from, const int& to){
+    if(from>=to) return from;
+    return floor((RealDist[0](*MT_RanGen))*(to-from)+from);
+}
 double DLM_Random::Gauss(const double& mean, const double& sigma){
     return (NormDist[0](*MT_RanGen))*sigma+mean;
 }

@@ -44,6 +44,10 @@ double TripleGaussSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],2))+Pars[6]*exp(-pow(Pars[0]/Pars[7],2));
 }
 
+double GaussExpSum(double* Pars){
+    return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],1));
+}
+
 /*
 double CustomUsmaniStefano1(const double& Radius,const int& ipart){
 
