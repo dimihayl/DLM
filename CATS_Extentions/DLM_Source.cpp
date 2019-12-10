@@ -1759,13 +1759,16 @@ void DLM_CleverMcLevyResoTM::InitNumMcIter(const unsigned& numiter){
 }
 
 double DLM_CleverMcLevyResoTM::RootEval(double* x, double* Pars){
+//printf(" B RootEval\n");
     double PARS[5];
     PARS[1] = *x;
     PARS[3] = Pars[0];
     PARS[4] = Pars[1];
+//printf(" E RootEval\n");
     return Eval(PARS);
 }
 double DLM_CleverMcLevyResoTM::Eval(double* Pars){
+//printf("Hello\n");
     if(!Histo) {Init();}
     if(!Histo) {return -1; printf("Possible problem in DLM_CleverMcLevyResoTM::Eval\n");}
     double& Radius = Pars[1];
@@ -1775,6 +1778,8 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
     //int RadBin = Histo->GetBin(0,Radius);
     int ScaleBin = Histo->GetBin(1,Scale);
     int StabilityBin = Histo->GetBin(2,Stability);
+    if(ScaleBin<0||ScaleBin>=Histo->GetNbins()) {printf("\033[1;33mWARNING!\033[0m A bad scaling parameter passed into DLM_CleverMcLevyResoTM::Eval\n"); return 0;}
+    if(StabilityBin<0||StabilityBin>=Histo->GetNbins()) {printf("\033[1;33mWARNING!\033[0m A bad stability parameter passed into DLM_CleverMcLevyResoTM::Eval\n"); return 0;}
     unsigned WhichBin[3];
     double par_stability;
     double par_scale;
@@ -1821,6 +1826,8 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
                     //after that we throw a random dice to decide IF each particle is primary or not
 
                     bool IsReso[2];
+                    IsReso[0] = false;
+                    IsReso[1] = false;
 
                     for(unsigned uParticle=0; uParticle<2; uParticle++){
                         if(!ResoWeight||!ResoWeight[uParticle]) continue;
@@ -1896,11 +1903,9 @@ unsigned DLM_CleverMcLevyResoTM::GetNumPars(){
     return 2;
 }
 void DLM_CleverMcLevyResoTM::Reset(){
-//printf("RESET\n");
     if(Histo) {delete Histo;Histo=NULL;}
 }
 void DLM_CleverMcLevyResoTM::Init(){
-//printf(" Time to init new histo!\n");
     Reset();
     Histo  = new DLM_Histo<double>();
     Histo->SetUp(3);

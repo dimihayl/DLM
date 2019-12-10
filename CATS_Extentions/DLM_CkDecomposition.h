@@ -96,6 +96,8 @@ public:
     DLM_Histo<double>* GetChildContribution(const char* name, const bool& WithLambda=false);
     DLM_Ck* GetCk();
 
+    const TH2F* GetResolutionMatrix();
+
     void GetName(char* name);
 
     bool Status();

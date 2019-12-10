@@ -4,8 +4,11 @@
 #include "TH1F.h"
 #include "TF1.h"
 #include "TGraph.h"
+#include "TGraphErrors.h"
 #include "TMath.h"
 #include "TSpline.h"
+#include "TSVDUnfold.h"
+#include "TRandom3.h"
 
 //for test only
 #include "TFile.h"
@@ -929,6 +932,157 @@ const TH1F* DLM_Fitter1::GetGlobalHisto() const{
     return HistoGlobal;
 }
 
+//typical values for the Regulator: around 10
+//note that to get a better handle on the uncertainties, the unfolding is repeated 100 times for randomly generated Ck
+TGraphErrors* DLM_Fitter1::GetUnfoldedCk(const unsigned& WhichSyst, const unsigned& Regulator, const TString& SaveIntoFile) const{
+    if(WhichSyst>=MaxNumSyst) return NULL;
+    int unf_NumBins = HistoToFit[WhichSyst]->GetNbinsX();
+    double unf_kmin = HistoToFit[WhichSyst]->GetBinLowEdge(1);
+    double unf_kmax = HistoToFit[WhichSyst]->GetXaxis()->GetBinUpEdge(HistoToFit[WhichSyst]->GetNbinsX());
+    TH1D* hData = new TH1D("DLM_Fitter1::hData","DLM_Fitter1::hData",unf_NumBins,unf_kmin,unf_kmax);
+    TH2D* hCovar = new TH2D("DLM_Fitter1::hCovar","DLM_Fitter1::hCovar",
+                            unf_NumBins,unf_kmin,unf_kmax,unf_NumBins,unf_kmin,unf_kmax);
+    TH1D* hMcReco = new TH1D("DLM_Fitter1::hMcReco","DLM_Fitter1::hMcReco",unf_NumBins,unf_kmin,unf_kmax);
+    TH1D* hMcTrue = new TH1D("DLM_Fitter1::hMcTrue","DLM_Fitter1::hMcTrue",unf_NumBins,unf_kmin,unf_kmax);
+    TH2D* hDetResponce = new TH2D("DLM_Fitter1::hDetResponce","DLM_Fitter1::hDetResponce",
+                            unf_NumBins,unf_kmin,unf_kmax,unf_NumBins,unf_kmin,unf_kmax);
+
+    //the y-axis will be the possible values of C(k)
+    TH2F* hRESULT = new TH2F("hRESULT","hRESULT",unf_NumBins,unf_kmin,unf_kmax,1000,-2,18);
+    TGraphErrors* grUnfoldedData = new TGraphErrors();
+    grUnfoldedData->SetName("grUnfoldedData");
+    grUnfoldedData->Set(unf_NumBins);
+
+    const unsigned NumIter = 1;
+    TRandom3 RANGEN(11);
+
+    TH1D* ddist;
+    TH1D* svdist;
+    TH2D* ustatcov;
+    TH2D* uadetcov;
+    TH2D* utaucov;
+    TH2D* uinvcov;
+printf("Hello\n");
+usleep(1000e3);
+    for(unsigned uIter=0; uIter<NumIter; uIter++){
+        for(int uBin=0; uBin<unf_NumBins; uBin++){
+            if(uIter==0){
+                hData->SetBinContent(uBin+1,HistoToFit[WhichSyst]->GetBinContent(uBin+1));
+                hData->SetBinError(uBin+1,HistoToFit[WhichSyst]->GetBinError(uBin+1));
+
+                hCovar->SetBinContent(uBin+1,uBin+1,HistoToFit[WhichSyst]->GetBinError(uBin+1)*HistoToFit[WhichSyst]->GetBinError(uBin+1));
+
+                hMcTrue->SetBinContent(uBin+1,SystemToFit[WhichSyst]->EvalMain(hData->GetBinCenter(uBin+1)));
+                hMcReco->SetBinContent(uBin+1,SystemToFit[WhichSyst]->EvalSmearedMain(hData->GetBinCenter(uBin+1)));
+
+                //hMcTrue->SetBinContent(uBin+1,1);
+                //hMcReco->SetBinContent(uBin+1,1);
+
+                const TH2F* hResoM = SystemToFit[WhichSyst]->GetResolutionMatrix();
+                for(int uBin2=0; uBin2<unf_NumBins; uBin2++){
+                    if(hResoM&&hResoM->GetXaxis()->GetNbins()>uBin&&hResoM->GetXaxis()->GetNbins()>uBin2){
+                        hDetResponce->SetBinContent(uBin+1,uBin2+1,hResoM->GetBinContent(uBin+1,uBin2+1));
+                    }
+                    else{
+                        hDetResponce->SetBinContent(uBin+1,uBin2+1,uBin==uBin2);
+                        //printf("Sanity check\n");
+                    }
+                }
+            }
+            else{
+                hData->SetBinContent(uBin+1,RANGEN.Gaus(HistoToFit[WhichSyst]->GetBinContent(uBin+1),HistoToFit[WhichSyst]->GetBinError(uBin+1)));
+            }
+        }
+
+        TSVDUnfold *tsvdunf = new TSVDUnfold( hData, hCovar, hMcReco, hMcTrue, hDetResponce );
+        tsvdunf->SetNormalize( kFALSE ); // no normalisation here
+        // Perform the unfolding with regularisation parameter Regulator
+        // - the larger Regulator, the finer grained the unfolding, but the more fluctuations occur
+        // - the smaller Regulator, the stronger is the regularisation and the bias
+        TH1D* unfres = tsvdunf->Unfold( Regulator );
+        if(uIter==0){
+            // Get the distribution of the d to cross check the regularization
+            // - choose Regulator to be the point where |d_i| stop being statistically significantly >>1
+            ddist = (TH1D*)tsvdunf->GetD()->Clone("tsvdunf_ddist");
+            // Get the distribution of the singular values
+            svdist = (TH1D*)tsvdunf->GetSV()->Clone("tsvdunf_svdist");
+            // Compute the error matrix for the unfolded spectrum using toy MC
+            // using the measured covariance matrix as input to generate the toys
+            // 100 toys should usually be enough
+            // The same method can be used for different covariance matrices separately.
+            ustatcov = (TH2D*)tsvdunf->GetUnfoldCovMatrix( hCovar, 100 )->Clone("tsvdunf_ustatcov");
+            // Now compute the error matrix on the unfolded distribution originating
+            // from the finite detector matrix statistics
+            uadetcov = (TH2D*)tsvdunf->GetAdetCovMatrix( 100 )->Clone("tsvdunf_uadetcov");
+            // Sum up the two (they are uncorrelated)
+            ustatcov->Add( uadetcov );
+            //Get the computed regularized covariance matrix (always corresponding to total uncertainty passed in constructor) and add uncertainties from finite MC statistics.
+            utaucov = (TH2D*)tsvdunf->GetXtau()->Clone("tsvdunf_utaucov");
+            utaucov->Add( uadetcov );
+            //Get the computed inverse of the covariance matrix
+            uinvcov = (TH2D*)tsvdunf->GetXinv()->Clone("tsvdunf_uinvcov");
+        }
+
+        unfres->Sumw2();
+        unfres->Scale(hData->Integral()/unfres->Integral());
+
+        for(int uBin=0; uBin<unf_NumBins; uBin++){
+            if(uIter==0){
+                grUnfoldedData->SetPoint(uBin,unfres->GetBinCenter(uBin+1),unfres->GetBinContent(uBin+1));
+                grUnfoldedData->SetPointError(uBin,0,unfres->GetBinError(uBin+1));
+            }
+            hRESULT->Fill(unfres->GetBinCenter(uBin+1),unfres->GetBinContent(uBin+1));
+        }
+        delete tsvdunf;
+
+    }
+printf("Hello again\n");
+usleep(1000e3);
+    for(int uBin=0; uBin<unf_NumBins; uBin++){
+        //grUnfoldedData->SetPointError(uBin,0,hRESULT->ProjectionY("hRESULT_ProjectionY", uBin+1,uBin+1)->GetStdDev());
+    }
+printf("And again %s\n",SaveIntoFile.Data());
+usleep(1000e3);
+
+
+
+
+
+    TFile* fOutput = NULL;
+    if(SaveIntoFile!=""){
+        fOutput = new TFile(SaveIntoFile,"recreate");
+        hData->Write();
+        hCovar->Write();
+        hMcReco->Write();
+        hMcTrue->Write();
+        hDetResponce->Write();
+        hRESULT->Write();
+        grUnfoldedData->Write();
+        ddist->Write();
+        svdist->Write();
+        ustatcov->Write();
+        utaucov->Write();
+        uinvcov->Write();
+    }
+printf("Signing out\n");
+usleep(1000e3);
+    delete hData;
+    delete hCovar;
+    delete hMcReco;
+    delete hMcTrue;
+    delete hDetResponce;
+    delete hRESULT;
+    delete ddist;
+    delete svdist;
+    delete ustatcov;
+    delete utaucov;
+    delete uinvcov;
+
+    if(fOutput) {delete fOutput; fOutput=NULL;}
+
+    return grUnfoldedData;
+}
+
 void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
 
     ShowFitInfo = show_fit_info;
@@ -1424,12 +1578,26 @@ double DLM_Fitter1::EvalGlobal(double* xVal, double* Pars){
 //if(NUM_FUN_CALLS%10==0){
 //printf("FUNCTION CALL %u\n",NUM_FUN_CALLS);
 //}
-
+//double L1,L2,PV;
+//FitGlobal->GetParLimits(p_sor0,L1,L2);
+//PV=FitGlobal->GetParameter(p_sor0);
+//printf(" __xVal=%f\n",*xVal);
+//printf(" B__Pars[p_sor0]=%f\n",Pars[p_sor0]);
+//printf(" B__FitGlobal=%f (%f, %f)\n",PV,L1,L2);
     unsigned GlobalBin = HistoGlobal->FindBin(*xVal)-1;
     double Momentum = GlobalToMomentum[GlobalBin];
     unsigned WhichSyst=0;
 //printf("Pars0[p_sor0/1/2] = %.2f/%.2f/%.2f\n",Pars[p_sor0],Pars[p_sor1],Pars[p_sor2]);
 //printf("Pars1[p_sor0/1/2] = %.2f/%.2f/%.2f\n",Pars[NumPar+p_sor0],Pars[NumPar+p_sor1],Pars[NumPar+p_sor2]);
+
+//for(unsigned uPar=0; uPar<NumPar; uPar++){
+//    PV=FitGlobal->GetParameter(uPar);
+//    FitGlobal->GetParLimits(uPar,L1,L2);
+//    printf(" __Pars[%u]=%f\n",uPar,Pars[uPar]);
+//    printf(" __FitGlobal=%f (%f, %f)\n\n",PV,L1,L2);
+//}
+//printf(" __Pars[p_sor0]=%f\n",Pars[p_sor0]);
+//printf(" __FitGlobal=%f (%f, %f)\n",PV,L1,L2);
 
     for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
         if(!HistoToFit[uSyst]) continue;
@@ -1600,6 +1768,8 @@ if(uPar>=NumPar) printf("AAA h\n");
         //printf("SystemToFit[WhichSyst]->EvalMain(%.3f)=%.3f\n", Momentum, SystemToFit[WhichSyst]->EvalMain(Momentum));
     }
 
+//printf(" E__Pars[p_sor0]=%f\n",Pars[p_sor0]);
+//printf(" E__FitGlobal=%f (%f, %f)\n",PV,L1,L2);
     return BlVal*CkVal+AddBlVal;
 }
 

@@ -14,6 +14,7 @@
 
 class DLM_CkDecomposition;
 class TGraph;
+class TGraphErrors;
 class TH1F;
 class TF1;
 
@@ -103,6 +104,12 @@ public:
     TF1* GetBaselineFit(const unsigned& WhichSyst) const;
     const TH1F* GetGlobalHisto() const;
 
+    TGraphErrors* GetUnfoldedCk(const unsigned& WhichSyst, const unsigned& Regulator, const TString& SaveIntoFile) const;
+
+    //TGraph* GetUnfoldedPrimaryCk();
+    //TGraph* GetUnfoldedFit();
+    //TGraph* GetUnfoldedPrimaryFit();
+    //TGraph* GetUnfoldedBaselineFit();
 
     //set up the global histogram and perform the fit
     void GoBabyGo(const bool& show_fit_info=false);

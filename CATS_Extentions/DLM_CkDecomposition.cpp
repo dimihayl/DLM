@@ -448,6 +448,10 @@ DLM_Ck* DLM_CkDecomposition::GetCk(){
     return CkMain;
 }
 
+const TH2F* DLM_CkDecomposition::GetResolutionMatrix(){
+    return RM_MomResolution->hSigmaMatrix;
+}
+
 void DLM_CkDecomposition::GetName(char* name){
     if(!name) return;
     strcpy(name,Name);

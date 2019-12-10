@@ -27,6 +27,9 @@ double GaussExpSum(double* Pars);
 
 double RepulsiveCore(double* Pars);
 
+void SetUpNorfolk(const char* InputFolder);
+double pp_Norfolk(double* Pars);
+
 double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars);

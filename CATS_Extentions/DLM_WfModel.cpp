@@ -12,10 +12,11 @@ const double Pi(3.141592653589793);
 
 //TYPE = 00 is LO
 //TYPE = 01 is LO+Coupling
+//TYPE = 03 is LO+Coupling, s+d waves
 //TYPE = 10 is NLO (s-wave)
 //TYPE = 11 is NLO+Coupling
 //TYPE = 12 is NLO (s and p-waves)
-//TYPE
+//TYPE = 13 is NLO+Coupling, s+d waves
 //for TYPE==01/11 we make it so, that Kitty has 4 channels
 //ch0 and ch1 are the LN->LN 1S0 and 3S1 (as per usual)
 //ch2 and ch3 are the SN->LN in the S-wave (1S0 and 3S1), however we ONLY add to the total correlation function the s-wave
@@ -55,6 +56,24 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
         NumChannels = 4;
         NumPwPerCh = 1;
         NumFiles = 2;
+        //NumMomBins = 43;
+    }
+    //the channels here are:
+    //[0] is 1S0 LN->LN (S wave)
+    //[1] is 1S0 SN->LN (S wave)
+    //[2] is LN->LN (S/D wave)
+    //[3] is SN->LN (S/D wave)
+    //[4] is LN->LN (D/S->S/D wave)
+    //[5] is SN->LN (D/S->S/D wave)
+    //the X/Y for the 2-5 means that in the s-wave we have the X-state, in d-wave the Y-state
+    //(the channels 2-5 have both s and d waves, ch 0,1 have only s wave)
+    else if(TYPE==3){
+        RadiusStepSize = 0.02;
+        RadiusMinimum = 0.02;
+        RadiusMaximum = 10.;
+        NumChannels = 6;
+        NumPwPerCh = 3;
+        NumFiles = 3;
         //NumMomBins = 43;
     }
 //! p-waves not yet implemented!

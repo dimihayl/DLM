@@ -457,10 +457,6 @@ public:
     bool DivideHisto(const DLM_Histo& other, const bool witherror=true){
         if(!Initialized) {InitWarning(); return false;}
         if(!SameStructure(other)||!Initialized) return false;
-        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
-            if(!other.BinValue[uBin]) BinValue[uBin] = 1e128;
-            else BinValue[uBin] /= other.BinValue[uBin];
-        }
         if(witherror)
             for(unsigned uBin=0; uBin<TotNumBins; uBin++){
                 if(!other.BinValue[uBin]) BinError[uBin] = 1e128;
@@ -469,6 +465,10 @@ public:
                                                     pow(BinError[uBin]*other.BinValue[uBin],2.)+
                                                     pow(BinValue[uBin]*other.BinError[uBin],2.));
             }
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            if(!other.BinValue[uBin]) BinValue[uBin] = 1e128;
+            else BinValue[uBin] /= other.BinValue[uBin];
+        }
         return true;
     }
     void AddToAll(const Type& value, const Type& error=0){

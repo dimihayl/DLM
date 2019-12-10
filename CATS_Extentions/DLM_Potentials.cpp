@@ -1,6 +1,7 @@
 
 #include "DLM_Potentials.h"
 #include "DLM_StefanoPotentials.h"
+#include "DLM_Histo.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +12,9 @@
 //int DlmPot=0;
 //int DlmPotFlag=0;
 DLM_StefanoPotentials*** fV18pot=NULL;
+//[lpot][lemp][slj]
+DLM_Histo<float>*** fNorfolkPot_pp=NULL;
+
 unsigned NumThreads_DLMPOT;
 
 void CleanUpV18Pot(){
@@ -1020,6 +1024,202 @@ double UsmaniPotentialOli(const int& Spin, double* Radius)
 //[4] is the slope
 double RepulsiveCore(double* Pars){
     return Pars[2]/(1+exp((Pars[0]-Pars[3])/Pars[4]));
+}
+
+void SetUpNorfolk(const char* InputFolder){
+    FILE *InFile;
+    const unsigned num_lpot = 4;
+    const unsigned num_lemp = 3;
+    const unsigned num_slj = 5;
+
+    char* cdummy = new char [256];
+    float fRadius;
+    float fPotential;
+
+    if(fNorfolkPot_pp){
+        for(unsigned upot=0; upot<num_lpot; upot++){
+            for(unsigned uemp=0; uemp<num_lemp; uemp++){
+                delete [] fNorfolkPot_pp[upot][uemp];
+            }
+            delete [] fNorfolkPot_pp[upot];
+        }
+        delete [] fNorfolkPot_pp;
+        fNorfolkPot_pp = NULL;
+    }
+//printf("A\n");
+    fNorfolkPot_pp = new DLM_Histo<float>** [num_lpot];
+    char**** InputFileName = new char*** [num_lpot];
+//printf("B\n");
+    for(unsigned upot=0; upot<num_lpot; upot++){
+//printf("upot=%u\n",upot);
+        fNorfolkPot_pp[upot] = new DLM_Histo<float>* [num_lpot];
+        InputFileName[upot] = new char** [num_lemp];
+        char spot[16];
+        switch(upot){
+            case 0 : strcpy(spot,"105"); break;
+            case 1 : strcpy(spot,"106"); break;
+            case 2 : strcpy(spot,"109"); break;
+            case 3 : strcpy(spot,"110"); break;
+            default : break;
+        }
+        for(unsigned uemp=0; uemp<num_lemp; uemp++){
+//printf(" uemp=%u\n",uemp);
+            fNorfolkPot_pp[upot][uemp] = new DLM_Histo<float> [num_slj];
+            InputFileName[upot][uemp] = new char* [num_slj];
+            char semp[16];
+            switch(uemp){
+                case 0 : strcpy(semp,"Strong"); break;
+                case 1 : strcpy(semp,"CFF"); break;
+                case 2 : strcpy(semp,"CFull"); break;
+                default : break;
+            }
+            for(unsigned uslj=0; uslj<num_slj; uslj++){
+//printf("  uslj=%u\n",uslj);
+                InputFileName[upot][uemp][uslj] = new char [512];
+                char sslj[16];
+                switch(uslj){
+                    case 0 : strcpy(sslj,"1S0"); break;
+                    case 1 : strcpy(sslj,"1D2"); break;
+                    case 2 : strcpy(sslj,"3P0"); break;
+                    case 3 : strcpy(sslj,"3P1"); break;
+                    case 4 : strcpy(sslj,"3P2"); break;
+                    default : break;
+                }
+                strcpy(InputFileName[upot][uemp][uslj],InputFolder);
+                strcat(InputFileName[upot][uemp][uslj],"/norfolk");
+                strcat(InputFileName[upot][uemp][uslj],spot);
+                strcat(InputFileName[upot][uemp][uslj],"_");
+                strcat(InputFileName[upot][uemp][uslj],semp);
+                strcat(InputFileName[upot][uemp][uslj],"_");
+                strcat(InputFileName[upot][uemp][uslj],sslj);
+                strcat(InputFileName[upot][uemp][uslj],".txt");
+
+                InFile = fopen(InputFileName[upot][uemp][uslj], "r");
+//printf("file: %s\n",InputFileName[upot][uemp][uslj]);
+                if(!InFile){
+                    printf("          \033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[upot][uemp][uslj]);
+                    fNorfolkPot_pp[upot][uemp][uslj].SetUp(1);
+                    fNorfolkPot_pp[upot][uemp][uslj].SetUp(0,10,0,100);
+                    fNorfolkPot_pp[upot][uemp][uslj].Initialize();
+                    continue;
+                }
+                unsigned NumLines=0;
+                while(!feof(InFile)){
+                    if(!fgets(cdummy, 255, InFile)) continue;
+                    NumLines++;
+                }
+                fclose(InFile);
+
+                if(NumLines<10){
+                    printf("\033[1;33mWARNING!\033[0m Possible bad input-file, error when reading from %s!\n",InputFileName[upot][uemp][uslj]);
+                    fNorfolkPot_pp[upot][uemp][uslj].SetUp(1);
+                    fNorfolkPot_pp[upot][uemp][uslj].SetUp(0,10,0,100);
+                    fNorfolkPot_pp[upot][uemp][uslj].Initialize();
+                    continue;
+                }
+
+                unsigned NumEntries=NumLines-1;
+                double* RadBinCenter = new double [NumEntries];
+                double* RadBins = new double [NumEntries+1];
+                float* PotVal = new float [NumEntries];
+
+                InFile = fopen(InputFileName[upot][uemp][uslj], "r");
+
+                if(!fgets(cdummy, 255, InFile)){
+                    printf("\033[1;33mWARNING!\033[0m Possible BUG in SetUpNorfolk!\n");
+                }
+
+                unsigned WhichEntry=0;
+                RadBins[0] = 0;
+                while(!feof(InFile)){
+                    if(!fgets(cdummy, 255, InFile)) continue;
+                    sscanf(cdummy, "%f %f",&fRadius,&fPotential);
+
+//printf(" V(%f): %f\n",fRadius,fPotential);
+//usleep(125e3);
+                    RadBinCenter[WhichEntry] = fRadius;
+                    PotVal[WhichEntry] = fPotential;
+                    if(WhichEntry>=1){
+                        RadBins[WhichEntry] = (RadBinCenter[WhichEntry]+RadBinCenter[WhichEntry-1])*0.5;
+                    }
+                    WhichEntry++;
+                }
+                fclose(InFile);
+                RadBins[NumEntries] = 2.*RadBinCenter[NumEntries-1]-RadBins[NumEntries-1];
+
+                fNorfolkPot_pp[upot][uemp][uslj].SetUp(1);
+                fNorfolkPot_pp[upot][uemp][uslj].SetUp(0,NumEntries,RadBins,RadBinCenter);
+                fNorfolkPot_pp[upot][uemp][uslj].Initialize();
+                for(unsigned uRad=0; uRad<NumEntries; uRad++){
+                    fNorfolkPot_pp[upot][uemp][uslj].SetBinContent(uRad,PotVal[uRad]);
+                    //printf("uRad = %u; r=%f; V = %e\n",uRad,fNorfolkPot_pp[upot][uemp][uslj].GetBinCenter(0,uRad),PotVal[uRad]);
+                }
+
+                delete [] RadBinCenter;
+                delete [] RadBins;
+                delete [] PotVal;
+            }
+        }
+    }
+
+
+
+
+    //Clean_SetUpNorfolk:
+    for(unsigned upot=0; upot<num_lpot; upot++){
+        for(unsigned uemp=0; uemp<num_lemp; uemp++){
+            for(unsigned uslj=0; uslj<num_slj; uslj++){
+                delete [] InputFileName[upot][uemp][uslj];
+            }
+            delete [] InputFileName[upot][uemp];
+        }
+        delete [] InputFileName[upot];
+    }
+    delete [] InputFileName;
+    delete [] cdummy;
+}
+
+//[0] radius, [1] momentum
+//[2] lpot [3] lemp [4] slj
+// for the full nv2s pick lpot between the different models:  lpot=106   RL = 1.2 fm R_S=0.8 fm (up to 125 MeV)
+//                             	                              lpot=105   RL = 1.0 fm R_S=0.7 fm (up to 125 MeV)
+//                                                            lpot=110   RL = 1.2 fm R_S=0.8 fm (up to 200 MeV)
+//                                                            lpot=109   RL = 1.0 fm R_S=0.7 fm (up to 200 MeV)
+//lemp:  -1 stong only
+//      100 added the effect of the Coulomb strong factor (but WITHOUT the base Coulomb)
+//      101 added higher order Coulomb effects (but WITHOUT the base Coulomb)
+//slj: 100 = 1S0
+//     122 = 1D2
+//     310 = 3P0
+//     311 = 3P1
+//     312 = 3P2
+double pp_Norfolk(double* Pars){
+    unsigned upot,uemp,uslj;
+//printf("0 : %f\n",Pars[0]);
+//printf("1 : %f\n",Pars[1]);
+//printf("2 : %f\n",Pars[2]);
+//printf("3 : %f\n",Pars[3]);
+//printf("4 : %f\n",Pars[4]);
+    if(Pars[2]==105) upot=0;
+    else if(Pars[2]==106) upot=1;
+    else if(Pars[2]==109) upot=2;
+    else if(Pars[2]==110) upot=3;
+    else return 0;
+
+    if(Pars[3]==-1) uemp=0;
+    else if(Pars[3]==100) uemp=1;
+    else if(Pars[3]==101) uemp=2;
+    else return 0;
+
+    if(Pars[4]==100) uslj=0;
+    else if(Pars[4]==122) uslj=1;
+    else if(Pars[4]==310) uslj=2;
+    else if(Pars[4]==311) uslj=3;
+    else if(Pars[4]==312) uslj=4;
+    else return 0;
+
+    if(!fNorfolkPot_pp) return 0;
+    return fNorfolkPot_pp[upot][uemp][uslj].Eval(&Pars[0]);
 }
 
 double ppDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
