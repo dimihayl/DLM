@@ -454,9 +454,10 @@ public:
                                         pow(BinValue[uBin]*other.BinError[uBin],2.));
         return true;
     }
+    /*
     bool DivideHisto(const DLM_Histo& other, const bool witherror=true){
         if(!Initialized) {InitWarning(); return false;}
-        if(!SameStructure(other)||!Initialized) return false;
+        if(!SameStructure(other)||!other.Initialized) return false;
         if(witherror)
             for(unsigned uBin=0; uBin<TotNumBins; uBin++){
                 if(!other.BinValue[uBin]) BinError[uBin] = 1e128;
@@ -469,6 +470,36 @@ public:
             if(!other.BinValue[uBin]) BinValue[uBin] = 1e128;
             else BinValue[uBin] /= other.BinValue[uBin];
         }
+        return true;
+    }
+    */
+    bool DivideHisto(const DLM_Histo& other, const bool witherror=true){
+        if(!Initialized) {InitWarning(); return false;}
+        if(!other.Initialized) {InitWarning(); return false;}
+        unsigned* BinId = new unsigned [Dim];
+        double* xVal = new double [Dim];
+        if(witherror)
+            for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+                GetBinCoordinates(uBin,BinId);
+                for(unsigned short sDim=0; sDim<Dim; sDim++){
+                    xVal[sDim] = BinCenter[sDim][BinId[sDim]];
+                }
+                if(!other.Eval(xVal)) BinError[uBin] = 1e128;
+                else BinError[uBin] = pow(other.Eval(xVal),-2.)*
+                                            sqrt(   pow(BinError[uBin]*other.Eval(xVal,true),2.)+
+                                                    pow(BinError[uBin]*other.Eval(xVal),2.)+
+                                                    pow(BinValue[uBin]*other.Eval(xVal,true),2.));
+            }
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            GetBinCoordinates(uBin,BinId);
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                xVal[sDim] = BinCenter[sDim][BinId[sDim]];
+            }
+            if(!other.Eval(xVal)) BinValue[uBin] = 1e128;
+            else BinValue[uBin] /= other.Eval(xVal);
+        }
+        delete [] BinId;
+        delete [] xVal;
         return true;
     }
     void AddToAll(const Type& value, const Type& error=0){

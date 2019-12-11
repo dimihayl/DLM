@@ -38,6 +38,7 @@ public:
     double** ResponseMatrix;
     int** SparseResponse;
 
+    enum enumSparse { xAxisFirst, xAxisLast, yAxisFirst, yAxisLast };
 private:
 
     void DefaultConstructor();
@@ -61,7 +62,7 @@ private:
 
     void NormalizeMatrix(const int& WhichMatr);
 
-    enum enumSparse { xAxisFirst, xAxisLast, yAxisFirst, yAxisLast };
+
     enum WhichMatrix { mSigma, mResidual, mResponse };
 };
 

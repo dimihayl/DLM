@@ -531,8 +531,8 @@ void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_Re
     else{
         for(unsigned uBinSmear=0; uBinSmear<CkToSmear->GetNbins(); uBinSmear++){
             CkSmeared->SetBinContent(uBinSmear, 0);
-            int FirstBin = SmearMatrix->SparseResponse[uBinSmear][yAxisFirst];
-            int LastBin = SmearMatrix->SparseResponse[uBinSmear][yAxisLast];
+            int FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::yAxisFirst];
+            int LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::yAxisLast];
             if(LastBin>CkToSmear->GetNbins()) LastBin = CkToSmear->GetNbins();
             for(unsigned uBinTrue=FirstBin; uBinTrue<LastBin; uBinTrue++){
                 //as the response matrix is normalized to the size of the bin, during the integration we multiply for it
