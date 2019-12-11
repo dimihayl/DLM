@@ -962,8 +962,8 @@ TGraphErrors* DLM_Fitter1::GetUnfoldedCk(const unsigned& WhichSyst, const unsign
     TH2D* uadetcov;
     TH2D* utaucov;
     TH2D* uinvcov;
-printf("Hello\n");
-usleep(1000e3);
+//printf("Hello\n");
+//usleep(1000e3);
     for(unsigned uIter=0; uIter<NumIter; uIter++){
         for(int uBin=0; uBin<unf_NumBins; uBin++){
             if(uIter==0){
@@ -1036,13 +1036,13 @@ usleep(1000e3);
         delete tsvdunf;
 
     }
-printf("Hello again\n");
-usleep(1000e3);
+//printf("Hello again\n");
+//usleep(1000e3);
     for(int uBin=0; uBin<unf_NumBins; uBin++){
         //grUnfoldedData->SetPointError(uBin,0,hRESULT->ProjectionY("hRESULT_ProjectionY", uBin+1,uBin+1)->GetStdDev());
     }
-printf("And again %s\n",SaveIntoFile.Data());
-usleep(1000e3);
+//printf("And again %s\n",SaveIntoFile.Data());
+//usleep(1000e3);
 
 
 
@@ -1064,8 +1064,8 @@ usleep(1000e3);
         utaucov->Write();
         uinvcov->Write();
     }
-printf("Signing out\n");
-usleep(1000e3);
+//printf("Signing out\n");
+//usleep(1000e3);
     delete hData;
     delete hCovar;
     delete hMcReco;
