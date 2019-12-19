@@ -460,7 +460,7 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
             }
         }
     }
-//if(Momentum>400&&Momentum<405)
+//if(Momentum>130&&Momentum<135)
 //printf("MuPar=%.4f; VAL_CkSmearedMainFeed=%.4f; VAL_CkSmearedMainFake=%.4f\n",MuPar,VAL_CkSmearedMainFeed,VAL_CkSmearedMainFake);
     return MuPar*VAL_CkSmearedMainFeed+VAL_CkSmearedMainFake;
 }
@@ -596,6 +596,7 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
                 for(unsigned uBin=0; uBin<CkMainFeed->GetNbins(); uBin++){
                     Momentum = CkMainFeed->GetBinCenter(0,uBin);
                     CkMainFeed->Add(uBin, CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]/MuPar);
+//CkMainFeed->Add(uBin, LambdaPar[uChild]/MuPar);
                 }
             }
             else{
@@ -606,7 +607,7 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
     }
     DecompositionStatus = true;
 }
-
+/*
 void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
     if(!SmearMatrix){
         CkSmeared[0] = CkToSmear[0];
@@ -617,7 +618,7 @@ void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_Re
             int FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::yAxisFirst];
             int LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::yAxisLast];
             if(LastBin>CkToSmear->GetNbins()) LastBin = CkToSmear->GetNbins();
-            for(unsigned uBinTrue=FirstBin; uBinTrue<LastBin; uBinTrue++){
+            for(unsigned uBinTrue=FirstBin; uBinTrue<=LastBin; uBinTrue++){
                 //as the response matrix is normalized to the size of the bin, during the integration we multiply for it
                 CkSmeared->Add(uBinSmear,   SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue]*CkToSmear->GetBinContent(uBinTrue)*
                                             CkToSmear->GetBinSize(uBinTrue)*CkSmeared->GetBinSize(uBinSmear));
@@ -625,7 +626,23 @@ void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_Re
         }
     }
 }
+*/
 
+void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
+    if(!SmearMatrix){
+        CkSmeared[0] = CkToSmear[0];
+    }
+    else{
+        for(unsigned uBinSmear=0; uBinSmear<CkToSmear->GetNbins(); uBinSmear++){
+            CkSmeared->SetBinContent(uBinSmear, 0);
+            for(unsigned uBinTrue=0; uBinTrue<CkToSmear->GetNbins(); uBinTrue++){
+                //as the response matrix is normalized to the size of the bin, during the integration we multiply for it
+                CkSmeared->Add(uBinSmear,   SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue]*CkToSmear->GetBinContent(uBinTrue)*
+                                            CkToSmear->GetBinSize(uBinTrue)*CkSmeared->GetBinSize(uBinSmear));
+            }
+        }
+    }
+}
 
 //check if any of the children has the same name
 bool DLM_CkDecomposition::UniqueName(const char* name){
