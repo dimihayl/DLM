@@ -33,6 +33,8 @@ public:
     //If kc<maximum momentum C(k>maximum momentum) = C(maximum momentum)
     //If kc<0, than outside the maximum momentum C(k) = |kc|
     void SetCutOff(const double& Momentum=1e6, const double& kc=-1);
+    double GetCutOff() const;
+    double GetCutOff_kc() const;
 
     bool Status();
     void Update(const bool& FORCE=false);

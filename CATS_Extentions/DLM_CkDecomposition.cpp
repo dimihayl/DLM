@@ -151,9 +151,15 @@ unsigned DLM_Ck::GetNumPotPar(){
     return NumPotPar;
 }
 void DLM_Ck::SetCutOff(const double& Momentum, const double& kc){
-    if(Momentum<GetBinUpEdge(0,NumBins[0])) CutOff = Momentum;
-    else CutOff = GetBinUpEdge(0,NumBins[0]);
+    if(Momentum<GetBinUpEdge(0,NumBins[0]-1)) CutOff = Momentum;
+    else CutOff = GetBinUpEdge(0,NumBins[0]-1);
     CutOff_kc = kc;
+}
+double DLM_Ck::GetCutOff() const{
+    return CutOff;
+}
+double DLM_Ck::GetCutOff_kc() const{
+    return CutOff_kc;
 }
 
 void DLM_Ck::SetPotPar(const unsigned& WhichPar, const double& Value){
@@ -186,6 +192,7 @@ bool DLM_Ck::Status(){
 
 //maybe a bug, if I change Transport to Ana -> no update unless I force it
 void DLM_Ck::Update(const bool& FORCE){
+//printf("SourceUpToDate = %i; PotUpToDate=%i; FORCE=%i\n",SourceUpToDate,PotUpToDate,FORCE);
     if(SourceUpToDate && PotUpToDate && !FORCE) return;
     if(CkFunction){
         for(unsigned uBin=0; uBin<NumBins[0]; uBin++){
@@ -200,19 +207,19 @@ void DLM_Ck::Update(const bool& FORCE){
         Kitty->KillTheCat();
         Kitty->SetNotifications(NOTIF);
         for(unsigned uBin=0; uBin<NumBins[0]; uBin++){
-            if(Kitty->GetMomBinUpEdge(Kitty->GetNumMomBins()-1)<GetBinCenter(0,uBin) &&
-               Kitty->GetMomBinLowEdge(0)>GetBinCenter(0,uBin) &&
+            if(Kitty->GetMomBinUpEdge(Kitty->GetNumMomBins()-1)>GetBinCenter(0,uBin) &&
+               Kitty->GetMomBinLowEdge(0)<GetBinCenter(0,uBin) &&
                CutOff>GetBinCenter(0,uBin)){
                BinValue[uBin] = Kitty->EvalCorrFun(GetBinCenter(0,uBin));
             }
-            else if(Kitty->GetMomBinLowEdge(0)<=GetBinCenter(0,uBin)){
+            else if(Kitty->GetMomBinLowEdge(0)>=GetBinCenter(0,uBin)){
                 BinValue[uBin] = 0;
             }
             //if we go to higher values than the CATS object, we assume a flat correlation equal to one,
             //unless there is the additional condition for slow linear convergence towards unity after the CutOff
             else{
                 //Eval will compute automatically the corresponding value in case of a CutOff
-                Eval(GetBinCenter(0,uBin));
+                BinValue[uBin] = Eval(GetBinCenter(0,uBin));
             }
             //BinValue[uBin] = 0;
         }
@@ -229,7 +236,7 @@ double DLM_Ck::Eval(const double& Momentum){
     if(Momentum<CutOff&&Momentum<BinRange[0][NumBins[0]]){
         return DLM_Histo::Eval(&Momentum);
     }
-    else if(Momentum>BinRange[0][NumBins[0]]){
+    else if(CutOff>BinRange[0][NumBins[0]]){
         kf = BinRange[0][NumBins[0]];
     }
     //Momentum>CutOff
@@ -379,18 +386,44 @@ void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double&
 }
 
 double DLM_CkDecomposition::EvalCk(const double& Momentum){
-
+//printf("DLM_CkDecomposition::EvalCk %f\n",Momentum);
+//if(Momentum>320) usleep(1500e3);
     if(ERROR_STATE) return 0;
     if(LambdaMain<0){
         printf("\033[1;31mERROR:\033[0m The λ0 parameter is smaller than zero!\n");
         return 0;
     }
     Update(false);
-
+//printf("Updated\n");
+//if(Momentum>320) usleep(1500e3);
     double VAL_CkSmearedMainFeed=0;
     double VAL_CkSmearedMainFake=0;
+    //flat towards unity
+    if(Momentum>CkMain->GetCutOff()){
+//printf("Momentum>=CkMain->GetCutOff() = %f>=%f\n",Momentum,CkMain->GetCutOff());
+        double kf;
+        if(CkMain->GetCutOff()>CkMain->GetUpEdge(0)){
+            kf = CkMain->GetUpEdge(0);
+        }
+        //Momentum>CutOff
+        else{
+            kf = CkMain->GetCutOff();
+        }
+        const double Cf = EvalCk(CkMain->GetCutOff());
+        double CutOff_kc = CkMain->GetCutOff_kc();
+//printf("CutOff_kc = %f; kf=%f\n",CutOff_kc,kf);
+//printf("Cf = %f\n",Cf);
+//usleep(500e3);
+        if(CutOff_kc<0) return fabs(CutOff_kc);
+        if(CutOff_kc<=kf) return Cf;
+        double ReturnVal = ((Momentum-kf)-Cf*(Momentum-CutOff_kc))/(CutOff_kc-kf);
+        if(ReturnVal>1) ReturnVal=1;
+//printf("ReturnVal = %f\n",ReturnVal);
+        return ReturnVal;
+    }
     //this is needed in order to get a smooth transition for the range outside of the histogram
-    if(Momentum>CkMain->GetUpEdge(0)){
+    else if(Momentum>CkMain->GetUpEdge(0)){
+//printf("Momentum>CkMain->GetUpEdge(0) = %f\n",Momentum);
         VAL_CkSmearedMainFeed = CkMain->Eval(Momentum)*LambdaMain/MuPar;
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             if(Type[uChild]==cFeedDown){
@@ -415,6 +448,7 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
         }
     }
     else{
+//printf("else\n");
         VAL_CkSmearedMainFeed = CkSmearedMainFeed->Eval(&Momentum);
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             if(Type[uChild]!=cFake) continue;
