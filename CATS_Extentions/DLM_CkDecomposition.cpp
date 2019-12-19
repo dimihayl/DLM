@@ -607,26 +607,6 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
     }
     DecompositionStatus = true;
 }
-/*
-void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
-    if(!SmearMatrix){
-        CkSmeared[0] = CkToSmear[0];
-    }
-    else{
-        for(unsigned uBinSmear=0; uBinSmear<CkToSmear->GetNbins(); uBinSmear++){
-            CkSmeared->SetBinContent(uBinSmear, 0);
-            int FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::yAxisFirst];
-            int LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::yAxisLast];
-            if(LastBin>CkToSmear->GetNbins()) LastBin = CkToSmear->GetNbins();
-            for(unsigned uBinTrue=FirstBin; uBinTrue<=LastBin; uBinTrue++){
-                //as the response matrix is normalized to the size of the bin, during the integration we multiply for it
-                CkSmeared->Add(uBinSmear,   SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue]*CkToSmear->GetBinContent(uBinTrue)*
-                                            CkToSmear->GetBinSize(uBinTrue)*CkSmeared->GetBinSize(uBinSmear));
-            }
-        }
-    }
-}
-*/
 
 void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
     if(!SmearMatrix){
@@ -635,7 +615,10 @@ void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_Re
     else{
         for(unsigned uBinSmear=0; uBinSmear<CkToSmear->GetNbins(); uBinSmear++){
             CkSmeared->SetBinContent(uBinSmear, 0);
-            for(unsigned uBinTrue=0; uBinTrue<CkToSmear->GetNbins(); uBinTrue++){
+            int FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisFirst];
+            int LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisLast];
+            if(LastBin>=CkToSmear->GetNbins()) LastBin = CkToSmear->GetNbins()-1;
+            for(unsigned uBinTrue=FirstBin; uBinTrue<=LastBin; uBinTrue++){
                 //as the response matrix is normalized to the size of the bin, during the integration we multiply for it
                 CkSmeared->Add(uBinSmear,   SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue]*CkToSmear->GetBinContent(uBinTrue)*
                                             CkToSmear->GetBinSize(uBinTrue)*CkSmeared->GetBinSize(uBinSmear));
