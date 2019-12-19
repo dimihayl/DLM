@@ -4,7 +4,6 @@
 
 #include "DLM_CkModels.h"
 
-
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):DLM_Histo(),
                 NumSourcePar(nSourcePar),NumPotPar(nPotPar){
     SetUp(1);
@@ -25,8 +24,45 @@ DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):D
             BinValue[uBin-1] = cat.GetCorrFun(uBin-1);
             BinError[uBin-1] = cat.GetCorrFunErr(uBin-1);
         }
-
     }
+    Kitty = &cat;
+    CkFunction = NULL;
+    DefaultConstructor();
+}
+
+DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat, const unsigned& numbin, const double* bins):DLM_Histo(),
+                NumSourcePar(nSourcePar),NumPotPar(nPotPar){
+    SetUp(1);
+    for(unsigned uBin=1; uBin<=cat.GetNumMomBins(); uBin++){
+        if(cat.GetMomBinLowEdge(uBin)<=cat.GetMomBinLowEdge(uBin-1)){
+            printf("\033[1;31mERROR:\033[0m DLM_Ck: The bin ranges should be in ascending order and a bin-width of 0 is not allowed!\n");
+            return;
+        }
+    }
+
+    SetUp(1);
+    SetUp(0,numbin,bins);
+    Initialize();
+
+    Kitty = &cat;
+    CkFunction = NULL;
+    DefaultConstructor();
+}
+
+DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat, const unsigned& numbin, const double& minMom, const double& maxMom):DLM_Histo(),
+                NumSourcePar(nSourcePar),NumPotPar(nPotPar){
+    SetUp(1);
+    for(unsigned uBin=1; uBin<=cat.GetNumMomBins(); uBin++){
+        if(cat.GetMomBinLowEdge(uBin)<=cat.GetMomBinLowEdge(uBin-1)){
+            printf("\033[1;31mERROR:\033[0m DLM_Ck: The bin ranges should be in ascending order and a bin-width of 0 is not allowed!\n");
+            return;
+        }
+    }
+
+    SetUp(1);
+    SetUp(0,numbin,minMom,maxMom);
+    Initialize();
+
     Kitty = &cat;
     CkFunction = NULL;
     DefaultConstructor();
@@ -164,7 +200,20 @@ void DLM_Ck::Update(const bool& FORCE){
         Kitty->KillTheCat();
         Kitty->SetNotifications(NOTIF);
         for(unsigned uBin=0; uBin<NumBins[0]; uBin++){
-            BinValue[uBin] = Kitty->EvalCorrFun(GetBinCenter(0,uBin));
+            if(Kitty->GetMomBinUpEdge(Kitty->GetNumMomBins()-1)<GetBinCenter(0,uBin) &&
+               Kitty->GetMomBinLowEdge(0)>GetBinCenter(0,uBin) &&
+               CutOff>GetBinCenter(0,uBin)){
+               BinValue[uBin] = Kitty->EvalCorrFun(GetBinCenter(0,uBin));
+            }
+            else if(Kitty->GetMomBinLowEdge(0)<=GetBinCenter(0,uBin)){
+                BinValue[uBin] = 0;
+            }
+            //if we go to higher values than the CATS object, we assume a flat correlation equal to one,
+            //unless there is the additional condition for slow linear convergence towards unity after the CutOff
+            else{
+                //Eval will compute automatically the corresponding value in case of a CutOff
+                Eval(GetBinCenter(0,uBin));
+            }
             //BinValue[uBin] = 0;
         }
         SourceUpToDate = true;

@@ -253,6 +253,24 @@ protected:
     Type* BinCenter;
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 template <class Type> class DLM_Histo{
 public:
     DLM_Histo(){
@@ -443,6 +461,25 @@ public:
                 BinError[uBin] = sqrt(BinError[uBin]*BinError[uBin]+scale*scale*other.BinError[uBin]*other.BinError[uBin]);
         return true;
     }
+    bool AddWeightedHisto(const DLM_Histo& other, const Type& scale=1){
+        if(!Initialized) {InitWarning(); return false;}
+        if(!Initialized) return false;
+        unsigned* BinId = new unsigned [Dim];
+        double* xVal = new double [Dim];
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            GetBinCoordinates(uBin,BinId);
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                xVal[sDim] = BinCenter[sDim][BinId[sDim]];
+            }
+            Type VAR = 1./(1./BinError[uBin]/BinError[uBin] + 1./other.Eval(xVal,1)/other.Eval(xVal,1));
+            BinValue[uBin] = BinValue[uBin]/BinError[uBin]/BinError[uBin] + other.Eval(xVal)/other.Eval(xVal,1)/other.Eval(xVal,1);
+            BinValue[uBin] *= VAR;
+            BinError[uBin] = sqrt(VAR);
+        }
+        delete [] BinId;
+        delete [] xVal;
+        return true;
+    }
     bool MultiplyHisto(const DLM_Histo& other, const bool witherror=true){
         if(!Initialized) {InitWarning(); return false;}
         if(!SameStructure(other)||!Initialized) return false;
@@ -543,6 +580,41 @@ public:
                 BinError[uBin] /= scale;
             }
         }
+    }
+    //xMin and xMax have size Dim, and each entry represents the min/max value to which the
+    //corresponding dimension should be considered
+    Type Integral(const double* xMin, const double* xMax){
+        Type RESULT = 0;
+        if(!Initialized) {InitWarning(); return RESULT;}
+        unsigned* BinId = new unsigned [Dim];
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            GetBinCoordinates(uBin,BinId);
+            double FractionInside=1;
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                //in case both xMin and xMax are outside of the bin
+                if(BinRange[sDim][BinId[sDim]]>=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]<xMax[sDim])
+                {continue;}
+                //in case both xMin and xMax are within the bin
+                else if(BinRange[sDim][BinId[sDim]]<xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>=xMax[sDim]){
+                    FractionInside *= ( (xMax[sDim]-xMin[sDim])/GetBinSize(sDim,BinId[sDim]) );
+                }
+                //in case xMax is within the bin
+                else if(BinRange[sDim][BinId[sDim]]>=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>=xMax[sDim]){
+                    FractionInside *= ( (xMax[sDim]-BinRange[sDim][BinId[sDim]])/GetBinSize(sDim,BinId[sDim]) );
+                }
+                //in case xMin is within the bin
+                else if(BinRange[sDim][BinId[sDim]]<xMin[sDim] && BinRange[sDim][BinId[sDim]+1]<xMin[sDim]){
+                    FractionInside *= ( (BinRange[sDim][BinId[sDim]+1]-xMin[sDim])/GetBinSize(sDim,BinId[sDim]) );
+                }
+                else{
+                    FractionInside = 0;
+                    break;
+                }
+            }
+            RESULT+=FractionInside*BinValue[uBin];
+        }
+        delete [] BinId;
+        return RESULT;
     }
     unsigned short GetDim() const{
         return Dim;
