@@ -85,7 +85,9 @@ public:
     //double Eval(const unsigned& WhichSyst, const double& Momentum);
     void GetFitGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning=true);
     void GetMultBaselineGraph(const unsigned& WhichSyst, TGraph& OutGraph, const bool& DataBinning=true);
+    //gets Ck related to the main contribution (not scaled for lambda pars). I.e. theory but smeared
     void GetCkDecompGraph(const unsigned& WhichSyst, TGraph& OutGraph);
+    //the pure theoretical prediction
     void GetCkTheoryGraph(const unsigned& WhichSyst, TGraph& OutGraph);
 
     void SetOutputDir(const TString& outdirname);

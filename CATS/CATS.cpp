@@ -1580,7 +1580,7 @@ void CATS::SetExternalWaveFunction(DLM_Histo<complex<double>>*** ExternalWF){
 void CATS::RemoveExternalWaveFunction(const unsigned& usCh, const unsigned& usPW){
     if(NumCh<=usCh || NumPW[usCh]<=usPW){
         if(Notifications>=nError)
-            printf("\033[1;31mERROR:\033[0m Bad input in CATS::UseExternalWaveFunction(...)\n");
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::RemoveExternalWaveFunction(...)\n");
         return;
     }
     ComputedWaveFunction = false;

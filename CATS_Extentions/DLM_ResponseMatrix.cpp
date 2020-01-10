@@ -56,22 +56,17 @@ void DLM_ResponseMatrix::DefaultConstructor(){
     for(int iBinY=0; iBinY<NumMomBins; iBinY++){
         for(int iBinX=0; iBinX<NumMomBins; iBinX++){
             for(int iBinX=0; iBinX<NumMomBins; iBinX++){
-//printf("RM[%i][%i]=%e\n",ResponseMatrix[iBinY][iBinX]);
                 if(ResponseMatrix[iBinY][iBinX]!=0 && SparseResponse[iBinY][xAxisFirst]==-1){
                     SparseResponse[iBinY][xAxisFirst] = iBinX;
-//printf(" xf = %i\n",iBinX);
                 }
                 if(ResponseMatrix[iBinY][iBinX]!=0 && SparseResponse[iBinX][yAxisFirst]==-1){
                     SparseResponse[iBinX][yAxisFirst] = iBinY;
-//printf(" yf = %i\n",iBinY);
                 }
                 if(ResponseMatrix[iBinY][iBinX]!=0){
                     SparseResponse[iBinY][xAxisLast] = iBinX;
-//printf(" xl = %i\n",iBinX);
                 }
                 if(ResponseMatrix[iBinY][iBinX]!=0){
                     SparseResponse[iBinX][yAxisLast] = iBinY;
-//printf(" yl = %i\n",iBinY);
                 }
             }
         }

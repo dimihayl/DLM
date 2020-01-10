@@ -261,6 +261,7 @@ DEBUGFLAG=0;
     LambdaPar = NULL;
     Type = NULL;
     RM_Child = NULL;
+    SM_Child = NULL;
     RM_MomResolution = NULL;
     CurrentStatus = false;
     DecompositionStatus = false;
@@ -289,6 +290,7 @@ DEBUGFLAG=0;
         LambdaPar = new double [NumChildren];
         Type = new int [NumChildren];
         RM_Child = new DLM_ResponseMatrix* [NumChildren];
+        SM_Child = new DLM_ResponseMatrix* [NumChildren];
         CurrentStatusChild = new bool [NumChildren];
         CkChildMainFeed = new DLM_Histo<double>* [NumChildren];
         CkSmearedChildMainFeed = new DLM_Histo<double>* [NumChildren];
@@ -297,6 +299,7 @@ DEBUGFLAG=0;
             LambdaPar[uChild] = 0;
             Type[uChild] = -1;
             RM_Child[uChild] = NULL;
+            SM_Child[uChild] = NULL;
             CurrentStatusChild[uChild] = false;
             CkChildMainFeed[uChild] = NULL;
             CkSmearedChildMainFeed[uChild] = NULL;
@@ -317,10 +320,12 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
 
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             if(RM_Child[uChild]) delete RM_Child[uChild];
+            if(SM_Child[uChild]) delete SM_Child[uChild];
             if(CkChildMainFeed[uChild]) delete CkChildMainFeed[uChild];
             if(CkSmearedChildMainFeed[uChild]) delete CkSmearedChildMainFeed[uChild];
         }
         delete [] RM_Child; RM_Child=NULL;
+        delete [] SM_Child; SM_Child=NULL;
         delete [] CkChildMainFeed; CkChildMainFeed=NULL;
         delete [] CkSmearedChildMainFeed; CkSmearedChildMainFeed=NULL;
     }
@@ -367,8 +372,12 @@ void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double&
     DecompositionStatus = false;
 
     if(RM_Child[WhichCk]) {delete RM_Child[WhichCk]; RM_Child[WhichCk]=NULL;}
+    if(SM_Child[WhichCk]) {delete SM_Child[WhichCk]; SM_Child[WhichCk]=NULL;}
     if(child && hResidualMatrix){
         RM_Child[WhichCk] = new DLM_ResponseMatrix(*child->CkMain, NULL, hResidualMatrix, InvertedAxis);
+    }
+    if(child && RM_MomResolution){
+        SM_Child[WhichCk] = new DLM_ResponseMatrix(*CkMain, RM_MomResolution->hSigmaMatrix, NULL, RM_MomResolution->InvertedAxis);
     }
 
     if(CkChildMainFeed[WhichCk]) {delete CkChildMainFeed[WhichCk]; CkChildMainFeed[WhichCk]=NULL;}
@@ -485,7 +494,7 @@ double DLM_CkDecomposition::EvalSmearedFeed(const unsigned& WhichChild,const dou
     if(WhichChild>=NumChildren) return 0;
     if(!CkSmearedChildMainFeed[WhichChild]&&Child[WhichChild]) {
         CkSmearedChildMainFeed[WhichChild] = new DLM_Histo<double> (*Child[WhichChild]->CkMain);
-        Smear(CkChildMainFeed[WhichChild], RM_MomResolution, CkSmearedChildMainFeed[WhichChild]);
+        Smear(CkChildMainFeed[WhichChild], SM_Child[WhichChild], CkSmearedChildMainFeed[WhichChild]);
     }
     if(CkSmearedChildMainFeed[WhichChild]) return CkSmearedChildMainFeed[WhichChild]->Eval(&Momentum);
     else return 0;
@@ -513,7 +522,7 @@ DLM_Histo<double>* DLM_CkDecomposition::GetChildContribution(const unsigned& Whi
     if(WhichChild>=NumChildren) return NULL;
     DLM_Histo<double>* Histo = new DLM_Histo<double> (*CkChildMainFeed[WhichChild]);
     if(Type[WhichChild]!=cFake){
-        Smear(CkChildMainFeed[WhichChild], RM_MomResolution, Histo);
+        Smear(CkChildMainFeed[WhichChild], SM_Child[WhichChild], Histo);
     }
     if(WithLambda) Histo->Scale(LambdaPar[WhichChild]);
     return Histo;
@@ -615,8 +624,8 @@ void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_Re
     else{
         for(unsigned uBinSmear=0; uBinSmear<CkToSmear->GetNbins(); uBinSmear++){
             CkSmeared->SetBinContent(uBinSmear, 0);
-            int FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisFirst];
-            int LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisLast];
+            unsigned FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisFirst];
+            unsigned LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisLast];
             if(LastBin>=CkToSmear->GetNbins()) LastBin = CkToSmear->GetNbins()-1;
             for(unsigned uBinTrue=FirstBin; uBinTrue<=LastBin; uBinTrue++){
                 //as the response matrix is normalized to the size of the bin, during the integration we multiply for it

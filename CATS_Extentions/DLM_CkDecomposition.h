@@ -73,11 +73,15 @@ public:
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child=NULL,
                          const TH2F* hResidualMatrix=NULL, const bool& InvertedAxis=false);
 
+    //full Ck
     double EvalCk(const double& Momentum);
+    //only the part related to the main contribution (normalized to unity at large k)
     double EvalMain(const double& Momentum);
     double EvalSmearedMain(const double& Momentum);
+    //excluding the missid part (normalized to unity at large k)
     double EvalMainFeed(const double& Momentum);
     double EvalSmearedMainFeed(const double& Momentum);
+    //the effect of a particular child on Ck, normalized to unity at large k
     double EvalSmearedFeed(const unsigned& WhichChild,const double& Momentum);
     //if(Renorm) -> spit out the C(k) normalized to 1
 /*
@@ -137,6 +141,9 @@ private:
     //For the children which are of type fake, the Sigma matrix is taken from their definition.
     DLM_ResponseMatrix* RM_MomResolution;
     DLM_ResponseMatrix** RM_Child;
+    //this is the smearing matrix of the PARENT, but with the binning of the child
+    //need for plotting
+    DLM_ResponseMatrix** SM_Child;
     //status of the main C(k)
     bool CurrentStatus;
     //status of the main C(k) of the child
