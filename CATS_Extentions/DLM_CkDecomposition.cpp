@@ -377,7 +377,7 @@ void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double&
         RM_Child[WhichCk] = new DLM_ResponseMatrix(*child->CkMain, NULL, hResidualMatrix, InvertedAxis);
     }
     if(child && RM_MomResolution){
-        SM_Child[WhichCk] = new DLM_ResponseMatrix(*CkMain, RM_MomResolution->hSigmaMatrix, NULL, RM_MomResolution->InvertedAxis);
+        SM_Child[WhichCk] = new DLM_ResponseMatrix(*child->CkMain, RM_MomResolution->hSigmaMatrix, NULL, RM_MomResolution->InvertedAxis);
     }
 
     if(CkChildMainFeed[WhichCk]) {delete CkChildMainFeed[WhichCk]; CkChildMainFeed[WhichCk]=NULL;}
