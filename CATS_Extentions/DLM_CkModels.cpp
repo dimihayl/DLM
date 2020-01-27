@@ -294,11 +294,29 @@ double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, 
 
 double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar){
   complex<double> ScatLen(PotPar[0],PotPar[1]);
+  //Entries for the GeneralLednicky function:
+  // 1. Momentum
+  // 2. Radius of Gaussian Source
+  // 3. Scattering length f0 Singlet:  Re, Im
+  // 4. Effective range (assumed Re)
+  // 5. Sc. Len. Triplet
+  // 6. Eff. range Triplet
+  // 7. TRUE to select singlet only: here the WUT sc. lengths are spin averaged
+  // 8. to select Quantum Statistics (false for different fermions)
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
 }
 
 double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar){
   complex<double> ScatLen(PotPar[0],PotPar[1]);
+    //Entries for the GeneralLednicky function:
+  // 1. Momentum
+  // 2. Radius of Gaussian Source
+  // 3. Scattering length f0 Singlet:  Re, Im
+  // 4. Effective range (assumed Re)
+  // 5. Sc. Len. Triplet
+  // 6. Eff. range Triplet
+  // 7. TRUE to select singlet only: here the WUT sc. lengths are spin averaged
+  // 8. to select Quantum Statistics (false for different fermions)
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
 }
 //
