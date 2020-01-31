@@ -46,6 +46,8 @@ double Tetsuo_pKm(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius);
 
+double KpProtonEquivalentPotential(double* pars);
+  
 double ReidSoftCore1S0(double* Radius);
 double ReidSoftCore3P(double* Radius);
 
