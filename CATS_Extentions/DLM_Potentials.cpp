@@ -726,6 +726,57 @@ printf(" VIA=%.2f\n",TempIA);
     return Result;
 }
 
+//------------------------------
+
+double KpProtonEquivalentPotential(double* pars){
+    double r = pars[0];
+    double& Spin = pars[2];
+
+    double par[7]={0};
+    double v = 0;
+    /*
+      the I=0 and I=1 equivalent potentials are taken from 
+      Kaon-nucleon scattering amplitudes and S' enhancements from quark Born diagrams
+      T. Barnes & E. S. Swanson
+      PHYSICAL REVIEW C VOLUME 49, NUMBER 2 FEBRUARY 1994
+      https://journals.aps.org/prc/pdf/10.1103/PhysRevC.49.1166
+      and interpolated with the sum 2 gaussian with a common normalization factor
+    */
+    if (Spin == 0){
+      //      par[0]    =     0.931149;
+      par[0]    =     1;
+      par[1]    =     0.612774;
+      par[2]    =   0.00379167;
+      par[3]    =     0.176426;
+      par[4]    =      1.43336;
+      par[5]    =   0.00259035; 
+      par[6]    =    0.0412807;
+      
+      v = par[0]*(par[1]/par[2]*exp(-r*r/par[3])+par[4]/par[5]*exp(-r*r/par[6]));
+      
+    }
+    else if (Spin == 1)  {
+      //      par[0]  =     0.844204;
+      par[0]  =     1.1;
+      par[1]  =      1.42784;
+      par[2]  =    0.0029962;
+      par[3]  =     0.231457;
+      par[4]  =     0.646766;
+      par[5]  =   0.00299979;
+      par[6]  =    0.0418019;
+
+      v = par[0]*(par[1]/par[2]*exp(-r*r/par[3])+par[4]/par[5]*exp(-r*r/par[6]));
+ 
+    }
+    else printf ("wrong polarization\n");
+
+    return v;
+}
+
+
+
+
+
 //I took it from Oli, he found it in some paper somewhere...
 //the difference to the CRAB potential is only in the 3P1 (triplet) state
 double ReidSoftCore(const int& polar, double* Radius){
