@@ -876,28 +876,33 @@ printf("uf=%u\n",uFile);
                 HistoPS[12][0].SetBinContent(WhichBin,0);
             }
             else if(uFile==f3D1){
-                //Wf1 is LN->LN (d wave)
-                //Wf2 is SN->LN (d wave)
-                //Wf3 is LN->LN (s->d wave)
-                //Wf4 is SN->LN (s->d wave)
+                //Wf1 is LN->LN (d wave) WRONG
+                //Wf2 is SN->LN (d wave) WRONG
+                //Wf3 is LN->LN (s->d wave) WRONG
+                //Wf4 is SN->LN (s->d wave) WRONG
+                //in reality it is:
+                //Wf1 is LN->LN (s->d wave)
+                //Wf2 is SN->LN (s->d wave)
+                //Wf3 is LN->LN (d wave)
+                //Wf4 is SN->LN (d wave)
                 sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2,&fReWf3,&fImWf3,&fReWf4,&fImWf4);
                 //1: 3S1+3P0+3D1
-                HistoWF[1][2].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoWF[1][2].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
                 HistoPS[1][2].SetBinContent(WhichBin,0);
                 //2: 3S1+3P1+3D1
-                HistoWF[2][2].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoWF[2][2].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
                 HistoPS[2][2].SetBinContent(WhichBin,0);
                 //3: 3S1+3P2+3D1
-                HistoWF[3][2].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoWF[3][2].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
                 HistoPS[3][2].SetBinContent(WhichBin,0);
                 //13: 3D1 SN(d) -> LN(d)
-                HistoWF[13][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoWF[13][0].SetBinContent(WhichBin,(fReWf4+fi*fImWf4)*fRadius);
                 HistoPS[13][0].SetBinContent(WhichBin,0);
                 //14: 3D1 LN(s) -> LN(d)
-                HistoWF[14][0].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
+                HistoWF[14][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
                 HistoPS[14][0].SetBinContent(WhichBin,0);
                 //15: 3D1 SN(s) -> LN(d)
-                HistoWF[14][0].SetBinContent(WhichBin,(fReWf4+fi*fImWf4)*fRadius);
+                HistoWF[14][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
                 HistoPS[14][0].SetBinContent(WhichBin,0);
             }
             else{
