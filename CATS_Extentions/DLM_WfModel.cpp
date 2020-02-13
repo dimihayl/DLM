@@ -557,7 +557,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     const double Mass_p = 938.272;
     const double Mass_L = 1115.683;
     Kitty.SetRedMass((Mass_p*Mass_L)/(Mass_p+Mass_L));
-printf("1\n");
+//printf("1\n");
     for(unsigned short usCh=7; usCh<NumChannels; usCh++){Kitty.SetOnlyNumericalPw(usCh,true);}
 
 
@@ -627,7 +627,7 @@ printf("1\n");
     //we want to have the very first bin (center) exactly at zero!
     RadBins[0] = -RadBins[1];
     RadBinLoaded[0] = false;
-printf("2\n");
+//printf("2\n");
 
     char** InputFileName = new char* [NumFiles];
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
@@ -646,7 +646,7 @@ printf("2\n");
     else{
         printf("YOU BROKE SOMETHING in Init_pL_Haidenbauer2019\n");
     }
-printf("3\n");
+//printf("3\n");
     FILE *InFile;
     int CurrentLine=0;
     //unsigned WhichMomBin;
@@ -661,9 +661,9 @@ printf("3\n");
 
     char* cdummy = new char [512];
     float fMomentum;
-printf("4\n");
+//printf("4\n");
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
-printf("uf=%u\n",uFile);
+//printf("uf=%u\n",uFile);
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){
             printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
@@ -690,7 +690,7 @@ printf("uf=%u\n",uFile);
         //i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
         MomentumBins[uFile][NumMomBins[uFile]] = 2.*Momentum[uFile][NumMomBins[uFile]-1]-MomentumBins[uFile][NumMomBins[uFile]-1];
     }
-printf("5\n");
+//printf("5\n");
     //const unsigned NumDLM_Histos = NumFiles>NumChannels?NumFiles:NumChannels;
     const unsigned NumDLM_Histos = NumChannels;
     //the first one is WF, second is PS
@@ -709,7 +709,7 @@ printf("5\n");
             HistoWF[uHist][uPw].Initialize();
         }
     }
-printf("6\n");
+//printf("6\n");
     //DLM_Histo<complex<double>> HistoPS[NumChannels];
     HistoPS = new DLM_Histo<complex<double>>* [NumDLM_Histos];
     for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
@@ -720,11 +720,11 @@ printf("6\n");
             HistoPS[uHist][uPw].Initialize();
         }
     }
-printf("7\n");
+//printf("7\n");
 
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
 //if(uFile>2) break;
-printf("uf=%u\n",uFile);
+//printf("uf=%u\n",uFile);
         int WhichMomBin=-1;
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){

@@ -28,6 +28,14 @@ double GaussSource(double* Pars){
 //printf(" G-> r=%.2f, s=%.2f => %.2f\n",Radius,Size,4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size)));
     return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
+
+//this source will not be normalized! However, CATS does a renormalization itself, so it should be fine.
+//in case of problems, contact the developers!
+double GaussSourceCutOff(double* Pars){
+    if(Pars[1]<Pars[4]) return 0;
+    return GaussSource(Pars);
+}
+
 //same as GaussSource, but we assume that the user calls the function wanting to sample from theta as well.
 //since Integral(dTheta) = 2 for a flat theta distribution and the whole Source function needs to be normalized to 1,
 //in order to preserve this we should divide the whole function by 2
