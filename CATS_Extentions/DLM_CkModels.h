@@ -3,6 +3,8 @@
 
 #include <complex>
 
+class CATSparameters;
+
 double LednickyAsInStar(const double& Momentum, const double& GaussR, const double& ScattLenSin, const double& EffRangeSin,
                         const double& Norm, const double& lambda, const double& ares, const double& RadRes);
 
@@ -71,6 +73,11 @@ double Lednicky_gauss_pAL_varlow(const double &Momentum, const double* SourcePar
 
  double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
  double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
+
+    void SetLedniIntegral_SourceFunction(double (*AS)(double*), CATSparameters& Pars);
+    void SetLedniIntegral_SourceClass(void* context, const unsigned& numparameters=0);
+    void RemoveLedniIntegral_SourceFunction();
+    void RemoveLedniIntegral_SourceClass();
 
 
 #endif

@@ -10,6 +10,31 @@
 
 using namespace std;
 
+
+double (*LEDNI_INT_SFUNCTION)(double* par) = NULL;
+CATSparameters* LEDNI_INT_SFUNCTION_PARS = NULL;
+void* LEDNI_INT_SCLASS = NULL;
+unsigned LEDNI_INT_SCLASS_NPARS = 0;
+
+void SetLedniIntegral_SourceFunction(double (*AS)(double*), CATSparameters& Pars){
+    LEDNI_INT_SFUNCTION = AS;
+    LEDNI_INT_SFUNCTION_PARS = &Pars;
+    RemoveLedniIntegral_SourceClass();
+}
+void SetLedniIntegral_SourceClass(void* context, const unsigned& numparameters){
+    LEDNI_INT_SCLASS = context;
+    LEDNI_INT_SCLASS_NPARS = numparameters;
+    RemoveLedniIntegral_SourceFunction();
+}
+void RemoveLedniIntegral_SourceFunction(){
+    LEDNI_INT_SFUNCTION = NULL;
+    LEDNI_INT_SFUNCTION_PARS = NULL;
+}
+void RemoveLedniIntegral_SourceClass(){
+    LEDNI_INT_SCLASS = NULL;
+    LEDNI_INT_SCLASS_NPARS = 0;
+}
+
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar){
 //printf("FR at %f\n", Momentum);
     return 1;
