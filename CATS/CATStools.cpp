@@ -476,9 +476,10 @@ const CatsLorentzVector& CatsParticlePair::GetSum() const{
 }
 
 CatsEvent::CatsEvent(const int& pid1, const int& pid2):Pid1(pid1),Pid2(pid2){
-    BufferSize = 64;
-    ParticleType1 = new CatsParticle [BufferSize];
-    ParticleType2 = new CatsParticle [BufferSize];
+    BufferSize1 = 64;
+    BufferSize2 = 64;
+    ParticleType1 = new CatsParticle [BufferSize1];
+    ParticleType2 = new CatsParticle [BufferSize2];
     ParticlePair = NULL;
     NumParticles1 = 0;
     NumParticles2 = 0;
@@ -498,9 +499,9 @@ void CatsEvent::Reset(){
 }
 void CatsEvent::AddParticle(const CatsParticle& Particle){
     if(Particle.GetPid()==Pid1){
-        if(NumParticles1==BufferSize){
-            BufferSize *= 2;
-            CatsParticle* Temp = new CatsParticle[BufferSize];
+        if(NumParticles1==BufferSize1){
+            BufferSize1 *= 2;
+            CatsParticle* Temp = new CatsParticle[BufferSize1];
             for(unsigned uPart=0; uPart<NumParticles1; uPart++){
                 Temp[uPart] = ParticleType1[uPart];
             }
@@ -511,9 +512,9 @@ void CatsEvent::AddParticle(const CatsParticle& Particle){
         NumParticles1++;
     }
     else if(Particle.GetPid()==Pid2){
-        if(NumParticles2==BufferSize){
-            BufferSize *= 2;
-            CatsParticle* Temp = new CatsParticle[BufferSize];
+        if(NumParticles2==BufferSize2){
+            BufferSize2 *= 2;
+            CatsParticle* Temp = new CatsParticle[BufferSize2];
             for(unsigned uPart=0; uPart<NumParticles2; uPart++){
                 Temp[uPart] = ParticleType2[uPart];
             }
@@ -574,6 +575,12 @@ unsigned CatsEvent::GetNumParticles1() const{
 }
 unsigned CatsEvent::GetNumParticles2() const{
     return Pid1==Pid2?NumParticles1:NumParticles2;
+}
+int CatsEvent::GetPidParticle1() const{
+    return Pid1;
+}
+int CatsEvent::GetPidParticle2() const{
+    return Pid2;
 }
 const CatsParticle& CatsEvent::GetParticleType1(const unsigned& WhichPart) const{
     if(WhichPart>=NumParticles1){

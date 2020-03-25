@@ -151,6 +151,8 @@ public:
     CatsParticlePair& GetParticlePair(const unsigned& WhichPair) const;
     unsigned GetNumParticles1() const;
     unsigned GetNumParticles2() const;
+    int GetPidParticle1() const;
+    int GetPidParticle2() const;
     const CatsParticle& GetParticleType1(const unsigned& WhichPart) const;
     const CatsParticle& GetParticleType2(const unsigned& WhichPart) const;
     bool GetSameType() const;
@@ -174,7 +176,8 @@ private:
     unsigned NumParticles2;
     unsigned NumPairs;
 
-    unsigned BufferSize;
+    unsigned BufferSize1;
+    unsigned BufferSize2;
 };
 
 //at the moment I do not check if the events loaded are of the same PID type (which should be the case!)
