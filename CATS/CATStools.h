@@ -245,11 +245,11 @@ friend class CATSnode;
 public:
     CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon,
               //double* mean, double* len, double (CATS::*sfun)(const double*, const double&));
-              double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel);
+              double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel, const bool& renorm=true);
     CATSelder(const CATSelder* TemplateElder,
-              void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel);
+              void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel, const bool& renorm=true);
     void BaseConstructor(double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel,
-                         const CATSelder* TemplateElder);
+                         const CATSelder* TemplateElder, const bool& renorm=true);
     ~CATSelder();
 
     short GetMaxDepth();
@@ -259,6 +259,7 @@ public:
     double GetGridValue(const unsigned& WhichNode, const bool& Normalized=false);
     double GetGridError(const unsigned& WhichNode, const bool& Normalized=false);
     void GetGridAxis(const unsigned& WhichNode, double* Axis);
+    void Renormalize();
 
     unsigned GetBoxId(double* particle);
     unsigned FindFirstParticleWithID(const unsigned& gbid);

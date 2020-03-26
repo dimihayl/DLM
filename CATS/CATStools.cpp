@@ -937,24 +937,24 @@ void CATSnode::StandardNodeInit(double* mean, double* len, const CATSnode* Templ
 
 //! see what happens if epsilon==0
 CATSelder::CATSelder(const short& dim, const short& mindep, const short& maxdep, const double& epsilon, double* mean, double* len,
-                     void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel):
+                     void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel, const bool& renorm):
     CATSnode(this, 0, 0, uipow(2,dim*maxdep)-1, mean, len),
     Dim(dim),MinDepth(mindep),MaxDepth(maxdep),Epsilon(epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
 
-    BaseConstructor(mean, len, context, Pars, gbid, numel, NULL);
+    BaseConstructor(mean, len, context, Pars, gbid, numel, NULL, renorm);
 }
 
-CATSelder::CATSelder(const CATSelder* TemplateElder, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel):
+CATSelder::CATSelder(const CATSelder* TemplateElder, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel, const bool& renorm):
     CATSnode(this, 0, 0, uipow(2,TemplateElder->Dim*TemplateElder->MaxDepth)-1, TemplateElder->MeanVal, TemplateElder->IntLen),
     Dim(TemplateElder->Dim),MinDepth(TemplateElder->MinDepth),MaxDepth(TemplateElder->MaxDepth),
     Epsilon(TemplateElder->Epsilon),NumSubNodes(uipow(2,Dim)),NumOfEl(numel){
 
-    BaseConstructor(TemplateElder->MeanVal, TemplateElder->IntLen, context, Pars, gbid, numel, TemplateElder);
+    BaseConstructor(TemplateElder->MeanVal, TemplateElder->IntLen, context, Pars, gbid, numel, TemplateElder, renorm);
 
 }
 
 void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSparameters* Pars, int64_t* gbid, const unsigned& numel,
-                                const CATSelder* TemplateElder){
+                                const CATSelder* TemplateElder, const bool& renorm){
 
     if(TemplateElder){
         MaxNumEndNodes = TemplateElder->NumEndNodes;
@@ -992,7 +992,9 @@ void CATSelder::BaseConstructor(double* mean, double* len, void* context, CATSpa
     if(TemplateElder && NumEndNodes!=TemplateElder->NumEndNodes){
         printf("\033[1;33mWARNING!\033[0m A potential huge bug in CATSelder::BaseConstructor, please contact the developers!\n");
     }
-
+    if(renorm) Renormalize();
+}
+void CATSelder::Renormalize(){
     double Integral=0;
     for(unsigned uNode=0; uNode<NumEndNodes; uNode++){
         Integral += EndNode[uNode]->SourceValue;

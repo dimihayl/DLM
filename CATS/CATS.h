@@ -168,6 +168,10 @@ public:
     //to contribute with a flat correlation, which is added automatically
     void SetNormalizedSource(const bool& val=true);
     bool GetNormalizedSource() const;
+    //this function is to tackle a design flaw, keeping backwards compatibility. By default the CATSelder (source container)
+    //renormalizes the source function, regardless of `SetNormalizedSource`. This function can switch off this normalization, making SetNormalizedSource more meaningful
+    void SetAutoNormSource(const bool& val=true);
+    bool GetAutoNormSource() const;
 
     //the input values should be non-negative
     //please set this condition BEFORE you load the source, else CATS will not save the TotalMomentum at all
@@ -407,6 +411,7 @@ protected:
     double SourceMinRad;
     double SourceMaxRad;
     bool NormalizedSource;
+    bool AutoNormSource;
 
     double MinTotPairMom;
     double MaxTotPairMom;

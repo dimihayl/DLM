@@ -69,6 +69,7 @@ CATS::CATS():
     SourceMaxRad=64.*FmToNu;
     MomDepSource=true;
     NormalizedSource=true;
+    AutoNormSource=true;
     MinTotPairMom = -1;
     MaxTotPairMom = 1e100;
     LoadedMinTotPairMom = -1;
@@ -1055,6 +1056,16 @@ void CATS::SetNormalizedSource(const bool& val){
 }
 bool CATS::GetNormalizedSource() const{
     return NormalizedSource;
+}
+void CATS::SetAutoNormSource(const bool& val){
+    if(val==AutoNormSource) return;
+    AutoNormSource = val;
+    SourceGridReady = false;
+    SourceUpdated = false;
+    ComputedCorrFunction = false;
+}
+bool CATS::GetAutoNormSource() const{
+    return AutoNormSource;
 }
 
 void CATS::SetTotPairMomCut(const double& minval, const double& maxval){
@@ -2906,6 +2917,7 @@ void CATS::FoldSourceAndWF(){
                 //else simply re-normalize the source to the total value of the integral (even if below 1)
                 //I am not sure if this even makes sense, consider in the future to use only the NormalizedSource case
                 else{
+//printf("We are in a questionable state: %f at C(%.0f)\n",SourceIntCut,GetMomentum(uMomBin));
                     kCorrFun[uMomBin] *= double(SourceInt)/double(SourceIntCut);
                     kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])*double(SourceInt)/double(SourceIntCut);
                 }
@@ -2969,14 +2981,14 @@ void CATS::SetUpSourceGrid(){
 //printf("BaseSourceGrid = new CATSelder\n");
 //printf(" AnaSourcePar[3]=%e\n",AnaSourcePar->GetParameter(0));
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
-                         this, AnaSourcePar, NULL, 0);
+                         this, AnaSourcePar, NULL, 0, AutoNormSource);
     }
     else if(NumPairs){
         //sorts the whole data according to the GridBoxId (all bins!)
         //this will setup the base grid
         SortAllData();
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
-                                        NULL, NULL, GridBoxId, NumPairs);
+                                        NULL, NULL, GridBoxId, NumPairs, AutoNormSource);
     }
     else{
         BaseSourceGrid = NULL;
@@ -3008,11 +3020,11 @@ void CATS::SetUpSourceGrid(){
             break;
         }
         if(UseAnalyticSource){
-            kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
+            kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0, AutoNormSource);
         }
         else if(LoadedPairsPerMomBin[uMomBin]){
             kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, NULL, NULL,
-                                                &GridBoxId[ArrayPosition], LoadedPairsPerMomBin[uMomBin]);
+                                                &GridBoxId[ArrayPosition], LoadedPairsPerMomBin[uMomBin], AutoNormSource);
             ArrayPosition += LoadedPairsPerMomBin[uMomBin];
         }
         else{
@@ -3056,11 +3068,11 @@ void CATS::SetUpSourceGrid(){
             AnaSourcePar->SetVariable(0,GetMomentum(uMomBin),false);
             for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
                 if(UseAnalyticSource){
-                    kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0);
+                    kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0, AutoNormSource);
                 }
                 else if(LoadedPairsPerBin[uMomBin][uIpBin]){
                     kbSourceGrid[uMomBin][uIpBin] = new CATSelder(BaseSourceGrid, NULL, NULL,
-                                                                &GridBoxId[ArrayPosition], LoadedPairsPerBin[uMomBin][uIpBin]);
+                                                                &GridBoxId[ArrayPosition], LoadedPairsPerBin[uMomBin][uIpBin], AutoNormSource);
                     ArrayPosition += LoadedPairsPerBin[uMomBin][uIpBin];
                 }
                 else{
