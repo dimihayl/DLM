@@ -269,6 +269,11 @@ DEBUGFLAG=0;
     CkMainSmeared = NULL;
     CkMainFeed = NULL;
     CkSmearedMainFeed = NULL;
+    SignalMain = NULL;
+    SignalChild = NULL;
+    SignalSmearedMain = NULL;
+    SignalSmearedChild = NULL;    
+    SignalsUpdated = false;
 
     if(ERROR_STATE){
         printf("\033[1;31mERROR:\033[0m The DLM_CkDecomposition got some rubbish input, the object will be broken!\n");
@@ -278,6 +283,8 @@ DEBUGFLAG=0;
     RM_MomResolution = new DLM_ResponseMatrix(ckfunction, hSigmaMatrix, NULL, InvertAxis);
     CkMainFeed = new DLM_Histo<double>(CkMain[0]);
     CkSmearedMainFeed = new DLM_Histo<double>(CkMain[0]);
+    SignalMain = new DLM_Histo<double>(CkMain[0]);
+    SignalSmearedMain = new DLM_Histo<double>(CkMain[0]);
 
     Name = new char [strlen(name)+1];
     strcpy(Name,name);
@@ -294,6 +301,8 @@ DEBUGFLAG=0;
         CurrentStatusChild = new bool [NumChildren];
         CkChildMainFeed = new DLM_Histo<double>* [NumChildren];
         CkSmearedChildMainFeed = new DLM_Histo<double>* [NumChildren];
+        SignalChild = new DLM_Histo<double>* [NumChildren];
+        SignalSmearedChild = new DLM_Histo<double>* [NumChildren];
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             Child[uChild] = NULL;
             LambdaPar[uChild] = 0;
@@ -303,6 +312,8 @@ DEBUGFLAG=0;
             CurrentStatusChild[uChild] = false;
             CkChildMainFeed[uChild] = NULL;
             CkSmearedChildMainFeed[uChild] = NULL;
+            SignalChild[uChild] = new DLM_Histo<double>(CkMain[0]);
+            SignalSmearedChild[uChild] = new DLM_Histo<double>(CkMain[0]);
         }
     }
 
@@ -323,17 +334,23 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
             if(SM_Child[uChild]) delete SM_Child[uChild];
             if(CkChildMainFeed[uChild]) delete CkChildMainFeed[uChild];
             if(CkSmearedChildMainFeed[uChild]) delete CkSmearedChildMainFeed[uChild];
+            if(SignalChild[uChild]) delete SignalChild[uChild];
+            if(SignalSmearedChild[uChild]) delete SignalSmearedChild[uChild];
         }
         delete [] RM_Child; RM_Child=NULL;
         delete [] SM_Child; SM_Child=NULL;
         delete [] CkChildMainFeed; CkChildMainFeed=NULL;
         delete [] CkSmearedChildMainFeed; CkSmearedChildMainFeed=NULL;
+        delete [] SignalChild; SignalChild=NULL;
+        delete [] SignalSmearedChild; SignalSmearedChild=NULL;
     }
     if(Name) {delete [] Name; Name=NULL;}
     if(RM_MomResolution) {delete RM_MomResolution; RM_MomResolution=NULL;}
     if(CkMainSmeared) {delete CkMainSmeared; CkMainSmeared=NULL;}
     if(CkMainFeed) {delete CkMainFeed; CkMainFeed=NULL;}
     if(CkSmearedMainFeed) {delete CkSmearedMainFeed; CkSmearedMainFeed=NULL;}
+    if(SignalMain) {delete SignalMain; SignalMain=NULL;}
+    if(SignalSmearedMain) {delete SignalSmearedMain; SignalSmearedMain=NULL;}
 }
 
 void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child,
@@ -395,21 +412,16 @@ void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double&
 }
 
 double DLM_CkDecomposition::EvalCk(const double& Momentum){
-//printf("DLM_CkDecomposition::EvalCk %f\n",Momentum);
-//if(Momentum>320) usleep(1500e3);
     if(ERROR_STATE) return 0;
     if(LambdaMain<0){
         printf("\033[1;31mERROR:\033[0m The λ0 parameter is smaller than zero!\n");
         return 0;
     }
     Update(false);
-//printf("Updated\n");
-//if(Momentum>320) usleep(1500e3);
     double VAL_CkSmearedMainFeed=0;
     double VAL_CkSmearedMainFake=0;
     //flat towards unity
     if(Momentum>CkMain->GetCutOff()){
-//printf("Momentum>=CkMain->GetCutOff() = %f>=%f\n",Momentum,CkMain->GetCutOff());
         double kf;
         if(CkMain->GetCutOff()>CkMain->GetUpEdge(0)){
             kf = CkMain->GetUpEdge(0);
@@ -420,30 +432,22 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
         }
         const double Cf = EvalCk(CkMain->GetCutOff());
         double CutOff_kc = CkMain->GetCutOff_kc();
-//printf("CutOff_kc = %f; kf=%f\n",CutOff_kc,kf);
-//printf("Cf = %f\n",Cf);
-//usleep(500e3);
         if(CutOff_kc<0) return fabs(CutOff_kc);
         if(CutOff_kc<=kf) return Cf;
         double ReturnVal = ((Momentum-kf)-Cf*(Momentum-CutOff_kc))/(CutOff_kc-kf);
         if(ReturnVal>1) ReturnVal=1;
-//printf("ReturnVal = %f\n",ReturnVal);
         return ReturnVal;
     }
     //this is needed in order to get a smooth transition for the range outside of the histogram
     else if(Momentum>CkMain->GetUpEdge(0)){
-//printf("Momentum>CkMain->GetUpEdge(0) = %f\n",Momentum);
         VAL_CkSmearedMainFeed = CkMain->Eval(Momentum)*LambdaMain/MuPar;
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             if(Type[uChild]==cFeedDown){
-                //printf("Momentum=%.4f\n",Momentum);
                 if(Child[uChild]){
                     VAL_CkSmearedMainFeed+=GetChild(uChild)->GetCk()->Eval(Momentum)*LambdaPar[uChild]/MuPar;
-                    //printf("(1): Ck=%.4f; lam=%.4f; mu=%.4f\n",GetChild(uChild)->GetCk()->Eval(Momentum),LambdaPar[uChild],MuPar);
                 }
                 else{
                     VAL_CkSmearedMainFeed+=(LambdaPar[uChild]/MuPar);
-                    //printf("(2): lam=%.4f; mu=%.4f\n",LambdaPar[uChild],MuPar);
                 }
             }
             else{
@@ -457,7 +461,6 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
         }
     }
     else{
-//printf("else\n");
         VAL_CkSmearedMainFeed = CkSmearedMainFeed->Eval(&Momentum);
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             if(Type[uChild]!=cFake) continue;
@@ -469,8 +472,6 @@ double DLM_CkDecomposition::EvalCk(const double& Momentum){
             }
         }
     }
-//if(Momentum>130&&Momentum<135)
-//printf("MuPar=%.4f; VAL_CkSmearedMainFeed=%.4f; VAL_CkSmearedMainFake=%.4f\n",MuPar,VAL_CkSmearedMainFeed,VAL_CkSmearedMainFake);
     return MuPar*VAL_CkSmearedMainFeed+VAL_CkSmearedMainFake;
 }
 
@@ -498,6 +499,37 @@ double DLM_CkDecomposition::EvalSmearedFeed(const unsigned& WhichChild,const dou
     }
     if(CkSmearedChildMainFeed[WhichChild]) return CkSmearedChildMainFeed[WhichChild]->Eval(&Momentum);
     else return 0;
+}
+
+double DLM_CkDecomposition::EvalSignal(const double& Momentum){
+	double Result = 0;
+	Result += EvalSignalMain(Momentum);
+	for(unsigned uChild=0; uChild<NumChildren; uChild++) Result += EvalSignalChild(uChild,Momentum);
+	return Result;
+}
+double DLM_CkDecomposition::EvalSignalSmeared(const double& Momentum){
+	double Result = 0;
+	Result += EvalSignalSmearedMain(Momentum);
+	for(unsigned uChild=0; uChild<NumChildren; uChild++) Result += EvalSignalSmearedChild(uChild,Momentum);
+	return Result;
+}
+double DLM_CkDecomposition::EvalSignalMain(const double& Momentum){
+	if(SignalMain) return SignalMain->Eval(&Momentum);
+	return 0;
+}
+double DLM_CkDecomposition::EvalSignalSmearedMain(const double& Momentum){
+	if(SignalSmearedMain) return SignalSmearedMain->Eval(&Momentum);
+	return 0;
+}
+double DLM_CkDecomposition::EvalSignalChild(const unsigned& WhichChild,const double& Momentum){
+	if(WhichChild>=NumChildren) return 0;
+	if(SignalChild[WhichChild]) return SignalChild[WhichChild]->Eval(&Momentum);
+	return 0;
+}
+double DLM_CkDecomposition::EvalSignalSmearedChild(const unsigned& WhichChild,const double& Momentum){
+	if(WhichChild>=NumChildren) return 0;
+	if(SignalSmearedChild[WhichChild]) return SignalSmearedChild[WhichChild]->Eval(&Momentum);
+	return 0;
 }
 
 unsigned DLM_CkDecomposition::GetNumChildren(){
@@ -564,11 +596,12 @@ bool DLM_CkDecomposition::Status(){
 
 bool SHOWSTUFF=false;
 
+
 //the strategy is as follows:
 //1) check the status and update the main C(k)
 //2) look if the children are up to date. If not, update them iteratively.
 //3) smear all correlations that needed an update
-void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
+void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecomp){
     double Momentum;
     CurrentStatus = CkMain->Status();
     for(unsigned uChild=0; uChild<NumChildren; uChild++){
@@ -596,25 +629,59 @@ void DLM_CkDecomposition::Update(const bool& FORCE_FULL_UPDATE){
 
         CkMainFeed->Copy(CkMain[0]);
         CkMainFeed->Scale(LambdaMain/MuPar);
+        
+        if(UpdateDecomp){
+			SignalMain[0] = CkMain[0];
+			SignalMain->Scale(LambdaMain);
+		}
+		else{
+			SignalMain->SetBinContentAll(0);
+			SignalSmearedMain->SetBinContentAll(0);
+		}
 
+        
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
-            if(Type[uChild]!=cFeedDown) continue;
+			SignalChild[uChild]->SetBinContentAll(0);
+			SignalSmearedChild[uChild]->SetBinContentAll(0);
+            if(Type[uChild]!=cFeedDown){
+				if(Child[uChild]){
+					for(unsigned uBin=0; uBin<SignalSmearedChild[uChild]->GetNbins(); uBin++){
+						Momentum = SignalSmearedChild[uChild]->GetBinCenter(0,uBin);
+						SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(&Momentum));
+						SignalSmearedChild[uChild]->SetBinContent(uBin,LambdaPar[uChild]*Child[uChild]->CkSmearedMainFeed->Eval(&Momentum));
+					}
+					SignalChild[uChild][0] -= LambdaPar[uChild];
+					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];						
+				}
+				continue;
+			}
             if(Child[uChild]){
                 Smear(Child[uChild]->CkMainFeed, RM_Child[uChild], CkChildMainFeed[uChild]);
-
                 for(unsigned uBin=0; uBin<CkMainFeed->GetNbins(); uBin++){
                     Momentum = CkMainFeed->GetBinCenter(0,uBin);
                     CkMainFeed->Add(uBin, CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]/MuPar);
+                    SignalChild[uChild]->SetBinContent(uBin,CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]);
 //CkMainFeed->Add(uBin, LambdaPar[uChild]/MuPar);
                 }
+				if(UpdateDecomp){
+					Smear(SignalChild[uChild], RM_MomResolution, SignalSmearedChild[uChild]);
+					SignalChild[uChild][0] -= LambdaPar[uChild];
+					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];
+				}
             }
             else{
                 *CkMainFeed+=(LambdaPar[uChild]/MuPar);
             }
         }
         Smear(CkMainFeed, RM_MomResolution, CkSmearedMainFeed);
+        if(UpdateDecomp){
+			Smear(SignalMain, RM_MomResolution, SignalSmearedMain);
+			SignalMain[0] -= LambdaMain;
+			SignalSmearedMain[0] -= LambdaMain;
+		}
     }
     DecompositionStatus = true;
+    SignalsUpdated = UpdateDecomp;
 }
 
 void DLM_CkDecomposition::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){

@@ -83,6 +83,15 @@ public:
     double EvalSmearedMainFeed(const double& Momentum);
     //the effect of a particular child on Ck, normalized to unity at large k
     double EvalSmearedFeed(const unsigned& WhichChild,const double& Momentum);
+    
+    //evaluate the fully smeared correlation, returning lambda*(Ck - 1)
+    double EvalSignal(const double& Momentum);
+    double EvalSignalSmeared(const double& Momentum);
+    double EvalSignalMain(const double& Momentum);
+    double EvalSignalSmearedMain(const double& Momentum);
+    double EvalSignalChild(const unsigned& WhichChild,const double& Momentum);
+    double EvalSignalSmearedChild(const unsigned& WhichChild,const double& Momentum);
+    
     //if(Renorm) -> spit out the C(k) normalized to 1
 /*
     //Only the main correlation
@@ -110,7 +119,7 @@ public:
 
     bool Status();
     //run with flag true before fitting (i.e. after you finish the full set up)
-    void Update(const bool& FORCE_FULL_UPDATE=true);
+    void Update(const bool& FORCE_FULL_UPDATE=true, const bool& UpdateDecomp=true);
 
 int DEBUGFLAG;
 
@@ -136,6 +145,14 @@ private:
     //the residual C(k) (corrected with the residual matrix) stemming from the CkMainFeed of the children
     DLM_Histo<double>** CkChildMainFeed;
     DLM_Histo<double>** CkSmearedChildMainFeed;
+    
+    //the signal (lambda*(Ck - 1)) for each contribution. All corrections are applied!
+    DLM_Histo<double>* SignalMain;
+    DLM_Histo<double>* SignalSmearedMain;
+    DLM_Histo<double>** SignalChild;
+    DLM_Histo<double>** SignalSmearedChild;
+    
+    bool SignalsUpdated;
 
     //N.B. I assume that the MomResolution is only taken into account if you look into that particular C(k) or the feed-down contributions.
     //For the children which are of type fake, the Sigma matrix is taken from their definition.

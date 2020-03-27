@@ -407,6 +407,12 @@ void CATS::SetNumChannels(const unsigned short& numCh){
         }
         return;
     }
+    if(Spin){
+        if(Notifications>=nError){
+            printf("\033[1;31mERROR:\033[0m Due to a known existing bug, ones set, you are not allowed to change the number of channels. Sorry :(\n");
+        }
+        return;
+    }
 
     if(Spin) {delete[]Spin; Spin=NULL;}
     Spin = new unsigned short [numCh];
@@ -461,6 +467,11 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetNumPW(unsigned short usCh, unsigned short numPW)\n");
         return;
     }
+    if(NumPW[usCh]){
+        printf("\033[1;31mERROR:\033[0m Due to a known existing bug, ones set, you are not allowed to change the number of partial waves. Sorry :(\n");
+        return;
+    }
+
     if(NumPW[usCh]==numPW) return;
     DelMomChPw();
     for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
