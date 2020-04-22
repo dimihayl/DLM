@@ -1863,6 +1863,7 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
                             BGT[1] = 0;
                             CosRcP1 = 0;
                             CosP0P1 = 0;
+//if(ResoWeight[0]==1) printf("0\n");
                         }
                     }
                     else if(IsReso[1]){
@@ -1873,6 +1874,7 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
                             BGT[1] = BGT_PR[RanInt][0];
                             CosRcP1 = BGT_PR[RanInt][1];
                             CosP0P1 = 0;
+//if(ResoWeight[0]==1) printf("1\n");
                         }
                     }
                     else{
@@ -1881,7 +1883,18 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
                         CosRcP0 = 0;
                         CosRcP1 = 0;
                         CosP0P1 = 0;
+//if(ResoWeight[0]==1) printf("C\n");
                     }
+
+//if(ResoWeight[0]==1){
+//printf("RAD = %f\n",RAD);
+//printf("BGT[0] = %f\n",BGT[0]);
+//printf("BGT[1] = %f\n",BGT[1]);
+//printf("CosRcP0 = %f\n",CosRcP0);
+//printf("CosRcP1 = %f\n",CosRcP1);
+//printf("CosP0P1 = %f\n",CosP0P1);
+//printf("\n");
+//}
 
                     //the sign convention is such, that r_core = primary_1 - primary_0
                     RAD = sqrt(RAD*RAD+BGT[0]*BGT[0]+BGT[1]*BGT[1]
