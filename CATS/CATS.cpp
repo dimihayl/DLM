@@ -2077,16 +2077,6 @@ DEBUG=-1;
     //1) изхвърли ги
     //2) запаза ги, като нормировката я направи на база максимума в MaxRho-3.14 (btw. make 3.14 the min. value for MaxRho!!!)
 
-            //in case the method failed to converge, the whole momentum bin is marked as unreliable and no
-            //further computations are done. This point will be excluded from the final result
-            if(!Converged){
-                MomBinConverged[uMomBin] = false;
-                if(Notifications>=nWarning)
-                    printf("          \033[1;33mWARNING:\033[0m A momentum bin at %.2f MeV failed to converge!\n", Momentum);
-                if(ExcludeFailedConvergence && Notifications>=nWarning){
-                    printf("                   It will be excluded from the final result!\n");
-                }
-            }
 
             //if the maximum wave-function is zero the computation will fail!
             //By design this should not really happen.
@@ -2094,6 +2084,8 @@ DEBUG=-1;
                 printf("\033[1;33mWARNING:\033[0m MaxConvergedNumWF is zero, which is not allowed and points to a bug in the code!\n");
                 printf("         Please contact the developers and do not trust your current results!\n");
             }
+
+            bool NR_Status;
 
             //!Now follows the normalization of the numerical wave function to the asymptotic solution
             //the individual steps are explained in detail in the official CATS documentation
@@ -2157,8 +2149,12 @@ DEBUG=-1;
                     UpShift += 0.95*ShiftRadStepLen;
                     DownShift = UpShift-ShiftRadStepLen;
                 }
+
                 ShiftRad = NewtonRapson(&CATS::AsymptoticRatio,
-                        DeltaRadAtMaxConv, usPW, Momentum, q1q2, MaxConvRad+DownShift, MaxConvRad+UpShift, NumRatio) - MaxConvRad;
+                        DeltaRadAtMaxConv, usPW, Momentum, q1q2, MaxConvRad+DownShift, MaxConvRad+UpShift, NumRatio,NR_Status) - MaxConvRad;
+                //if(!NR_Status&&Notifications>=nWarning) {printf("The above warning triggered for bin nr. %u (k=%.2f)\n",uMomBin,GetMomentum(uMomBin));}
+                if(!NR_Status) {MomBinConverged[uMomBin]=false;}
+
                 double ShiftRho = ShiftRad*Momentum;
                 double Norm = ReferencePartialWave(MaxConvRad+ShiftRad, Momentum, usPW, q1q2)/MaxConvergedNumWF;
 
@@ -2194,6 +2190,25 @@ DEBUG=-1;
                 WaveFunRad[uMomBin][usCh][usPW][SWFB] = 2*BufferRad[SWFB-1]-WaveFunRad[uMomBin][usCh][usPW][SWFB-1];
 
             }//if(MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
+
+            //in case the method failed to converge, the whole momentum bin is marked as unreliable and no
+            //further computations are done. This point will be excluded from the final result
+            if(!Converged){
+                MomBinConverged[uMomBin] = false;
+                if(Notifications>=nWarning)
+                    printf("          \033[1;33mWARNING:\033[0m A momentum bin at %.2f MeV failed to converge!\n", Momentum);
+                if(ExcludeFailedConvergence && Notifications>=nWarning){
+                    printf("                   It will be excluded from the final result!\n");
+                }
+            }
+            if(!NR_Status){
+                MomBinConverged[uMomBin] = false;
+                if(Notifications>=nWarning)
+                    printf("          \033[1;33mWARNING:\033[0m The failed NewtonRapson occurred at %.2f MeV!\n", Momentum);
+                if(ExcludeFailedConvergence && Notifications>=nWarning){
+                    printf("                   The corresponding bin will be excluded from the final result!\n");
+                }
+            }
 
             delete [] BufferRad;
             delete [] BufferWaveFunction;
@@ -3198,8 +3213,9 @@ double CATS::AsymptoticRatio(const double& Radius, const double& Momentum, const
 
 double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&) const,
                           const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
-                          const double&  xMin, const double&  xMax, const double& fValShift) const{
+                          const double&  xMin, const double&  xMax, const double& fValShift, bool& status) const{
 
+    status = true;
     const unsigned maxIter = 256;
 
     double DeltaX;
@@ -3213,7 +3229,7 @@ double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&,
         if(!DeltaF){
             DeltaX=1;
             if(Notifications>=nWarning)
-                printf("\033[1;33mWARNING:\033[0m Something is fishy with the NewtonRapson solver! Might be a bug! Please contact the developers!\n");
+                {printf("\033[1;33mWARNING:\033[0m Something is fishy with the NewtonRapson solver! Might be a bug! Please contact the developers!\n");status=false;}
         }
         else DeltaX = -fVal*EpsilonX/DeltaF;
         xVal += DeltaX;
@@ -3227,14 +3243,14 @@ double CATS::NewtonRapson(double (CATS::*Function)(const double&, const double&,
         }
         if(counter==16 && fabs(fValNew)>fabs(fVal)){
             if(Notifications>=nWarning)
-                printf("\033[1;33mWARNING:\033[0m The backtracking of the NewtonRapson root-finder failed!\n");
+                {printf("\033[1;33mWARNING:\033[0m The backtracking of the NewtonRapson root-finder failed!\n");status=false;}
         }
         if(fabs(fValNew)<fabs(DeltaF)){
             return xVal;
         }
     }
     if(Notifications>=nWarning)
-        printf("\033[1;33mWARNING:\033[0m The NewtonRapson root-finder failed!\n");
+        {printf("\033[1;33mWARNING:\033[0m The NewtonRapson root-finder failed!\n");status=false;}
     return xVal;
 }
 

@@ -593,7 +593,7 @@ protected:
     //a numerical root-finder. Very fast and accurate for well-behaved (near to linear) functions
     double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&) const,
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
-                          const double&  xMin, const double&  xMax, const double& fValShift) const;
+                          const double&  xMin, const double&  xMax, const double& fValShift, bool& status) const;
 
     template <class Type> void ResortData(Type* input, DLM_Sort <int64_t, unsigned>& Sorter);
     unsigned GetBoxId(double* particle);
