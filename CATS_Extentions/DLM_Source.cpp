@@ -49,13 +49,15 @@ return GaussSource(Pars)*exp(-pow((Pars[2]-1)/(2.*0.4),2.));
 }
 
 //double CauchySource(const double& Radius, const double& Size){
-//single particle
+//based on single particle emission, which leads to a rather complicated expression, that is approximated with the formula below
 double CauchySource(double* Pars){
-    //double& Momentum = Pars[0];
     double& Radius = Pars[1];
-    //double& CosTheta = Pars[2];
     double& Size = Pars[3];
     return 2.97*Size*sqrt(2)*Radius*Radius/Pi*pow(Radius*Radius+0.125*2.97*2.97*Size*Size,-2.);
+
+}
+double CauchySourceTheta(double* Pars){
+    return 0.5*CauchySource(Pars);
 }
 
 double CauchySource_v2(double* Pars){
@@ -67,8 +69,13 @@ double CauchySource_v2(double* Pars){
             atan(sqrt(2.+0.5*pow(Radius/Size,2.))*Radius/Size/sqrt(2));
 }
 
-double CauchySourceTheta(double* Pars){
-    return 0.5*CauchySource(Pars);
+//follows the definition here (Eur. Phys. J. C 36, 67–78 (2004))
+//it has the same functional shape as CauchySource, but the parameterization is slightly different,
+//i.e. there is going to be a multiplicative offset between the obtained radii
+double ExponentialSource(double* Pars){
+    double& Radius = Pars[1];
+    double& Size = Pars[3];
+    return 4.*Radius*Radius*Size*pow(Radius*Radius+Size*Size,-2.);
 }
 
 double DoubleGaussSource(double* Pars){

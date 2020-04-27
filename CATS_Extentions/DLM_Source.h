@@ -13,6 +13,8 @@ double GaussSourceTF1(double* x, double* Pars);
 double GaussSourceTheta(double* Pars);
 double CauchySource(double* Pars);
 double CauchySourceTheta(double* Pars);
+double CauchySource_v2(double* Pars);
+double ExponentialSource(double* Pars);
 
 double DoubleGaussSource(double* Pars);
 double GaussCauchySource(double* Pars);

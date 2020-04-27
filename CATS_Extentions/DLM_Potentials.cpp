@@ -735,7 +735,7 @@ double KpProtonEquivalentPotential(double* pars){
     double par[7]={0};
     double v = 0;
     /*
-      the I=0 and I=1 equivalent potentials are taken from 
+      the I=0 and I=1 equivalent potentials are taken from
       Kaon-nucleon scattering amplitudes and S' enhancements from quark Born diagrams
       T. Barnes & E. S. Swanson
       PHYSICAL REVIEW C VOLUME 49, NUMBER 2 FEBRUARY 1994
@@ -749,11 +749,11 @@ double KpProtonEquivalentPotential(double* pars){
       par[2]    =   0.00379167;
       par[3]    =     0.176426;
       par[4]    =      1.43336;
-      par[5]    =   0.00259035; 
+      par[5]    =   0.00259035;
       par[6]    =    0.0412807;
-      
+
       v = par[0]*(par[1]/par[2]*exp(-r*r/par[3])+par[4]/par[5]*exp(-r*r/par[6]));
-      
+
     }
     else if (Spin == 1)  {
       //      par[0]  =     0.844204;
@@ -766,7 +766,7 @@ double KpProtonEquivalentPotential(double* pars){
       par[6]  =    0.0418019;
 
       v = par[0]*(par[1]/par[2]*exp(-r*r/par[3])+par[4]/par[5]*exp(-r*r/par[6]));
- 
+
     }
     else printf ("wrong polarization\n");
 
@@ -1067,6 +1067,22 @@ double UsmaniPotentialOli(const int& Spin, double* Radius)
 
 }
 
+double UsmaniPotentialCats(double* Pars){
+    double& r = Pars[0];
+    double& Spin = Pars[2];
+    //Values for the potential
+    const double vbar = 6.2;
+    const double vsigma = 0.25;
+    const double wc = 2137;
+    double x=r*0.7;
+    double vc = wc/(1+exp((r-0.5)/0.2));
+    double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-2.*r*r),2.);
+    double v = 0.;
+    if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
+    else if (Spin == 1)  v = vc - (vbar - 0.25*vsigma)*tpi*tpi;//Usmani triplet
+    else printf ("wrong polarization\n");
+    return v;
+}
 
 ////////////////////////////////////////////
 

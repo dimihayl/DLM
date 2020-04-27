@@ -24,7 +24,7 @@ double DoubleGaussSum(double* Pars);
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2
 double TripleGaussSum(double* Pars);
 double GaussExpSum(double* Pars);
-
+double UsmaniPotentialCats(double* Pars);
 double RepulsiveCore(double* Pars);
 
 void SetUpNorfolk(const char* InputFolder);
@@ -47,7 +47,7 @@ double Tetsuo_pKm(const int& WhichPot, const int& DlmPotFlag,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius);
 
 double KpProtonEquivalentPotential(double* pars);
-  
+
 double ReidSoftCore1S0(double* Radius);
 double ReidSoftCore3P(double* Radius);
 
