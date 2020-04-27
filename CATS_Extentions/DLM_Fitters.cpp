@@ -9,11 +9,14 @@
 #include "TSpline.h"
 #include "TSVDUnfold.h"
 #include "TRandom3.h"
+#include "TH2D.h"
 
 //for test only
 #include "TFile.h"
 
-#include "DLM_CkDecomposition.h"
+#include "DLM_Ck.h"
+#include "DLM_CkDecomp.h"
+
 
 double DLM_FITTER2_FUNCTION_POL(double* xVal, double* pars){
     const int Order = TMath::Nint(pars[0]);
@@ -53,7 +56,7 @@ double DLM_FITTER2_FUNCTION_SPLINE3(double* xVal, double* pars){
 DLM_Fitter1::DLM_Fitter1(const unsigned& maxnumsyst):MaxNumSyst(maxnumsyst),NumPar(26+25),NumRangePar(4){
     HistoOriginal = new const TH1F* [MaxNumSyst];
     HistoToFit = new TH1F* [MaxNumSyst];
-    SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
+    SystemToFit = new DLM_CkDecomp* [MaxNumSyst];
     SourceSystems = NULL;
     PotentialSystems = NULL;
     ParentSource = NULL;
@@ -203,13 +206,13 @@ DLM_Fitter1::~DLM_Fitter1(){
 }
 
 //void DLM_Fitter1::TEST1(const unsigned& WhichSyst, TH1F* histo, const double& FromMeV ,
-//                   DLM_CkDecomposition* decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX){
+//                   DLM_CkDecomp* decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX){
 //HistoToFit[0] = new TH1F(TString::Format("HistoToFit%u",0),TString::Format("HistoToFit%u",0),10,0,1);
 //return;
 //}
 
 void DLM_Fitter1::SetSystem(const unsigned& WhichSyst, const TH1F& histo, const double& FromMeV ,
-                   DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX){
+                   DLM_CkDecomp& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX){
 
 
 //printf("&decomp = %p\n",&decomp);
@@ -304,7 +307,7 @@ TString DLM_Fitter1::GetSystem(const unsigned& WhichSyst){
     return Result;
 }
 
-bool DLM_Fitter1::ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomposition& decomp){
+bool DLM_Fitter1::ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomp& decomp){
     if(WhichSyst>=MaxNumSyst){
         printf("WARNING: ChangeCkModel says WhichSyst>=MaxNumSyst\n");
         return false;
@@ -932,9 +935,12 @@ const TH1F* DLM_Fitter1::GetGlobalHisto() const{
     return HistoGlobal;
 }
 
+
 //typical values for the Regulator: around 10
 //note that to get a better handle on the uncertainties, the unfolding is repeated 100 times for randomly generated Ck
 TGraphErrors* DLM_Fitter1::GetUnfoldedCk(const unsigned& WhichSyst, const unsigned& Regulator, const TString& SaveIntoFile) const{
+    return NULL;
+/*
     if(WhichSyst>=MaxNumSyst) return NULL;
     int unf_NumBins = HistoToFit[WhichSyst]->GetNbinsX();
     double unf_kmin = HistoToFit[WhichSyst]->GetBinLowEdge(1);
@@ -1081,6 +1087,7 @@ TGraphErrors* DLM_Fitter1::GetUnfoldedCk(const unsigned& WhichSyst, const unsign
     if(fOutput) {delete fOutput; fOutput=NULL;}
 
     return grUnfoldedData;
+*/
 }
 
 void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
@@ -1178,7 +1185,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
 //printf("NumSourceSystems=%u\n",NumSourceSystems);
     //we reset all memory regarding the fit
     if(SourceSystems){delete[]SourceSystems;SourceSystems=NULL;}
-    if(NumSourceSystems) SourceSystems = new DLM_CkDecomposition*[NumSourceSystems];
+    if(NumSourceSystems) SourceSystems = new DLM_CkDecomp*[NumSourceSystems];
     if(ParentSource){delete[]ParentSource;ParentSource=NULL;}
     if(NumSourceSystems) ParentSource = new int [NumSourceSystems];
 //printf("SourceSystems=%p\n",SourceSystems);
@@ -1223,7 +1230,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
     //set the addresses of the secondary Ck functions to the SourceSystems
     for(unsigned uSourceMap=0; uSourceMap<NumSourceMapEntries; uSourceMap++){
         bool IsNotCkToFit=true;
-        DLM_CkDecomposition* SystAddress=NULL;
+        DLM_CkDecomp* SystAddress=NULL;
         for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
             if(!SystemToFit[uSyst]) continue;
             SystemToFit[uSyst]->GetName(buffer);
@@ -1291,7 +1298,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
 //printf("NumPotentialSystems=%u\n",NumPotentialSystems);
     //we reset all memory regarding the fit
     if(PotentialSystems){delete[]PotentialSystems;PotentialSystems=NULL;}
-    if(NumPotentialSystems) PotentialSystems = new DLM_CkDecomposition*[NumPotentialSystems];
+    if(NumPotentialSystems) PotentialSystems = new DLM_CkDecomp*[NumPotentialSystems];
     if(ParentPotential){delete[]ParentPotential;ParentPotential=NULL;}
     if(NumPotentialSystems) ParentPotential = new int [NumPotentialSystems];
 //printf("PotentialSystems=%p\n",PotentialSystems);
@@ -1337,7 +1344,7 @@ void DLM_Fitter1::GoBabyGo(const bool& show_fit_info){
     //set the addresses of the secondary Ck functions to the PotentialSystems
     for(unsigned uPotentialMap=0; uPotentialMap<NumPotentialMapEntries; uPotentialMap++){
         bool IsNotCkToFit=true;
-        DLM_CkDecomposition* SystAddress=NULL;
+        DLM_CkDecomp* SystAddress=NULL;
         for(unsigned uSyst=0; uSyst<MaxNumSyst; uSyst++){
             if(!SystemToFit[uSyst]) continue;
             SystemToFit[uSyst]->GetName(buffer);
@@ -1815,7 +1822,7 @@ DLM_Fitter2::DLM_Fitter2(const int& maxnumsyst):MaxNumSyst(maxnumsyst){
     StartPotPars = new int [MaxNumSyst];
     StartAddBlPars = new int [MaxNumSyst];
     StartMultBlPars = new int [MaxNumSyst];
-    SystemToFit = new DLM_CkDecomposition* [MaxNumSyst];
+    SystemToFit = new DLM_CkDecomp* [MaxNumSyst];
     Function_AddBl = new FitterFunction [MaxNumSyst];
     Function_MultBl = new FitterFunction [MaxNumSyst];
     FunctionType_AddBl = new  fBlFunction[MaxNumSyst];

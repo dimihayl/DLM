@@ -4,19 +4,17 @@
 #include "CATS.h"
 #include "DLM_Histo.h"
 
-#include "TH2F.h"
-
 class DLM_ResponseMatrix{
 
 public:
-    DLM_ResponseMatrix(DLM_Histo<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia=false);
-    DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia=false);
+    DLM_ResponseMatrix(DLM_Histo<double>& ch, const DLM_Histo<float>* hs, const DLM_Histo<float>* hr, const bool& ia=false);
+    DLM_ResponseMatrix(CATS& ab, const DLM_Histo<float>* hs, const DLM_Histo<float>* hr, const bool& ia=false);
     ~DLM_ResponseMatrix();
 
     DLM_Histo<double>* CatHisto;
     bool CatHistoIsMyOwn;
-    const TH2F* hSigmaMatrix;
-    const TH2F* hResidualMatrix;
+    const DLM_Histo<float>* hSigmaMatrix;
+    const DLM_Histo<float>* hResidualMatrix;
 
     //by default the input matrices are supposed to be [Y][X]
     //with the X axis being the the original (unsmeared) momentum
@@ -53,7 +51,7 @@ private:
     void MakeUnitMatrix(const int& WhichMatr);
 
 //converts the TH2F matrix to double** format
-    void ConvertMatrix(const int& WhichMatr, const TH2F* input, const bool& InvAxis);
+    void ConvertMatrix(const int& WhichMatr, const DLM_Histo<float>* input, const bool& InvAxis);
 
     double BilinearInterpolation(const double& x0, const double& y0,
                                  const double& x1, const double& y1,

@@ -1793,8 +1793,8 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
     //int RadBin = Histo->GetBin(0,Radius);
     int ScaleBin = Histo->GetBin(1,Scale);
     int StabilityBin = Histo->GetBin(2,Stability);
-    if(ScaleBin<0||ScaleBin>=Histo->GetNbins()) {printf("\033[1;33mWARNING!\033[0m A bad scaling parameter passed into DLM_CleverMcLevyResoTM::Eval\n"); return 0;}
-    if(StabilityBin<0||StabilityBin>=Histo->GetNbins()) {printf("\033[1;33mWARNING!\033[0m A bad stability parameter passed into DLM_CleverMcLevyResoTM::Eval\n"); return 0;}
+    if(ScaleBin<0||ScaleBin>=int(Histo->GetNbins())) {printf("\033[1;33mWARNING!\033[0m A bad scaling parameter passed into DLM_CleverMcLevyResoTM::Eval\n"); return 0;}
+    if(StabilityBin<0||StabilityBin>=int(Histo->GetNbins())) {printf("\033[1;33mWARNING!\033[0m A bad stability parameter passed into DLM_CleverMcLevyResoTM::Eval\n"); return 0;}
     unsigned WhichBin[3];
     double par_stability;
     double par_scale;

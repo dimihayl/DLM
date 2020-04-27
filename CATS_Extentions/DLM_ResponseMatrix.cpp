@@ -73,7 +73,7 @@ void DLM_ResponseMatrix::DefaultConstructor(){
     }
 }
 
-DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr, const bool& ia):
+DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const DLM_Histo<float>* hs, const DLM_Histo<float>* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ab.GetNumMomBins()){
     double* BINS = ab.CopyMomBin();
     CatHisto = new DLM_Histo<double> ();
@@ -85,7 +85,7 @@ DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const TH2F* hs, const TH2F* hr,
     DefaultConstructor();
 }
 
-DLM_ResponseMatrix::DLM_ResponseMatrix(DLM_Histo<double>& ch, const TH2F* hs, const TH2F* hr, const bool& ia):
+DLM_ResponseMatrix::DLM_ResponseMatrix(DLM_Histo<double>& ch, const DLM_Histo<float>* hs, const DLM_Histo<float>* hr, const bool& ia):
     hSigmaMatrix(hs),hResidualMatrix(hr),InvertedAxis(ia),NumMomBins(ch.GetNbins()){
 
     CatHisto = &ch;
@@ -197,7 +197,7 @@ void DLM_ResponseMatrix::MakeUnitMatrix(const int& WhichMatr){
     }
 }
 
-void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, const bool& InvAxis){
+void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const DLM_Histo<float>* input, const bool& InvAxis){
 
     int** Sparse = GetSparse(WhichMatr);
     double** Matrix = GetMatrix(WhichMatr);
@@ -221,8 +221,9 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
     double* WeightY = new double [MaxBufferSize];
 
     //if the axis are inverted
-    const TAxis* Xaxis = InvAxis?input->GetYaxis():input->GetXaxis();
-    const TAxis* Yaxis = InvAxis?input->GetXaxis():input->GetYaxis();
+    const int Xaxis = InvAxis;
+    const int Yaxis = !InvAxis;
+
     for(int iBin=0; iBin<NumMomBins; iBin++){
         Sparse[iBin][xAxisFirst] = -1;
         Sparse[iBin][xAxisLast] = -2;
@@ -236,8 +237,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
         MomLowEdgeX = CatHisto->GetBinLowEdge(0,iBinX);
         MomUpEdgeX = CatHisto->GetBinUpEdge(0,iBinX);
         //the corresponding bin numbers in the smear histogram
-        WhichBinAtLowEdgeX = Xaxis->FindFixBin(MomLowEdgeX);
-        WhichBinAtUpEdgeX = Xaxis->FindFixBin(MomUpEdgeX);
+        WhichBinAtLowEdgeX = input->GetBin(Xaxis,MomLowEdgeX);
+        WhichBinAtUpEdgeX = input->GetBin(Xaxis,MomUpEdgeX);
         //number of histogram bins that are enclosed in this interval
         NumOldBinsX = WhichBinAtUpEdgeX - WhichBinAtLowEdgeX + 1;
 //Printf("MomLowEdgeX=%f", MomLowEdgeX);
@@ -253,8 +254,8 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
         for(int iBinY=0; iBinY<NumMomBins; iBinY++){
             MomLowEdgeY = CatHisto->GetBinLowEdge(0,iBinY);
             MomUpEdgeY = CatHisto->GetBinUpEdge(0,iBinY);
-            WhichBinAtLowEdgeY = Xaxis->FindFixBin(MomLowEdgeY);
-            WhichBinAtUpEdgeY = Xaxis->FindFixBin(MomUpEdgeY);
+            WhichBinAtLowEdgeY = input->GetBin(Yaxis,MomLowEdgeY);
+            WhichBinAtUpEdgeY = input->GetBin(Yaxis,MomUpEdgeY);
             NumOldBinsY = WhichBinAtUpEdgeY - WhichBinAtLowEdgeY + 1;
             if(NumOldBinsY>MaxBufferSize){
                 printf("ERROR: DLM_ResponseMatrix::ConvertMatrix hates you since NumOldBinsX>MaxBufferSize\nA CRASH SHOULD FOLLOW!\n");
@@ -263,26 +264,29 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const TH2F* input, 
             for(int iOldBinX=1; iOldBinX<NumOldBinsX-1; iOldBinX++){
                 WeightX[iOldBinX] = 1;
             }
-            WeightX[0] = (Xaxis->GetBinUpEdge(WhichBinAtLowEdgeX)-MomLowEdgeX)/Xaxis->GetBinWidth(WhichBinAtLowEdgeX);
+
+            WeightX[0] = (input->GetBinUpEdge(Xaxis,WhichBinAtLowEdgeX)-MomLowEdgeX)/input->GetBinSize(Xaxis,WhichBinAtLowEdgeX);
             if(NumOldBinsX>1){
-                WeightX[NumOldBinsX-1] = (MomUpEdgeX-Xaxis->GetBinLowEdge(WhichBinAtUpEdgeX))/Xaxis->GetBinWidth(WhichBinAtUpEdgeX);
+                WeightX[NumOldBinsX-1] = (MomUpEdgeX-input->GetBinLowEdge(Xaxis,WhichBinAtUpEdgeX))/input->GetBinSize(Xaxis,WhichBinAtUpEdgeX);
             }
 
             for(int iOldBinY=1; iOldBinY<NumOldBinsY-1; iOldBinY++){
                 WeightY[iOldBinY] = 1;
             }
-            WeightY[0] = (Yaxis->GetBinUpEdge(WhichBinAtLowEdgeY)-MomLowEdgeY)/Yaxis->GetBinWidth(WhichBinAtLowEdgeY);
+            WeightY[0] = (input->GetBinUpEdge(Yaxis,WhichBinAtLowEdgeY)-MomLowEdgeY)/input->GetBinSize(Yaxis,WhichBinAtLowEdgeY);
             if(NumOldBinsY>1){
-                WeightY[NumOldBinsY-1] = (MomUpEdgeY-Yaxis->GetBinLowEdge(WhichBinAtUpEdgeY))/Yaxis->GetBinWidth(WhichBinAtUpEdgeY);
-            }
-            Matrix[iBinY][iBinX] = 0;
-            for(int iOldBinX=0; iOldBinX<NumOldBinsX; iOldBinX++){
-                for(int iOldBinY=0; iOldBinY<NumOldBinsY; iOldBinY++){
-                    Matrix[iBinY][iBinX] += WeightX[iOldBinX]*WeightY[iOldBinY]*
-                        input->GetBinContent(WhichBinAtLowEdgeX+iOldBinX, WhichBinAtLowEdgeY+iOldBinY);
-                }
+                WeightY[NumOldBinsY-1] = (MomUpEdgeY-input->GetBinLowEdge(Yaxis,WhichBinAtUpEdgeY))/input->GetBinSize(Yaxis,WhichBinAtUpEdgeY);
             }
 
+            Matrix[iBinY][iBinX] = 0;
+            for(int iOldBinX=0; iOldBinX<NumOldBinsX; iOldBinX++){
+                unsigned WhichBin[2];
+                for(int iOldBinY=0; iOldBinY<NumOldBinsY; iOldBinY++){
+                    WhichBin[Xaxis] = WhichBinAtLowEdgeX+iOldBinX;
+                    WhichBin[Yaxis] = WhichBinAtLowEdgeY+iOldBinY;
+                    Matrix[iBinY][iBinX] += WeightX[iOldBinX]*WeightY[iOldBinY]*input->GetBinContent(WhichBin);
+                }
+            }
             if(Matrix[iBinY][iBinX]!=0 && Sparse[iBinY][xAxisFirst]==-1){
                 Sparse[iBinY][xAxisFirst] = iBinX;
             }
@@ -367,7 +371,7 @@ printf("SUMY = %f\n",SUMY);
 
 
 
-
+/*
 void RespMatrTest1(){
 
     const int NumBins = 3;
@@ -411,5 +415,5 @@ void RespMatrTest1(){
     delete hTest1;
 
 }
-
+*/
 
