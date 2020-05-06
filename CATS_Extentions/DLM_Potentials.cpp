@@ -488,27 +488,34 @@ struct LatticeValues{
     double** PAR_VST;
 
     double EvalV(const int& iFlag, const int& Element, const double& Rad){
-        if(iFlag>=3 || iFlag<0) return 0;
-        double* PAR = Element==0?PAR_V0[iFlag]:Element==1?PAR_VS[iFlag]:Element==2?PAR_VT[iFlag]:Element==3?PAR_VST[iFlag]:NULL;
+        if(iFlag>=3 || iFlag<-3) return 0;
+        double YukawaPowerVST;
+        int FLAG = iFlag;
+        if(iFlag<0) {YukawaPowerVST=2.0; FLAG=-iFlag-1;}
+        else {YukawaPowerVST=1.0; FLAG=iFlag;}
+        double* PAR = Element==0?PAR_V0[FLAG]:Element==1?PAR_VS[FLAG]:Element==2?PAR_VT[FLAG]:Element==3?PAR_VST[FLAG]:NULL;
         if(!PAR) return 0;
         if(!Rad || !PAR[1] || !PAR[3] || !PAR[5]) return 0;
         return  PAR[0]*exp(-pow(Rad/PAR[1],2.))+PAR[2]*exp(-pow(Rad/PAR[3],2.))+PAR[4]*exp(-pow(Rad/PAR[5],2.))+
-                PAR[6]*pow(1.-exp(-PAR[7]*Rad*Rad),2.)*exp(-2.*146./197.3269602*Rad)/(Rad*Rad);
+                PAR[6]*pow(1.-exp(-PAR[7]*Rad*Rad),YukawaPowerVST)*exp(-YukawaPowerVST*146./197.3269602*Rad)/(Rad*Rad);
     }
 
     double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
-        int iFlag = DlmPotFlag-11;
+        int iFlag = abs(DlmPotFlag)-11;
+        int iFlagYk = iFlag;
+        if(DlmPotFlag<0) iFlagYk = -iFlag-1;
+//printf("DlmPotFlag=%i\n",DlmPotFlag);
         if(IsoSpin==0 && Spin==0){
-            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlag,3,Rad);
+            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlagYk,3,Rad);
         }
         else if(IsoSpin==0 && Spin==1){
-            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3,Rad);
+            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)-3.*EvalV(iFlagYk,3,Rad);
         }
         else if(IsoSpin==1 && Spin==0){
-            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3,Rad);
+            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)-3.*EvalV(iFlagYk,3,Rad);
         }
         else if(IsoSpin==1 && Spin==1){
-            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlag,3,Rad);
+            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlagYk,3,Rad);
         }
         else return 0;
     }
@@ -517,17 +524,15 @@ struct LatticeValues{
 
 
 //updated version from 1th October 2018
+//there was a bug version, where one of the exponential (Yukawa) terms had the wrong power
+//to call the broken version, use a negative DlmPotFlag
 double LatticePots_pXi_ver2(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
-    static LatticeValues LVAL;
+    static LatticeValues LVAL(DlmPotFlag>=0);
     if(AngMom) return 0;
     return LVAL.Eval(DlmPotFlag,IsoSpin,Spin,Radius[0]);
 }
-
-
-
-
 
 
 
