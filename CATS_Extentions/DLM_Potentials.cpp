@@ -529,7 +529,7 @@ struct LatticeValues{
 double LatticePots_pXi_ver2(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars){
-    static LatticeValues LVAL(DlmPotFlag>=0);
+    static LatticeValues LVAL;
     if(AngMom) return 0;
     return LVAL.Eval(DlmPotFlag,IsoSpin,Spin,Radius[0]);
 }
