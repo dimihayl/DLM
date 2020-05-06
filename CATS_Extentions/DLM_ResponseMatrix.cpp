@@ -79,6 +79,7 @@ DLM_ResponseMatrix::DLM_ResponseMatrix(CATS& ab, const DLM_Histo<float>* hs, con
     CatHisto = new DLM_Histo<double> ();
     CatHisto->SetUp(1);
     CatHisto->SetUp(0,ab.GetNumMomBins(), BINS);
+    CatHisto->Initialize();
     CatHistoIsMyOwn = true;
     delete [] BINS;
 
