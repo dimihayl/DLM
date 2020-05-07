@@ -522,7 +522,8 @@ struct LatticeValues{
 
 
 struct LatticeValuesPaper{
-  std::vector<std::vector<float>> parameter; 
+  std::vector<std::vector<float>> parameter;
+  std::vector<std::vector<float>> parameterOLD; 
   LatticeValuesPaper() {
     //Following the most recent hal publication: https://inspirehep.net/literature/1771619
     //Values are summarized: https://docs.google.com/spreadsheets/d/12g3YztBIpL7BlTBpEbNnV_C5vR8K1NiOLOWwRoZb03I/edit?usp=sharing
@@ -604,10 +605,75 @@ struct LatticeValuesPaper{
       {0.1257,0.2317,0.497,862.3302,442.6556,387.1174,-85.5663,0.4042,-132.0333,-48.5274,-12.7652,192.7584,89.9265,44.6653,-65.85,-43.9422,-16.0204,-1.3882,0.3342},
       {0.128,0.2405,0.4999,896.4969,415.9204,376.6059,-85.9244,0.4066,-132.3181,-46.6662,-10.4764,203.886,79.3207,43.7329,-72.6295,-40.1308,-14.7768,-1.4244,0.2629},
       {0.1282,0.2444,0.513,906.2299,435.2305,347.2022,-89.1028,0.4197,-131.5798,-45.768,-11.5168,202.3761,85.1461,39.9807,-77.0847,-35.737,-14.441,-1.2891,0.1796}
-    }; 
+    };
+    
+    //old parameters for QA
+    //V0 alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_2 = d1, rho2 = 1/sqrt(d2) 
+    //VS alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
+    //VT alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
+    //VST alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_1 = d1, rho2 = 1/sqrt(d2) 
+    parameterOLD =
+      {
+	{ 832.719,0.126567,306.315,0.262349,521.285,0.461616,-80.9157,9.41638,-112.713,0.119882,-60.3916,0.219904,-12.971,0.440375,0,0,205.93,0.135111,93.3825,0.278859,26.9143,0.588477,0,0,-79.774,0.135531,-32.564,0.275606,-9.3541,0.538997,-1.75591,2.88912 },
+	{800.944,0.125499,340.209,0.25353,528.537,0.453636,-74.9729,9.89426,-124.804,0.122483,-48.2802,0.234785,-12.4604,0.450708,0,0,170.527,0.121487,117.874,0.224199,42.0892,0.510129,0,0,-90.3105,0.148112,-26.359,0.351332,-4.72814,0.707443,-1.26899,2.55046},
+	{807.648,0.12642,359.403,0.255362,500.769,0.451934,-67.7968,10.0506,-52.9071,0.0916017,-119.322,0.164464,-22.4783,0.408204,0,0,124.788,0.112992,151.176,0.194521,48.0954,0.490352,0,0,-82.1509,0.15925,-26.2495,0.358359,-6.31347,0.639725,-1.32727,2.67235}
+      };
   }
-  ~LatticeValuesPaper(){} 
   
+  ~LatticeValuesPaper(){} 
+
+  double EvalVOld(const int& iFlag, const int& Element, const double& Rad){
+    if(iFlag > 3 || iFlag < 0) {
+      return 0;
+    } else  {
+      double out = 0;
+      if (Element == 0) {
+	double alph_1 = parameterOLD[iFlag][0];
+	double beta_1 = parameterOLD[iFlag][1];
+	double alph_2 = parameterOLD[iFlag][2];
+	double beta_2 = parameterOLD[iFlag][3];
+	double alph_3 = parameterOLD[iFlag][4];
+	double beta_3 = parameterOLD[iFlag][5];
+	double lmb_2  = parameterOLD[iFlag][6];
+	double rho_2  = parameterOLD[iFlag][7];
+	out = EvalYukawa(Rad, 1./sqrt(rho_2));
+	out = out*out*lmb_2; 
+	out += EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
+	//std::cout << "Element 0, Radius: " << Rad << " EvalYukawa(Rad, 1./sqrt(rho_2))" << EvalYukawa(Rad, 1./sqrt(rho_2)) << "\n";
+      } else if (Element == 1) {
+	double alph_1 = parameterOLD[iFlag][8];
+	double beta_1 = parameterOLD[iFlag][9];
+	double alph_2 = parameterOLD[iFlag][10];
+	double beta_2 = parameterOLD[iFlag][11];
+	double alph_3 = parameterOLD[iFlag][12];
+	double beta_3 = parameterOLD[iFlag][13];
+	//14
+	//15 
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
+      } else if (Element == 2) {
+	double alph_1 = parameterOLD[iFlag][16];
+	double beta_1 = parameterOLD[iFlag][17];
+	double alph_2 = parameterOLD[iFlag][18];
+	double beta_2 = parameterOLD[iFlag][19];
+	double alph_3 = parameterOLD[iFlag][20];
+	double beta_3 = parameterOLD[iFlag][21];
+	//22
+	//23
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
+      } else if (Element == 3) { 
+	double alph_1 = parameterOLD[iFlag][24];
+	double beta_1 = parameterOLD[iFlag][25];
+	double alph_2 = parameterOLD[iFlag][26];
+	double beta_2 = parameterOLD[iFlag][27];
+	double alph_3 = parameterOLD[iFlag][28];
+	double beta_3 = parameterOLD[iFlag][29];
+	double lmb_1  = parameterOLD[iFlag][30];
+	double rho_1  = parameterOLD[iFlag][31];
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3)+lmb_1*EvalYukawa(Rad, rho_1); 
+      }
+      return out; 
+    } 
+  }
   double EvalV(const int& iFlag, const int& Element, const double& Rad){
     if(iFlag > 68 || iFlag < 0) {
       return 0;
@@ -616,7 +682,7 @@ struct LatticeValuesPaper{
       double beta_1 = parameter[iFlag][0];
       double beta_2 = parameter[iFlag][1];
       double beta_3 = parameter[iFlag][2];
-      if (Element == 0) {
+      if (Element == 0) {//v0
 	double alph_1 = parameter[iFlag][3];
 	double alph_2 = parameter[iFlag][4];
 	double alph_3 = parameter[iFlag][5];
@@ -625,17 +691,17 @@ struct LatticeValuesPaper{
 	out = EvalYukawa(Rad, rho_2);
 	out = out*out*lmb_2; 
 	out += EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
-      } else if (Element == 1) {
+      } else if (Element == 1) {//vs
 	double alph_1 = parameter[iFlag][8];
 	double alph_2 = parameter[iFlag][9];
 	double alph_3 = parameter[iFlag][10];
 	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
-      } else if (Element == 2) {
+      } else if (Element == 2) {//vt
 	double alph_1 = parameter[iFlag][11];
 	double alph_2 = parameter[iFlag][12];
 	double alph_3 = parameter[iFlag][13];
 	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
-      } else if (Element == 3) { 
+      } else if (Element == 3) {//vst
 	double alph_1 = parameter[iFlag][14];
 	double alph_2 = parameter[iFlag][15];
 	double alph_3 = parameter[iFlag][16];
@@ -646,28 +712,28 @@ struct LatticeValuesPaper{
       return out; 
     } 
   }
-
+  
   double EvalExp(const double& Rad, const double& alpha, const double& beta) {
     return alpha*exp(-(Rad/beta)*(Rad/beta)); 
   }
   double EvalYukawa(const double& Rad, const double& rho) {
-    double m_pion = 146.;
+    double m_pion = 146./197.3269602;
     return (1.-exp(-Rad*Rad/(rho*rho)))*exp(-m_pion*Rad)/Rad; 
   }
   
   double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
     int iFlag = DlmPotFlag-11;
     if(IsoSpin==0 && Spin==0){
-      return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlag,3,Rad);
+      return EvalVOld(iFlag,0,Rad)-3.*EvalVOld(iFlag,1,Rad)-3.*EvalVOld(iFlag,2,Rad)+9.*EvalVOld(iFlag,3,Rad);
     }
     else if(IsoSpin==0 && Spin==1){
-      return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3,Rad);
+      return EvalVOld(iFlag,0,Rad)+EvalVOld(iFlag,1,Rad)-3.*EvalVOld(iFlag,2,Rad)-3.*EvalVOld(iFlag,3,Rad);
     }
     else if(IsoSpin==1 && Spin==0){
-      return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3,Rad);
+      return EvalVOld(iFlag,0,Rad)-3.*EvalVOld(iFlag,1,Rad)+EvalVOld(iFlag,2,Rad)-3.*EvalVOld(iFlag,3,Rad);
     }
     else if(IsoSpin==1 && Spin==1){
-      return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlag,3,Rad);
+      return EvalVOld(iFlag,0,Rad)+EvalVOld(iFlag,1,Rad)+EvalVOld(iFlag,2,Rad)+EvalVOld(iFlag,3,Rad);
     }
     else return 0;
   }
