@@ -487,12 +487,14 @@ struct LatticeValues{
     double** PAR_VT;
     double** PAR_VST;
 
+    //if element is 3 => correct potential
+    //if element is 4 => the old (wrong) parameterization of the yukawa term (with power of 2)
     double EvalV(const int& iFlag, const int& Element, const double& Rad){
         if(iFlag>=3 || iFlag<-3) return 0;
-        double YukawaPowerVST;
+        double YukawaPowerVST=2.0;
         int FLAG = iFlag;
-        if(iFlag<0) {YukawaPowerVST=2.0; FLAG=-iFlag-1;}
-        else {YukawaPowerVST=1.0; FLAG=iFlag;}
+        if(FLAG==3) YukawaPowerVST=1.0;//for the 3rd element only
+        if(FLAG==4) FLAG=3;//dummy flag to make the 3rd element wrong (as in an older computation)
         double* PAR = Element==0?PAR_V0[FLAG]:Element==1?PAR_VS[FLAG]:Element==2?PAR_VT[FLAG]:Element==3?PAR_VST[FLAG]:NULL;
         if(!PAR) return 0;
         if(!Rad || !PAR[1] || !PAR[3] || !PAR[5]) return 0;
@@ -502,20 +504,17 @@ struct LatticeValues{
 
     double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
         int iFlag = abs(DlmPotFlag)-11;
-        int iFlagYk = iFlag;
-        if(DlmPotFlag<0) iFlagYk = -iFlag-1;
-//printf("DlmPotFlag=%i\n",DlmPotFlag);
         if(IsoSpin==0 && Spin==0){
-            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlagYk,3,Rad);
+            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlag,3+(DlmPotFlag<0),Rad);
         }
         else if(IsoSpin==0 && Spin==1){
-            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)-3.*EvalV(iFlagYk,3,Rad);
+            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3+(DlmPotFlag<0),Rad);
         }
         else if(IsoSpin==1 && Spin==0){
-            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)-3.*EvalV(iFlagYk,3,Rad);
+            return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)-3.*EvalV(iFlag,3+(DlmPotFlag<0),Rad);
         }
         else if(IsoSpin==1 && Spin==1){
-            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlagYk,3,Rad);
+            return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlag,3,Rad);
         }
         else return 0;
     }
