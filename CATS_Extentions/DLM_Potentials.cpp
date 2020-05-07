@@ -492,10 +492,10 @@ struct LatticeValues{
     double EvalV(const int& iFlag, const int& Element, const double& Rad){
         if(iFlag>=3 || iFlag<-3) return 0;
         double YukawaPowerVST=2.0;
-        int FLAG = iFlag;
-        if(FLAG==3) YukawaPowerVST=1.0;//for the 3rd element only
-        if(FLAG==4) FLAG=3;//dummy flag to make the 3rd element wrong (as in an older computation)
-        double* PAR = Element==0?PAR_V0[FLAG]:Element==1?PAR_VS[FLAG]:Element==2?PAR_VT[FLAG]:Element==3?PAR_VST[FLAG]:NULL;
+        int ELEMENT = Element;
+        if(Element==3) YukawaPowerVST=1.0;//for the 3rd element only
+        if(Element==4) ELEMENT=3;//dummy flag to make the 3rd element wrong (as in an older computation)
+        double* PAR = ELEMENT==0?PAR_V0[iFlag]:ELEMENT==1?PAR_VS[iFlag]:ELEMENT==2?PAR_VT[iFlag]:ELEMENT==3?PAR_VST[iFlag]:NULL;
         if(!PAR) return 0;
         if(!Rad || !PAR[1] || !PAR[3] || !PAR[5]) return 0;
         return  PAR[0]*exp(-pow(Rad/PAR[1],2.))+PAR[2]*exp(-pow(Rad/PAR[3],2.))+PAR[4]*exp(-pow(Rad/PAR[5],2.))+
