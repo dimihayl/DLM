@@ -499,7 +499,7 @@ struct LatticeValues{
         if(!PAR) return 0;
         if(!Rad || !PAR[1] || !PAR[3] || !PAR[5]) return 0;
         return  PAR[0]*exp(-pow(Rad/PAR[1],2.))+PAR[2]*exp(-pow(Rad/PAR[3],2.))+PAR[4]*exp(-pow(Rad/PAR[5],2.))+
-                PAR[6]*pow(1.-exp(-PAR[7]*Rad*Rad),YukawaPowerVST)*exp(-YukawaPowerVST*146./197.3269602*Rad)/(Rad*Rad);
+                PAR[6]*pow((1.-exp(-PAR[7]*Rad*Rad))*exp(-146./197.3269602*Rad)/Rad,YukawaPowerVST);
     }
 
     double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
