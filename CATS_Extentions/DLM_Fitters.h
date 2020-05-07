@@ -6,13 +6,13 @@
 
 #include "TString.h"
 
-//#include "DLM_CkDecomp.h"
+//#include "DLM_CkDecomposition.h"
 
 //this typedef it used to save the potentials for the
 //different channels as an array of function pointers.
 //typedef double (*CatsAnaSource)(double*);
 
-class DLM_CkDecomp;
+class DLM_CkDecomposition;
 class TGraph;
 class TGraphErrors;
 class TH1F;
@@ -42,10 +42,10 @@ public:
 
     //sets up a certain system that we want to fit
     void SetSystem(const unsigned& WhichSyst, const TH1F& histo, const double& FromMeV ,
-                   DLM_CkDecomp& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
+                   DLM_CkDecomposition& decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
     int GetSystem(const TString& System);
     TString GetSystem(const unsigned& WhichSyst);
-    bool ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomp& decomp);
+    bool ChangeCkModel(const unsigned& WhichSyst, DLM_CkDecomposition& decomp);
     //in case there are multiple systems sharing a source this should be set here
     void AddSameSource(const TString& System, const TString& EqualTo, const int& numpars);
     void RemoveSameSource(const TString& System);
@@ -117,7 +117,7 @@ public:
     void GoBabyGo(const bool& show_fit_info=false);
 
 //void TEST1(const unsigned& WhichSyst, TH1F* histo, const double& FromMeV ,
-//                   DLM_CkDecomp* decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
+//                   DLM_CkDecomposition* decomp, const double& KMIN, const double& KFEMTO, const double& KLINEAR, const double& KMAX);
 
     //double TESTEVAL(double xVal, double* PARS) {return EvalGlobal(&xVal, PARS);}
 
@@ -137,17 +137,17 @@ private:
     TH1F** HistoToFit;
 
     //[WhichSyst]
-    DLM_CkDecomp** SystemToFit;
+    DLM_CkDecomposition** SystemToFit;
     unsigned NumSourceSystems;
     //an array containing all main Ck's + all secondaries that have their source fixed to one of the mains
-    DLM_CkDecomp** SourceSystems;
+    DLM_CkDecomposition** SourceSystems;
     //the ID in the main array of the Ck to which the source of a system is fixed
     int* ParentSource;
     int* ParentParameter;
 
     unsigned NumPotentialSystems;
     //an array containing all main Ck's + all secondaries that have their source fixed to one of the mains
-    DLM_CkDecomp** PotentialSystems;
+    DLM_CkDecomposition** PotentialSystems;
     //the ID in the main array of the Ck to which the source of a system is fixed
     int* ParentPotential;
 
@@ -299,7 +299,7 @@ private:
     fBlFunction* FunctionType_AddBl;
     fBlFunction* FunctionType_MultBl;
 
-    DLM_CkDecomp** SystemToFit;
+    DLM_CkDecomposition** SystemToFit;
 
     void IncreaseMaxNumPars();
 };
