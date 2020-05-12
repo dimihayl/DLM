@@ -723,7 +723,7 @@ struct LatticeValuesPaper{
   }
   
   double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
-    int iFlag = DlmPotFlag-11;
+    int iFlag = DlmPotFlag;
     if(IsoSpin==0 && Spin==0){
       return EvalV(iFlag,0,Rad)-3.*EvalV(iFlag,1,Rad)-3.*EvalV(iFlag,2,Rad)+9.*EvalV(iFlag,3,Rad);
     }
