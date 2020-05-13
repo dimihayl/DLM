@@ -468,9 +468,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS*
 
 
 
-
-
-//at the moment CUTOFF is not included (we only have the files for 600)
+//TYPE==0 is NLO13, TYPE==2 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF){
     double RadiusStepSize;
     double RadiusMinimum;
@@ -563,6 +561,14 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
 
     //fP1 is both 1P1 and 3P1
     enum HaideFiles {f1S0, f3S1, fP1, f3P0, f3P2, f3D1};
+    bool FileAvailable[NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
+    //we have the p-waves only for NLO at a cutoff of 600
+    if(CUTOFF!=600||TYPE==1){
+        FileAvailable[fP1] = false;
+        FileAvailable[f3P0] = false;
+        FileAvailable[f3P2] = false;
+    }
 
     //LIST OF CHANNELS:
     //main channels:
@@ -633,9 +639,14 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         InputFileName[uFile] = new char[256];
         strcpy(InputFileName[uFile],InputFolder);
+        strcat(InputFileName[uFile],"Chiral");
     }
 
-    if(true){
+    if(TYPE==0){
+        char strCutOff[16];
+        sprintf(strCutOff,"13_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
+
         strcat(InputFileName[f1S0], "NLO1s0.data");
         strcat(InputFileName[f3S1], "NLO3s1.data");
         strcat(InputFileName[fP1], "NLOPU.data");
@@ -643,8 +654,45 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         strcat(InputFileName[f3P2], "NLO3P2.data");
         strcat(InputFileName[f3D1], "NLO3d1.data");
     }
+    else if(TYPE==1){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
+
+        strcat(InputFileName[f1S0], "NLO1s0.data");
+        strcat(InputFileName[f3S1], "NLO3s1.data");
+        strcat(InputFileName[fP1], "NLOPU.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
+    }
+    else if(TYPE==-1){
+        char strCutOff[16];
+        sprintf(strCutOff,"13_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
+
+        strcat(InputFileName[f1S0], "LO1s0.data");
+        strcat(InputFileName[f3S1], "LO3s1.data");
+        strcat(InputFileName[fP1], "LOPU.data");
+        strcat(InputFileName[f3P0], "LO3P0.data");
+        strcat(InputFileName[f3P2], "LO3P2.data");
+        strcat(InputFileName[f3D1], "LO3d1.data");
+    }
+    else if(TYPE==-2){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
+
+        strcat(InputFileName[f1S0], "LO1s0.data");
+        strcat(InputFileName[f3S1], "LO3s1.data");
+        strcat(InputFileName[fP1], "LOPU.data");
+        strcat(InputFileName[f3P0], "LO3P0.data");
+        strcat(InputFileName[f3P2], "LO3P2.data");
+        strcat(InputFileName[f3D1], "LO3d1.data");
+    }
     else{
         printf("YOU BROKE SOMETHING in Init_pL_Haidenbauer2019\n");
+        return NULL;
     }
 //printf("3\n");
     FILE *InFile;
@@ -663,6 +711,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     float fMomentum;
 //printf("4\n");
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
 //printf("uf=%u\n",uFile);
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){
@@ -703,6 +752,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
         HistoWF[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
         for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
             HistoWF[uHist][uPw].SetUp(2);
             HistoWF[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
             HistoWF[uHist][uPw].SetUp(1,NumRadBins,RadBins);
@@ -715,6 +765,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
         HistoPS[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
         for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
             HistoPS[uHist][uPw].SetUp(1);
             HistoPS[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
             HistoPS[uHist][uPw].Initialize();
@@ -723,6 +774,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
 //printf("7\n");
 
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
 //if(uFile>2) break;
 //printf("uf=%u\n",uFile);
         int WhichMomBin=-1;
@@ -939,7 +991,6 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         delete [] WhichFile[usCh];
     }
     delete [] WhichFile;
-
     return Histo;
 
 }
@@ -2696,7 +2747,7 @@ DLM_Histo<complex<double>>*** Init_pKminus_Kyoto2019(const char* InputFolder, CA
     else if(TYPE==1){
         RadiusStepSize = 0.1;
         RadiusMinimum = 0.0;
-        RadiusMaximum = 20.;
+        RadiusMaximum = 64.;
         NumChannels = 6;
         NumPwPerCh = 1;
         NumFiles = 1;
@@ -2750,7 +2801,7 @@ DLM_Histo<complex<double>>*** Init_pKminus_Kyoto2019(const char* InputFolder, CA
         strcat(InputFileName[0], "wf_Kyoto_cc_woC.dat");
     }
     else if(TYPE==1){
-        strcat(InputFileName[0], "wf_Kyoto_cc_C.dat");
+        strcat(InputFileName[0], "wf64_Kyoto_cc_C.dat");
     }
     else{
         printf("YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
