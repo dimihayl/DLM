@@ -468,7 +468,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS*
 
 
 
-//TYPE==0 is NLO13, TYPE==2 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19
+//TYPE==0 is NLO13, TYPE==1 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF){
     double RadiusStepSize;
     double RadiusMinimum;

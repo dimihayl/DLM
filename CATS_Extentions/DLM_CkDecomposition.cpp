@@ -21,6 +21,16 @@ DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numch
 
 DLM_CkDecomposition::~DLM_CkDecomposition(){
     if(dlmSigmaMatrix) {delete dlmSigmaMatrix; dlmSigmaMatrix=NULL;}
+    if(dlmFeedMatrix){
+        for(unsigned uChild=0; uChild<NumChildren; uChild++){
+            if(dlmFeedMatrix[uChild]){
+                delete dlmFeedMatrix[uChild];
+                dlmFeedMatrix[uChild] = NULL;
+            }
+        }
+        delete [] dlmFeedMatrix;
+        dlmFeedMatrix = NULL;
+    }
 }
 
 void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child,
