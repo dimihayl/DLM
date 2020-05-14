@@ -607,13 +607,13 @@ struct LatticeValuesPaper{
       {0.1257,0.2317,0.497,862.3302,442.6556,387.1174,-85.5663,0.4042,-132.0333,-48.5274,-12.7652,192.7584,89.9265,44.6653,-65.85,-43.9422,-16.0204,-1.3882,0.3342},//68
       {0.128,0.2405,0.4999,896.4969,415.9204,376.6059,-85.9244,0.4066,-132.3181,-46.6662,-10.4764,203.886,79.3207,43.7329,-72.6295,-40.1308,-14.7768,-1.4244,0.2629},//69
       {0.1282,0.2444,0.513,906.2299,435.2305,347.2022,-89.1028,0.4197,-131.5798,-45.768,-11.5168,202.3761,85.1461,39.9807,-77.0847,-35.737,-14.441,-1.2891,0.1796}//70
-    }
-      //old parameters for QA
-      //V0 alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_2 = d1, rho2 = 1/sqrt(d2) 
-      //VS alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
-      //VT alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
-      //VST alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_1 = d1, rho2 = 1/sqrt(d2) 
-      parameterOLD =
+    }; 
+    //old parameters for QA
+    //V0 alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_2 = d1, rho2 = 1/sqrt(d2) 
+    //VS alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
+    //VT alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
+    //VST alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_1 = d1, rho2 = 1/sqrt(d2) 
+    parameterOLD =
       {
 	{ 832.719,0.126567,306.315,0.262349,521.285,0.461616,-80.9157,9.41638,-112.713,0.119882,-60.3916,0.219904,-12.971,0.440375,0,0,205.93,0.135111,93.3825,0.278859,26.9143,0.588477,0,0,-79.774,0.135531,-32.564,0.275606,-9.3541,0.538997,-1.75591,2.88912 },
 	{800.944,0.125499,340.209,0.25353,528.537,0.453636,-74.9729,9.89426,-124.804,0.122483,-48.2802,0.234785,-12.4604,0.450708,0,0,170.527,0.121487,117.874,0.224199,42.0892,0.510129,0,0,-90.3105,0.148112,-26.359,0.351332,-4.72814,0.707443,-1.26899,2.55046},
@@ -737,6 +737,22 @@ struct LatticeValuesPaper{
     }
     else if(IsoSpin==1 && Spin==1){
       return EvalV(iFlag,0,Rad)+EvalV(iFlag,1,Rad)+EvalV(iFlag,2,Rad)+EvalV(iFlag,3,Rad);
+    }
+    else return 0;
+  }
+  double EvalOperator(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
+    int iFlag = DlmPotFlag;
+    if(IsoSpin==0 && Spin==0){
+      return EvalV(iFlag,0,Rad); 
+    }
+    else if(IsoSpin==0 && Spin==1){
+      return EvalV(iFlag,1,Rad); 
+    }
+    else if(IsoSpin==1 && Spin==0){
+      return EvalV(iFlag,2,Rad);
+    }
+    else if(IsoSpin==1 && Spin==1){
+      return EvalV(iFlag,3,Rad);
     }
     else return 0;
   }
