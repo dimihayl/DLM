@@ -677,7 +677,7 @@ struct LatticeValuesPaper{
     } 
   }
   double EvalV(const int& iFlag, const int& Element, const double& Rad){
-    if(iFlag > 68 || iFlag < 0) {
+    if(iFlag > 70 || iFlag < 0) {
       return 0;
     } else  {
       double out = 0;
