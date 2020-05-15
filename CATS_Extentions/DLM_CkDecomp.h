@@ -23,6 +23,14 @@ public:
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child=NULL,
                          const DLM_Histo<float>* hResidualMatrix=NULL, const bool& InvertedAxis=false);
 
+/*
+    //if true, the data is unfolded, and later on all Eval functions applied
+    //if the data has not been unfolded yet, it is performed with the default settings
+    void UseUnfoldedData(const bool& unfold){}
+    //performs the actual unfolding (only for the momentum resolution)
+    //nboot = number of iterations for the bootstrap
+    void UnfoldData(const unsigned& nboot=100);
+*/
     //full Ck
     double EvalCk(const double& Momentum);
     //only the part related to the main contribution (normalized to unity at large k)

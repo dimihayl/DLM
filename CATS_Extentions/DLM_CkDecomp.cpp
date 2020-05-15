@@ -181,6 +181,14 @@ void DLM_CkDecomp::AddContribution(const unsigned& WhichCk, const double& fracti
     }
 }
 
+//void DLM_CkDecomp::UnfoldData(const unsigned& nboot){
+    //CkMain the main correlation function
+    //DLM_CkDecomp** Child; list of all children
+    //int* Type; //type of the children
+
+
+//}
+
 double DLM_CkDecomp::EvalCk(const double& Momentum){
     if(ERROR_STATE) return 0;
     if(LambdaMain<0){

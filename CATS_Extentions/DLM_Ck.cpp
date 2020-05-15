@@ -212,8 +212,10 @@ void DLM_Ck::Update(const bool& FORCE){
                Kitty->GetMomBinLowEdge(0)<GetBinCenter(0,uBin) &&
                CutOff>GetBinCenter(0,uBin)){
                BinValue[uBin] = Kitty->EvalCorrFun(GetBinCenter(0,uBin));
+//printf("if %f -> %f\n",GetBinCenter(0,uBin),BinValue[uBin]);
             }
             else if(Kitty->GetMomBinLowEdge(0)>=GetBinCenter(0,uBin)){
+//printf("Kitty->GetMomBinLowEdge(0)>=GetBinCenter(0,uBin) : %f>=%f",Kitty->GetMomBinLowEdge(0),GetBinCenter(0,uBin));
                 BinValue[uBin] = 0;
             }
             //if we go to higher values than the CATS object, we assume a flat correlation equal to one,
@@ -221,6 +223,7 @@ void DLM_Ck::Update(const bool& FORCE){
             else{
                 //Eval will compute automatically the corresponding value in case of a CutOff
                 BinValue[uBin] = Eval(GetBinCenter(0,uBin));
+//printf("else %f -> %f\n",GetBinCenter(0,uBin),BinValue[uBin]);
             }
             //BinValue[uBin] = 0;
         }
@@ -244,9 +247,10 @@ double DLM_Ck::Eval(const double& Momentum){
     else{
         kf = CutOff;
     }
-    const double Cf = DLM_Histo::Eval(&kf);
-//printf("CutOff_kc=%.4f\n",CutOff_kc);
-//printf("CutOff=%.4f\n",CutOff);
+///THIS IS STILL BUGGY, QUICK FIXED !!!!!!!!!!!!
+    //const double Cf = DLM_Histo::Eval(&kf);
+    const double Cf = BinValue[GetBin(0,kf)-1];
+    //printf("Cf = %f\n",Cf);
     if(CutOff_kc<0) return fabs(CutOff_kc);
     if(CutOff_kc<=kf) return Cf;
     double ReturnVal = ((Momentum-kf)-Cf*(Momentum-CutOff_kc))/(CutOff_kc-kf);
