@@ -90,6 +90,7 @@ void DLM_CkDecomp::AddTheMatrix(const DLM_Histo<float>* hSigmaMatrix, const bool
 }
 
 DLM_CkDecomp::~DLM_CkDecomp(){
+
     if(ERROR_STATE) return;
     if(NumChildren){
         delete [] Child; Child=NULL;
@@ -119,6 +120,7 @@ DLM_CkDecomp::~DLM_CkDecomp(){
     if(CkSmearedMainFeed) {delete CkSmearedMainFeed; CkSmearedMainFeed=NULL;}
     if(SignalMain) {delete SignalMain; SignalMain=NULL;}
     if(SignalSmearedMain) {delete SignalSmearedMain; SignalSmearedMain=NULL;}
+
 }
 
 void DLM_CkDecomp::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child,

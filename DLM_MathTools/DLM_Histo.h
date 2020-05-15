@@ -275,15 +275,7 @@ template <class Type> class DLM_Histo{
 public:
     DLM_Histo(){
 //printf("DLM_Histo() %p\n",this);
-        BinRange = NULL;
-        BinValue = NULL;
-        BinError = NULL;
-        BinCenter = NULL;
-        NumBins = NULL;
-        TotNumBins=0;
-        PER = NULL;
-        Initialized=false;
-        Dim = 0;
+        ConstructorState();
 //printf("BinValue=%p\n",BinValue);
         //xValue = NULL;
         //xBin = NULL;
@@ -331,6 +323,7 @@ public:
             //Normalization[sDim] = new Type[2];
         }
         InitPER();
+        Initialized = false;
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const double* bins, const double* bincenter=NULL){
         if(sDim>=Dim) return;
@@ -394,22 +387,28 @@ public:
                 if(uBin) BinCenter[sDim][uBin-1] = (BinRange[sDim][uBin-1]+BinRange[sDim][uBin])*0.5;
             }
         }
+        Initialized = false;
     }
     bool Initialize(const bool& ZeroElements=true){
 //printf("Initialize 1\n");
         if(!Dim||!NumBins||!BinRange||!BinCenter) return false;
-        TotNumBins=1;
+        if(!Initialized){
+            TotNumBins=1;
 //printf("Initialize 2\n");
-        for(unsigned short sDim=0; sDim<Dim; sDim++){
-//printf("sDim=%u; NumBins[sDim]=%u; BinRange[sDim]=%p; BinCenter[sDim]=%p\n",sDim,NumBins[sDim],BinRange[sDim],BinCenter[sDim]);
-            if(!NumBins[sDim]||!BinRange[sDim]||!BinCenter[sDim]) {TotNumBins=0;return false;}
-            TotNumBins*=NumBins[sDim];
+//printf(" BinValue = %p\n",BinValue);
+//printf(" BinError = %p\n",BinError);
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+    //printf("sDim=%u; NumBins[sDim]=%u; BinRange[sDim]=%p; BinCenter[sDim]=%p\n",sDim,NumBins[sDim],BinRange[sDim],BinCenter[sDim]);
+                if(!NumBins[sDim]||!BinRange[sDim]||!BinCenter[sDim]) {TotNumBins=0;return false;}
+                TotNumBins*=NumBins[sDim];
+            }
+            if(BinValue){delete [] BinValue; BinValue=NULL;}
+            if(BinError){delete [] BinError; BinError=NULL;}
+            BinValue = new Type[TotNumBins+2];
+            BinError = new Type[TotNumBins];
         }
-        if(!BinValue){delete [] BinValue; BinValue=NULL;}
-        if(!BinError){delete [] BinError; BinError=NULL;}
-        BinValue = new Type[TotNumBins+2];
-        BinError = new Type[TotNumBins];
         if(ZeroElements){
+//printf("Initialize 3\n");
             for(unsigned uBin=0; uBin<TotNumBins; uBin++){
                 BinValue[uBin]=0;
                 BinError[uBin]=0;
@@ -948,12 +947,14 @@ public:
 //printf("operator=\n");
         //if(!Initialized) {InitWarning(); return false;}
 //printf("BinValue=%p\n",BinValue);
-        SetUp(other.Dim);
-//printf("other.Dim=%u; Dim=%u\n",other.Dim,Dim);
-//printf("Dim done\n");
-        for(unsigned short sDim=0; sDim<Dim; sDim++) SetUp(sDim,other.NumBins[sDim],other.BinRange[sDim]);
-//printf("SetUp done\n");
-        if(!Initialize(false)) return false;
+        if(!SameStructure(other)){
+            SetUp(other.Dim);
+    //printf("other.Dim=%u; Dim=%u\n",other.Dim,Dim);
+    //printf("Dim done\n");
+            for(unsigned short sDim=0; sDim<Dim; sDim++) SetUp(sDim,other.NumBins[sDim],other.BinRange[sDim]);
+    //printf("SetUp done\n");
+            if(!Initialize(false)) return false;
+        }
 //printf("Initialize done\n");
         for(unsigned short sDim=0; sDim<Dim; sDim++){
             for(unsigned uBin=0; uBin<NumBins[sDim]; uBin++){
@@ -1047,7 +1048,20 @@ public:
     }
 
 protected:
+    void ConstructorState(){
+//printf("ConstructorState\n");
+        BinRange = NULL;
+        BinValue = NULL;
+        BinError = NULL;
+        BinCenter = NULL;
+        NumBins = NULL;
+        TotNumBins=0;
+        PER = NULL;
+        Initialized=false;
+        Dim = 0;
+    }
     void CleanUp(){
+//printf("CleanUp %u dimensions\n",Dim);
 //printf("CU: BinRange\n");
         if(BinRange){
             for(unsigned short sDim=0; sDim<Dim; sDim++){
@@ -1079,7 +1093,7 @@ protected:
             }
             delete [] PER; PER=NULL;
         }
-        Initialized=false;
+        ConstructorState();
     }
     void CleanUp(const unsigned short sDim){
         if(BinRange){
