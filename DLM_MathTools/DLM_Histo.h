@@ -759,7 +759,6 @@ public:
         delete [] WhichBin;
         return BinSize;
     }
-
     unsigned GetBin(const unsigned short& sDim, const double& xVal) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
@@ -805,6 +804,94 @@ public:
             BINCENTER[uBin] = BinCenter[sDim][uBin];
         }
         return BINCENTER;
+    }
+    //returns the number of minima
+    unsigned FindMinima(Type& Value) const{
+        unsigned* Dummy;
+        unsigned NumMin=FindMinima(Value,Dummy);
+        delete[]Dummy;
+        return NumMin;
+    }
+    unsigned FindMinima(Type& Value, unsigned*& BinId) const{
+        bool MinFound=false;
+        Type MIN_VAL;
+        unsigned NumMin;
+        unsigned SizeOfBuffer=8;
+        unsigned* WhichBins = new unsigned[SizeOfBuffer];
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            if(!uBin){
+                NumMin=0;
+                MIN_VAL=BinValue[uBin];
+                WhichBins[NumMin]=uBin;
+                NumMin=1;
+            }
+            else if(BinValue[uBin]<MIN_VAL){
+                NumMin=0;
+                MIN_VAL=BinValue[uBin];
+                WhichBins[NumMin]=uBin;
+                NumMin=1;
+            }
+            else if(BinValue[uBin]==MIN_VAL){
+                if(SizeOfBuffer<=NumMin){
+                    SizeOfBuffer*=2;
+                    unsigned* TempBins = new unsigned [SizeOfBuffer];
+                    for(unsigned uBuff=0; uBuff<SizeOfBuffer/2; uBuff++)
+                        TempBins[uBuff]=WhichBins[uBuff];
+                    delete[]WhichBins;
+                    WhichBins=TempBins;
+                }
+                WhichBins[NumMin]=uBin;
+                NumMin++;
+            }
+        }
+        //printf(" WhichBins=%p\n",WhichBins);
+        //printf(" WhichBins[0]=%u\n",WhichBins[0]);
+        BinId=WhichBins;
+        Value = MIN_VAL;
+        return NumMin;
+    }
+    //returns the number of maxima
+    unsigned FindMixima(Type& Value) const{
+        unsigned* Dummy;
+        unsigned NumMax=FindMixima(Value,Dummy);
+        delete[]Dummy;
+        return NumMax;
+    }
+    Type FindMixima(Type& Value, unsigned*& BinId) const{
+        bool MaxFound=false;
+        Type MAX_VAL;
+        unsigned NumMax;
+        unsigned SizeOfBuffer=8;
+        unsigned* WhichBins = new unsigned[SizeOfBuffer];
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            if(!uBin){
+                NumMax=0;
+                MAX_VAL=BinValue[uBin];
+                WhichBins[NumMax]=uBin;
+                NumMax=1;
+            }
+            else if(BinValue[uBin]>MAX_VAL){
+                NumMax=0;
+                MAX_VAL=BinValue[uBin];
+                WhichBins[NumMax]=uBin;
+                NumMax=1;
+            }
+            else if(BinValue[uBin]==MAX_VAL){
+                if(SizeOfBuffer<=NumMax){
+                    SizeOfBuffer*=2;
+                    unsigned* TempBins = new unsigned [SizeOfBuffer];
+                    for(unsigned uBuff=0; uBuff<SizeOfBuffer/2; uBuff++)
+                        TempBins[uBuff]=WhichBins[uBuff];
+                    delete[]WhichBins;
+                    WhichBins=TempBins;
+                }
+                WhichBins[NumMax]=uBin;
+                NumMax++;
+            }
+        }
+        BinId=WhichBins;
+        Value = MAX_VAL;
+        return NumMax;
     }
 
     Type Eval(const double* xVal, const bool& EvalTheError=false) const{
