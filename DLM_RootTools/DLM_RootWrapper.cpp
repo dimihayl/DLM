@@ -1,6 +1,7 @@
 
 #include "DLM_RootWrapper.h"
 #include "TH2F.h"
+#include <unistd.h>
 
 DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
     if(!input){
@@ -21,10 +22,11 @@ DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
     for(unsigned uBin=0; uBin<NumBinsY; uBin++){
         Yaxis_pars[uBin] = input->GetYaxis()->GetBinLowEdge(uBin+1);
     }
-    Yaxis_pars[NumBinsX] = input->GetYaxis()->GetBinUpEdge(NumBinsX);
+    Yaxis_pars[NumBinsY] = input->GetYaxis()->GetBinUpEdge(NumBinsY);
     dlmHisto->SetUp(0,NumBinsX,Xaxis_pars);
     dlmHisto->SetUp(1,NumBinsY,Yaxis_pars);
     dlmHisto->Initialize(true);
+
     unsigned WhichBin[2];
     for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){
         for(unsigned uBinY=0; uBinY<NumBinsY; uBinY++){

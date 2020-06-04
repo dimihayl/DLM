@@ -8,6 +8,7 @@
 #include "DLM_CppTools.h"
 //#include <stdint.h>
 //#include <complex>
+//#include <unistd.h>
 
 template <class Type> class DLM_Histo1D{
 public:
@@ -536,6 +537,28 @@ public:
         }
         delete [] BinId;
         delete [] xVal;
+        return true;
+    }
+    bool DivideHistoBinByBin(const DLM_Histo& other, const bool witherror=true){
+        if(!Initialized) {InitWarning(); return false;}
+        if(!other.Initialized) {InitWarning(); return false;}
+        if(!SameStructure(other)) {return false;}
+        unsigned* BinId = new unsigned [Dim];
+        if(witherror)
+            for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+                GetBinCoordinates(uBin,BinId);
+                if(!other.BinValue[uBin]) BinError[uBin] = 1e128;
+                else BinError[uBin] = pow(other.BinValue[uBin],-2.)*
+                                            sqrt(   pow(BinError[uBin]*other.BinError[uBin],2.)+
+                                                    pow(BinError[uBin]*other.BinValue[uBin],2.)+
+                                                    pow(BinValue[uBin]*other.BinError[uBin],2.));
+            }
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            GetBinCoordinates(uBin,BinId);
+            if(!other.BinValue[uBin]) BinValue[uBin] = 1e128;
+            else BinValue[uBin] /= other.BinValue[uBin];
+        }
+        delete [] BinId;
         return true;
     }
     void AddToAll(const Type& value, const Type& error=0){
