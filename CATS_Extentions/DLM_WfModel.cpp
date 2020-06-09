@@ -481,6 +481,19 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         NumMomBins[uFile] = 0;
     }
 
+    //fP1 is both 1P1 and 3P1
+    enum HaideFiles {f1S0, f3S1, fP1, f3P0, f3P2, f3D1};
+    bool FileAvailable[NumFiles];
+    bool InludePwaves=true;
+    for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
+    //we have the p-waves only for NLO at a cutoff of 600
+    if(CUTOFF!=600||TYPE!=1){
+        FileAvailable[fP1] = false;
+        FileAvailable[f3P0] = false;
+        FileAvailable[f3P2] = false;
+        InludePwaves = false;
+    }
+
     //LIST OF CHANNELS:
     //main channels:
     //0: 1S0+1P1
@@ -540,8 +553,8 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     Kitty.SetChannelWeight(8,3./4.);
     Kitty.SetChannelWeight(9,3./4.);
     Kitty.SetChannelWeight(10,3./4.);
-    Kitty.SetChannelWeight(11,1./12.);
-    Kitty.SetChannelWeight(12,5./12.);
+    Kitty.SetChannelWeight(11,1./12.*InludePwaves);
+    Kitty.SetChannelWeight(12,5./12.*InludePwaves);
     Kitty.SetChannelWeight(13,3./20.);
     Kitty.SetChannelWeight(14,3./20.);
     Kitty.SetChannelWeight(15,3./20.);
@@ -559,16 +572,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     for(unsigned short usCh=7; usCh<NumChannels; usCh++){Kitty.SetOnlyNumericalPw(usCh,true);}
 
 
-    //fP1 is both 1P1 and 3P1
-    enum HaideFiles {f1S0, f3S1, fP1, f3P0, f3P2, f3D1};
-    bool FileAvailable[NumFiles];
-    for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
-    //we have the p-waves only for NLO at a cutoff of 600
-    if(CUTOFF!=600||TYPE==1){
-        FileAvailable[fP1] = false;
-        FileAvailable[f3P0] = false;
-        FileAvailable[f3P2] = false;
-    }
+
 
     //LIST OF CHANNELS:
     //main channels:
@@ -584,8 +588,8 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     //8: 3S1 SN(s) -> LN(s)
     //9: 3S1 LN(d) -> LN(s)
     //10: 3S1 SN(d) -> LN(s)
-    //11: 3P0 SN(p) -> LN(p)
-    //12: 3P2 SN(p) -> LN(p)
+    //11: 3P0 SN(p) -> LN(p)//
+    //12: 3P2 SN(p) -> LN(p)//
     //13: 3D1 SN(d) -> LN(d)
     //14: 3D1 LN(s) -> LN(d)
     //15: 3D1 SN(s) -> LN(d)
@@ -716,6 +720,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){
             printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+printf("1-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
             return NULL;
         }
 
@@ -781,6 +786,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){
             printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
             return Histo;
         }
 
