@@ -3227,6 +3227,193 @@ DLM_Histo<complex<double>>*** InitHaidenbauerKaonPlus(const char* InputFolder, C
     return Histo;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+DLM_Histo<complex<double>>*** Init_pd_Sebastian(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF){
+
+    const unsigned short NumMomBins = 26;
+    const double kMin = 5;
+    const double kSize = 5;
+    double* MomBinCenter = new double [NumMomBins];
+    double* MomBins = new double [NumMomBins+1];
+    MomBins[0] = 0;
+    MomBins[1] = kMin+0.5*kSize;
+    for(unsigned uMomBin=2; uMomBin<=NumMomBins; uMomBin++){
+        MomBins[uMomBin] = MomBins[uMomBin-1]+kSize;
+    }
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        MomBinCenter[uMomBin] = kMin+kSize*double(uMomBin);
+    }
+
+    const unsigned short NumChannels = 2;
+    char* cdummy = new char [512];
+    char*** FileName;
+    FileName = new char** [NumChannels];
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        FileName[uCh] = new char* [NumMomBins];
+        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            FileName[uCh][uMomBin] = new char [512];
+            strcpy(FileName[uCh][uMomBin],InputFolder);
+            if(uCh==0) strcat(FileName[uCh][uMomBin],"Wf-pd-D/");
+            else strcat(FileName[uCh][uMomBin],"Wf-pd-Q/");
+            strcat(FileName[uCh][uMomBin],"Wf-pd-");
+            if(uCh==0) strcat(FileName[uCh][uMomBin],"D-k");
+            else strcat(FileName[uCh][uMomBin],"Q-k");
+            sprintf(cdummy,"%.0f-",MomBinCenter[uMomBin]);
+            strcat(FileName[uCh][uMomBin],cdummy);
+            sprintf(cdummy,"L%i-",CUTOFF);
+            strcat(FileName[uCh][uMomBin],cdummy);
+            if(TYPE==0){strcat(FileName[uCh][uMomBin],"l0p5.dat");}
+            else {strcat(FileName[uCh][uMomBin],"l1p0.dat");}
+        }
+    }
+
+    //how many lines to skip at the beginning of each file
+    const unsigned NumDummyLines = 17;
+    unsigned CurrentLine;
+    float fRadius;
+    float fWfRe;
+    float fWfIm;
+
+    Kitty.SetNumChannels(NumChannels);
+    Kitty.SetNumPW(0,1);
+    Kitty.SetNumPW(1,1);
+
+    Kitty.SetChannelWeight(0,1./3.);
+    Kitty.SetChannelWeight(1,2./3.);
+
+    //dummy values
+    Kitty.SetSpin(0,1);
+    Kitty.SetSpin(1,3);
+
+    //btw, none of this matters
+    Kitty.SetQ1Q2(1);
+    Kitty.SetPdgId(2212, 100000);
+    const double Mass_p = 938.272;
+    const double Mass_d = 1875.613;
+    Kitty.SetRedMass((Mass_p*Mass_d)/(Mass_p+Mass_d));
+
+    const unsigned MaxNumRadBins = 256;
+    unsigned NumRadBins=0;
+    double* RadBins = new double [MaxNumRadBins+1];
+    double* RadBinCenter = new double [MaxNumRadBins];
+
+    FILE *InFile;
+    InFile = fopen(FileName[0][0], "r");
+    if(!InFile){
+        printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", FileName[0][0]);
+        return NULL;
+    }
+
+    CurrentLine=0;
+    RadBins[0] = 0;
+    while(!feof(InFile)){//line by line
+        if(!fgets(cdummy, 511, InFile)) continue;//get a single line into cdummy
+        if(CurrentLine<NumDummyLines){CurrentLine++; continue;}
+
+        sscanf(cdummy, "%f %f %f",&fRadius,&fWfRe,&fWfIm);
+        RadBinCenter[NumRadBins] = fRadius;
+        if(NumRadBins){
+            //set the bin range in between the last two bin centers
+            RadBins[NumRadBins] = 0.5*(RadBinCenter[NumRadBins]+RadBinCenter[NumRadBins-1]);
+        }
+        NumRadBins++;
+
+        CurrentLine++;
+    }
+    fclose(InFile);
+    //set the upper edge of the last bin, where we just add the bin width of the last bin
+    //i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
+    RadBins[NumRadBins] = 2.*RadBinCenter[NumRadBins-1]-RadBins[NumRadBins-1];
+
+    DLM_Histo<complex<double>>*** Histo = new DLM_Histo<complex<double>>** [2];
+    DLM_Histo<complex<double>>**& HistoWF = Histo[0];
+    DLM_Histo<complex<double>>**& HistoPS = Histo[1];
+
+    HistoWF = new DLM_Histo<complex<double>>* [NumChannels];
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        HistoWF[uCh] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uCh)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uCh); uPw++){
+            //2dim, k* and radius
+            HistoWF[uCh][uPw].SetUp(2);
+            HistoWF[uCh][uPw].SetUp(0,NumMomBins,MomBins);
+            HistoWF[uCh][uPw].SetUp(1,NumRadBins,RadBins);
+            HistoWF[uCh][uPw].Initialize();
+        }
+    }
+
+    HistoPS = new DLM_Histo<complex<double>>* [NumChannels];
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        HistoPS[uCh] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uCh)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uCh); uPw++){
+            //2dim, k* and radius
+            HistoPS[uCh][uPw].SetUp(2);
+            HistoPS[uCh][uPw].SetUp(0,NumMomBins,MomBins);
+            HistoPS[uCh][uPw].SetUp(1,NumRadBins,RadBins);
+            HistoPS[uCh][uPw].Initialize();
+        }
+    }
+
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        //for the future if we have more PWs, for now it will be a single iteration
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uCh); uPw++){
+            for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+                //open the corresponding file
+                InFile = fopen(FileName[uCh][uMomBin], "r");
+                if(!InFile){
+                    printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", FileName[uCh][uMomBin]);
+                    return NULL;
+                }
+
+                CurrentLine=0;
+                unsigned WhichBin[2];
+                WhichBin[0] = uMomBin;
+                WhichBin[1] = 0;
+                while(!feof(InFile)){//line by line
+                    if(!fgets(cdummy, 511, InFile)) continue;//get a single line into cdummy
+                    if(CurrentLine<NumDummyLines){CurrentLine++; continue;}
+
+                    sscanf(cdummy, "%f %f %f",&fRadius,&fWfRe,&fWfIm);
+                    //figure out which k* and radius bins we are filling
+
+                    HistoWF[uCh][uPw].SetBinContent(WhichBin,(fWfRe+fi*fWfIm)*fRadius);
+                    HistoPS[uCh][uPw].SetBinContent(WhichBin,0);
+
+                    WhichBin[1]++;
+                    CurrentLine++;
+                }
+                fclose(InFile);
+            }
+        }
+    }
+
+    delete [] MomBinCenter;
+    delete [] MomBins;
+    delete [] cdummy;
+    for(unsigned uCh=0; uCh<NumChannels; uCh++){
+        for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+            delete [] FileName[uCh][uMomBin];
+        }
+        delete [] FileName[uCh];
+    }
+    delete [] FileName;
+    delete [] RadBinCenter;
+    delete [] RadBins;
+
+    return Histo;
+}
+
+
+
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo){
     for(unsigned short usCh=0; usCh<NumChannels; usCh++){
         if(Histo&&Histo[0]&&Histo[0][usCh]){delete[]Histo[0][usCh];Histo[0][usCh]=NULL;}

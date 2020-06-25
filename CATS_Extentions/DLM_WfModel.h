@@ -29,6 +29,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
 DLM_Histo<complex<double>>*** Init_pKminus_Kyoto2019(const char* InputFolder, CATS& Kitty, const int& TYPE);
 DLM_Histo<complex<double>>*** InitHaidenbauerKaonPlus(const char* InputFolder, CATS& Kitty, const int& TYPE);
 
+DLM_Histo<complex<double>>*** Init_pd_Sebastian(const char* InputFolder, CATS& Kitty, const int& TYPE=0, const int& CUTOFF=400);
 
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo);
 void CleanUpWfHisto(const CATS& Kitty, DLM_Histo<complex<double>>***& Histo);
