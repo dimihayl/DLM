@@ -124,7 +124,7 @@ void DLM_DecayMatrix::Run(const int& SEED, const unsigned& NumIter)
     TFile *outputfile = new TFile(FileName,"update");
     if(!outputfile) outputfile = new TFile(FileName,"recreate");
 
-    TH2F* hRes = new TH2F("HistoName","x: relk mothers, y: relk daughters",NumBins,kMin,kMax,NumBins,kMin,kMax);
+    TH2F* hRes = new TH2F(HistoName,"x: relk mothers, y: relk daughters",NumBins,kMin,kMax,NumBins,kMin,kMax);
 
     TLorentzVector tvec_m1, tvec_m2;
     TLorentzVector* tvec_d1;
