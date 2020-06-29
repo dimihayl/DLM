@@ -157,6 +157,13 @@ void DLM_DecayMatrix::Run(const int& SEED, const unsigned& NumIter)
         }
         relK_d = relKcalc(*tvec_d1,*tvec_d2);
         hRes->Fill(relK_m,relK_d);
+
+        if(NumDaughters1<=1){
+            delete tvec_d1;
+        }
+        if(NumDaughters2<=1){
+            delete tvec_d2;
+        }
     }
 
     outputfile->cd();
