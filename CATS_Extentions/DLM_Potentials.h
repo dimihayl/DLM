@@ -25,6 +25,7 @@ double DoubleGaussSum(double* Pars);
 double TripleGaussSum(double* Pars);
 double GaussExpSum(double* Pars);
 double UsmaniPotentialCats(double* Pars);
+double UsmaniFit(double* Pars);
 double RepulsiveCore(double* Pars);
 
 void SetUpNorfolk(const char* InputFolder);

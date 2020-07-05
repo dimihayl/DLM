@@ -523,19 +523,19 @@ struct LatticeValues{
 
 struct LatticeValuesPaper{
   std::vector<std::vector<float>> parameter;
-  std::vector<std::vector<float>> parameterOLD; 
+  std::vector<std::vector<float>> parameterOLD;
   LatticeValuesPaper() {
     //Following the most recent hal publication: https://inspirehep.net/literature/1771619
     //Values are summarized: https://docs.google.com/spreadsheets/d/12g3YztBIpL7BlTBpEbNnV_C5vR8K1NiOLOWwRoZb03I/edit?usp=sharing
     //Scheme:
-    //          beta_1(0)  , beta_2(1)  , beta_3(2)  , (shared among potentials) 
+    //          beta_1(0)  , beta_2(1)  , beta_3(2)  , (shared among potentials)
     //V0:       alpha_1(3) , alpha_2(4) , alpha_3(5) , lmb_2(6) , rho_2(7) ,
     //VSigma:   alpha_1(8) , alpha_2(9) , alpha_3(10),
     //VTau:     alpha_1(11), alpha_2(12), alpha_3(13),
-    //VSigmaTau:alpha_1(14), alpha_2(15), alpha_3(16), lmb_1(17), rho_1(18), 
+    //VSigmaTau:alpha_1(14), alpha_2(15), alpha_3(16), lmb_1(17), rho_1(18),
     parameter = {
       {0.129347826,0.257882609,0.569352174,957.6177391,551.982587,171.2853609,-109.8198826,0.609430435,-125.6768391,-50.35931739,-5.578369565,192.5241478,104.5099,31.54982174,-79.6482087,-37.5626087,-6.981852174,-1.623326087,0.249204348,0},
-      {0.1293,0.2574,0.5671,956.5365,551.3278,173.5383,-108.3599,0.6054,-124.1416,-51.0465,-5.4057,192.5351,103.4974,32.1514,-79.912,-37.3872,-7.1677,-1.5995,0.2594,1}, 
+      {0.1293,0.2574,0.5671,956.5365,551.3278,173.5383,-108.3599,0.6054,-124.1416,-51.0465,-5.4057,192.5351,103.4974,32.1514,-79.912,-37.3872,-7.1677,-1.5995,0.2594,1},
       {0.1298,0.2597,0.5742,962.4006,551.7967,164.5277,-109.8527,0.6142,-129.9177,-47.4349,-5.7077,195.0046,103.4218,31.0253,-79.8773,-37.0849,-6.9693,-1.5764,0.247,2},
       {0.1285,0.2548,0.5656,947.132,559.6762,175.2138,-110.3494,0.6105,-124.3225,-51.3004,-6.5205,188.5444,107.7063,31.6191,-80.6019,-37.3876,-6.9862,-1.694,0.2419,3},
       {0.1281,0.2538,0.5649,941.1004,566.0914,175.7539,-108.3571,0.6071,-122.2735,-52.5149,-6.0959,189.5948,106.987,32.6486,-79.1654,-38.2752,-7.0508,-1.6424,0.2424,4},
@@ -558,8 +558,8 @@ struct LatticeValuesPaper{
       {0.13,0.2604,0.5753,968.628,549.5837,164.7968,-110.4965,0.6137,-126.8373,-49.4348,-5.8063,194.153,101.7749,30.6115,-80.077,-37.0154,-6.7615,-1.6295,0.2495,21},
       {0.1296,0.2584,0.5688,960.4571,543.9938,174.5126,-110.7417,0.6064,-126.4445,-50.0331,-5.3404,193.1581,105.0561,31.2893,-80.1471,-37.0134,-7.1054,-1.6197,0.2485,22},
       {0.1292,0.257,0.5694,955.3817,553.8313,172.5263,-109.9073,0.6069,-125.9599,-51.9737,-5.2443,191.3695,104.445,31.6577,-78.6583,-38.4901,-7.2101,-1.5864,0.2814,23},
-      {0.124434783,0.24073913,0.533047826,871.4414348,629.8059522,194.0608348,-97.26147391,0.602813043,-122.0438565,-52.15276957,-8.426,184.9633522,108.4566609,36.70529565,-84.88748261,-32.19935652,-11.58966957,-1.420756522,0.136308696,24}, 
-      {0.1243,0.2399,0.5323,869.2726,626.486,199.3267,-96.6568,0.5932,-121.9414,-53.4535,-7.9636,183.8645,108.8791,36.7804,-84.4872,-31.5858,-12.0533,-1.3531,0.1295,25},  
+      {0.124434783,0.24073913,0.533047826,871.4414348,629.8059522,194.0608348,-97.26147391,0.602813043,-122.0438565,-52.15276957,-8.426,184.9633522,108.4566609,36.70529565,-84.88748261,-32.19935652,-11.58966957,-1.420756522,0.136308696,24},
+      {0.1243,0.2399,0.5323,869.2726,626.486,199.3267,-96.6568,0.5932,-121.9414,-53.4535,-7.9636,183.8645,108.8791,36.7804,-84.4872,-31.5858,-12.0533,-1.3531,0.1295,25},
       {0.1244,0.2412,0.5346,869.3825,633.3597,188.9363,-96.3453,0.6076,-126.2292,-48.3133,-9.0465,187.412,108.4225,37.2313,-85.2586,-32.1331,-11.8374,-1.3908,0.1352,26},
       {0.1237,0.2377,0.5325,861.7193,638.0694,197.8498,-97.5622,0.6009,-121.3455,-52.6356,-9.4646,182.4489,109.8547,37.2802,-85.8937,-31.6917,-11.668,-1.4942,0.132,27},
       {0.1229,0.2358,0.5303,845.373,644.7708,203.9443,-95.6018,0.5883,-118.0282,-55.1575,-8.607,182.6999,110.3945,38.0576,-83.4625,-33.7146,-11.7095,-1.3993,0.1333,28},
@@ -607,10 +607,10 @@ struct LatticeValuesPaper{
       {0.1282,0.2444,0.513,906.2299,435.2305,347.2022,-89.1028,0.4197,-131.5798,-45.768,-11.5168,202.3761,85.1461,39.9807,-77.0847,-35.737,-14.441,-1.2891,0.1796,70}
     };
     //old parameters for QA
-    //V0 alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_2 = d1, rho2 = 1/sqrt(d2) 
+    //V0 alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_2 = d1, rho2 = 1/sqrt(d2)
     //VS alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
     //VT alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, 0, 0
-    //VST alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_1 = d1, rho2 = 1/sqrt(d2) 
+    //VST alpha_1, beta_1, alpha_2, beta_2, alpha_3, beta_3, lambda_1 = d1, rho2 = 1/sqrt(d2)
     parameterOLD =
       {
 	{ 832.719,0.126567,306.315,0.262349,521.285,0.461616,-80.9157,9.41638,-112.713,0.119882,-60.3916,0.219904,-12.971,0.440375,0,0,205.93,0.135111,93.3825,0.278859,26.9143,0.588477,0,0,-79.774,0.135531,-32.564,0.275606,-9.3541,0.538997,-1.75591,2.88912 },
@@ -618,8 +618,8 @@ struct LatticeValuesPaper{
 	{807.648,0.12642,359.403,0.255362,500.769,0.451934,-67.7968,10.0506,-52.9071,0.0916017,-119.322,0.164464,-22.4783,0.408204,0,0,124.788,0.112992,151.176,0.194521,48.0954,0.490352,0,0,-82.1509,0.15925,-26.2495,0.358359,-6.31347,0.639725,-1.32727,2.67235}
       };
   }
-  
-  ~LatticeValuesPaper(){} 
+
+  ~LatticeValuesPaper(){}
 
   double EvalVOld(const int& iFlag, const int& Element, const double& Rad){
     if(iFlag > 2 || iFlag < 0) {
@@ -636,7 +636,7 @@ struct LatticeValuesPaper{
 	double lmb_2  = parameterOLD[iFlag][6];
 	double rho_2  = parameterOLD[iFlag][7];
 	out = EvalYukawa(Rad, 1./sqrt(rho_2));
-	out = out*out*lmb_2; 
+	out = out*out*lmb_2;
 	out += EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
       } else if (Element == 1) {
 	double alph_1 = parameterOLD[iFlag][8];
@@ -646,8 +646,8 @@ struct LatticeValuesPaper{
 	double alph_3 = parameterOLD[iFlag][12];
 	double beta_3 = parameterOLD[iFlag][13];
 	//14
-	//15 
-	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
+	//15
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
       } else if (Element == 2) {
 	double alph_1 = parameterOLD[iFlag][16];
 	double beta_1 = parameterOLD[iFlag][17];
@@ -657,8 +657,8 @@ struct LatticeValuesPaper{
 	double beta_3 = parameterOLD[iFlag][21];
 	//22
 	//23
-	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
-      } else if (Element == 3) { 
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
+      } else if (Element == 3) {
 	double alph_1 = parameterOLD[iFlag][24];
 	double beta_1 = parameterOLD[iFlag][25];
 	double alph_2 = parameterOLD[iFlag][26];
@@ -668,11 +668,11 @@ struct LatticeValuesPaper{
 	double lmb_1  = parameterOLD[iFlag][30];
 	double rho_1  = parameterOLD[iFlag][31];
 	out = EvalYukawa(Rad, 1./sqrt(rho_1));
-	out *= lmb_1; 
+	out *= lmb_1;
 	out += EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
       }
-      return out; 
-    } 
+      return out;
+    }
   }
   double EvalV(const int& iFlag, const int& Element, const double& Rad){
     if(iFlag > 70 || iFlag < 0) {
@@ -689,39 +689,39 @@ struct LatticeValuesPaper{
 	double lmb_2  = parameter[iFlag][6];
 	double rho_2  = parameter[iFlag][7];
 	out = EvalYukawa(Rad, rho_2);
-	out = out*out*lmb_2; 
-	out += EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
+	out = out*out*lmb_2;
+	out += EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
       } else if (Element == 1) {//vs
 	double alph_1 = parameter[iFlag][8];
 	double alph_2 = parameter[iFlag][9];
 	double alph_3 = parameter[iFlag][10];
-	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
       } else if (Element == 2) {//vt
 	double alph_1 = parameter[iFlag][11];
 	double alph_2 = parameter[iFlag][12];
 	double alph_3 = parameter[iFlag][13];
-	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3); 
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3);
       } else if (Element == 3) {//vst
 	double alph_1 = parameter[iFlag][14];
 	double alph_2 = parameter[iFlag][15];
 	double alph_3 = parameter[iFlag][16];
 	double lmb_1  = parameter[iFlag][17];
 	double rho_1  = parameter[iFlag][18];
-	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3)+lmb_1*EvalYukawa(Rad, rho_1); 
+	out = EvalExp(Rad,alph_1,beta_1)+EvalExp(Rad,alph_2,beta_2)+EvalExp(Rad,alph_3,beta_3)+lmb_1*EvalYukawa(Rad, rho_1);
       }
-      return out; 
-    } 
+      return out;
+    }
   }
-  
+
   double EvalExp(const double& Rad, const double& alpha, const double& beta) {
-    return alpha*exp(-(Rad*Rad/(beta*beta))); 
+    return alpha*exp(-(Rad*Rad/(beta*beta)));
   }
   double EvalYukawa(const double& Rad, const double& rho) {
     // mass has to be equal to the one from the paper, factor hbar c was confirmed in private communication with Sasaki
-    double m_pion = 146./197.327; 
-    return (1.-exp(-Rad*Rad/(rho*rho)))*exp(-m_pion*Rad)/Rad; 
+    double m_pion = 146./197.327;
+    return (1.-exp(-Rad*Rad/(rho*rho)))*exp(-m_pion*Rad)/Rad;
   }
-  
+
   double Eval(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
     int iFlag = DlmPotFlag;
     if(IsoSpin==0 && Spin==0){
@@ -741,10 +741,10 @@ struct LatticeValuesPaper{
   double EvalOperator(const int& DlmPotFlag, const double& IsoSpin, const double& Spin, const double& Rad){
     int iFlag = DlmPotFlag;
     if(IsoSpin==0 && Spin==0){
-      return EvalV(iFlag,0,Rad); 
+      return EvalV(iFlag,0,Rad);
     }
     else if(IsoSpin==0 && Spin==1){
-      return EvalV(iFlag,1,Rad); 
+      return EvalV(iFlag,1,Rad);
     }
     else if(IsoSpin==1 && Spin==0){
       return EvalV(iFlag,2,Rad);
@@ -1322,6 +1322,22 @@ double UsmaniPotentialCats(double* Pars){
     const double wc = 2137;
     double x=r*0.7;
     double vc = wc/(1+exp((r-0.5)/0.2));
+    double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-2.*r*r),2.);
+    double v = 0.;
+    if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
+    else if (Spin == 1)  v = vc - (vbar - 0.25*vsigma)*tpi*tpi;//Usmani triplet
+    else printf ("wrong polarization\n");
+    return v;
+}
+double UsmaniFit(double* Pars){
+    double& r = Pars[0];
+    double& Spin = Pars[2];
+    //Values for the potential
+    const double vbar = 6.2;
+    const double vsigma = 0.25;
+    const double wc = Pars[3];
+    double x=r*0.7;
+    double vc = wc/(1+exp((r-Pars[4])/Pars[5]));
     double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-2.*r*r),2.);
     double v = 0.;
     if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
