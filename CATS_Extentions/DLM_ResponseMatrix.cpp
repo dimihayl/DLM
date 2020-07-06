@@ -213,7 +213,7 @@ void DLM_ResponseMatrix::ConvertMatrix(const int& WhichMatr, const DLM_Histo<flo
     int WhichBinAtUpEdgeY;
     int NumOldBinsX;
     int NumOldBinsY;
-    const int MaxBufferSize = 256;
+    const int MaxBufferSize = 1024;
     //these guys are used to see what fraction of all counts in the bin we should take
     //important when the binning is different in the cats object and in the matrix
     //in the end we end up with a matrix containing the number of entries in a specific momenta ranges,

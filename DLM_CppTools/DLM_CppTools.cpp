@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <cerrno>
 
 int ipow(int base, unsigned char exp){
     int result = 1;
@@ -176,6 +179,27 @@ void ShowTime(long long Time, char * str, short show, bool compact, short NumUni
             else
                 strcat(str, " and ");
         }
+    }
+}
+
+//0 no such file
+//1 file exists and is NOT opened
+//-1 file exists and is opened
+int file_status(const char* name){
+    int file_stat = open(name, O_RDONLY);
+    if (file_stat < 0) {
+        //file does not exist
+        close(file_stat);
+        return 0;
+    }
+    if (fcntl(file_stat, F_SETLEASE, F_WRLCK) && EAGAIN == errno) {
+        close(file_stat);
+        return -1;
+    }
+    else {
+        fcntl(file_stat, F_SETLEASE, F_UNLCK);
+        close(file_stat);
+        return 1;
     }
 }
 
