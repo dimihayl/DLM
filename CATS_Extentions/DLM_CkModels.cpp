@@ -228,8 +228,8 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     complex<double> ScattAmplSin = pow(IsLen1+0.5*eRan1*Momentum*Momentum-i*Momentum,-1.);
 
     double CkValue = 0.;
-    double term1 = +2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius);
-    double term2 = -imag(ScattAmplSin)*F2/Radius;
+    //double term1 = +2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius);
+    //double term2 = -imag(ScattAmplSin)*F2/Radius;
     CkValue +=  0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
                 2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius;
     //so far this is the eq. for singlet only, w/o QS
@@ -309,19 +309,19 @@ double GeneralLednickyIntegral(const double& Momentum, const double& GaussR, con
 
     const complex<double> IsLen1 = InverseScatLen?ScattLenSin/FmToNu:1./(ScattLenSin*FmToNu+1e-64);
     const double eRan1 = EffRangeSin*FmToNu;
-    const complex<double> IsLen3 = InverseScatLen?ScattLenTri/FmToNu:1./(ScattLenTri*FmToNu+1e-64);
-    const double eRan3 = EffRangeTri*FmToNu;
+    //const complex<double> IsLen3 = InverseScatLen?ScattLenTri/FmToNu:1./(ScattLenTri*FmToNu+1e-64);
+    //const double eRan3 = EffRangeTri*FmToNu;
 
     complex<double> ScattAmplSin = pow(IsLen1+0.5*eRan1*Mom*Mom-i*Mom,-1.);
 
     double CkValue = 0.;
-    double term1 = 8*Pi*real(ScattAmplSin)*intvalue1;
-    double term2 = -8*Pi*imag(ScattAmplSin)*intvalue2;
+    //double term1 = 8*Pi*real(ScattAmplSin)*intvalue1;
+    //double term2 = -8*Pi*imag(ScattAmplSin)*intvalue2;
     CkValue +=  0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
                 8*Pi*real(ScattAmplSin)*intvalue1-8*Pi*imag(ScattAmplSin)*intvalue2;
 
     if(!SinOnly){
-        complex<double> ScattAmplTri = pow(IsLen3+0.5*eRan3*Mom*Mom-i*Mom,-1.);
+        //complex<double> ScattAmplTri = pow(IsLen3+0.5*eRan3*Mom*Mom-i*Mom,-1.);
         CkValue +=  3*(
                     0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
                     8*Pi*real(ScattAmplSin)*intvalue1-8*Pi*imag(ScattAmplSin)*intvalue2);
@@ -489,7 +489,7 @@ double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, 
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen1,PotPar[2],ScatLen3,PotPar[5],false,false);
 }
 double Lednicky_2channel(const double& Momentum, const double* SourcePar, const double* PotPar){
-    return GeneralLednicky2channel(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,PotPar[4],PotPar[5]);
+    return GeneralLednicky2channel(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,false,PotPar[4],PotPar[5]);
 }
 
 double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar){
@@ -531,7 +531,7 @@ double Lednicky_gauss_pAL_Integral(const double& Momentum, const double* SourceP
   // 7. Eff. range Triplet
   // 8. TRUE to select singlet only: here the WUT sc. lengths are spin averaged
   // 9. to select Quantum Statistics (false for different fermions)
-    return GeneralLednickyIntegral(Momentum,SourcePar[0],SourcePar[1],ScatLen,PotPar[2],0,0,true,false);
+    return GeneralLednickyIntegral(Momentum,SourcePar[0],SourcePar[1],ScatLen,PotPar[2],0,0,true,false,false);
 }
 //
 // double Lednicky_LAL_mess(const double& Momentum, const double* SourcePar, const double* PotPar){

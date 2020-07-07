@@ -15,7 +15,7 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
 double GeneralLednicky2channel(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
                        const double& ScattLenTri, const double& EffRangeTri,
-                       const bool& QS, const bool& InverseScatLen=false,
+                       const bool& QS, const bool& InverseScatLen,
                        const double& Weight1, const double& Weight2);
 double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const std::complex<double>& ScattLenSin, const double& EffRangeSin,
@@ -79,12 +79,8 @@ double Lednicky_gauss_pAL_varlow(const double &Momentum, const double* SourcePar
 
  double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
  double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
- double ComplexLednickyCoulomb_Averaged(const double& Momentum, const double* SourcePar, const double* PotPar);
 
- double Lednicky_gauss_pAL_Integral(const double& Momentum, const double* SourcePar, const double* PotPar);
-
-
-    void SetLedniIntegral_SourceFunction(double (*AS)(double*), double* par);
+    void SetLedniIntegral_SourceFunction(double (*AS)(double*), CATSparameters& Pars);
     void SetLedniIntegral_SourceClass(void* context, const unsigned& numparameters=0);
     void RemoveLedniIntegral_SourceFunction();
     void RemoveLedniIntegral_SourceClass();
