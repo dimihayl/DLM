@@ -25,6 +25,9 @@ double GaussSource(double* Pars){
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double& Size = Pars[3];
+    // printf("Radius = %.2f\n",Radius);
+    // printf("Size = %.2f\n",Size);
+
 //printf(" G-> r=%.2f, s=%.2f => %.2f\n",Radius,Size,4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size)));
     return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
