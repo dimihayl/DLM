@@ -185,7 +185,9 @@ void ShowTime(long long Time, char * str, short show, bool compact, short NumUni
 //0 no such file
 //1 file exists and is NOT opened
 //-1 file exists and is opened
+//-2 ERROR
 int file_status(const char* name){
+    #ifdef F_SETLEASE
     int file_stat = open(name, O_RDONLY);
     if (file_stat < 0) {
         //file does not exist
@@ -201,6 +203,10 @@ int file_status(const char* name){
         close(file_stat);
         return 1;
     }
+    #else
+    printf("\033[1;33mWARNING:\033[0m The file_status function will only work with Linux.\n");
+    return -2;
+    #endif // F_SETLEASE
 }
 
 DLM_Timer::DLM_Timer(){
