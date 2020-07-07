@@ -12,6 +12,11 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const double& ScattLenSin, const double& EffRangeSin,
                        const double& ScattLenTri, const double& EffRangeTri,
                        const bool& SinOnly, const bool& QS, const bool& InverseScatLen=false);
+double GeneralLednicky2channel(const double& Momentum, const double& GaussR,
+                       const double& ScattLenSin, const double& EffRangeSin,
+                       const double& ScattLenTri, const double& EffRangeTri,
+                       const bool& QS, const bool& InverseScatLen=false,
+                       const double& Weight1, const double& Weight2);
 double GeneralLednicky(const double& Momentum, const double& GaussR,
                        const std::complex<double>& ScattLenSin, const double& EffRangeSin,
                        const std::complex<double>& ScattLenTri, const double& EffRangeTri,
@@ -49,6 +54,8 @@ double ComplexLednicky_Singlet(const double& Momentum, const double* SourcePar, 
 double ComplexLednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
 double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
+
+double Lednicky_2channel(const double& Momentum, const double* SourcePar, const double* PotPar);
 
 double Lednicky_gauss_Sigma0(const double &Momentum, const double* SourcePar, const double* PotPar);
 double pXi_pheno(const double &Momentum, const double* SourcePar, const double* PotPar);
