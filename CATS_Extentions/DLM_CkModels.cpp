@@ -135,7 +135,6 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     CkValue +=  0.5*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius))+
                 2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius;
     //so far this is the eq. for singlet only, w/o QS
-
     //if we need to include the triplet, we add the term with a weight factor of 3 more than the singlet.
     //since however the correct norm. coeff. are 0.25 and 0.75 we need to divide by 4 to get the final result
     if(!SinOnly){
@@ -151,7 +150,6 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
         CkValue -= exp(-Radius*Radius*4.*Momentum*Momentum);
         CkValue *= 0.5;
     }
-
     CkValue += 1;
 
     return CkValue;
@@ -185,23 +183,19 @@ double GeneralLednicky2channel(const double& Momentum, const double& GaussR,
     complex<double> ScattAmplSin = pow(IsLen1+0.5*eRan1*Momentum*Momentum-i*Momentum,-1.);
 
     double CkValue = 0.;
-    CkValue +=  Weight1*0.5*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius))+
-                2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius;
+    CkValue +=  Weight1*(0.5*pow(abs(ScattAmplSin)/Radius,2)*(1-(eRan1)/(2*sqrt(Pi)*Radius))+
+                2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius);
     //so far this is the eq. for singlet only, w/o QS
-
     //if we need to include the triplet, we add the term with a weight factor of 3 more than the singlet.
     //since however the correct norm. coeff. are 0.25 and 0.75 we need to divide by 4 to get the final result
-
     complex<double> ScattAmplTri = pow(IsLen3+0.5*eRan3*Momentum*Momentum-i*Momentum,-1.);
     CkValue +=  Weight2*(
                 0.5*pow(abs(ScattAmplTri)/Radius,2)*(1-(eRan3)/(2*sqrt(Pi)*Radius))+
                 2*real(ScattAmplTri)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplTri)*F2/Radius);
-
     //if we have to include QS we need to add a correction factor and normalize by factor of 1/2
     if(QS){
         CkValue -= (exp(-Radius*Radius*4.*Momentum*Momentum))*(Weight2-Weight1);
     }
-
     CkValue += 1;
 
     return CkValue;
