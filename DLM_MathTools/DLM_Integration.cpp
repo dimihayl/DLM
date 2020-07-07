@@ -109,7 +109,7 @@ double DLM_INT_aSimpsonWiki(const double& a, const double& b,  // interval [a,b]
   double c = (a + b)/2, h = b - a;
   double fa = FUNCTION(a), fb = FUNCTION(b), fc = FUNCTION(c);
   double S = (h/6)*(fa + 4*fc + fb);
-//printf("a=%f; b=%f\n",a,b);
+  // printf("a=%f; b=%f\n",a,b);
   return DLM_INT_adaptiveSimpsonsAuxWiki(a, b, epsilon, S, fa, fb, fc, maxRecursionDepth);
 }
 

@@ -1,22 +1,22 @@
 
 #include "DLM_CkModels.h"
-
 #include "gsl_sf_dawson.h"
-
 #include "CATSconstants.h"
 #include "CATStools.h"
+#include "DLM_Integration.h"
+#include "DLM_Source.h"
 
 using namespace std;
 
 
 double (*LEDNI_INT_SFUNCTION)(double* par) = NULL;
-CATSparameters* LEDNI_INT_SFUNCTION_PARS = NULL;
+double* LEDNI_INT_SFUNCTION_PARS = NULL;
 void* LEDNI_INT_SCLASS = NULL;
 unsigned LEDNI_INT_SCLASS_NPARS = 0;
 
-void SetLedniIntegral_SourceFunction(double (*AS)(double*), CATSparameters& Pars){
+void SetLedniIntegral_SourceFunction(double (*AS)(double*), double* par){
     LEDNI_INT_SFUNCTION = AS;
-    LEDNI_INT_SFUNCTION_PARS = &Pars;
+    LEDNI_INT_SFUNCTION_PARS = par;
     RemoveLedniIntegral_SourceClass();
 }
 void SetLedniIntegral_SourceClass(void* context, const unsigned& numparameters){
@@ -31,6 +31,44 @@ void RemoveLedniIntegral_SourceFunction(){
 void RemoveLedniIntegral_SourceClass(){
     LEDNI_INT_SCLASS = NULL;
     LEDNI_INT_SCLASS_NPARS = 0;
+}
+
+double Integral1_Function(double* par){
+  double r = par[1];
+  double k = par[0];
+  double int1;
+  int1 = cos(k*r)*sin(k*r)/(4*Pi*r*r*k);
+  //  printf("r in IntegralFunction1 *hcbar = %.4f \n", r*197.3);
+  // printf("GaussSource = %.2f \n", GaussSource(par));
+  // printf("multiplic = %.2f \n", int1*GaussSource(par));
+  return int1*GaussSourceCutOff(par);
+}
+
+double Integral2_Function(double* par){
+  double r = par[1];
+  double k = par[0];
+  double int2;
+  int2 = sin(k*r)*sin(k*r)/(4*Pi*r*r*k);
+  return int2*GaussSourceCutOff(par);
+}
+
+double Integral1_FunctionGauss(double* par){
+  double r = par[1];
+  double k = par[0];
+  double int1;
+  int1 = cos(k*r)*sin(k*r)/(4*Pi*r*r*k);
+  //  printf("r in IntegralFunction1 *hcbar = %.4f \n", r*197.3);
+  // printf("GaussSource = %.2f \n", GaussSource(par));
+  // printf("multiplic = %.2f \n", int1*GaussSource(par));
+  return int1*GaussSource(par);
+}
+
+double Integral2_FunctionGauss(double* par){
+  double r = par[1];
+  double k = par[0];
+  double int2;
+  int2 = sin(k*r)*sin(k*r)/(4*Pi*r*r*k);
+  return int2*GaussSource(par);
 }
 
 double Flat_Residual(const double& Momentum, const double* SourcePar, const double* PotPar){
@@ -190,9 +228,15 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     complex<double> ScattAmplSin = pow(IsLen1+0.5*eRan1*Momentum*Momentum-i*Momentum,-1.);
 
     double CkValue = 0.;
+    double term1 = +2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius);
+    double term2 = -imag(ScattAmplSin)*F2/Radius;
     CkValue +=  0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
                 2*real(ScattAmplSin)*F1/(sqrt(Pi)*Radius)-imag(ScattAmplSin)*F2/Radius;
     //so far this is the eq. for singlet only, w/o QS
+    // std::cout << "------- In General Lednicky analytical -------" << std::endl;
+    // printf("term1 = %.4f \n", term1);
+    // printf("term2 = %.4f \n", term2);
+    // std::cout << "----------------------------------------------" << std::endl;
 
     //if we need to include the triplet, we add the term with a weight factor of 3 more than the singlet.
     //since however the correct norm. coeff. are 0.25 and 0.75 we need to divide by 4 to get the final result
@@ -206,6 +250,86 @@ double GeneralLednicky(const double& Momentum, const double& GaussR,
     //if we have to include QS we need to add a correction factor and normalize by factor of 1/2
     if(QS){
         CkValue -= exp(-Radius*Radius*4.*Momentum*Momentum);
+        CkValue *= 0.5;
+    }
+
+    CkValue += 1;
+
+    return CkValue;
+}
+
+double GeneralLednickyIntegral(const double& Momentum, const double& GaussR, const double& cutoff,
+                       const complex<double>& ScattLenSin, const double& EffRangeSin,
+                       const complex<double>& ScattLenTri, const double& EffRangeTri,
+                       const bool& SinOnly, const bool& QS, const bool& InverseScatLen){
+   double params [5];
+   params[0] = Momentum;
+   params[3] = GaussR*FmToNu;
+   params[4] = cutoff*FmToNu;
+  // printf("params[0] = %.4f \n", params[0]);
+  // printf("params[3] = %.4f \n", params[3]);
+  // printf("cutoff = %.4f \n", cutoff);
+
+   double intvalue1;
+   double intvalue2;
+   double max_int = 20.*FmToNu;
+   double min_int = params[4];
+
+    DLM_INT_SetFunction(GaussSourceCutOff, params,1);
+    // DLM_INT_SetFunction(GaussSource, params,1);
+
+    // double NormSource = DLM_INT_aSimpsonWiki(1.e-3,max_int);
+    double NormSource = DLM_INT_aSimpsonWiki(min_int,max_int);
+    //  double NormSource = DLM_INT_SimpsonWiki(min_int + 1.e-3,max_int,10000);
+
+
+     printf("NormSource = %.6f \n", NormSource);
+
+    if (NormSource <1.e-3){
+      printf("WARNING: the Normalization of the source is zero!!\n");
+      return 1;
+    }
+
+    DLM_INT_SetFunction(Integral1_Function, params,1);
+    // DLM_INT_SetFunction(Integral1_FunctionGauss, params,1);
+    // intvalue1 = (1./NormSource)*DLM_INT_aSimpsonWiki(1.e-3,max_int);
+    intvalue1 = (1./NormSource)*DLM_INT_aSimpsonWiki(min_int,max_int);
+      // intvalue1 = (1./NormSource)*DLM_INT_SimpsonWiki(min_int + 1.e-3,max_int,10000);
+
+
+    DLM_INT_SetFunction(Integral2_Function, params,1);
+    // DLM_INT_SetFunction(Integral2_FunctionGauss, params,1);
+
+    // intvalue2 = (1./NormSource)*DLM_INT_aSimpsonWiki(1.e-3,max_int);
+    intvalue2 = (1./NormSource)*DLM_INT_aSimpsonWiki(min_int,max_int);
+    // intvalue2 = (1./NormSource)*DLM_INT_SimpsonWiki(min_int + 1.e-3,max_int,10000);
+
+    double Mom = params[0];
+    double Radius = params[3];
+
+    const complex<double> IsLen1 = InverseScatLen?ScattLenSin/FmToNu:1./(ScattLenSin*FmToNu+1e-64);
+    const double eRan1 = EffRangeSin*FmToNu;
+    const complex<double> IsLen3 = InverseScatLen?ScattLenTri/FmToNu:1./(ScattLenTri*FmToNu+1e-64);
+    const double eRan3 = EffRangeTri*FmToNu;
+
+    complex<double> ScattAmplSin = pow(IsLen1+0.5*eRan1*Mom*Mom-i*Mom,-1.);
+
+    double CkValue = 0.;
+    double term1 = 8*Pi*real(ScattAmplSin)*intvalue1;
+    double term2 = -8*Pi*imag(ScattAmplSin)*intvalue2;
+    CkValue +=  0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
+                8*Pi*real(ScattAmplSin)*intvalue1-8*Pi*imag(ScattAmplSin)*intvalue2;
+
+    if(!SinOnly){
+        complex<double> ScattAmplTri = pow(IsLen3+0.5*eRan3*Mom*Mom-i*Mom,-1.);
+        CkValue +=  3*(
+                    0.5*pow(abs(ScattAmplSin)/Radius,2)*(1.-(eRan1)/(2*sqrt(Pi)*Radius))+
+                    8*Pi*real(ScattAmplSin)*intvalue1-8*Pi*imag(ScattAmplSin)*intvalue2);
+        CkValue *= 0.25;
+    }
+    //if we have to include QS we need to add a correction factor and normalize by factor of 1/2
+    if(QS){
+        CkValue -= exp(-Radius*Radius*4.*Mom*Mom);
         CkValue *= 0.5;
     }
 
@@ -395,6 +519,20 @@ double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, co
   // 8. to select Quantum Statistics (false for different fermions)
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
 }
+double Lednicky_gauss_pAL_Integral(const double& Momentum, const double* SourcePar, const double* PotPar){
+  complex<double> ScatLen(PotPar[0],PotPar[1]);
+  //Entries for the GeneralLednicky function:
+  // 1. Momentum
+  // 2. Radius of Gaussian Source
+  // 3. Cutoff in the source
+  // 4. Scattering length f0 Singlet:  Re, Im
+  // 5. Effective range (assumed Re)
+  // 6. Sc. Len. Triplet
+  // 7. Eff. range Triplet
+  // 8. TRUE to select singlet only: here the WUT sc. lengths are spin averaged
+  // 9. to select Quantum Statistics (false for different fermions)
+    return GeneralLednickyIntegral(Momentum,SourcePar[0],SourcePar[1],ScatLen,PotPar[2],0,0,true,false);
+}
 //
 // double Lednicky_LAL_mess(const double& Momentum, const double* SourcePar, const double* PotPar){
 //     std::complex<double> ScLenLAL(PotPar[0], PotPar[1]);
@@ -429,6 +567,7 @@ double ComplexLednickyCoulomb_Averaged(const double& Momentum, const double* Sou
 }
 
 //Lednicky model for Baryon-Antibaryon analysis with APPROX Coulomb
+
 
 double Lednicky_gauss_pAp_CATS(const double &Momentum, const double* SourcePar, const double* PotPar){
   double radius = 1.188;
