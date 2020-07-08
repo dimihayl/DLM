@@ -5,6 +5,17 @@
 #include "DLM_Ck.h"
 #include "DLM_CkModels.h"
 
+DLM_Ck::DLM_Ck(const unsigned numbins,const double& kmin, const double& kmax):DLM_Histo(),NumSourcePar(0),NumPotPar(0){
+    Kitty = NULL;
+    CkFunction = NULL;
+    SetUp(1);
+    SetUp(0,numbins,kmin,kmax);
+    Initialize();
+    DefaultConstructor();
+    SourceUpToDate = true;
+    PotUpToDate = true;
+}
+
 DLM_Ck::DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat):DLM_Histo(),
                 NumSourcePar(nSourcePar),NumPotPar(nPotPar){
     SetUp(1);
