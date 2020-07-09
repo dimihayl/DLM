@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <cerrno>
+#include <stdlib.h>
 
 int ipow(int base, unsigned char exp){
     int result = 1;
@@ -116,7 +117,7 @@ void ShowTime(long long Time, char * str, short show, bool compact, short NumUni
     //the last shown unit
     short last_unit;
 
-    long long T_temp = Time;
+    long long T_temp = abs(Time);
     //sets values for y, d, h, min, s
     for(short i=0; i<NumUnits; i++){
         values[i] += T_temp/value_in_sec[i];
@@ -159,7 +160,7 @@ void ShowTime(long long Time, char * str, short show, bool compact, short NumUni
         last_unit = NumUnits-1;
     }
 
-    strcpy(str, "");
+    strcpy(str, Time>=0?"":"- ");
     char TempStr[24];
 
     for(short i=first_unit; i<=last_unit; i++){
