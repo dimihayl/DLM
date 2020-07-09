@@ -117,7 +117,7 @@ void ShowTime(long long Time, char * str, short show, bool compact, short NumUni
     //the last shown unit
     short last_unit;
 
-    long long T_temp = llabs(Time);
+    long long T_temp = Time;
     //sets values for y, d, h, min, s
     for(short i=0; i<NumUnits; i++){
         values[i] += T_temp/value_in_sec[i];
