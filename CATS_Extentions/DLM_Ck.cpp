@@ -223,7 +223,7 @@ void DLM_Ck::Update(const bool& FORCE){
                Kitty->GetMomBinLowEdge(0)<GetBinCenter(0,uBin) &&
                CutOff>GetBinCenter(0,uBin)){
                BinValue[uBin] = Kitty->EvalCorrFun(GetBinCenter(0,uBin));
-//printf("if %f -> %f\n",GetBinCenter(0,uBin),BinValue[uBin]);
+//printf(" SETTING: %.0f -> %.4f\n",GetBinCenter(0,uBin),BinValue[uBin]);
             }
             else if(Kitty->GetMomBinLowEdge(0)>=GetBinCenter(0,uBin)){
 //printf("Kitty->GetMomBinLowEdge(0)>=GetBinCenter(0,uBin) : %f>=%f",Kitty->GetMomBinLowEdge(0),GetBinCenter(0,uBin));
@@ -249,6 +249,7 @@ double DLM_Ck::Eval(const double& Momentum){
     if(Momentum<BinRange[0][0]) return 0;
     double kf;
     if(Momentum<CutOff&&Momentum<BinRange[0][NumBins[0]]){
+//printf(" --> I should be evaluating here\n");
         return DLM_Histo::Eval(&Momentum);
     }
     else if(CutOff>BinRange[0][NumBins[0]]){

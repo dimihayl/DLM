@@ -50,6 +50,9 @@ public:
     double EvalSignalChild(const unsigned& WhichChild,const double& Momentum);
     double EvalSignalSmearedChild(const unsigned& WhichChild,const double& Momentum);
 
+    double GetLambdaMain();
+    double GetLambdaChild(const unsigned& WhichChild);
+
     //if(Renorm) -> spit out the C(k) normalized to 1
 /*
     //Only the main correlation

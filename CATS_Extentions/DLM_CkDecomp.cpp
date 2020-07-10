@@ -310,10 +310,13 @@ double DLM_CkDecomp::EvalSignalSmearedChild(const unsigned& WhichChild,const dou
 	return 0;
 }
 
-unsigned DLM_CkDecomp::GetNumChildren(){
-    return NumChildren;
+double DLM_CkDecomp::GetLambdaMain(){
+	return LambdaMain;
 }
-
+double DLM_CkDecomp::GetLambdaChild(const unsigned& WhichChild){
+    if(WhichChild>=NumChildren) return 0;
+    return LambdaPar[WhichChild];
+}
 
 DLM_CkDecomp* DLM_CkDecomp::GetChild(const unsigned& WhichChild){
     if(WhichChild>=NumChildren) return NULL;
