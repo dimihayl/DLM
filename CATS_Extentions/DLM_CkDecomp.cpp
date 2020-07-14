@@ -317,6 +317,9 @@ double DLM_CkDecomp::GetLambdaChild(const unsigned& WhichChild){
     if(WhichChild>=NumChildren) return 0;
     return LambdaPar[WhichChild];
 }
+unsigned DLM_CkDecomp::GetNumChildren(){
+    return NumChildren;
+}
 
 DLM_CkDecomp* DLM_CkDecomp::GetChild(const unsigned& WhichChild){
     if(WhichChild>=NumChildren) return NULL;
