@@ -2452,74 +2452,112 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
     unsigned short NumPwPerCh;
     //unsigned short NumFiles;
     unsigned NumMomBins = 0;
-    unsigned short NumFiles = 10; // (to cover all s,p,d, waves)
+    unsigned short NumFiles = 6; // (to cover all s,p,d, waves)
     bool* TakeThisFile = new bool [NumFiles];
 
     if(TYPE==0){
         RadiusStepSize = 0.02;
         RadiusMinimum = 0.02;
         RadiusMaximum = 10.;
-        NumChannels = 2;
-        NumPwPerCh = 1;
-        NumFiles = 2;
-        //NumMomBins = 40;
+        NumChannels = 4;
+        NumFiles = 6;
     }
     else if(TYPE==1){
         RadiusStepSize = 0.02;
         RadiusMinimum = 0.02;
         RadiusMaximum = 10.;
-        NumChannels = 4;
-        NumPwPerCh = 1;
-        NumFiles = 2;
-        //NumMomBins =200;
+        NumChannels = 8;
+        NumFiles = 6;
     }
     else{
         printf("YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
         return NULL;
     }
+// channels for CATS object
+// ch 0: 1S0 -> 1/4
+// ch 1: 3S1, 3P0 -> 3/4 x 1/9 = 1/12
+// ch 2: 3S1 -> 3/4 x 8/9 = 2/3
+// Update 13.07.2020
+// ch 0: 1S0 + 1P1 -> 1/4
+// ch 1: 3S1 + 3P0 -> 3/4 x 1/9 = 1/12
+// ch 2: 3S1 + 3P1 -> 3/4 x 1/3 = 1/4
+// ch 3: 3S1 + 3P2 -> 3/4 x 5/9 = 5/12
+// ch 4: 3S1 (dummy channel)
 
     Kitty.SetNumChannels(NumChannels);
     if(TYPE==0){
         //ppbar->ppbar
-        Kitty.SetNumPW(0,NumPwPerCh);
+        Kitty.SetNumPW(0,2);
         Kitty.SetChannelWeight(0,1./4.);
         Kitty.SetSpin(0,0);
 
-        Kitty.SetNumPW(1,NumPwPerCh);
-        Kitty.SetChannelWeight(1,3./4.);
+        Kitty.SetNumPW(1,2);
+        Kitty.SetChannelWeight(1,1./12.);
         Kitty.SetSpin(1,1);
+
+        Kitty.SetNumPW(2,2);
+        Kitty.SetChannelWeight(2,1./4.);
+        Kitty.SetSpin(2,1);
+
+        Kitty.SetNumPW(3,2);
+        Kitty.SetChannelWeight(3,5./12.);
+        Kitty.SetSpin(3,1);
+
+        // Kitty.SetNumPW(4,1);
+        // Kitty.SetChannelWeight(4,3./4.);
+        // Kitty.SetSpin(4,1);
     }
     else if(TYPE==1){
         //ppbar->ppbar
-        Kitty.SetNumPW(0,NumPwPerCh);
+        Kitty.SetNumPW(0,2);
         Kitty.SetChannelWeight(0,1./4.);
         Kitty.SetSpin(0,0);
 
-        Kitty.SetNumPW(1,NumPwPerCh);
-        Kitty.SetChannelWeight(1,3./4.);
+        Kitty.SetNumPW(1,2);
+        Kitty.SetChannelWeight(1,1./12.);
         Kitty.SetSpin(1,1);
 
-        //nnbar->ppbar
-        Kitty.SetNumPW(2,NumPwPerCh);
+        Kitty.SetNumPW(2,2);
         Kitty.SetChannelWeight(2,1./4.);
-        Kitty.SetSpin(2,0);
+        Kitty.SetSpin(2,1);
 
-        Kitty.SetNumPW(3,NumPwPerCh);
-        Kitty.SetChannelWeight(3,3./4.);
+        Kitty.SetNumPW(3,2);
+        Kitty.SetChannelWeight(3,5./12.);
         Kitty.SetSpin(3,1);
+
+        //nnbar->ppbar
+        Kitty.SetNumPW(4,2);
+        Kitty.SetChannelWeight(4,1./4.);
+        Kitty.SetSpin(4,0);
+
+        Kitty.SetNumPW(5,2);
+        Kitty.SetChannelWeight(5,1./12.);
+        Kitty.SetSpin(5,1);
+
+        Kitty.SetNumPW(6,2);
+        Kitty.SetChannelWeight(6,1./4.);
+        Kitty.SetSpin(6,1);
+
+        Kitty.SetNumPW(7,2);
+        Kitty.SetChannelWeight(7,5./12.);
+        Kitty.SetSpin(7,1);
     }
     else{
         printf("Да му еба майката!\n");
     }
+
 
     Kitty.SetQ1Q2(-1);
     Kitty.SetPdgId(2212, -2212);
     const double Mass_p = 938.272;
     Kitty.SetRedMass((Mass_p*Mass_p)/(Mass_p+Mass_p));
     //only take the s-waves into account, i.e. C(k)->0 as for coupled channels
+    // CATS does not do anything for the asymptotic solution
     if(TYPE%10==1){
-        Kitty.SetOnlyNumericalPw(2,true);
-        Kitty.SetOnlyNumericalPw(3,true);
+        Kitty.SetOnlyNumericalPw(4,true);
+        Kitty.SetOnlyNumericalPw(5,true);
+        Kitty.SetOnlyNumericalPw(6,true);
+        Kitty.SetOnlyNumericalPw(7,true);
     }
 
     //we always add 1 bin at zero, so if we have e.g. 0.1 to 0.3, these are 3 bins + 1 extra
@@ -2544,6 +2582,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
         strcpy(InputFileName[uFile],InputFolder);
     }
 
+
     //char* buffer = new char [512];
     if(TYPE<=1){
         //1-10 is singlet
@@ -2553,15 +2592,24 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
         //    strcat(InputFileName[uFile], buffer);
         //    printf("%s\n",InputFileName[uFile]);
         //}
+
         strcat(InputFileName[0], "w.31");
         strcat(InputFileName[1], "w.32");
+        strcat(InputFileName[2], "w.30");//3P0
+        strcat(InputFileName[3], "w.11");//1P1
+        strcat(InputFileName[4], "w.12");//3P1
+        // strcat(InputFileName[5], "w.13");//3P2
+        strcat(InputFileName[5], "w_2007.13");//3P2 new 20.07.2020
+
+
+
+      // for(unsigned uFile=0; uFile<NumFiles; uFile++){
+      //   printf("%s\n",InputFileName[uFile]);
+      // }
     }
     else{
         printf("YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
     }
-
-
-
 
     //unsigned WhichMomBin;
 
@@ -2573,7 +2621,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
     float fMomentum;
 
     FILE *InFile;
-    InFile = fopen(InputFileName[0], "r");
+    InFile = fopen(InputFileName[0], "r");//since it has #mombins=180 and the others have 200!!
     if(!InFile){
         printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[0]);
         return NULL;
@@ -2597,6 +2645,10 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
         CurrentLine++;
     }
     fclose(InFile);
+    //  printf("TOTAL NUMMOMBINS = %i\n",NumMomBins);
+    //  printf("MAX MOM = %.2f\n",MomentumBins[NumMomBins]);
+
+    // return 0;
     //set the upper edge of the last bin, where we just add the bin width of the last bin
     //i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
     MomentumBins[NumMomBins] = 2.*Momentum[NumMomBins-1]-MomentumBins[NumMomBins-1];
@@ -2613,8 +2665,8 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
     HistoWF = new DLM_Histo<complex<double>>* [NumDLM_Histos];
 //printf("NumChannels = %u\n",NumChannels);
     for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
-        HistoWF[uHist] = new DLM_Histo<complex<double>> [NumPwPerCh];
-        for(unsigned uPw=0; uPw<NumPwPerCh; uPw++){
+        HistoWF[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
             HistoWF[uHist][uPw].SetUp(2);
             HistoWF[uHist][uPw].SetUp(0,NumMomBins,MomentumBins);
             HistoWF[uHist][uPw].SetUp(1,NumRadBins,RadBins);
@@ -2625,8 +2677,8 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
     //DLM_Histo<complex<double>> HistoPS[NumChannels];
     HistoPS = new DLM_Histo<complex<double>>* [NumDLM_Histos];
     for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
-        HistoPS[uHist] = new DLM_Histo<complex<double>> [NumPwPerCh];
-        for(unsigned uPw=0; uPw<NumPwPerCh; uPw++){
+        HistoPS[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
             HistoPS[uHist][uPw].SetUp(1);
             HistoPS[uHist][uPw].SetUp(0,NumMomBins,MomentumBins);
             HistoPS[uHist][uPw].Initialize();
@@ -2679,9 +2731,6 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
                 continue;
             }
 
-            sscanf(cdummy, " %f %f %f %f %f %f",
-                    &fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
-
             if(WhichMomBin<0){
                 printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
                 continue;
@@ -2689,16 +2738,93 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
 
             unsigned WhichBin[2];
             WhichBin[0] = unsigned(WhichMomBin);
+            // printf("NumMomBins Haide = ");
             //we fill up the radius bins with and offset of 1, due to the special zeroth bin
             WhichBin[1] = RadBin+1;
 
-            HistoWF[uFile][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
-            HistoPS[uFile][0].SetBinContent(WhichBin,0);
+            if(TYPE==0){
+              if(uFile==0){//1S0
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+                HistoWF[0][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[0][0].SetBinContent(WhichBin,0);
+              } else if(uFile==1){//3S1
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+                HistoWF[1][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[1][0].SetBinContent(WhichBin,0);
+                HistoWF[2][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[2][0].SetBinContent(WhichBin,0);
+                HistoWF[3][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[3][0].SetBinContent(WhichBin,0);
+              } else if(uFile==2){//3P0
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+                HistoWF[1][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[1][1].SetBinContent(WhichBin,0);
+              } else if(uFile==3){//1P1
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+                HistoWF[0][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[0][1].SetBinContent(WhichBin,0);
+              } else if(uFile==4){//3P1
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+                HistoWF[2][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[2][1].SetBinContent(WhichBin,0);
+              } else if(uFile==5){//3P2
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+                HistoWF[3][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+                HistoPS[3][1].SetBinContent(WhichBin,0);
+              }
+            } else if(TYPE==1){
+              if(uFile==0){
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+              HistoWF[0][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[0][0].SetBinContent(WhichBin,0);
 
-            if(TYPE==1){
-                HistoWF[uFile+2][0].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
-                HistoPS[uFile+2][0].SetBinContent(WhichBin,0);
+              HistoWF[4][0].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[4][0].SetBinContent(WhichBin,0);
+              } else if(uFile==1){
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+              HistoWF[1][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[1][0].SetBinContent(WhichBin,0);
+              HistoWF[2][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[2][0].SetBinContent(WhichBin,0);
+              HistoWF[3][0].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[3][0].SetBinContent(WhichBin,0);
+
+              HistoWF[5][0].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[5][0].SetBinContent(WhichBin,0);
+              HistoWF[6][0].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[6][0].SetBinContent(WhichBin,0);
+              HistoWF[7][0].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[7][0].SetBinContent(WhichBin,0);
+              } else if(uFile==2){//3P0
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+              HistoWF[1][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[1][1].SetBinContent(WhichBin,0);
+              HistoWF[5][1].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[5][1].SetBinContent(WhichBin,0);
+              }else if(uFile==3){//1P1
+              sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+              HistoWF[0][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[0][1].SetBinContent(WhichBin,0);
+
+              HistoWF[4][1].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[4][1].SetBinContent(WhichBin,0);
+              } else if(uFile==4){//3P1
+              sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+              HistoWF[2][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[2][1].SetBinContent(WhichBin,0);
+
+              HistoWF[6][1].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[6][1].SetBinContent(WhichBin,0);
+              } else if(uFile==5){//3P2
+              sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf_ppbar,&fImWf_ppbar,&fReWf_nnbar,&fImWf_nnbar);
+              HistoWF[3][1].SetBinContent(WhichBin,(fReWf_ppbar+fi*fImWf_ppbar)*fRadius);
+              HistoPS[3][1].SetBinContent(WhichBin,0);
+
+              HistoWF[7][1].SetBinContent(WhichBin,(fReWf_nnbar+fi*fImWf_nnbar)*fRadius);
+              HistoPS[7][1].SetBinContent(WhichBin,0);
+              }
             }
+
 
             RadBin++;
             //if we have are passed the last radius bin in this momentum bin => we start over.
