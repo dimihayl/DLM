@@ -34,6 +34,8 @@ public:
     double GetCutOff() const;
     double GetCutOff_kc() const;
 
+    CATS* GetTheCat() const;
+
     bool Status();
     void Update(const bool& FORCE=false);
     double Eval(const double& Momentum);

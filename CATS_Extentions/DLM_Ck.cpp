@@ -173,6 +173,9 @@ double DLM_Ck::GetCutOff() const{
 double DLM_Ck::GetCutOff_kc() const{
     return CutOff_kc;
 }
+CATS* DLM_Ck::GetTheCat() const{
+    return Kitty;
+}
 
 void DLM_Ck::SetPotPar(const unsigned& WhichPar, const double& Value){
     if(WhichPar>=NumPotPar) return;
