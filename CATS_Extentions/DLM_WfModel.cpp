@@ -2476,7 +2476,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
         NumFiles = 6;
     }
     else{
-        printf("YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
+        printf("HELLO MY DEAR VALENTINA: YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
         return NULL;
     }
 // channels for CATS object
@@ -2637,7 +2637,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
 
 
     //char* buffer = new char [512];
-    if(TYPE<=1){
+    if(TYPE<=2){
         //1-10 is singlet
         //11-20 is triplet
         //for(unsigned uFile=0; uFile<NumFiles; uFile++){
@@ -2658,7 +2658,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
       // }
     }
     else{
-        printf("YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
+        printf("HELLO MY DEAR VALENTINA: YOU BROKE SOMETHING in Init_pantip_Haidenbauer\n");
     }
 
     //unsigned WhichMomBin;
