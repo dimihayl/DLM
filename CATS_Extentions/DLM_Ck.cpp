@@ -208,7 +208,13 @@ bool DLM_Ck::Status(){
 //maybe a bug, if I change Transport to Ana -> no update unless I force it
 void DLM_Ck::Update(const bool& FORCE){
 //printf("SourceUpToDate = %i; PotUpToDate=%i; FORCE=%i\n",SourceUpToDate,PotUpToDate,FORCE);
-    if(SourceUpToDate && PotUpToDate && !FORCE) return;
+    bool CatsStatus = true;
+    if(Kitty){
+      CatsStatus *= Kitty->CkStatus();
+      CatsStatus *= Kitty->PotentialStatus();
+      CatsStatus *= Kitty->SourceStatus();
+    }
+    if(CatsStatus && SourceUpToDate && PotUpToDate && !FORCE) return;
     if(CkFunction){
         for(unsigned uBin=0; uBin<NumBins[0]; uBin++){
             BinValue[uBin] = CkFunction(GetBinCenter(0,uBin), SourcePar, PotPar);
