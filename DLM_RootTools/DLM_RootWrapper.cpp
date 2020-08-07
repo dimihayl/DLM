@@ -1,6 +1,7 @@
 
 #include "DLM_RootWrapper.h"
 #include "TH2F.h"
+#include "TH1F.h"
 #include <unistd.h>
 
 DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
@@ -62,4 +63,19 @@ TH2F* Convert_DlmHisto_TH2F(const DLM_Histo<float>* input, const char* name){
     }
     return hROOT;
 }
-
+TH1F* Convert_DlmHisto_TH1F(const DLM_Histo<float>* input, const char* name){
+    if(!input || !name || input->GetDim()!=2){
+        printf("\033[1;31mERROR:\033[0m Bad input into Convert_DlmHisto_TH1F\n");
+        return NULL;
+    }
+    unsigned NumBinsX = input->GetNbins(0);
+    double* BinsX = input->GetBinRange(0);
+    TH1F* hROOT = new TH1F(name,name,NumBinsX,BinsX);
+    unsigned WhichBin[1];
+    for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){
+        WhichBin[0] = uBinX;
+        hROOT->SetBinContent(uBinX+1,input->GetBinContent(WhichBin));
+        hROOT->SetBinError(uBinX+1,input->GetBinError(WhichBin));
+    }
+    return hROOT;
+}
