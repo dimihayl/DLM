@@ -62,7 +62,7 @@ execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --libs" OUTPUT_VAR
 string(REGEX REPLACE "\n$" "" CFLAGS "${CFLAGS}")
 string(REGEX REPLACE "\n$" "" LIBS "${LIBS}")
 
-set(CFLAGS " -O2 -Wall -lgomp -pthread -fopenmp -std=c++11 ${CFLAGS}")
+set(CFLAGS " -O2 -lgomp -pthread -fopenmp -std=c++11 ${CFLAGS}")
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
