@@ -64,7 +64,7 @@ TH2F* Convert_DlmHisto_TH2F(const DLM_Histo<float>* input, const char* name){
     return hROOT;
 }
 TH1F* Convert_DlmHisto_TH1F(const DLM_Histo<float>* input, const char* name){
-    if(!input || !name || input->GetDim()!=2){
+    if(!input || !name || input->GetDim()!=1){
         printf("\033[1;31mERROR:\033[0m Bad input into Convert_DlmHisto_TH1F\n");
         return NULL;
     }
