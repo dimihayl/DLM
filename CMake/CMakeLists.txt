@@ -30,8 +30,8 @@ include_directories(${CATS_FOLDER}/DLM_CppTools)
 include_directories(${GSL_INCLUDE})
 include_directories(${ROOT_PATH}/include)
 
-add_library(CATSbasic SHARED 		${CATS_FOLDER}/CATS/CATS.cpp 
-					${CATS_FOLDER}/CATS/CATStools.cpp 
+add_library(CATSbasic SHARED 		${CATS_FOLDER}/CATS/CATS.cpp
+					${CATS_FOLDER}/CATS/CATStools.cpp
 					${CATS_FOLDER}/DLM_CppTools/DLM_CppTools.cpp
 					${CATS_FOLDER}/DLM_MathTools/DLM_Histo.cpp)
 add_library(CATSextended SHARED 	${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.cpp
@@ -39,21 +39,22 @@ add_library(CATSextended SHARED 	${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.cpp
 					${CATS_FOLDER}/DLM_MathTools/DLM_Random.cpp
 					${CATS_FOLDER}/DLM_MathTools/DLM_Bessel.cpp
 					${CATS_FOLDER}/DLM_MathTools/DLM_MathFunctions.cpp
-					${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.cpp 
-					${CATS_FOLDER}/CATS_Extentions/DLM_Potentials.cpp 
+					${CATS_FOLDER}/CATS_Extentions/DLM_CkModels.cpp
+					${CATS_FOLDER}/CATS_Extentions/DLM_Potentials.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_Source.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_StefanoPotentials.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_ResponseMatrix.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_Ck.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomp.cpp
 					${CATS_FOLDER}/CATS_Extentions/DLM_WfModel.cpp)
-add_library(CATSdev	SHARED		${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.cpp 
-					${CATS_FOLDER}/CATS_Extentions/DLM_Fitters.cpp 
+add_library(CATSdev	SHARED		${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.cpp
+					${CATS_FOLDER}/CATS_Extentions/DLM_Fitters.cpp
 					${CATS_FOLDER}/DLM_RootTools/DLM_SubPads.cpp
 					${CATS_FOLDER}/DLM_RootTools/DLM_DrawingTools.cpp
 					${CATS_FOLDER}/DLM_RootTools/DLM_HistoAnalysis.cpp
 					${CATS_FOLDER}/DLM_RootTools/DLM_RootWrapper.cpp
-					${CATS_FOLDER}/DLM_RootTools/DLM_DecayMatrix.cpp)					
+          ${CATS_FOLDER}/DLM_RootTools/DLM_MultiFit.cpp
+					${CATS_FOLDER}/DLM_RootTools/DLM_DecayMatrix.cpp)
 
 
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --cflags" OUTPUT_VARIABLE CFLAGS)
@@ -102,6 +103,7 @@ install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_SubPads.h DESTINATION ${CATS_DES
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_DrawingTools.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_HistoAnalysis.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_RootWrapper.h DESTINATION ${CATS_DESTINATION}/include)
+install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_MultiFit.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_DecayMatrix.h DESTINATION ${CATS_DESTINATION}/include)
 install (PROGRAMS ${CATS_FOLDER}/bin/cats-config DESTINATION ${CATS_DESTINATION}/bin)
 
@@ -110,5 +112,3 @@ file(APPEND ${CATS_DESTINATION}/bin/CMakeDLM.txt "${CATS_DESTINATION}\n")
 file(APPEND ${CATS_DESTINATION}/bin/CMakeDLM.txt "${ROOT_PATH}\n")
 file(APPEND ${CATS_DESTINATION}/bin/CMakeDLM.txt "${GSL_INCLUDE}\n")
 file(APPEND ${CATS_DESTINATION}/bin/CMakeDLM.txt "${GSL_LIB}\n")
-
-

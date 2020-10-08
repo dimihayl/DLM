@@ -1,36 +1,28 @@
 #ifndef DLM_MILTIFIT_H
 #define DLM_MILTIFIT_H
 
-//#include "DLM_Spectrum1D.h"
-
-#include "Fit/Fitter.h"
-#include "Fit/BinData.h"
-#include "Fit/Chi2FCN.h"
-//#include "TH1.h"
-//#include "TList.h"
+#ifndef ROOT_Math_WrappedMultiTF1
 #include "Math/WrappedMultiTF1.h"
-//#include "HFitInterface.h"
-//#include "TCanvas.h"
-//#include "TStyle.h"
-//#include "TFile.h"
-/*
-namespace ROOT{
-  //namespace Math{
-    //class WrappedMultiTF1;
-  //}
-  namespace Fit{
-    class DataOptions;
-    class DataRange;
-    class BinData;
-    class Chi2Function;
-    class FitResult;
-  }
-}
-*/
+#endif
+
+#ifndef ROOT_Fit_DataOptions
+#include "Fit/DataOptions.h"
+#endif
+
+#ifndef ROOT_Fit_DataRange
+#include "Fit/DataRange.h"
+#endif
+
+#ifndef ROOT_Fit_BinData
+#include "Fit/BinData.h"
+#endif
+
+#ifndef ROOT_Fit_Chi2FCN
+#include "Fit/Chi2FCN.h"
+#endif
+
 class TH1F;
 class TF1;
-
-void combinedFit();
 
 class DLM_MultiFit{
 
@@ -54,7 +46,6 @@ public:
     TH1F** HistoToFit;
     TF1** FitFunction;
     double** spec_par;
-
 
     //[i][j] : tells you if the i-th par is equal to
     //j-th par. The numbering follows the GNS
@@ -86,9 +77,6 @@ public:
     ~DLM_MultiFit(); //done
 
     bool AddSpectrum(TH1F* histo, TF1* fit); //done
-
-    //void ReserveMem(unsigned short numspec);
-    //bool SetSpectrum(DLM_Spectrum1D spec, unsigned short ispec);
 
     void ClearSpectra();
     void ResetParRelations();
