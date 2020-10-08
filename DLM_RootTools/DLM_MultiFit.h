@@ -30,6 +30,8 @@ namespace ROOT{
 class TH1F;
 class TF1;
 
+void combinedFit();
+
 class DLM_MultiFit{
 
 //protected:
@@ -51,6 +53,7 @@ public:
     //DLM_Spectrum1D ** Spectra;
     TH1F** HistoToFit;
     TF1** FitFunction;
+    double** spec_par;
 
 
     //[i][j] : tells you if the i-th par is equal to
