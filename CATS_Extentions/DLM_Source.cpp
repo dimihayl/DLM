@@ -19,6 +19,13 @@ double GaussSourceTF1(double* x, double* Pars){
     return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 
+double GaussSourceScaledTF1(double* x, double* Pars){
+    double& Radius = *x;
+    double& Size = Pars[0];
+    double& Alpha = Pars[1];
+    return Alpha*4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+}
+
 //2-particle
 double GaussSource(double* Pars){
     //double& Momentum = Pars[0];
