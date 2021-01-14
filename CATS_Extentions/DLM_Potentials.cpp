@@ -52,6 +52,24 @@ double GaussExpSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],1));
 }
 
+double Gaussian(double* Pars) {
+  // Pars[0] Radius in fm
+  // Pars[1] Momentum in MeV/c
+  // Pars[2] v_eff in MeV
+  // Pars[3] mu in fm^-2
+  // This function returns a Gaussian-type potential of the form v_eff * exp(- mu r^2)
+  return Pars[2] * exp(-Pars[3] * Pars[0] * Pars[0]);
+}
+
+double Yukawa(double* Pars) {
+  // Pars[0] Radius in fm
+  // Pars[1] Momentum in MeV/c
+  // Pars[2] A is dimensionless
+  // Pars[3] alpha in MeV
+  // this function returns a Yukawa-type potential as A/r exp(-alpha r)
+  return Pars[2] / (Pars[0] / 197.3269602) * exp(-Pars[3] * Pars[0] / 197.3269602);
+}
+
 /*
 double CustomUsmaniStefano1(const double& Radius,const int& ipart){
 

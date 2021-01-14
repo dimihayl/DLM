@@ -28,6 +28,9 @@ double UsmaniPotentialCats(double* Pars);
 double UsmaniFit(double* Pars);
 double RepulsiveCore(double* Pars);
 
+double Gaussian(double* Pars);
+double Yukawa(double* Pars);
+
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);
 
