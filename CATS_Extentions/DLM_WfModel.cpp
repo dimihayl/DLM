@@ -4409,7 +4409,7 @@ DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
   Kitty.SetQ1Q2(0); // Coulomb is already included in the wave function!
   Kitty.SetPdgId(2212, -411);
   const double Mass_p = 938.272;
-  const double Mass_Dminus = 1192.642;
+  const double Mass_Dminus = 1869.65;
   Kitty.SetRedMass((Mass_p * Mass_Dminus) / (Mass_p + Mass_Dminus));
 
   Kitty.SetOnlyNumericalPw(1, true);
