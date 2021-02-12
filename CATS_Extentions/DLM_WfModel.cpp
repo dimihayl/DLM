@@ -4377,7 +4377,7 @@ DLM_Histo<complex<double>>*** Init_pd_Sebastian(const char* InputFolder, CATS& K
 
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
                                                        CATS &Kitty,
-                                                       const int TYPE) {
+                                                       const int& TYPE) {
 
   double RadiusStepSize;
   double RadiusMinimum;
@@ -4594,7 +4594,7 @@ DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
 
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
                                                        CATS *Kitty,
-                                                       const int TYPE) {
+                                                       const int& TYPE) {
   return Init_pDminus_Haidenbauer(InputFolder, *Kitty, TYPE);
 }
 
