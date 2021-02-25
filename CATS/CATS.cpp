@@ -1298,6 +1298,7 @@ complex<double> CATS::EvalAsymptoticRadialWF(const unsigned& WhichMomBin, const 
 complex<double> CATS::EvalReferenceRadialWF(const unsigned& WhichMomBin, const unsigned short& usPW, const double& Radius,
                                     const bool& DivideByR){
     if(NumMomBins<=WhichMomBin) return 0;
+    if(OnlyNumPw[usPW]) return 0;
     double MultFactor = DivideByR?1./(Radius*FmToNu+1e-64):1;
     return ReferencePartialWave(Radius*FmToNu, GetMomentum(WhichMomBin), usPW, Q1Q2)*MultFactor;
 }
