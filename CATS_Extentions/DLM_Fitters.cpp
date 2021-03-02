@@ -27,8 +27,8 @@ double DLM_FITTER2_FUNCTION_POL(double* xVal, double* pars){
     return RESULT;
 }
 
-double* DLM_FITTER2_ARRAY_SPLINE3_X;
-double* DLM_FITTER2_ARRAY_SPLINE3_Y;
+
+
 double DLM_FITTER2_FUNCTION_SPLINE3(double* xVal, double* pars){
     //[0] = NumKnots
     //[1] = der at 0
@@ -36,6 +36,8 @@ double DLM_FITTER2_FUNCTION_SPLINE3(double* xVal, double* pars){
     //[3]... posX
     //[...]... poxY
     const int MAX_KNOTS = 20;
+    static double* DLM_FITTER2_ARRAY_SPLINE3_X=NULL;
+    static double* DLM_FITTER2_ARRAY_SPLINE3_Y=NULL;
     int NumKnots = TMath::Nint(pars[0]);
     if(NumKnots<2) NumKnots=2;
     if(NumKnots>MAX_KNOTS) NumKnots=MAX_KNOTS;
