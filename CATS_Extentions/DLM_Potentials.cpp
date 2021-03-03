@@ -38,6 +38,7 @@ double ZeroPotential(double* Radius){
     return 0;
 }
 
+//[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1;
 double DoubleGaussSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],2));
 }
