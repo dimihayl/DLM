@@ -30,6 +30,9 @@ double RepulsiveCore(double* Pars);
 
 double Gaussian(double* Pars);
 double Yukawa(double* Pars);
+double YukawaRepCore(double* Pars);
+double YukawaGaussCore(double* Pars);
+double YukawaDimiCore(double* Pars);
 
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);

@@ -2,6 +2,7 @@
 #include "DLM_Potentials.h"
 #include "DLM_StefanoPotentials.h"
 #include "DLM_Histo.h"
+#include "CATSconstants.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -67,9 +68,38 @@ double Yukawa(double* Pars) {
   // Pars[2] A is dimensionless
   // Pars[3] alpha in MeV
   // this function returns a Yukawa-type potential as A/r exp(-alpha r)
-  return Pars[2] / (Pars[0] / 197.3269602) * exp(-Pars[3] * Pars[0] / 197.3269602);
+  return Pars[2] / (Pars[0] / NuToFm) * exp(-Pars[3] * Pars[0] / NuToFm);
 }
-
+//[4] strength, [5] range and [6] slope of the repulsive core
+//smooth transition from a yukawa type of potential towards a repulsive core
+double YukawaRepCore(double* Pars) {
+  double RepCore = Pars[4]/(1+exp((Pars[0]-Pars[5])/Pars[6]));
+  double Transition = 1./(1.+exp(-8./Pars[5]*(Pars[0]-Pars[5])));
+  return RepCore-pow(-Yukawa(Pars),Transition);
+}
+double YukawaGaussCore(double* Pars) {
+  double GaussCore = Pars[4]*exp(-pow(Pars[0]/Pars[5],2));
+  double Transition = 1./(1.+exp(-8./Pars[5]*(Pars[0]-Pars[5])));
+  return GaussCore-pow(-Yukawa(Pars),Transition);
+}
+//Yukawa amplitude (A)[2]
+//Yukawa scale/range (R)[3]
+//Repulsive core amplitude (RC_A)[4]
+//Repulsive core range (RC_R)[5]
+//Repulsive core slope (RC_C)[6]
+double YukawaDimiCore(double* Pars) {
+  double r = fabs(Pars[0]);
+  double A = fabs(Pars[2]);
+  double R = fabs(Pars[3]);
+  double RC_A = fabs(Pars[4]);
+  double RC_R = fabs(Pars[5]);
+  double RC_S = fabs(Pars[6]);
+  double dr = RC_A/(1.+exp(r/RC_S));
+  double RC = RC_A/(1.+exp((r-RC_R)/RC_S));
+  double Yuk = -A/(r+dr)*exp(-r/R);
+  return Yuk+RC;
+}
+//i(x) = −exp(−x−0)/(x+g(x))+20h(x)
 /*
 double CustomUsmaniStefano1(const double& Radius,const int& ipart){
 
