@@ -53,8 +53,9 @@ add_library(CATSdev	SHARED		${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.c
 					${CATS_FOLDER}/DLM_RootTools/DLM_DrawingTools.cpp
 					${CATS_FOLDER}/DLM_RootTools/DLM_HistoAnalysis.cpp
 					${CATS_FOLDER}/DLM_RootTools/DLM_RootWrapper.cpp
-          ${CATS_FOLDER}/DLM_RootTools/DLM_MultiFit.cpp
-					${CATS_FOLDER}/DLM_RootTools/DLM_DecayMatrix.cpp)
+          				${CATS_FOLDER}/DLM_RootTools/DLM_MultiFit.cpp
+					${CATS_FOLDER}/DLM_RootTools/DLM_DecayMatrix.cpp
+					${CATS_FOLDER}/DLM_RootTools/DLM_RootFit.cpp)
 
 
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --cflags" OUTPUT_VARIABLE CFLAGS)
@@ -105,6 +106,7 @@ install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_HistoAnalysis.h DESTINATION ${CA
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_RootWrapper.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_MultiFit.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_DecayMatrix.h DESTINATION ${CATS_DESTINATION}/include)
+install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_RootFit.h DESTINATION ${CATS_DESTINATION}/include)
 install (PROGRAMS ${CATS_FOLDER}/bin/cats-config DESTINATION ${CATS_DESTINATION}/bin)
 
 file(WRITE ${CATS_DESTINATION}/bin/CMakeDLM.txt "${PROJECT_NAME}\n")
