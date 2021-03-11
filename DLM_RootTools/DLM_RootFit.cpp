@@ -5,7 +5,7 @@
 #include "Fit/Fitter.h"
 #include "HFitInterface.h"
 
-TFitResultPtr FitHisto( TH1* h1, TF1* f1, Option_t* option, Option_t* goption,
+TFitResultPtr DLM_FitHisto( TH1* h1, TF1* f1, Option_t* option, Option_t* goption,
                         const ROOT::Math::MinimizerOptions& moption,
                         Double_t xxmin, Double_t xxmax){
 
