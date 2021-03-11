@@ -1319,7 +1319,7 @@ double CATS::GetMomBinUpEdge(const unsigned& WhichMomBin) const{
     return MomBin[WhichMomBin+1];
 }
 
-double* CATS::CopyMomBin(){
+double* CATS::CopyMomBin() const{
     double* MomBinCopy = new double [NumMomBins+1];
     for(unsigned uMomBin=0; uMomBin<=NumMomBins; uMomBin++){
         MomBinCopy[uMomBin] = MomBin[uMomBin];

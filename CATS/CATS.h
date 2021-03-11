@@ -256,7 +256,7 @@ public:
     double GetMomBinUpEdge(const unsigned& WhichMomBin) const;
     //use with care, the memory allocation is not monitored by cats, i.e. the pointer you
     //get from here should be deleted later in your code!
-    double* CopyMomBin();
+    double* CopyMomBin() const;
 
     unsigned GetMomBin(const double& Momentum) const;
     unsigned GetIpBin(const double& bVal) const;
