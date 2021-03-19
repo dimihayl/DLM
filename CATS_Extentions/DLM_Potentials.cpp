@@ -54,6 +54,14 @@ double GaussExpSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],1));
 }
 
+double SingleGauss(double* Pars) {
+  // Pars[0] Radius in fm
+  // Pars[1] Momentum in MeV/c
+  // Pars[2] v_eff in MeV
+  // Pars[3] mu in fm
+  return Pars[2]*exp(-Pars[0]*Pars[0]/Pars[3]/Pars[3]);
+}
+
 double Gaussian(double* Pars) {
   // Pars[0] Radius in fm
   // Pars[1] Momentum in MeV/c
@@ -71,6 +79,9 @@ double Yukawa(double* Pars) {
   // this function returns a Yukawa-type potential as A/r exp(-alpha r)
   return Pars[2] / (Pars[0] / NuToFm) * exp(-Pars[3] * Pars[0] / NuToFm);
 }
+
+
+
 //[4] strength, [5] range and [6] slope of the repulsive core
 //smooth transition from a yukawa type of potential towards a repulsive core
 double YukawaRepCore(double* Pars) {
@@ -83,8 +94,8 @@ double YukawaGaussCore(double* Pars) {
   double Transition = 1./(1.+exp(-8./Pars[5]*(Pars[0]-Pars[5])));
   return GaussCore-pow(-Yukawa(Pars),Transition);
 }
-//Yukawa amplitude (A)[2]
-//Yukawa scale/range (R)[3]
+//Yukawa amplitude (A)[2] -> MeV
+//Yukawa scale/range (R)[3] -> fm
 //Repulsive core amplitude (RC_A)[4]
 //Repulsive core range (RC_R)[5]
 //Repulsive core slope (RC_C)[6]
@@ -92,14 +103,27 @@ double YukawaDimiCore(double* Pars) {
   double r = fabs(Pars[0]);
   double A = fabs(Pars[2]);
   double R = fabs(Pars[3]);
-  double RC_A = fabs(Pars[4]);
+  double RC_A = Pars[4];
   double RC_R = fabs(Pars[5]);
   double RC_S = fabs(Pars[6]);
-  double dr = RC_A/(1.+exp(r/RC_S));
+  double dr = fabs(RC_A)/(1.+exp(r/RC_S));
   double RC = RC_A/(1.+exp((r-RC_R)/RC_S));
-  double Yuk = -A/(r+dr)*exp(-r/R);
+  double Yuk = -A/(r+dr)/FmToNu*exp(-r/R);
   return Yuk+RC;
 }
+double YukawaDimiSmooth(double* Pars) {
+  double r = fabs(Pars[0]);
+  double A = fabs(Pars[2]);
+  double R = fabs(Pars[3]);
+  double RC_R = R*0.001;
+  double RC_A = -A/(r)/FmToNu*exp(-RC_R/R);
+  double RC_S = 0.2*RC_R;
+  double dr = fabs(RC_A)/(1.+exp(r/RC_S));
+  double RC = RC_A/(1.+exp((r-RC_R)/RC_S));
+  double Yuk = -A/(r+dr)/FmToNu*exp(-r/R);
+  return Yuk+RC;
+}
+
 //i(x) = −exp(−x−0)/(x+g(x))+20h(x)
 /*
 double CustomUsmaniStefano1(const double& Radius,const int& ipart){

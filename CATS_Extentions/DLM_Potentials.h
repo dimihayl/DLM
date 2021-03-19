@@ -19,6 +19,7 @@ void CleanUpV18Pot();
 
 double ZeroPotential(double* Radius);
 
+double SingleGauss(double* Pars);
 double DoubleGaussSum(double* Pars);
 //V0*exp(-r^2/β0^2)+V1*exp(-r^2/β1^2)+V2*exp(-r^2/β2^2)
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2
@@ -28,11 +29,13 @@ double UsmaniPotentialCats(double* Pars);
 double UsmaniFit(double* Pars);
 double RepulsiveCore(double* Pars);
 
+
 double Gaussian(double* Pars);
 double Yukawa(double* Pars);
 double YukawaRepCore(double* Pars);
 double YukawaGaussCore(double* Pars);
 double YukawaDimiCore(double* Pars);
+double YukawaDimiSmooth(double* Pars);
 
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);

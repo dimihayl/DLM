@@ -384,6 +384,8 @@ void CatsParticle::SetPid(const int& pid){
 }
 void CatsParticle::SetMass(const double& mass){
     Mass=mass;
+    Set(FourSpace[0],FourSpace[1],FourSpace[2],FourSpace[3],
+        sqrt(Mass*Mass+GetP2()),FourMomentum[1],FourMomentum[2],FourMomentum[3]);
 }
 void CatsParticle::SetWidth(const double& width){
     Width=width;

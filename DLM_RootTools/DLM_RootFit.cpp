@@ -6,7 +6,7 @@
 #include "HFitInterface.h"
 
 TFitResultPtr DLM_FitHisto( TH1* h1, TF1* f1, Option_t* option, Option_t* goption,
-                        const ROOT::Math::MinimizerOptions& moption,
+                        const ROOT::Math::MinimizerOptions* moption,
                         Double_t xxmin, Double_t xxmax){
 
   // implementation of Fit method is in file hist/src/HFitImpl.cxx
@@ -21,5 +21,5 @@ TFitResultPtr DLM_FitHisto( TH1* h1, TF1* f1, Option_t* option, Option_t* goptio
   // (t.b.d. do a ML unbinned fit with buffer data)
   h1->BufferEmpty();
 
-  return ROOT::Fit::FitObject(h1, f1 , fitOption , minOption, goption, range);
+  return ROOT::Fit::FitObject(h1, f1 , fitOption , moption?*moption:minOption, goption, range);
 }
