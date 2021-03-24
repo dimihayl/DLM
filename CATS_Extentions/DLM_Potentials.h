@@ -20,6 +20,7 @@ void CleanUpV18Pot();
 double ZeroPotential(double* Radius);
 
 double SingleGauss(double* Pars);
+double SingleGaussDynamic(double* Pars);
 double DoubleGaussSum(double* Pars);
 //V0*exp(-r^2/β0^2)+V1*exp(-r^2/β1^2)+V2*exp(-r^2/β2^2)
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2

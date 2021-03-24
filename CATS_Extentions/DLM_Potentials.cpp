@@ -54,13 +54,41 @@ double GaussExpSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],1));
 }
 
-double SingleGauss(double* Pars) {
+double SingleGauss(double* Pars){
   // Pars[0] Radius in fm
   // Pars[1] Momentum in MeV/c
   // Pars[2] v_eff in MeV
   // Pars[3] mu in fm
   return Pars[2]*exp(-Pars[0]*Pars[0]/Pars[3]/Pars[3]);
 }
+
+//single gaussian, the amplitude of which changes with energy
+//originally included to model K+ p, as suggested by Yuki Kamiya.
+//for the pKp potential:
+//  R = 0.376 fm
+//  K0 = 2084 MeV
+//  K1 = 50.81 MeV
+//  K2 = 18.34 MeV
+//  K3 = -1.752 MeV
+//  k0 = sqrt(2*mu*100) MeV, where mu = (Mass_p*Mass_Kch)/(Mass_Kch+Mass_Kch)
+double SingleGaussDynamic(double* Pars){
+  // Pars[0] Radius in fm
+  // Pars[1] Momentum in MeV/c
+  // Pars[2] R (width)
+  // Pars[3] scale of the energy dependence
+  // Pars[4] the order of the energy dependence
+  // Pars[5...] amplitude associated with each order
+  double& r = Pars[0]; double& k = Pars[1];
+  double& R = Pars[2]; double& k0 = Pars[3]; long order = lround(Pars[4]);
+  double* Kalpha = &Pars[5];
+  double SUM=0;
+  for(long lo=0; lo<=order; lo++){
+    SUM += Kalpha[lo]*pow(k/k0,2.*double(lo));
+  }
+  return exp(-r*r/R/R)*SUM;
+}
+
+
 
 double Gaussian(double* Pars) {
   // Pars[0] Radius in fm
@@ -123,6 +151,8 @@ double YukawaDimiSmooth(double* Pars) {
   double Yuk = -A/(r+dr)/FmToNu*exp(-r/R);
   return Yuk+RC;
 }
+
+
 
 //i(x) = −exp(−x−0)/(x+g(x))+20h(x)
 /*
