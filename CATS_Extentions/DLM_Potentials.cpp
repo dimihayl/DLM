@@ -80,8 +80,7 @@ double SingleGaussDynamic(double* Pars){
   // Pars[5...] amplitude associated with each order
   double& r = Pars[0]; double& k = Pars[1];
   double& R = Pars[2]; double& k0 = Pars[3]; long order = lround(Pars[4]);
-  double* Kalpha = &Pars[5];
-  double SUM=0;
+  double* Kalpha = &Pars[5]; double SUM=0;
   for(long lo=0; lo<=order; lo++){
     SUM += Kalpha[lo]*pow(k/k0,2.*double(lo));
   }
