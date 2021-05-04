@@ -3,12 +3,22 @@
 #include "TMath.h"
 #include "TF1.h"
 #include "TH1.h"
+#include "TH2F.h"
 #include "TH1D.h"
+#include "TRandom3.h"
 
 #include "DLM_HistoAnalysis.h"
 
 using namespace TMath;
 
+bool SameTH1structure(const TH1* h1, const TH1* h2){
+  if(h1->GetNbinsX()!=h2->GetNbinsX()) return false;
+  for(unsigned uBin=0; uBin<h1->GetNbinsX(); uBin++){
+    if(h1->GetXaxis()->GetBinLowEdge(uBin+1)!=h2->GetXaxis()->GetBinLowEdge(uBin+1)) return false;
+    if(h1->GetXaxis()->GetBinUpEdge(uBin+1)!=h2->GetXaxis()->GetBinUpEdge(uBin+1)) return false;
+  }
+  return true;
+}
 
 TH1D * MakeHistoFromTF1(TF1 * f1, double min, double max, unsigned int nbins){
     TH1D * h1d = new TH1D("h1d", "h1d", nbins, min, max);
@@ -304,4 +314,466 @@ void DrawCentralInterval(TH1F*& h1, double Median, double LowReach, double UpRea
 
     h1median->SetBinContent(1, h1main->GetBinContent(h1main->FindBin(Median)));
 
+}
+
+HistoAddRatios::HistoAddRatios(const unsigned numterms, const char* OutHistoName, const unsigned numbins, const double ylow, const double yup):
+NumTerms(numterms),NumBinsY(numbins),lowY(ylow),upY(yup){
+  IgnoreUncertainty = NULL;
+  MickeyMousePoisson = NULL;
+  fNormalization = NULL;
+  hNormalization = NULL;
+  Numerator = NULL;
+  Denominator = NULL;
+  Ratio = NULL;
+  ConstValue = NULL;
+  ConstError = NULL;
+  pValue = NULL;
+  nSigma = NULL;
+  if(NumTerms){
+    IgnoreUncertainty = new bool[NumTerms];
+    MickeyMousePoisson = new bool[NumTerms];
+    fNormalization = new float[NumTerms];
+    hNormalization = new const TH1*[NumTerms];
+    Numerator = new const TH1* [NumTerms];
+    Denominator = new const TH1* [NumTerms];
+    Ratio = new TH2F* [NumTerms];
+    ConstValue = new float[NumTerms];
+    ConstError = new float[NumTerms];
+    for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+      IgnoreUncertainty[uTerm] = false;
+      MickeyMousePoisson[uTerm] = false;
+      fNormalization[uTerm] = 1;
+      hNormalization[uTerm] = NULL;
+      Numerator[uTerm] = NULL;
+      Denominator[uTerm] = NULL;
+      Ratio[uTerm] = NULL;
+      ConstValue[uTerm] = 0;
+      ConstError[uTerm] = 0;
+    }
+  }
+  else{
+    printf("\033[1;31mERROR:\033[0m Zero terms in HistoAddRatios\n");
+  }
+  hResult = NULL;
+  NumIter = -1;
+  MinIter = 4000;
+  //GaussLimit = 32;
+  CompareToNull = false;
+  EntriesForNsigma = 100;
+  hResultName = new char[128];
+  strcpy(hResultName,OutHistoName);
+  rangen = new TRandom3(11);
+  NbinsX = 0;
+  Xmin = -1e6;
+  Xmax = 1e6;
+  ExpectationUncertainty = false;
+}
+HistoAddRatios::~HistoAddRatios(){
+  if(IgnoreUncertainty){delete[]IgnoreUncertainty;IgnoreUncertainty=NULL;}
+  if(MickeyMousePoisson){delete[]MickeyMousePoisson;MickeyMousePoisson=NULL;}
+  if(fNormalization){delete[]fNormalization;fNormalization=NULL;}
+  if(hNormalization){delete[]hNormalization;hNormalization=NULL;}
+  if(Numerator){delete[]Numerator;Numerator=NULL;}
+  if(Denominator){delete[]Denominator;Denominator=NULL;}
+  if(Ratio){delete[]Ratio;Ratio=NULL;}
+  if(ConstValue){delete[]ConstValue;ConstValue=NULL;}
+  if(ConstError){delete[]ConstError;ConstError=NULL;}
+  if(hResult){delete hResult;hResult=NULL;}
+  if(hResultName){delete hResultName;hResultName=NULL;}
+  if(rangen){delete rangen;rangen=NULL;}
+  if(pValue){delete pValue;pValue=NULL;}
+  if(nSigma){delete nSigma;nSigma=NULL;}
+}
+//void HistoAddRatios::SetGaussLimit(const unsigned gauslim){
+//  GaussLimit = gauslim;
+//}
+void HistoAddRatios::SetIgnoreUncertainty(const unsigned WhichOne, const bool yes){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetIgnoreUncertainty, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  if(IgnoreUncertainty[WhichOne]!=yes&&hResult){delete hResult; hResult=NULL;}
+  IgnoreUncertainty[WhichOne] = yes;
+}
+void HistoAddRatios::SetNormalization(const unsigned WhichOne, const float Norm){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetNormalization, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  if(fNormalization[WhichOne]!=Norm&&hResult){delete hResult; hResult=NULL;}
+  fNormalization[WhichOne] = Norm;
+  hNormalization[WhichOne] = NULL;
+}
+void HistoAddRatios::SetNormalization(const unsigned WhichOne, const TH1* Norm){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetNormalization, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  //make sure that we have the same binning in all histograms
+  for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+    if(hNormalization[uTerm]){
+      if(!SameTH1structure(Norm,Numerator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Denominator[uTerm]){
+      if(!SameTH1structure(Norm,Denominator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+  }
+  if(hResult){delete hResult; hResult=NULL;}
+  hNormalization[WhichOne] = Norm;
+}
+void HistoAddRatios::SetNumerator(const unsigned WhichOne, const TH1* Num){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetNumerator, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  //make sure that we have the same binning in all histograms
+  for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+    if(Numerator[uTerm]){
+      if(!SameTH1structure(Num,Numerator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Denominator[uTerm]){
+      if(!SameTH1structure(Num,Denominator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Ratio[uTerm]){
+      if(!SameTH1structure(Num,Ratio[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+  }
+  if(hResult){delete hResult; hResult=NULL;}
+  Numerator[WhichOne] = Num;
+}
+void HistoAddRatios::SetDenominator(const unsigned WhichOne, const TH1* Denom){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetDenominator, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  //make sure that we have the same binning in all histograms
+  for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+    if(Numerator[uTerm]){
+      if(!SameTH1structure(Denom,Numerator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Denominator[uTerm]){
+      if(!SameTH1structure(Denom,Denominator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Ratio[uTerm]){
+      if(!SameTH1structure(Denom,Ratio[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+  }
+  if(hResult){delete hResult; hResult=NULL;}
+  Denominator[WhichOne] = Denom;
+}
+void HistoAddRatios::SetConstant(const unsigned WhichOne, const float value, const float error){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetConstant, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  if(Numerator[WhichOne]){Numerator[WhichOne]=NULL;}
+  if(Denominator[WhichOne]){Denominator[WhichOne]=NULL;}
+  if(Ratio[WhichOne]){Ratio[WhichOne]=NULL;}
+  ConstValue[WhichOne] = value;
+  ConstError[WhichOne] = error;
+}
+void HistoAddRatios::SetRatio(const unsigned WhichOne, const TH1* ratio, const bool MickeyPoisson){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetRatio, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  if(Denominator[WhichOne]){Denominator[WhichOne]=NULL;}
+  SetNumerator(WhichOne,ratio);
+  MickeyMousePoisson[WhichOne] = MickeyPoisson;
+}
+void HistoAddRatios::SetRatio(const unsigned WhichOne, TH2F* ratio){
+  if(WhichOne>=NumTerms){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::SetRatio, only %u terms are allowed\n",NumTerms);
+    return;
+  }
+  if(Denominator[WhichOne]){Denominator[WhichOne]=NULL;}
+  if(Numerator[WhichOne]){Numerator[WhichOne]=NULL;}
+  //make sure that we have the same binning in all histograms
+  for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+    if(Numerator[uTerm]){
+      if(!SameTH1structure(ratio,Numerator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Denominator[uTerm]){
+      if(!SameTH1structure(ratio,Denominator[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+    if(Ratio[uTerm]){
+      if(!SameTH1structure(ratio,Ratio[uTerm])){
+        printf("\033[1;33mWARNING:\033[0m All histograms in HistoAddRatios should have the same binning\n");
+        //return;
+      }
+      else break;
+    }
+  }
+  Ratio[WhichOne] = ratio;
+}
+void HistoAddRatios::SetNumIter(const unsigned numiter){
+  if(numiter<100){
+    printf("\033[1;33mWARNING:\033[0m Very small number of iterations in HistoAddRatios (%u) was set, reconsider?\n",numiter);
+  }
+  if(NumIter!=numiter&&hResult){delete hResult; hResult=NULL;}
+  NumIter = numiter;
+}
+void HistoAddRatios::SetMinIter(const unsigned numiter){
+  if(MinIter!=numiter&&hResult){delete hResult; hResult=NULL;}
+  MinIter = numiter;
+}
+
+void HistoAddRatios::SetCompareToNullHypothesis(const bool compare, const unsigned MinEntriesForNsigma){
+  if(MinEntriesForNsigma<10){
+    printf("\033[1;33mWARNING:\033[0m Very small number of entries required for the evaluation of nsigma in HistoAddRatios (%u) was set, reconsider?\n",MinEntriesForNsigma);
+  }
+  if(CompareToNull!=compare&&hResult){delete hResult; hResult=NULL;}
+  if(CompareToNull&&EntriesForNsigma!=MinEntriesForNsigma&&hResult){delete hResult; hResult=NULL;}
+  CompareToNull = compare;
+  EntriesForNsigma = MinEntriesForNsigma;
+}
+void HistoAddRatios::SetRange(const float min, const float max){
+  Xmin = min;
+  Xmax = max;
+}
+TH2F* HistoAddRatios::GetResult(){
+  if(!hResult){
+    for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+      if(Numerator[uTerm]||Ratio[uTerm]){
+        const TAxis* Xaxis = Numerator[uTerm]?Numerator[uTerm]->GetXaxis():Ratio[uTerm]->GetXaxis();
+        NbinsX = Xaxis->GetNbins();
+        double* BinningX = new double [NbinsX+1];
+        for(unsigned uBin=0; uBin<NbinsX; uBin++){
+          BinningX[uBin] = Xaxis->GetBinLowEdge(uBin+1);
+        }
+        BinningX[NbinsX] = Xaxis->GetBinUpEdge(NbinsX);
+        //printf("1\n");
+        hResult = new TH2F(hResultName,hResultName,NbinsX,BinningX,NumBinsY,lowY,upY);
+        //printf("2\n");
+        //hResult = (TH1F*)Numerator[uTerm]->Clone(hResultName);
+        delete [] BinningX;
+        for(unsigned uBin=0; uBin<=hResult->GetNbinsX(); uBin++){
+          hResult->SetBinContent(uBin,0);
+          hResult->SetBinError(uBin,0);
+        }
+        break;
+      }
+    }
+    if(!hResult){
+      printf("\033[1;33mWARNING:\033[0m There are no entries set for the computation in HistoAddRatios\n");
+      return NULL;
+    }
+    if(pValue){delete pValue;}
+    if(nSigma){delete nSigma;}
+    pValue = new double [NbinsX];
+    nSigma = new double [NbinsX];
+    for(unsigned uBin=0; uBin<NbinsX; uBin++){
+      float Xvalue = hResult->GetXaxis()->GetBinCenter(uBin+1);
+      if(Xvalue<Xmin) continue;
+      if(Xvalue>Xmax) break;
+      unsigned AboveZero=0;
+      unsigned BelowZero=0;
+      unsigned AtZero=0;
+      unsigned UPVAL;
+      TH1D** RatioProjection = new TH1D* [NumTerms];
+      for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+        if(Ratio[uTerm]){
+          RatioProjection[uTerm] = Ratio[uTerm]->ProjectionY(TString::Format("RatioProjection_%u",uTerm),uBin+1,uBin+1);
+        }
+        else{
+          RatioProjection[uTerm] = NULL;
+        }
+      }
+      for(unsigned uIter=0; uIter<NumIter; uIter++){
+        double numer;
+        double denom;
+        double norm;
+        double sum=0;
+        for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+          if(hNormalization[uTerm]) norm = hNormalization[uTerm]->GetBinContent(uBin+1);
+          else norm = fNormalization[uTerm];
+          //division of yields
+          if(Numerator[uTerm]&&Denominator[uTerm]){
+            //no errors
+            if(IgnoreUncertainty[uTerm]){
+              sum += norm*Numerator[uTerm]->GetBinContent(uBin+1)/Denominator[uTerm]->GetBinContent(uBin+1);
+            }//with errors
+            else{
+              double mean_numer = Numerator[uTerm]->GetBinContent(uBin+1);
+              //if we want to use expected unertainties for the mean, this is where we do exactly that
+              if(Numerator[uTerm]->GetBinError(uBin+1)&&ExpectationUncertainty)
+                mean_numer = rangen->Gaus(mean_numer,Numerator[uTerm]->GetBinError(uBin+1));
+              if(mean_numer<0) mean_numer = 0;
+              //sampling from a Poisson. Below the same for the denom
+              numer = rangen->Poisson(mean_numer);
+              //printf(" numer = %.1f\n",numer);
+
+              double mean_denom = Denominator[uTerm]->GetBinContent(uBin+1);
+              if(Denominator[uTerm]->GetBinError(uBin+1)&&ExpectationUncertainty)
+                mean_denom = rangen->Gaus(mean_denom,Denominator[uTerm]->GetBinError(uBin+1));
+              if(mean_denom<0) mean_denom = 0;
+              denom = rangen->Poisson(mean_denom);
+              sum += norm*numer/denom;
+            }
+          }
+          //the case in which we have only set the ratio
+          else if(Numerator[uTerm]){
+            //no errors
+            if(IgnoreUncertainty[uTerm]){
+              sum += norm*Numerator[uTerm]->GetBinContent(uBin+1);
+            }
+            //with errors
+            //By Default we assume Gaussian errors, BUT if MickeyMousePoisson is true, we do the following trick:
+            //assume that the uncertainty of the ratio is a scaled (by factor A) down Poisson (A*N), where the errors are A*sqrt(N).
+            //we can than estimate the effective yield based on the value and error from the bin, and sample the uncertainties from there,
+            //before finally rescaling by the corresponding factor A. This way, we avoid problems with negative values and should
+            //get a more accurate result in case of investigating corr. functions, where the error is dominated by the numerator (Poisson)
+            else{
+              if(!MickeyMousePoisson[uTerm]){
+                numer = rangen->Gaus(Numerator[uTerm]->GetBinContent(uBin+1),Numerator[uTerm]->GetBinError(uBin+1));
+              }
+              else{
+                double Value = Numerator[uTerm]->GetBinContent(uBin+1);
+                double Error = Numerator[uTerm]->GetBinError(uBin+1);
+                double EffYield = pow(Value/Error,2.);
+                numer = Value/EffYield*rangen->Poisson(EffYield);
+              }
+              sum += norm*numer;
+            }
+          }
+          else if(Ratio[uTerm]){
+            numer = RatioProjection[uTerm]->GetRandom();
+            sum += norm*numer;
+          }
+          //constant
+          else{
+            if(IgnoreUncertainty[uTerm]){
+              sum += norm*ConstValue[uTerm];
+            }
+            else{
+              sum += norm*rangen->Gaus(ConstValue[uTerm],ConstError[uTerm]);
+            }
+          }
+        }
+        hResult->Fill(Xvalue,sum);
+        pValue[uBin] = 0;
+        nSigma[uBin] = 0;
+        if(CompareToNull){
+          AboveZero += sum>0;
+          BelowZero += sum<0;
+          AtZero += sum==0;
+          if( (AboveZero>=EntriesForNsigma&&BelowZero>=EntriesForNsigma&&uIter+1>=MinIter)||uIter+1==NumIter ){
+            if(AboveZero>BelowZero) UPVAL=2.*BelowZero+AtZero;
+            else UPVAL=2.*AboveZero+AtZero;
+            pValue[uBin] = double(UPVAL)/double(uIter+1);
+            //printf(" %u raw pval = %.5f\n",uBin,pValue[uBin]);
+            if(pValue[uBin]) nSigma[uBin] = sqrt(2)*TMath::ErfcInverse(pValue[uBin]);
+            //printf(" %u raw nsig = %.5f\n",uBin,nSigma[uBin]);
+            break;//the uIter
+          }
+        }
+      }//uIter
+      for(unsigned uTerm=0; uTerm<NumTerms; uTerm++){
+        delete RatioProjection[uTerm];
+        RatioProjection[uTerm] = NULL;
+      }
+      delete [] RatioProjection;
+      RatioProjection = NULL;
+    }//uBin
+  }
+  return hResult;
+}
+TH2F* HistoAddRatios::CopyResult(TString HistoName){
+  if(!hResult) GetResult();
+  return (TH2F*)hResult->Clone(HistoName);
+}
+double HistoAddRatios::GetTotPval(const bool Fisher){
+  double Chi2=0;
+  if(Fisher){
+    for(unsigned uBin=0; uBin<NbinsX; uBin++){
+      Chi2 -= 2.*log(pValue[uBin]);
+    }
+    return TMath::Prob(Chi2,2*NbinsX);
+  }
+  else{
+    for(unsigned uBin=0; uBin<NbinsX; uBin++){
+      Chi2 += nSigma[uBin]*nSigma[uBin];
+    }
+    return TMath::Prob(Chi2,NbinsX);
+  }
+}
+double HistoAddRatios::GetTotNsig(const bool Fisher){
+  return sqrt(2)*TMath::ErfcInverse(GetTotPval(Fisher));
+}
+double HistoAddRatios::GetPval(const unsigned WhichBin){
+  if(WhichBin>=NbinsX){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::GetPval, only %u bins are allowed\n",NbinsX);
+    return 0;
+  }
+  if(!pValue[WhichBin]&&!nSigma[WhichBin]){
+    //return TMath::Erfc(GetNsig(WhichBin)/sqrt(2));
+    return -1./double(NumIter);//upper limit
+  }
+  else return pValue[WhichBin];
+}
+double HistoAddRatios::GetNsig(const unsigned WhichBin){
+  if(WhichBin>=NbinsX){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::GetNsig, only %u bins are allowed\n",NbinsX);
+    return 0;
+  }
+  if(!pValue[WhichBin]&&!nSigma[WhichBin]){
+    //TH1D* hProj = hResult->ProjectionY("ProjectionY",WhichBin+1,WhichBin+1);
+    //return fabs(hProj->GetMean()/hProj->GetStdDev());
+    return -sqrt(2)*TMath::ErfcInverse(1./double(NumIter));
+  }
+  else return nSigma[WhichBin];
+}
+void HistoAddRatios::SetRandomSeed(const int seed){
+  if(rangen){rangen->SetSeed(seed);}
+}
+void HistoAddRatios::SetExpectationUncertainty(const bool experr){
+  ExpectationUncertainty = experr;
+}
+void HistoAddRatios::GetCentralInt(const unsigned WhichBin, const double& nsigma, double& Median, double& Low, double& Up){
+  if(WhichBin>=NbinsX){
+    printf("\033[1;33mWARNING:\033[0m Bad input in HistoAddRatios::GetCentralInt, only %u bins are allowed\n",NbinsX);
+    return;
+  }
+  TH1D* hProj = hResult->ProjectionY("ProjectionY",WhichBin+1,WhichBin+1);
+  Median = GetCentralInterval(hProj[0],1.-TMath::Erfc(nsigma/sqrt(2)),Low,Up,true);
 }
