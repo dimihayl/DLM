@@ -215,6 +215,7 @@ public:
     ~DLM_CleverMcLevyResoTM();
     double Eval(double* Pars);
     double RootEval(double* x, double* Pars);
+    double RootEvalNorm(double* x, double* Pars);
 
     void InitStability(const unsigned& numPts, const double& minVal, const double& maxVal);
     void InitScale(const unsigned& numPts, const double& minVal, const double& maxVal);
@@ -230,6 +231,7 @@ public:
     void AddBGT_RR(const float& bgt0,const float& a_cp0,const float& bgt1,const float& a_cp1,const float& a_p0p1);
     void InitNumMcIter(const unsigned& numiter);
     unsigned GetNumPars();
+    void SetNormalization(const double& norm);
 private:
     //0 = single particle
     //1 = pair
@@ -244,6 +246,7 @@ private:
     double MaxScale;
     double MinRad;
     double MaxRad;
+    double Normalization;
 
     double* ResoWeight;
     //const DLM_Histo<double>* ResoEmissionPR;

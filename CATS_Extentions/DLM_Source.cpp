@@ -1655,6 +1655,7 @@ DLM_CleverMcLevyResoTM::DLM_CleverMcLevyResoTM(){
     NumBGT_RP = 0;
     NumBGT_RR = 0;
     NumMcIter = 1000000;
+    Normalization = 1;
 }
 DLM_CleverMcLevyResoTM::~DLM_CleverMcLevyResoTM(){
     if(Histo) {delete Histo;Histo=NULL;}
@@ -1782,7 +1783,9 @@ void DLM_CleverMcLevyResoTM::InitNumMcIter(const unsigned& numiter){
     if(Histo) Histo->SetBinContentAll(1e6);
     NumMcIter=numiter;
 }
-
+void DLM_CleverMcLevyResoTM::SetNormalization(const double& norm){
+  Normalization = norm;
+}
 double DLM_CleverMcLevyResoTM::RootEval(double* x, double* Pars){
 //printf(" B RootEval\n");
     double PARS[5];
@@ -1790,7 +1793,14 @@ double DLM_CleverMcLevyResoTM::RootEval(double* x, double* Pars){
     PARS[3] = Pars[0];
     PARS[4] = Pars[1];
 //printf(" E RootEval\n");
-    return Eval(PARS);
+    return Normalization*Eval(PARS);
+}
+double DLM_CleverMcLevyResoTM::RootEvalNorm(double* x, double* Pars){
+    double PARS[5];
+    PARS[1] = *x;
+    PARS[3] = Pars[0];
+    PARS[4] = Pars[1];
+    return Pars[2]*Eval(PARS);
 }
 double DLM_CleverMcLevyResoTM::Eval(double* Pars){
 //printf("Hello\n");
@@ -1934,7 +1944,7 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
         }
     }
     double RETVAL = Histo->Eval(RSS);
-    return RETVAL;
+    return Normalization*RETVAL;
 
 }
 unsigned DLM_CleverMcLevyResoTM::GetNumPars(){

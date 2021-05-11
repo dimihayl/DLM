@@ -40,6 +40,8 @@ void DLM_CkDecomp::StandardSetup(const char* name){
     SignalChild = NULL;
     SignalSmearedMain = NULL;
     SignalSmearedChild = NULL;
+    PS_Main = NULL;
+    PS_Child = NULL;
     SignalsUpdated = false;
 
     if(ERROR_STATE){
@@ -69,6 +71,7 @@ void DLM_CkDecomp::StandardSetup(const char* name){
         CkSmearedChildMainFeed = new DLM_Histo<double>* [NumChildren];
         SignalChild = new DLM_Histo<double>* [NumChildren];
         SignalSmearedChild = new DLM_Histo<double>* [NumChildren];
+        PS_Child = new DLM_Histo<float>* [NumChildren];
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             Child[uChild] = NULL;
             LambdaPar[uChild] = 0;
@@ -80,6 +83,7 @@ void DLM_CkDecomp::StandardSetup(const char* name){
             CkSmearedChildMainFeed[uChild] = NULL;
             SignalChild[uChild] = new DLM_Histo<double>(CkMain[0]);
             SignalSmearedChild[uChild] = new DLM_Histo<double>(CkMain[0]);
+            PS_Child[uChild] = NULL;
         }
     }
 
@@ -105,6 +109,7 @@ DLM_CkDecomp::~DLM_CkDecomp(){
             if(CkSmearedChildMainFeed[uChild]) delete CkSmearedChildMainFeed[uChild];
             if(SignalChild[uChild]) delete SignalChild[uChild];
             if(SignalSmearedChild[uChild]) delete SignalSmearedChild[uChild];
+            if(PS_Child[uChild]) delete PS_Child[uChild];
         }
         delete [] RM_Child; RM_Child=NULL;
         delete [] SM_Child; SM_Child=NULL;
@@ -112,6 +117,7 @@ DLM_CkDecomp::~DLM_CkDecomp(){
         delete [] CkSmearedChildMainFeed; CkSmearedChildMainFeed=NULL;
         delete [] SignalChild; SignalChild=NULL;
         delete [] SignalSmearedChild; SignalSmearedChild=NULL;
+        delete [] PS_Child; PS_Child=NULL;
     }
     if(Name) {delete [] Name; Name=NULL;}
     if(RM_MomResolution) {delete RM_MomResolution; RM_MomResolution=NULL;}
@@ -121,6 +127,16 @@ DLM_CkDecomp::~DLM_CkDecomp(){
     if(SignalMain) {delete SignalMain; SignalMain=NULL;}
     if(SignalSmearedMain) {delete SignalSmearedMain; SignalSmearedMain=NULL;}
 
+}
+
+void DLM_CkDecomp::AddPhaseSpace(const unsigned& WhichCk, const DLM_Histo<float>* hPhaseSpace){
+  if(ERROR_STATE) return;
+  if(WhichCk>=NumChildren){
+      return;
+  }
+  if(PS_Child[WhichCk]) {delete PS_Child[WhichCk]; PS_Child[WhichCk]=NULL;}
+  PS_Child[WhichCk] = new DLM_Histo<float>(*hPhaseSpace);
+  PS_Child[WhichCk]->ScaleToBinSize();
 }
 
 void DLM_CkDecomp::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child,
@@ -273,7 +289,7 @@ double DLM_CkDecomp::EvalSmearedFeed(const unsigned& WhichChild,const double& Mo
     if(WhichChild>=NumChildren) return 0;
     if(!CkSmearedChildMainFeed[WhichChild]&&Child[WhichChild]) {
         CkSmearedChildMainFeed[WhichChild] = new DLM_Histo<double> (*Child[WhichChild]->CkMain);
-        Smear(CkChildMainFeed[WhichChild], SM_Child[WhichChild], CkSmearedChildMainFeed[WhichChild]);
+        Smear(CkChildMainFeed[WhichChild], SM_Child[WhichChild], CkSmearedChildMainFeed[WhichChild], PS_Child[WhichChild]);
     }
     if(CkSmearedChildMainFeed[WhichChild]) return CkSmearedChildMainFeed[WhichChild]->Eval(&Momentum);
     else return 0;
@@ -338,7 +354,7 @@ DLM_Histo<double>* DLM_CkDecomp::GetChildContribution(const unsigned& WhichChild
     if(WhichChild>=NumChildren) return NULL;
     DLM_Histo<double>* Histo = new DLM_Histo<double> (*CkChildMainFeed[WhichChild]);
     if(Type[WhichChild]!=cFake){
-        Smear(CkChildMainFeed[WhichChild], SM_Child[WhichChild], Histo);
+        Smear(CkChildMainFeed[WhichChild], SM_Child[WhichChild], Histo, PS_Child[WhichChild]);
     }
     if(WithLambda) Histo->Scale(LambdaPar[WhichChild]);
     return Histo;
@@ -440,7 +456,7 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
 				continue;
 			}
             if(Child[uChild]){
-                Smear(Child[uChild]->CkMainFeed, RM_Child[uChild], CkChildMainFeed[uChild]);
+                Smear(Child[uChild]->CkMainFeed, RM_Child[uChild], CkChildMainFeed[uChild], PS_Child[uChild]);
                 for(unsigned uBin=0; uBin<CkMainFeed->GetNbins(); uBin++){
                     Momentum = CkMainFeed->GetBinCenter(0,uBin);
                     CkMainFeed->Add(uBin, CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]/MuPar);
@@ -448,7 +464,7 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
 //CkMainFeed->Add(uBin, LambdaPar[uChild]/MuPar);
                 }
 				if(UpdateDecomp){
-					Smear(SignalChild[uChild], RM_MomResolution, SignalSmearedChild[uChild]);
+					Smear(SignalChild[uChild], RM_MomResolution, SignalSmearedChild[uChild], PS_Child[uChild]);
 					SignalChild[uChild][0] -= LambdaPar[uChild];
 					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];
 				}
@@ -468,7 +484,7 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
     SignalsUpdated = UpdateDecomp;
 }
 
-void DLM_CkDecomp::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared){
+void DLM_CkDecomp::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared, DLM_Histo<float>* PhaseSpace){
     if(!SmearMatrix){
         CkSmeared[0] = CkToSmear[0];
     }
@@ -478,10 +494,26 @@ void DLM_CkDecomp::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseM
             unsigned FirstBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisFirst];
             unsigned LastBin = SmearMatrix->SparseResponse[uBinSmear][DLM_ResponseMatrix::xAxisLast];
             if(LastBin>=CkToSmear->GetNbins()) LastBin = CkToSmear->GetNbins()-1;
+            double PSPACE_NORM = PhaseSpace?0:1;
             for(unsigned uBinTrue=FirstBin; uBinTrue<=LastBin; uBinTrue++){
                 //as the response matrix is normalized to the size of the bin, during the integration we multiply for it
-                CkSmeared->Add(uBinSmear,   SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue]*CkToSmear->GetBinContent(uBinTrue)*
-                                            CkToSmear->GetBinSize(uBinTrue)*CkSmeared->GetBinSize(uBinSmear));
+                double TRANSF = SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue];
+                double CKTRUE = CkToSmear->GetBinContent(uBinTrue);
+                double DTRUE = CkToSmear->GetBinSize(uBinTrue);
+                double DSMEAR = CkSmeared->GetBinSize(uBinSmear);
+                //the phase space is assumed to be counts normalized to the bin width (i.e. function)
+                double TrueCrd = CkToSmear->GetBinCenter(0,uBinTrue);
+                //unsigned PSBIN = PhaseSpace->GetBin(0,TrueCrd);
+                //double PSVOL = 1./PhaseSpace->GetBinSize(PSBIN);
+                //this would be converting counts to functional value
+                double PSPACE = PhaseSpace?PhaseSpace->Eval(&TrueCrd):1;
+                //CkSmeared->Add(uBinSmear,   SmearMatrix->ResponseMatrix[uBinSmear][uBinTrue]*CkToSmear->GetBinContent(uBinTrue)*
+                //                            CkToSmear->GetBinSize(uBinTrue)*CkSmeared->GetBinSize(uBinSmear));
+                CkSmeared->Add(uBinSmear,   TRANSF*PSPACE*CKTRUE*DTRUE*DSMEAR);
+                PSPACE_NORM += TRANSF*PSPACE*DTRUE*DSMEAR;
+            }
+            if(PhaseSpace&&PSPACE_NORM){
+              CkSmeared->ScaleBin(uBinSmear,1./PSPACE_NORM);
             }
         }
     }
@@ -498,4 +530,3 @@ bool DLM_CkDecomp::UniqueName(const char* name){
     }
     return true;
 }
-

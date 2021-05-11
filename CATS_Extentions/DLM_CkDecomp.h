@@ -22,7 +22,7 @@ public:
     //void AddImpurity(const unsigned& WhichCk, const double& fraction, DLM_CkDecomp* child);
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child=NULL,
                          const DLM_Histo<float>* hResidualMatrix=NULL, const bool& InvertedAxis=false);
-
+    void AddPhaseSpace(const unsigned& WhichCk, const DLM_Histo<float>* hPhaseSpace);
 /*
     //if true, the data is unfolded, and later on all Eval functions applied
     //if the data has not been unfolded yet, it is performed with the default settings
@@ -126,6 +126,9 @@ protected:
     //this is the smearing matrix of the PARENT, but with the binning of the child
     //need for plotting
     DLM_ResponseMatrix** SM_Child;
+    DLM_Histo<float>* PS_Main;
+    DLM_Histo<float>** PS_Child;
+
     //status of the main C(k)
     bool CurrentStatus;
     //status of the main C(k) of the child
@@ -136,9 +139,8 @@ protected:
     //bool CheckStatus();
 
     //void SmearOLD(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared);
-    void Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared);
+    void Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared, DLM_Histo<float>* PhaseSpace=NULL);
 };
 
 
 #endif
-

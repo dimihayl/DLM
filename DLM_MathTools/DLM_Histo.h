@@ -578,6 +578,12 @@ public:
         BinValue[TotNumBins] *= scale;
         BinValue[TotNumBins+1] *= scale;
     }
+    void ScaleBin(const unsigned& WhichTotBin, const Type& Value){
+        if(!Initialized) {InitWarning(); return;}
+        if(WhichTotBin>=TotNumBins+2) return;
+        BinValue[WhichTotBin] *= Value;
+        BinError[WhichTotBin] *= Value;
+    }
     void ScaleToBinSize(){
         if(!Initialized) {InitWarning(); return;}
         Type BinSize;

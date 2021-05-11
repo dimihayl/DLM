@@ -42,6 +42,33 @@ DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
     return dlmHisto;
 }
 
+DLM_Histo<float>* Convert_TH1F_DlmHisto(const TH1F* input){
+    if(!input){
+        printf("\033[1;31mERROR:\033[0m Bad input into Convert_TH1F_DlmHisto\n");
+        return NULL;
+    }
+    DLM_Histo<float>* dlmHisto;
+    dlmHisto = new DLM_Histo<float> ();
+    dlmHisto->SetUp(1);
+    unsigned NumBinsX = input->GetXaxis()->GetNbins();
+    double* Xaxis_pars = new double [NumBinsX+1];
+    for(unsigned uBin=0; uBin<NumBinsX; uBin++){
+        Xaxis_pars[uBin] = input->GetXaxis()->GetBinLowEdge(uBin+1);
+    }
+    Xaxis_pars[NumBinsX] = input->GetXaxis()->GetBinUpEdge(NumBinsX);
+    dlmHisto->SetUp(0,NumBinsX,Xaxis_pars);
+    dlmHisto->Initialize(true);
+
+    unsigned WhichBin[1];
+    for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){
+        WhichBin[0] = uBinX;
+        dlmHisto->SetBinContent(WhichBin,input->GetBinContent(uBinX+1));
+        dlmHisto->SetBinError(WhichBin,input->GetBinError(uBinX+1));
+    }
+    delete [] Xaxis_pars;
+    return dlmHisto;
+}
+
 TH2F* Convert_DlmHisto_TH2F(const DLM_Histo<float>* input, const char* name){
     if(!input || !name || input->GetDim()!=2){
         printf("\033[1;31mERROR:\033[0m Bad input into Convert_DlmHisto_TH2F\n");
