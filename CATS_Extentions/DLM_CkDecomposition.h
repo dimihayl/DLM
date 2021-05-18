@@ -23,12 +23,14 @@ public:
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child=NULL,
                          const TH2F* hResidualMatrix=NULL, const bool& InvertedAxis=false);
     void AddPhaseSpace(const unsigned& WhichCk, const TH1F* hPhaseSpace);
+    void AddPhaseSpace(const TH1F* hPhaseSpace);
     //const TH2F* GetResolutionMatrix();
 
 private:
     DLM_Histo<float>* dlmSigmaMatrix;
     DLM_Histo<float>** dlmFeedMatrix;
     DLM_Histo<float>** dlmPhaseSpace;
+    DLM_Histo<float>* dlmPhaseSpaceMain;
 };
 
 #endif

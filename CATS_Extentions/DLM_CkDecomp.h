@@ -23,6 +23,8 @@ public:
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child=NULL,
                          const DLM_Histo<float>* hResidualMatrix=NULL, const bool& InvertedAxis=false);
     void AddPhaseSpace(const unsigned& WhichCk, const DLM_Histo<float>* hPhaseSpace);
+    //this is for the momentum smearing
+    void AddPhaseSpace(const DLM_Histo<float>* hPhaseSpace);
 /*
     //if true, the data is unfolded, and later on all Eval functions applied
     //if the data has not been unfolded yet, it is performed with the default settings

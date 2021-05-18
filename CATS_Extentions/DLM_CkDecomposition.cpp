@@ -14,6 +14,7 @@ DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numch
     dlmSigmaMatrix = NULL;
     dlmFeedMatrix = NULL;
     dlmPhaseSpace = NULL;
+    dlmPhaseSpaceMain = NULL;
     if(hSigmaMatrix){
         dlmSigmaMatrix = Convert_TH2F_DlmHisto(hSigmaMatrix);
         AddTheMatrix(dlmSigmaMatrix,InvertAxis);
@@ -43,6 +44,7 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
         delete [] dlmPhaseSpace;
         dlmPhaseSpace = NULL;
     }
+    if(dlmPhaseSpaceMain){delete dlmPhaseSpaceMain; dlmPhaseSpaceMain=NULL;}
 }
 
 void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child,
@@ -80,4 +82,13 @@ void DLM_CkDecomposition::AddPhaseSpace(const unsigned& WhichCk, const TH1F* hPh
   }
   if(hPhaseSpace) dlmPhaseSpace[WhichCk] = Convert_TH1F_DlmHisto(hPhaseSpace);
   DLM_CkDecomp::AddPhaseSpace(WhichCk,dlmPhaseSpace[WhichCk]);
+}
+
+void DLM_CkDecomposition::AddPhaseSpace(const TH1F* hPhaseSpace){
+  if(dlmPhaseSpaceMain){
+      delete dlmPhaseSpaceMain;
+      dlmPhaseSpaceMain = NULL;
+  }
+  if(hPhaseSpace) dlmPhaseSpaceMain = Convert_TH1F_DlmHisto(hPhaseSpace);
+  DLM_CkDecomp::AddPhaseSpace(dlmPhaseSpaceMain);
 }

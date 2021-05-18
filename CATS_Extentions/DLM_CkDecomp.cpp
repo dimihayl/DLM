@@ -71,6 +71,7 @@ void DLM_CkDecomp::StandardSetup(const char* name){
         CkSmearedChildMainFeed = new DLM_Histo<double>* [NumChildren];
         SignalChild = new DLM_Histo<double>* [NumChildren];
         SignalSmearedChild = new DLM_Histo<double>* [NumChildren];
+        PS_Main = NULL;
         PS_Child = new DLM_Histo<float>* [NumChildren];
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
             Child[uChild] = NULL;
@@ -126,6 +127,7 @@ DLM_CkDecomp::~DLM_CkDecomp(){
     if(CkSmearedMainFeed) {delete CkSmearedMainFeed; CkSmearedMainFeed=NULL;}
     if(SignalMain) {delete SignalMain; SignalMain=NULL;}
     if(SignalSmearedMain) {delete SignalSmearedMain; SignalSmearedMain=NULL;}
+    if(PS_Main) {delete PS_Main; PS_Main=NULL;}
 
 }
 
@@ -135,8 +137,17 @@ void DLM_CkDecomp::AddPhaseSpace(const unsigned& WhichCk, const DLM_Histo<float>
       return;
   }
   if(PS_Child[WhichCk]) {delete PS_Child[WhichCk]; PS_Child[WhichCk]=NULL;}
+  if(!hPhaseSpace) return;
   PS_Child[WhichCk] = new DLM_Histo<float>(*hPhaseSpace);
   PS_Child[WhichCk]->ScaleToBinSize();
+}
+
+void DLM_CkDecomp::AddPhaseSpace(const DLM_Histo<float>* hPhaseSpace){
+  if(ERROR_STATE) return;
+  if(PS_Main) {delete PS_Main; PS_Main=NULL;}
+  if(!hPhaseSpace) return;
+  PS_Main = new DLM_Histo<float>(*hPhaseSpace);
+  PS_Main->ScaleToBinSize();
 }
 
 void DLM_CkDecomp::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child,
@@ -275,7 +286,7 @@ double DLM_CkDecomp::EvalMain(const double& Momentum){
 double DLM_CkDecomp::EvalSmearedMain(const double& Momentum){
     if(!CkMainSmeared){
         CkMainSmeared = new DLM_Histo<double>(*CkMain);
-        Smear(CkMain,RM_MomResolution,CkMainSmeared);
+        Smear(CkMain,RM_MomResolution,CkMainSmeared,PS_Main);
     }
     return CkMainSmeared->Eval(&Momentum);
 }
@@ -431,31 +442,29 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
         CkMainFeed->Scale(LambdaMain/MuPar);
 
         if(UpdateDecomp){
-			SignalMain[0] = CkMain[0];
-			SignalMain->Scale(LambdaMain);
-		}
-		else{
-			SignalMain->SetBinContentAll(0);
-			SignalSmearedMain->SetBinContentAll(0);
-		}
-
-
+			       SignalMain[0] = CkMain[0];
+			       SignalMain->Scale(LambdaMain);
+		     }
+		     else{
+        		 SignalMain->SetBinContentAll(0);
+        		   SignalSmearedMain->SetBinContentAll(0);
+		     }
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
-			SignalChild[uChild]->SetBinContentAll(0);
-			SignalSmearedChild[uChild]->SetBinContentAll(0);
+			       SignalChild[uChild]->SetBinContentAll(0);
+			       SignalSmearedChild[uChild]->SetBinContentAll(0);
             if(Type[uChild]!=cFeedDown){
-				if(Child[uChild]){
-					for(unsigned uBin=0; uBin<SignalSmearedChild[uChild]->GetNbins(); uBin++){
-						Momentum = SignalSmearedChild[uChild]->GetBinCenter(0,uBin);
-						SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(&Momentum));
-						SignalSmearedChild[uChild]->SetBinContent(uBin,LambdaPar[uChild]*Child[uChild]->CkSmearedMainFeed->Eval(&Momentum));
-					}
-					SignalChild[uChild][0] -= LambdaPar[uChild];
-					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];
-				}
-				continue;
-			}
-            if(Child[uChild]){
+				          if(Child[uChild]){
+					               for(unsigned uBin=0; uBin<SignalSmearedChild[uChild]->GetNbins(); uBin++){
+						                     Momentum = SignalSmearedChild[uChild]->GetBinCenter(0,uBin);
+						                     SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(&Momentum));
+						                     SignalSmearedChild[uChild]->SetBinContent(uBin,LambdaPar[uChild]*Child[uChild]->CkSmearedMainFeed->Eval(&Momentum));
+					                }
+                					SignalChild[uChild][0] -= LambdaPar[uChild];
+                					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];
+          				}
+          				continue;
+        			}
+              if(Child[uChild]){
                 Smear(Child[uChild]->CkMainFeed, RM_Child[uChild], CkChildMainFeed[uChild], PS_Child[uChild]);
                 for(unsigned uBin=0; uBin<CkMainFeed->GetNbins(); uBin++){
                     Momentum = CkMainFeed->GetBinCenter(0,uBin);
@@ -463,19 +472,19 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
                     SignalChild[uChild]->SetBinContent(uBin,CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]);
 //CkMainFeed->Add(uBin, LambdaPar[uChild]/MuPar);
                 }
-				if(UpdateDecomp){
-					Smear(SignalChild[uChild], RM_MomResolution, SignalSmearedChild[uChild], PS_Child[uChild]);
-					SignalChild[uChild][0] -= LambdaPar[uChild];
-					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];
-				}
+        				if(UpdateDecomp){
+        					Smear(SignalChild[uChild], RM_MomResolution, SignalSmearedChild[uChild], PS_Main);
+        					SignalChild[uChild][0] -= LambdaPar[uChild];
+        					SignalSmearedChild[uChild][0] -= LambdaPar[uChild];
+        				}
             }
             else{
                 *CkMainFeed+=(LambdaPar[uChild]/MuPar);
             }
         }
-        Smear(CkMainFeed, RM_MomResolution, CkSmearedMainFeed);
+        Smear(CkMainFeed, RM_MomResolution, CkSmearedMainFeed, PS_Main);
         if(UpdateDecomp){
-			Smear(SignalMain, RM_MomResolution, SignalSmearedMain);
+			Smear(SignalMain, RM_MomResolution, SignalSmearedMain, PS_Main);
 			SignalMain[0] -= LambdaMain;
 			SignalSmearedMain[0] -= LambdaMain;
 		}
