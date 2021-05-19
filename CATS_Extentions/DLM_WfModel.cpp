@@ -2449,7 +2449,7 @@ DLM_Histo<complex<double>>*** Init_pantip_Haidenbauer(const char* InputFolder, C
     //unsigned NumRadiusBins;
 
     unsigned short NumChannels;
-    unsigned short NumPwPerCh;
+    //unsigned short NumPwPerCh;
     //unsigned short NumFiles;
     unsigned NumMomBins = 0;
     unsigned short NumFiles = 7; // (to cover all s,p,d, waves)
@@ -4659,7 +4659,7 @@ DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
 
   unsigned short NumChannels;
   unsigned short NumPwPerCh;
-  unsigned short NumFiles;
+  //unsigned short NumFiles;
   unsigned NumMomBins = 0;
 
   if (TYPE == 0) {
@@ -4668,7 +4668,7 @@ DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
     RadiusMaximum = 10.;
     NumChannels = 2;
     NumPwPerCh = 1;
-    NumFiles = 1;
+    //NumFiles = 1;
   } else {
     printf("YOU BROKE SOMETHING in Init_pDminus_Haidenbauer\n");
     return NULL;

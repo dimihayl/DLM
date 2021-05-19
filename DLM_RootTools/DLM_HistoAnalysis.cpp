@@ -13,7 +13,7 @@ using namespace TMath;
 
 bool SameTH1structure(const TH1* h1, const TH1* h2){
   if(h1->GetNbinsX()!=h2->GetNbinsX()) return false;
-  for(unsigned uBin=0; uBin<h1->GetNbinsX(); uBin++){
+  for(int uBin=0; uBin<h1->GetNbinsX(); uBin++){
     if(h1->GetXaxis()->GetBinLowEdge(uBin+1)!=h2->GetXaxis()->GetBinLowEdge(uBin+1)) return false;
     if(h1->GetXaxis()->GetBinUpEdge(uBin+1)!=h2->GetXaxis()->GetBinUpEdge(uBin+1)) return false;
   }
@@ -587,7 +587,7 @@ TH2F* HistoAddRatios::GetResult(){
         //printf("2\n");
         //hResult = (TH1F*)Numerator[uTerm]->Clone(hResultName);
         delete [] BinningX;
-        for(unsigned uBin=0; uBin<=hResult->GetNbinsX(); uBin++){
+        for(int uBin=0; uBin<=hResult->GetNbinsX(); uBin++){
           hResult->SetBinContent(uBin,0);
           hResult->SetBinError(uBin,0);
         }
