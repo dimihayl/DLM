@@ -2,6 +2,7 @@
 #include "DLM_RootWrapper.h"
 #include "TH2F.h"
 #include "TH1F.h"
+#include "TROOT.h"
 #include <unistd.h>
 
 DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
@@ -78,6 +79,7 @@ TH2F* Convert_DlmHisto_TH2F(const DLM_Histo<float>* input, const char* name){
     unsigned NumBinsY = input->GetNbins(1);
     double* BinsX = input->GetBinRange(0);
     double* BinsY = input->GetBinRange(1);
+    gROOT->cd();
     TH2F* hROOT = new TH2F(name,name,NumBinsX,BinsX,NumBinsY,BinsY);
     unsigned WhichBin[2];
     for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){
@@ -97,6 +99,7 @@ TH1F* Convert_DlmHisto_TH1F(const DLM_Histo<float>* input, const char* name){
     }
     unsigned NumBinsX = input->GetNbins(0);
     double* BinsX = input->GetBinRange(0);
+    gROOT->cd();
     TH1F* hROOT = new TH1F(name,name,NumBinsX,BinsX);
     unsigned WhichBin[1];
     for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){

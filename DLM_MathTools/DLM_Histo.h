@@ -359,6 +359,7 @@ public:
             }
 
         }
+        Initialized = false;
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const double& xmin, const double& xmax){
         if(sDim>=Dim) return;
@@ -391,7 +392,7 @@ public:
         Initialized = false;
     }
     bool Initialize(const bool& ZeroElements=true){
-//printf("Initialize 1\n");
+//printf("Initialize 1: %i\n",Initialized);
         if(!Dim||!NumBins||!BinRange||!BinCenter) return false;
         if(!Initialized){
             TotNumBins=1;
@@ -611,10 +612,14 @@ public:
     }
     //xMin and xMax have size Dim, and each entry represents the min/max value to which the
     //corresponding dimension should be considered
-    Type Integral(const double* xMin, const double* xMax){
+    Type Integral(const double* xMin, const double* xMax, const bool& Normalized=false){
         Type RESULT = 0;
         if(!Initialized) {InitWarning(); return RESULT;}
         unsigned* BinId = new unsigned [Dim];
+        double PhaseSpaceSize = 1;
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+          PhaseSpaceSize *= (xMax[sDim]-xMin[sDim]);
+        }
         for(unsigned uBin=0; uBin<TotNumBins; uBin++){
             GetBinCoordinates(uBin,BinId);
             double FractionInside=1;
@@ -627,11 +632,11 @@ public:
                     FractionInside *= ( (xMax[sDim]-xMin[sDim])/GetBinSize(sDim,BinId[sDim]) );
                 }
                 //in case xMax is within the bin
-                else if(BinRange[sDim][BinId[sDim]]>=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>=xMax[sDim]){
+                else if(BinRange[sDim][BinId[sDim]]>=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>=xMax[sDim] && BinRange[sDim][BinId[sDim]]<xMax[sDim]){
                     FractionInside *= ( (xMax[sDim]-BinRange[sDim][BinId[sDim]])/GetBinSize(sDim,BinId[sDim]) );
                 }
                 //in case xMin is within the bin
-                else if(BinRange[sDim][BinId[sDim]]<xMin[sDim] && BinRange[sDim][BinId[sDim]+1]<xMin[sDim]){
+                else if(BinRange[sDim][BinId[sDim]]<xMin[sDim] && BinRange[sDim][BinId[sDim]+1]<=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>xMax[sDim]){
                     FractionInside *= ( (BinRange[sDim][BinId[sDim]+1]-xMin[sDim])/GetBinSize(sDim,BinId[sDim]) );
                 }
                 else{
@@ -639,10 +644,52 @@ public:
                     break;
                 }
             }
-            RESULT+=FractionInside*BinValue[uBin];
-        }
+            RESULT+=FractionInside*BinValue[uBin]*(Normalized?GetBinSize(uBin):1.);
+        }//uBin
         delete [] BinId;
-        return RESULT;
+        return RESULT/(Normalized?PhaseSpaceSize:1.);
+    }
+    bool Rebin(DLM_Histo<Type>& other){
+      if(other.Dim!=Dim){
+        printf("\033[1;31mERROR:\033[0m DLM_Histo cannot perform the rebin (wrong dimension of the output)!\n");
+        return false;
+      }
+      double* xMin = new double [Dim];
+      double* xMax = new double [Dim];
+      unsigned* BinId = new unsigned [Dim];
+      for(unsigned uNewBin=0; uNewBin<other.TotNumBins; uNewBin++){
+        other.GetBinCoordinates(uNewBin,BinId);
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+          xMin[sDim] = other.BinRange[sDim][BinId[sDim]];
+          xMax[sDim] = other.BinRange[sDim][BinId[sDim]+1];
+        }
+        other.BinValue[uNewBin] = Integral(xMin,xMax,true);
+      }
+      delete [] xMin;
+      delete [] xMax;
+      delete [] BinId;
+      return true;
+    }
+    //in each dim
+    void Rebin(const unsigned* RebFactor){
+      DLM_Histo<Type> RebinnedHisto;
+      RebinnedHisto.SetUp(Dim);
+      for(unsigned short sDim=0; sDim<Dim; sDim++){
+        double* BinRangeNew = new double[NumBins[sDim]/RebFactor[sDim]+2];
+        unsigned BinCounter = 0;
+        for(unsigned uBin=0; uBin<NumBins[sDim]; uBin++){
+          if(uBin%RebFactor[sDim]==0){
+            BinRangeNew[BinCounter] = BinRange[sDim][uBin];
+            BinCounter++;
+          }
+        }
+        BinRangeNew[BinCounter] = GetUpEdge(sDim);
+        RebinnedHisto.SetUp(sDim,BinCounter,BinRangeNew);
+        delete [] BinRangeNew;
+      }
+      RebinnedHisto.Initialize();
+      Rebin(RebinnedHisto);
+      Copy(RebinnedHisto);
     }
     unsigned short GetDim() const{
         return Dim;
