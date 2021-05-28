@@ -500,8 +500,9 @@ double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, co
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
 }
 
-double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar){
-  complex<double> ScatLen(PotPar[0],PotPar[1]);
+  double Lednicky_gauss_LAL_v2(const double &Momentum, const double *SourcePar, const double *PotPar)
+  {
+    complex<double> ScatLen(PotPar[0], PotPar[1]);
     //Entries for the GeneralLednicky function:
   // 1. Momentum
   // 2. Radius of Gaussian Source
@@ -717,7 +718,6 @@ double Lednicky_gauss_LAL_varlow(const double &Momentum, const double* SourcePar
 
 }
 
-
 //SourcePar[0] = Radius
 //PotPar[0] = a0 for 1S0
 //PotPar[1] = Reff for 1S0
@@ -746,6 +746,8 @@ double LednickyCoulomb_Identical_Triplet(const double& Momentum, const double* S
 double Lednicky_SingletTriplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     return GeneralLednicky(Momentum,SourcePar[0],PotPar[0],PotPar[1],PotPar[2],PotPar[3],false,false);
 }
+
+
 
 
 
@@ -960,3 +962,170 @@ double LednickySingletScatAmplitude(const double& kStar,
 
   return CkValue + 1;
 }
+
+
+
+
+ double Lednicky_CC_pAL(const double &Momentum, const double* SourcePar, const double* PotPar){
+//     //This model tries to calculate the CF for 2 channels in pAL
+//     //Elastic scattering parameters taken from WUT measurments in HIC
+
+//     //Parameter definitions:
+    complex<double> ScatLen_1(PotPar[0],PotPar[1]);//elastic
+    complex<double> effrange_1(PotPar[2],0.);
+    double RG = SourcePar[0]; //Gaussian radius
+
+    const double hbarc = 0.197326971844;
+//     //Oli's original code was in GeV and fm though, so we must convert the Momentum to GeV!
+    const double MomentumGeV = Momentum/1000.;
+
+    complex<double> ScatLen_2(PotPar[3],PotPar[4]);//inelastic
+    complex<double> effrange_2(PotPar[5],0.);
+
+    const double mass_proton = 0.938272;
+    const double mass_Lambda = 1.115683;
+    const double mass_cc1 = 0.1372736;//assuming for now only 2 body πK
+    const double mass_cc2 = 0.495644;//avg mass for π+ and π0 and for K+ and K0
+
+    double mu1 = mass_proton*mass_Lambda/(mass_proton+mass_Lambda);
+    double mu2 = mass_cc1*mass_cc2/(mass_cc1+mass_cc2);
+//     //*****************************************
+//     //*****************************************
+
+    double k1 = MomentumGeV/hbarc;//momentum in the elastic channel
+    double k2 = sqrt(2*mu2*(MomentumGeV*MomentumGeV/(2*mu1) + mass_proton + mass_Lambda - mass_cc1 - mass_cc2));
+    k2 /=hbarc; //momentum in the inelastic channel
+    //(k2>k1)
+
+
+    //Define inverse K-matrices
+    complex<double> Kinv_11 = 1./ScatLen_1 + 0.5 * effrange_1 *k1*k1;
+    complex<double> Kinv_22 = Kinv_11;//we assume the same type of interaction for channel
+    complex<double> Kinv_21 = 1./ScatLen_2 + 0.5 * effrange_2 *k1*k2;
+
+  //Determinant of scattering amplitude matrix:
+    complex<double> Det = (Kinv_11 + complex<double>(0.,-k1))*(Kinv_22 + complex<double>(0.,-k2)) - Kinv_21*Kinv_21;
+
+    //What is really needed are the scattering amplitudes:
+    complex<double> f11 = (Kinv_22 + complex<double>(0.,-k2))/Det;
+    complex<double> f22 = (Kinv_11 + complex<double>(0.,-k1))/Det;
+    complex<double> f21 = -(Kinv_21)/Det;
+
+    // printf("---debug 1 ---\n");
+    double fF1 = gsl_sf_dawson(2*k1*RG)/(2*k1*RG);
+    // printf("fF1 = %.6f\n",fF1);
+    double fF2 = (1.-exp(-pow(2*k1*RG,2)))/(2*k1*RG);
+
+
+  //elastic part of the correlation function(1 -> 1):
+  //---------------------------------------------
+    double corr_el = 0.5*pow(abs(f11),2.)/(RG*RG) + 2.*real(f11)/(sqrt(Pi)*RG)*fF1 - imag(f11)/RG * fF2;
+    //---------------------------------------------
+
+    //inelastic part of the correlation function(2 -> 1):
+    //---------------------------------------------
+    double corr_inel = 0.5*mu2/mu1*fabs(pow(abs(f21),2.)/(RG*RG));
+
+    //---------------------------------------------
+
+    //correction term to non spheric distortions on the short range scale
+    //Define matrices d_ij = 2Re d(K_ij)/dk²
+
+    complex<double> d11_dk = 0.5*effrange_1;
+    complex<double> d22_dk = 0.5*effrange_1;
+    complex<double> d21_dk = 0.5*effrange_2;
+
+    complex<double> factor1 = f11 * conj(f21);
+
+    double corr_distort = pow(abs(f11),2.)* 2.*real(d11_dk) + pow(abs(f21),2.)* 2.*real(d22_dk) + 2.*real(factor1) * 2.*real(d21_dk);
+    corr_distort *= -1./(4*sqrt(Pi)*pow(RG,3.));
+
+    double corr_fin = 1. + corr_el + corr_inel + corr_distort ;
+
+    return corr_fin;
+//     //if(par[1] == 0.) return 1. + par[2]*(par[3]*corr_fin -1.); //this is with baseline
+//     //else return par[2]*(par[3]*corr_fin -1.);//this is baseline subtracted
+ }
+
+double Lednicky_CC_LAL(const double &Momentum, const double* SourcePar, const double* PotPar){
+//     //This model tries to calculate the CF for 2 channels in pAL
+//     //Elastic scattering parameters taken from WUT measurments in HIC
+
+//     //Parameter definitions:
+    complex<double> ScatLen_1(PotPar[0],PotPar[1]);//elastic
+    complex<double> effrange_1(PotPar[2],0.);
+    double RG = SourcePar[0]; //Gaussian radius
+
+    const double hbarc = 0.197326971844;
+//     //Oli's original code was in GeV and fm though, so we must convert the Momentum to GeV!
+    const double MomentumGeV = Momentum/1000.;
+
+    complex<double> ScatLen_2(PotPar[3],PotPar[4]);//inelastic
+    complex<double> effrange_2(PotPar[5],0.);
+
+    const double mass_Lambda = 1.115683;
+    const double mass_cc1 = 0.495644;//assuming for now only 2 body KantiK
+    const double mass_cc2 = 0.495644;//avg mass for K+ and K0
+
+    double mu1 = mass_Lambda*mass_Lambda/(mass_Lambda+mass_Lambda);
+    double mu2 = mass_cc1*mass_cc2/(mass_cc1+mass_cc2);
+//     //*****************************************
+//     //*****************************************
+
+    double k1 = MomentumGeV/hbarc;//momentum in the elastic channel
+    double k2 = sqrt(2*mu2*(MomentumGeV*MomentumGeV/(2*mu1) + mass_Lambda + mass_Lambda - mass_cc1 - mass_cc2));
+    k2 /=hbarc; //momentum in the inelastic channel
+    //(k2>k1)
+
+
+    //Define inverse K-matrices
+    complex<double> Kinv_11 = 1./ScatLen_1 + 0.5 * effrange_1 *k1*k1;
+    complex<double> Kinv_22 = Kinv_11;//we assume the same type of interaction for channel
+    complex<double> Kinv_21 = 1./ScatLen_2 + 0.5 * effrange_2 *k1*k2;
+
+  //Determinant of scattering amplitude matrix:
+    complex<double> Det = (Kinv_11 + complex<double>(0.,-k1))*(Kinv_22 + complex<double>(0.,-k2)) - Kinv_21*Kinv_21;
+
+    //What is really needed are the scattering amplitudes:
+    complex<double> f11 = (Kinv_22 + complex<double>(0.,-k2))/Det;
+    complex<double> f22 = (Kinv_11 + complex<double>(0.,-k1))/Det;
+    complex<double> f21 = -(Kinv_21)/Det;
+
+
+    printf("---debug 1 ---\n");
+    double fF1 = gsl_sf_dawson(2.*k1*RG)/(2.*k1*RG);
+    printf("fF1 = %.2f\n",fF1);
+    double fF2 = (1.-exp(-pow(2*k1*RG,2)))/(2*k1*RG);
+
+  // double F1 = gsl_sf_dawson(2. * kStar * radius) / (2. * kStar * radius);
+  // double F2 = (1. - std::exp(-4. * kStar * kStar * radius * radius)) /
+  //             (2. * kStar * radius);
+  //elastic part of the correlation function(1 -> 1):
+  //---------------------------------------------
+    double corr_el = 0.5*pow(abs(f11),2.)/(RG*RG) + 2.*real(f11)/(sqrt(Pi)*RG)*fF1 - imag(f11)/RG * fF2;
+    //---------------------------------------------
+
+    //inelastic part of the correlation function(2 -> 1):
+    //---------------------------------------------
+    double corr_inel = 0.5*mu2/mu1*fabs(pow(abs(f21),2.)/(RG*RG));
+
+    //---------------------------------------------
+
+    //correction term to non spheric distortions on the short range scale
+    //Define matrices d_ij = 2Re d(K_ij)/dk²
+
+    complex<double> d11_dk = 0.5*effrange_1;
+    complex<double> d22_dk = 0.5*effrange_1;
+    complex<double> d21_dk = 0.5*effrange_2;
+
+    complex<double> factor1 = f11 * conj(f21);
+
+    double corr_distort = pow(abs(f11),2.)* 2.*real(d11_dk) + pow(abs(f21),2.)* 2.*real(d22_dk) + 2.*real(factor1) * 2.*real(d21_dk);
+    corr_distort *= -1./(4*sqrt(Pi)*pow(RG,3.));
+
+    double corr_fin = 1. + corr_el + corr_inel + corr_distort ;
+
+    return corr_fin;
+//     //if(par[1] == 0.) return 1. + par[2]*(par[3]*corr_fin -1.); //this is with baseline
+//     //else return par[2]*(par[3]*corr_fin -1.);//this is baseline subtracted
+ }

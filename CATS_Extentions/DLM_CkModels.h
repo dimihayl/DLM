@@ -80,6 +80,11 @@ double Lednicky_gauss_pAL_varlow(const double &Momentum, const double* SourcePar
  double Lednicky_gauss_pAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
  double Lednicky_gauss_LAL_v2(const double& Momentum, const double* SourcePar, const double* PotPar);
 
+ //2-channel Lednicky for pAL
+ double Lednicky_CC_pAL(const double &Momentum, const double* SourcePar, const double* PotPar);
+ double Lednicky_CC_LAL(const double &Momentum, const double* SourcePar, const double* PotPar);
+
+
     void SetLedniIntegral_SourceFunction(double (*AS)(double*), CATSparameters& Pars);
     void SetLedniIntegral_SourceClass(void* context, const unsigned& numparameters=0);
     void RemoveLedniIntegral_SourceFunction();
