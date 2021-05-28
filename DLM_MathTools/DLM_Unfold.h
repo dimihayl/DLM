@@ -26,6 +26,7 @@ public:
     void SetPcOutput(const bool& pcoutput) {PcOutput=pcoutput;}
     //void SetOutput(const int& level, const TString& ouputfilename);
     DLM_Histo<float>* Unfold();
+    DLM_Histo<float>* UnfoldDimi();
     //DLM_Histo<float>* UnfoldNew();
     DLM_Histo<float>* Fold();
     double GetReachedPrecision() const {return ReachedPrecision;}
@@ -40,6 +41,7 @@ private:
     TH2F* hResponse;
     DLM_Histo<float>* dlmData;
     DLM_Histo<float>* dlmResponse;
+    //DLM_Histo<float>* dlmResponseReb;
     unsigned NumIter;
     double Precision;
     double PrecisionWorst;
@@ -55,6 +57,7 @@ private:
     double SplineFitUnfolded(double* xVal, double* pars);
     double DimiFit(double* xVal, double* pars);
     double DimiFitFolded(double* xVal, double* pars);
+    //void SparseTheResponse();
     DLM_Histo<float>* dlmData_reb2;
     double* DLM_FITTER_ARRAY_SPLINE3_X;
     double* DLM_FITTER_ARRAY_SPLINE3_Y;

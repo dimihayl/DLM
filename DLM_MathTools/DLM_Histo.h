@@ -712,7 +712,7 @@ public:
      void SetBinError(const unsigned& WhichTotBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins) return;
-        BinError[WhichTotBin]=Val;
+        BinError[WhichTotBin]=fabs(Val);
     }
     void SetBinContentAll(const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -740,6 +740,7 @@ public:
             WhichBin[sDim] = GetBin(sDim,AxisValue[sDim]);
         }
         BinValue[GetTotBin(WhichBin)] += Val;
+        delete [] WhichBin;
     }
 
     void SetBinContent(const unsigned* WhichBin, const Type& Val){

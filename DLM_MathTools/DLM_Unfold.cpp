@@ -19,6 +19,7 @@ DLM_Unfold::DLM_Unfold(){
   dlmData = NULL;
   dlmData_reb2 = NULL;
   dlmResponse = NULL;
+  //dlmResponseReb = NULL;
   hData = NULL;
   hResponse = NULL;
   //15 mins
@@ -51,6 +52,7 @@ DLM_Unfold::~DLM_Unfold(){
   if(dlmData){delete dlmData; dlmData=NULL;}
   if(dlmData_reb2){delete dlmData_reb2; dlmData_reb2=NULL;}
   if(dlmResponse){delete dlmResponse; dlmResponse=NULL;}
+  //if(dlmResponseReb){delete dlmResponseReb; dlmResponseReb=NULL;}
   if(DLM_FITTER_ARRAY_SPLINE3_X){delete DLM_FITTER_ARRAY_SPLINE3_X; DLM_FITTER_ARRAY_SPLINE3_X=NULL;}
   if(DLM_FITTER_ARRAY_SPLINE3_Y){delete DLM_FITTER_ARRAY_SPLINE3_Y; DLM_FITTER_ARRAY_SPLINE3_Y=NULL;}
   if(SparseFirst){delete[]SparseFirst; SparseFirst=NULL;}
@@ -78,6 +80,7 @@ void DLM_Unfold::SetData(TH1F* data){
   if(hData){delete hData; hData=NULL;}
   hData = (TH1F*)data->Clone("DLM_Unfold::hData");
   if(dlmData){delete dlmData; dlmData=NULL;}
+  //if(dlmResponseReb){delete dlmResponseReb; dlmResponseReb=NULL;}
   if(!data) return;
   dlmData = Convert_TH1F_DlmHisto(hData);
   if(RangeMin==0&&RangeMax==0){
@@ -102,8 +105,10 @@ void DLM_Unfold::SetResponse(TH2F* response){
   if(hResponse){delete hResponse; hResponse=NULL;}
   hResponse = (TH2F*)response->Clone("DLM_Unfold::hResponse");
   if(dlmResponse){delete dlmResponse; dlmResponse=NULL;}
+  //if(dlmResponseReb){delete dlmResponseReb; dlmResponseReb=NULL;}
   if(!response) return;
   dlmResponse = Convert_TH2F_DlmHisto(hResponse);
+
   if(SparseFirst){delete SparseFirst; SparseFirst=NULL;}
   if(SparseLast){delete SparseLast; SparseLast=NULL;}
   SparseFirst = new unsigned [response->GetYaxis()->GetNbins()];
@@ -125,8 +130,34 @@ void DLM_Unfold::SetResponse(TH2F* response){
     if(SparseLast[uBinY]<response->GetXaxis()->GetNbins()-1)SparseLast[uBinY]++;
     //printf("Y %u: %u %u\n",uBinY,SparseFirst[uBinY],SparseLast[uBinY]);
   }
-}
 
+}
+/*
+void DLM_Unfold::SparseTheResponse(){
+  unsigned uBin[2];
+  if(SparseFirst){delete SparseFirst; SparseFirst=NULL;}
+  if(SparseLast){delete SparseLast; SparseLast=NULL;}
+  SparseFirst = new unsigned [dlmResponseReb->GetNbins(1)];
+  SparseLast = new unsigned [dlmResponseReb->GetNbins(1)];
+  for(uBin[1]=0; uBin[1]<dlmResponseReb->GetNbins(1); uBin[1]++){
+    SparseFirst[uBin[1]]=-1;
+    SparseLast[uBin[1]]=0;
+    //bool FirstFound = false;
+    for(uBin[0]=0; uBin[0]<dlmResponseReb->GetNbins(0); uBin[0]++){
+      if(dlmResponseReb->GetBinContent(uBin)!=0&&SparseFirst[uBin[1]]==-1){
+        SparseFirst[uBin[1]]=uBin[0];
+      }
+      if(dlmResponseReb->GetBinContent(uBin)!=0&&SparseLast[uBin[1]]<=dlmResponseReb->GetNbins(0)){
+        SparseLast[uBin[1]]=uBin[0];
+      }
+    }
+    //this is done so that we have a single bin left for extrapolation
+    if(SparseFirst[uBin[1]])SparseFirst[uBin[1]]--;
+    if(SparseLast[uBin[1]]<<dlmResponseReb->GetNbins(0)-1)SparseLast[uBin[1]]++;
+    //printf("Y %u: %u %u\n",uBin[1],SparseFirst[uBin[1]],SparseLast[uBin[1]]);
+  }
+}
+*/
 void DLM_Unfold::SetUnfoldPrecision(const double& precision, const double& worst){
   if(precision<=0||precision>1||worst<precision){
     printf("\033[1;33mWARNING!\033[0m DLM_Unfold got a weird precision! Ignored!\n");
@@ -297,12 +328,13 @@ bool DIMISTYLE = true;
   unsigned NumResultEnties = 0;
 
   double Avg_chi2ndf=0;
-  const unsigned BinDepth = NumBins<5?NumBins:5;
+  //const unsigned BinDepth = NumBins<5?NumBins:5;
+  const unsigned BinDepth = 2;
   //the time (in seconds) beyond which we settle for Okayish_chi2ndf;
   long long PatienceForPerfection;
   //whatever we have after that much time, we take
   long long PatienceMax;
-  const unsigned NumBackAndForth = 8;//this is a maximum value
+  const unsigned NumBackAndForth = 1024*4;//this is a maximum value
   const unsigned MaxStepsWithoutImprovement1 = 24;//32
   const unsigned MaxStepsWithoutImprovement2 = 12;//16
   const unsigned ErrorDepth = 3;//3
@@ -335,12 +367,13 @@ bool DIMISTYLE = true;
     if(dlmData_reb2){delete dlmData_reb2; dlmData_reb2=NULL;}
     dlmData_reb2 = new DLM_Histo<float>(*dlmData);
     dlmData_reb2->Rebin(&REB2);
-    if(dlmDimiWorkHorse){delete [] dlmDimiWorkHorse; dlmDimiWorkHorse=NULL;}
+    if(dlmDimiWorkHorse){delete dlmDimiWorkHorse; dlmDimiWorkHorse=NULL;}
     dlmDimiWorkHorse = new DLM_Histo<float>(*dlmData_reb2);
 
     FitFoldOriginal = new TF1("FitFoldOriginal",this,&DLM_Unfold::DimiFit,RangeMin,RangeMax,dlmData_reb2->GetNbins(),"DLM_Unfold","DimiFit");
     for(unsigned uPar=0; uPar<dlmData_reb2->GetNbins(); uPar++){
       FitFoldOriginal->SetParameter(uPar,dlmData_reb2->GetBinContent(uPar));
+      FitFoldOriginal->SetParLimits(uPar,0,2.*dlmData_reb2->GetBinContent(uPar));
       //printf("p%u = %f\n",uPar,dlmData_reb2->GetBinContent(uPar));
     }
     FitFoldOriginal->SetNpx(256);
@@ -373,7 +406,7 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
       for(unsigned uPar=0; uPar<dlmData_reb2->GetNbins(); uPar++){
         //FitFoldFinal->FixParameter(uPar,dlmData_reb2->GetBinContent(uPar));
         FitFoldFinal->SetParameter(uPar,FitFoldOriginal->GetParameter(uPar)*randomize);
-        //FitFoldFinal->SetParLimits(uPar,FitFoldOriginal->GetParameter(uPar)*0.25,FitFoldOriginal->GetParameter(uPar)*4.);
+        FitFoldFinal->SetParLimits(uPar,0,FitFoldOriginal->GetParameter(uPar)*10.);
         //FitFoldFinal->SetParLimits(uPar,FitFoldOriginal->GetParameter(uPar)*0.1,FitFoldOriginal->GetParameter(uPar)*10.);
       }
       FitFoldFinal->SetNpx(256);
@@ -398,6 +431,7 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
     FitUnfoldFinal = new TF1("FitUnfoldFinal",this,&DLM_Unfold::DimiFit,RangeMin,RangeMax,dlmData_reb2->GetNbins(),"DLM_Unfold","DimiFit");
     for(unsigned uPar=0; uPar<dlmData_reb2->GetNbins(); uPar++){
       FitUnfoldFinal->SetParameter(uPar,FitFoldFinal->GetParameter(uPar));
+      FitUnfoldFinal->SetParLimits(uPar,0,FitFoldFinal->GetParameter(uPar)*10.);
     }
     FitUnfoldFinal->SetNpx(256);
   }
@@ -521,6 +555,7 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
     //double OriginalValueMax;
     double Error;
     double RandomValue;
+    double EffectiveCounts;//assuming E/N = sqrt(N)/N = 1/sqrt(N) = relErr; N = 1/relErr^2
     //double RandomMean;
     double xAxis;
 
@@ -531,8 +566,10 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
       if(xAxis>RangeMax) break;
       OriginalValue = dlmData->GetBinContent(uBin);
       Error = dlmData->GetBinError(uBin);
+      EffectiveCounts = pow(Error/OriginalValue,-2.);
       if(uSeed){
-        RandomValue = rangen.Gaus(OriginalValue,Error);
+        //RandomValue = rangen.Gaus(OriginalValue,Error);
+        RandomValue = rangen.Poisson(EffectiveCounts)*OriginalValue/EffectiveCounts;
       }
       else RandomValue = dlmData->GetBinContent(uBin);
       dlmData_boot.SetBinContent(uBin,RandomValue);
@@ -552,6 +589,16 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
     DLM_Histo<float> dlmBestFolded(*dlmData);
 
     unsigned StepsWithoutImprovement=0;
+    //unsigned NumSuccess=0;
+    //unsigned NumAttempts=0;
+    //double SuccessRate=1;
+
+    unsigned* NumSuccess = new unsigned[dlmSampleUnfolded.GetNbins()];
+    unsigned* NumAttempts = new unsigned[dlmSampleUnfolded.GetNbins()];
+    double* SuccessRate = new double[dlmSampleUnfolded.GetNbins()];
+    double MinSuccessRate=0.25;
+    unsigned MinAttempts=2;
+
     //bootstrap the sampling histogram ones, to avoid a bias in the chi2 determination (where the original solution is used as a benchmark)
     //here we should sample from the unfolded soltion, in fact we use the fit from upstairs
     for(unsigned uBin=0; uBin<dlmSampleUnfolded.GetNbins(); uBin++){
@@ -560,10 +607,14 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
       if(xAxis>RangeMax) break;
       OriginalValue = FitUnfoldFinal->Eval(xAxis);//dlmData->GetBinContent(uBin);
       Error = dlmData->GetBinError(uBin+1);
-      RandomValue = rangen.Gaus(OriginalValue,Error);
+      //RandomValue = rangen.Gaus(OriginalValue,Error);
       //what the hell is this??
-      //RandomValue=OriginalValue;
+      RandomValue=OriginalValue;
       dlmSampleUnfolded.SetBinContent(uBin,RandomValue);
+
+      NumSuccess[uBin]=0;
+      NumAttempts[uBin]=0;
+      SuccessRate[uBin]=1;
     }
 
     for(unsigned uBF=0; uBF<NumBackAndForth; uBF++){
@@ -572,6 +623,15 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
       strcpy(ctext3,"");
       std::cout << ctext1 << std::flush;
       bool REFRESHED_INFO = false;
+
+      //MinAttempts = 10 + uBF*4;
+      //MinSuccessRate = 1./(10 + uBF*16);
+      for(unsigned uBin=0; uBin<dlmSampleUnfolded.GetNbins(); uBin++){
+        NumSuccess[uBin]=0;
+        NumAttempts[uBin]=0;
+        SuccessRate[uBin]=1;
+      }
+
       for(unsigned uBin=0; uBin<2*dlmSampleUnfolded.GetNbins(); uBin++){
         //we iterate twice, from below and from above.
         //The second iteration is for 'polishing',
@@ -590,21 +650,36 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
         unsigned MaxStepsWithoutImprovement = (!Polishing)?MaxStepsWithoutImprovement1:MaxStepsWithoutImprovement2;
         //if we are in a tough spot, increase the MaxSteps
         MaxStepsWithoutImprovement *= (uBF/2+1);
+        //we monitor how often we get an improvement. If often, we keep on digging, as it will
+        //help reduce the chi2 from regions that can be easily improved
 
         for(unsigned uED=1*unsigned(Polishing); uED<ErrorDepth+1*unsigned(Polishing); uED++){
           double Scale = pow(0.5,double(uED));
           StepsWithoutImprovement=0;
+          //NumSuccess = 0;
+          //NumAttempts = 0;
+          //SuccessRate = 1;
           unsigned uBin_From =(!Polishing)?WhichBin:WhichBin-BinDepth+1;
           unsigned uBin_To = (!Polishing)?WhichBin+BinDepth:WhichBin+1;
-          while(StepsWithoutImprovement<MaxStepsWithoutImprovement){
+          //while(StepsWithoutImprovement<MaxStepsWithoutImprovement || SuccessRate>MinimumSuccessRate){
+          while(SuccessRate[uBin_From]>MinSuccessRate||NumAttempts[uBin_From]<MinAttempts){
+            //printf("%u: SR=%.2f/%.2f; NA=%u/%u\n",uBin_From,SuccessRate[uBin_From]*100.,MinSuccessRate*100.,NumAttempts[uBin_From],MinAttempts);
             dlmUnfolded = dlmSampleUnfolded;
             //we iterate over the desired bin range and bootstrap a bit
             for(unsigned uBin2=uBin_From; uBin2<uBin_To; uBin2++){
               OriginalValue = dlmSampleUnfolded.GetBinContent(WhichBin);
               Error = dlmData_boot.GetBinError(WhichBin);
-              if(StepsWithoutImprovement%2) RandomValue = rangen.Uniform(OriginalValue-0.5*Error*Scale,OriginalValue+0.5*Error*Scale);
+              EffectiveCounts = pow(Error*Scale/OriginalValue,-2.);
+              //if(StepsWithoutImprovement%2) RandomValue = rangen.Uniform(OriginalValue-0.5*Error*Scale,OriginalValue+0.5*Error*Scale);
+              if(NumAttempts[uBin_From]%2) RandomValue = rangen.Uniform(OriginalValue-0.5*Error*Scale,OriginalValue+0.5*Error*Scale);
               //half of the time we allow for a larger spread
-              else RandomValue = rangen.Gaus(OriginalValue,Error*Scale);
+              //else RandomValue = rangen.Gaus(OriginalValue,Error*Scale);
+              else{
+                RandomValue = rangen.Poisson(EffectiveCounts);
+                RandomValue*=OriginalValue;
+                RandomValue/=EffectiveCounts;
+              }
+              RandomValue = fabs(RandomValue);
               dlmUnfolded.SetBinContent(WhichBin,RandomValue);
             }
             //Ck_Unfolded->Update(true);
@@ -646,7 +721,7 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
             }
             //the idea: on the first iteration, make the solution close to the expectation (find the desired global min)
             //          on the next iterations, loosen up the condition to explore local minima
-            if(Chi2_Data<BestChi2_Data&&Chi2_BinFitMax<=double(uBF+1)*Chi2_BinDataMax){
+            if(Chi2_Data<BestChi2_Data&&Chi2_BinFitMax<=double(uBF/16+1)*Chi2_BinDataMax){
             //if(Chi2_BinDataMax<BestChi2_BinData){
                 sprintf(ctext3," --> %.1f",Chi2_Data);
                 if(!Silent&&PcOutput){
@@ -676,10 +751,13 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
                     TerminateIter = true;
                     break;
                 }
+                NumSuccess[uBin_From]++;
             }
             else{
                 StepsWithoutImprovement++;
             }
+            NumAttempts[uBin_From]++;
+            SuccessRate[uBin_From] = double(NumSuccess[uBin_From])/double(NumAttempts[uBin_From]);
           }//while
           if(TerminateIter) break;
         }//uED
@@ -730,6 +808,10 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
 
     }//uBF
 
+    delete [] NumAttempts;
+    delete [] NumSuccess;
+    delete [] SuccessRate;
+
     long long ExeTime = ComputingTime.Stop()/1000000.;
     Avg_chi2ndf = (Avg_chi2ndf*NumIterDone+f_chi2ndf)/(NumIterDone+1);
     IterTime += ExeTime;
@@ -764,18 +846,22 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
 
         if(!NumResultEnties){
           Mean = dlmBestUnfolded.GetBinContent(uBin);
+//printf("1. Mean = %f\n",Mean);
           Mean2 = dlmBestUnfolded.GetBinContent(uBin)*dlmBestUnfolded.GetBinContent(uBin);
         }
         else{
-          Mean = dlmUnfoldResult->GetBinContent(uBin);
+          Mean = dlmUnfoldResult->GetBinContent(uBin);//dlmUnfoldResult
+//printf("2. Mean = %f\n",Mean);
           Mean += dlmBestUnfolded.GetBinContent(uBin)/double(NumResultEnties);
+//printf("3. Mean = %f\n",Mean);
           Mean *= double(NumResultEnties)/double(NumResultEnties+1);
 
-          Mean2 = dlmUnfoldResult->GetBinError(uBin);
+          Mean2 = dlmUnfoldResult->GetBinError(uBin);//dlmUnfoldResult
           Mean2 += dlmBestUnfolded.GetBinContent(uBin)/double(NumResultEnties);
           Mean2 *= double(NumResultEnties)/double(NumResultEnties+1);
         }
         dlmUnfoldResult->SetBinContent(uBin,Mean);
+//printf("4. Mean = %f\n\n",Mean);
         dlmUnfoldResult->SetBinError(uBin,Mean);
 
         BinCounter++;
@@ -803,6 +889,106 @@ for(unsigned uRefit=0; uRefit<1; uRefit++){
 
 
 
+DLM_Histo<float>* DLM_Unfold::UnfoldDimi(){
+  if(!dlmData||!dlmResponse){
+    printf("\033[1;33mWARNING!\033[0m DLM_Unfold misses some input to unfold!\n");
+    return NULL;
+  }
+
+  DLM_Timer JobTime;
+  TRandom3 rangen(SEEDmin+1);
+
+  const unsigned NumBins = dlmData->GetBin(0,RangeMax)-dlmData->GetBin(0,RangeMin)+1;
+  if(NumBins<=1){
+    printf("\033[1;33mWARNING!\033[0m Smearing a less than 2 bins is truely the next level! Sorry, cannot do it!\n");
+    return NULL;
+  }
+
+  if(BinByBinFolded){delete [] BinByBinFolded; BinByBinFolded=NULL;}
+  BinByBinFolded = new std::vector<float> [NumBins];
+  if(BinByBinUnfolded){delete [] BinByBinUnfolded; BinByBinUnfolded=NULL;}
+  BinByBinUnfolded = new std::vector<float> [NumBins];
+  DLM_Histo<float>* dlmUnfoldResult = new DLM_Histo<float>(*dlmData);
+  dlmUnfoldResult->SetBinContentAll(0);
+  dlmUnfoldResult->SetBinErrorAll(0);
+  unsigned NumResultEnties = 0;
+
+  char* strtime = new char [128];
+  char* ctext1 = new char [128];
+
+  if(!Silent) printf("\nUnfolding:\n\n");
+  double IterTime = 0;
+
+  double f_chi2;
+  int f_ndf;
+  double f_chi2ndf;
+  double f_pval;
+  double f_ns;
+
+  if(FitFoldFinal){delete FitFoldFinal; FitFoldFinal=NULL;}
+
+  for(unsigned uReb=4; uReb>=2; uReb/=2){
+//printf("uReb %u\n",uReb);
+    if(dlmData_reb2){delete dlmData_reb2; dlmData_reb2=NULL;}
+    dlmData_reb2 = new DLM_Histo<float>(*dlmData);
+    dlmData_reb2->Rebin(&uReb);
+    if(dlmDimiWorkHorse){delete dlmDimiWorkHorse; dlmDimiWorkHorse=NULL;}
+    dlmDimiWorkHorse = new DLM_Histo<float>(*dlmData_reb2);
+    gROOT->cd();
+    TF1* FitTempFold = new TF1(TString::Format("FitFoldFinal_%u",uReb),this,&DLM_Unfold::DimiFitFolded,RangeMin,RangeMax,dlmData_reb2->GetNbins(),"DLM_Unfold","DimiFitFolded");
+    double xVal;
+    for(unsigned uPar=0; uPar<dlmData_reb2->GetNbins(); uPar++){
+      xVal = dlmData_reb2->GetBinCenter(0,uPar);
+      //FitTempFold->SetParameter(uPar,FitFoldFinal?FitFoldFinal->Eval(xVal):dlmData_reb2->GetBinContent(uPar));
+      //FitTempFold->SetParLimits(uPar,0,1.5*FitTempFold->GetParameter(uPar));
+      FitTempFold->SetParameter(uPar,dlmData_reb2->GetBinContent(uPar));
+      double UpLimit;
+      if(FitFoldFinal) UpLimit=FitFoldFinal->Eval(xVal)*1.5;
+      else UpLimit=dlmData_reb2->GetBinContent(uPar)*1.5;
+      FitTempFold->SetParLimits(uPar,0,UpLimit);
+      //printf(" p%u: %f --> %f\n",uPar,FitTempFold->GetParameter(uPar),1.5*FitTempFold->GetParameter(uPar));
+    }
+    FitTempFold->SetNpx(256);
+    if(FitFoldFinal){delete FitFoldFinal; FitFoldFinal=NULL;}
+    FitFoldFinal = FitTempFold;
+
+    gROOT->cd();
+    hData->Fit(FitFoldFinal,"S, N, R, M");
+//printf("fit done");
+    f_chi2 = FitFoldFinal->GetChisquare();
+    f_ndf = FitFoldFinal->GetNumberFitPoints();
+//printf("f_chi2 %f; f_ndf %i\n",f_chi2,f_ndf);
+    f_chi2ndf = f_chi2/double(f_ndf);
+    f_pval = TMath::Prob(f_chi2,f_ndf);
+    f_ns = sqrt(2)*TMath::ErfcInverse(f_pval+1e-32);
+    if(!Silent) printf("Fit (rebin %u):\n",uReb);
+    if(!Silent) printf(" chi2/ndf = %.1f/%i = %.2f\n",f_chi2,f_ndf,f_chi2/double(f_ndf));
+//printf("gROOT\n");
+    gROOT->cd();
+    if(FitUnfoldFinal){delete FitUnfoldFinal; FitUnfoldFinal=NULL;}
+//printf("new\n");
+    FitUnfoldFinal = new TF1(TString::Format("FitUnfoldFinal_%u",uReb),this,&DLM_Unfold::DimiFit,RangeMin,RangeMax,dlmData_reb2->GetNbins(),"DLM_Unfold","DimiFit");
+//printf("uPar\n");
+    for(unsigned uPar=0; uPar<dlmData_reb2->GetNbins(); uPar++){
+      xVal = dlmData_reb2->GetBinCenter(0,uPar);
+      FitUnfoldFinal->FixParameter(uPar,FitFoldFinal->GetParameter(uPar));
+    }
+    FitUnfoldFinal->SetNpx(256);
+
+  }//uReb
+printf("outside\n");
+  for(unsigned uBin=0; uBin<dlmUnfoldResult->GetNbins(); uBin++){
+    dlmUnfoldResult->SetBinContent(uBin,FitUnfoldFinal->Eval(dlmUnfoldResult->GetBinCenter(0,uBin)));
+  }
+printf("deleting\n");
+  delete [] strtime;
+  delete [] ctext1;
+  return dlmUnfoldResult;
+printf("ending\n");
+}
+
+
+
 DLM_Histo<float>* DLM_Unfold::Fold(){
   if(!dlmData) return NULL;
   DLM_Histo<float>* dlmFolded = new DLM_Histo<float>(*dlmData);
@@ -810,20 +996,54 @@ DLM_Histo<float>* DLM_Unfold::Fold(){
   return dlmFolded;
 }
 
+//N.B. I think I rely on having the same binning between response and data, not to mention that
+//I pick only a single value from the response matrix, not the ingegral... too bad
 void DLM_Unfold::Fold(const DLM_Histo<float>& DATA, DLM_Histo<float>& RESULT){
+  if(!dlmResponse){
+    RESULT=DATA;
+    return;
+  }
+  /*
+  if(!dlmResponseReb){
+    double* BinRange = DATA.GetBinRange(0);
+    dlmResponseReb = new DLM_Histo<float>();
+    dlmResponseReb->SetUp(2);
+    dlmResponseReb->SetUp(0,DATA.GetNbins(),BinRange);
+    dlmResponseReb->SetUp(1,DATA.GetNbins(),BinRange);
+    dlmResponseReb->Initialize();
+    //printf("About to rebin\n");
+    dlmResponse->Rebin(*dlmResponseReb);
+    //printf("About to sparse\n");
+    SparseTheResponse();
+    delete [] BinRange;
+  }
+  */
   const unsigned NumBins = DATA.GetNbins();
   unsigned uBin[2];
   double Momentum[2];
   //DLM_Histo<float>* dlmFolded = new DLM_Histo<float>(DATA);
   for(uBin[1]=0; uBin[1]<NumBins; uBin[1]++){
+    //printf(" [%u ... %u ... %u]\n",0,uBin[1],NumBins);
     Momentum[1] = DATA.GetBinCenter(0,uBin[1]);
     double Integral=0;
     double Normalization=0;
+    //[low/up][sDim]
+    double BinRange[2][2];
+    //double RespMatrInt;
+    //double RespMatrNorm;
+    BinRange[0][1] = DATA.GetBinLowEdge(0,uBin[1]);
+    BinRange[1][1] = DATA.GetBinUpEdge(0,uBin[1]);
     for(uBin[0]=SparseFirst[uBin[1]]; uBin[0]<=SparseLast[uBin[1]]; uBin[0]++){
     //for(uBin[0]=0; uBin[0]<NumBins; uBin[0]++){
+      //printf(" X: [%u ... %u ... %u]\n",SparseFirst[uBin[1]],uBin[0],SparseLast[uBin[1]]);
       Momentum[0] = DATA.GetBinCenter(0,uBin[0]);
+      BinRange[0][0] = DATA.GetBinLowEdge(0,uBin[0]);
+      BinRange[1][0] = DATA.GetBinUpEdge(0,uBin[0]);
       if(!DATA.GetBinContent(uBin)) continue;
+      //RespMatrInt = dlmResponse->Integral(BinRange[0],BinRange[1],true);
+      //printf(" RM = %f vs %f\n",dlmResponse->Eval(Momentum),RespMatrInt);
       Integral += DATA.GetBinContent(uBin)*dlmResponse->Eval(Momentum);
+      //Integral += DATA.GetBinContent(uBin)*RespMatrInt;
       Normalization += dlmResponse->Eval(Momentum);
     }
     Integral /= Normalization;
