@@ -10,7 +10,7 @@
 #include "TMinuit.h"
 #include "TFitResultPtr.h"
 #include "TFitResult.h"
-#include "TH1F.h"
+#include "TH1.h"
 #include "TF1.h"
 
 #include "Fit/Fitter.h"
@@ -171,11 +171,11 @@ void DLM_MultiFit::ReallocMemSpectra(unsigned short m){
     if(!m) {ClearSpectra(); return;}
     max_spectra = m;
 
-    TH1F ** histo_temp = NULL;
+    TH1 ** histo_temp = NULL;
     TF1 ** fit_temp = NULL;
 
     if(num_spectra){
-        histo_temp = new TH1F * [num_spectra];
+        histo_temp = new TH1 * [num_spectra];
         for(unsigned short i=0; i<num_spectra; i++){
             histo_temp[i] = HistoToFit[i];
         }
@@ -187,7 +187,7 @@ void DLM_MultiFit::ReallocMemSpectra(unsigned short m){
         }
         delete [] FitFunction;
     }
-    HistoToFit = new TH1F * [max_spectra];
+    HistoToFit = new TH1 * [max_spectra];
     FitFunction = new TF1 * [max_spectra];
     spec_par = new double* [max_spectra];
     for(unsigned short i=0; i<max_spectra; i++){
@@ -206,7 +206,7 @@ void DLM_MultiFit::ReallocMemSpectra(unsigned short m){
     }
 }
 
-bool DLM_MultiFit::AddSpectrum(TH1F* histo, TF1* fit){
+bool DLM_MultiFit::AddSpectrum(TH1* histo, TF1* fit){
     if(!histo || !fit){
         return false;
     }

@@ -78,11 +78,30 @@ void DLM_Unfold::SetData(TH1F* data){
   //}
   gROOT->cd();
   if(hData){delete hData; hData=NULL;}
-  hData = (TH1F*)data->Clone("DLM_Unfold::hData");
+  hData = (TH1F*)data->Clone(TString::Format("DLM_Unfold::hData_%p",this));
   if(dlmData){delete dlmData; dlmData=NULL;}
   //if(dlmResponseReb){delete dlmResponseReb; dlmResponseReb=NULL;}
   if(!data) return;
   dlmData = Convert_TH1F_DlmHisto(hData);
+  if(RangeMin==0&&RangeMax==0){
+    RangeMin = dlmData->GetBinLowEdge(0,0);
+    RangeMax = dlmData->GetBinUpEdge(0,dlmData->GetNbins()-1);
+  }
+  else if(RangeMin<dlmData->GetBinLowEdge(0,0)){
+    RangeMin = dlmData->GetBinLowEdge(0,0);
+  }
+  else if(RangeMax>dlmData->GetBinLowEdge(0,dlmData->GetNbins()-1)){
+    RangeMax = dlmData->GetBinUpEdge(0,dlmData->GetNbins()-1);
+  }
+}
+
+void DLM_Unfold::SetData(DLM_Histo<float>* data){
+  gROOT->cd();
+  if(hData){delete hData; hData=NULL;}
+  if(dlmData){delete dlmData; dlmData=NULL;}
+  if(!data) return;
+  dlmData = new DLM_Histo<float>(*data);
+  hData = Convert_DlmHisto_TH1F(dlmData,TString::Format("DLM_Unfold::hData_%p",this));
   if(RangeMin==0&&RangeMax==0){
     RangeMin = dlmData->GetBinLowEdge(0,0);
     RangeMax = dlmData->GetBinUpEdge(0,dlmData->GetNbins()-1);
@@ -103,9 +122,8 @@ void DLM_Unfold::SetResponse(TH2F* response){
   //}
   gROOT->cd();
   if(hResponse){delete hResponse; hResponse=NULL;}
-  hResponse = (TH2F*)response->Clone("DLM_Unfold::hResponse");
+  hResponse = (TH2F*)response->Clone(TString::Format("DLM_Unfold::hResponse_%p",this));
   if(dlmResponse){delete dlmResponse; dlmResponse=NULL;}
-  //if(dlmResponseReb){delete dlmResponseReb; dlmResponseReb=NULL;}
   if(!response) return;
   dlmResponse = Convert_TH2F_DlmHisto(hResponse);
 
@@ -130,8 +148,42 @@ void DLM_Unfold::SetResponse(TH2F* response){
     if(SparseLast[uBinY]<response->GetXaxis()->GetNbins()-1)SparseLast[uBinY]++;
     //printf("Y %u: %u %u\n",uBinY,SparseFirst[uBinY],SparseLast[uBinY]);
   }
-
 }
+
+
+void DLM_Unfold::SetResponse(DLM_Histo<float>* response){
+  gROOT->cd();
+  if(hResponse){delete hResponse; hResponse=NULL;}
+  if(dlmResponse){delete dlmResponse; dlmResponse=NULL;}
+  if(!response) return;
+
+  dlmResponse = new DLM_Histo<float>(*response);
+  hResponse = Convert_DlmHisto_TH2F(dlmResponse,TString::Format("DLM_Unfold::hResponse_%p",this));
+
+  if(SparseFirst){delete SparseFirst; SparseFirst=NULL;}
+  if(SparseLast){delete SparseLast; SparseLast=NULL;}
+  SparseFirst = new unsigned [hResponse->GetYaxis()->GetNbins()];
+  SparseLast = new unsigned [hResponse->GetYaxis()->GetNbins()];
+  for(unsigned uBinY=0; uBinY<hResponse->GetYaxis()->GetNbins(); uBinY++){
+    SparseFirst[uBinY]=-1;
+    SparseLast[uBinY]=0;
+    //bool FirstFound = false;
+    for(unsigned uBinX=0; uBinX<hResponse->GetXaxis()->GetNbins(); uBinX++){
+      if(hResponse->GetBinContent(uBinX+1,uBinY+1)!=0&&SparseFirst[uBinY]==-1){
+        SparseFirst[uBinY]=uBinX;
+      }
+      if(hResponse->GetBinContent(uBinX+1,uBinY+1)!=0&&SparseLast[uBinY]<=hResponse->GetXaxis()->GetNbins()){
+        SparseLast[uBinY]=uBinX;
+      }
+    }
+    //this is done so that we have a single bin left for extrapolation
+    if(SparseFirst[uBinY])SparseFirst[uBinY]--;
+    if(SparseLast[uBinY]<hResponse->GetXaxis()->GetNbins()-1)SparseLast[uBinY]++;
+    //printf("Y %u: %u %u\n",uBinY,SparseFirst[uBinY],SparseLast[uBinY]);
+  }
+}
+
+
 /*
 void DLM_Unfold::SparseTheResponse(){
   unsigned uBin[2];

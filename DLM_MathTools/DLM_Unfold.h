@@ -15,8 +15,10 @@ public:
     ~DLM_Unfold();
     //supposed to be in counts
     void SetData(TH1F* data);
+    void SetData(DLM_Histo<float>* data);
     //supposed to be a function, i.e. normalized to the bin width
     void SetResponse(TH2F* response);
+    void SetResponse(DLM_Histo<float>* response);
     void SetUnfoldPrecision(const double& precision, const double& worst);
     void SetUnfoldBootstrap(const unsigned& numiter, const int& seedmin);
     void SetUnfoldSeconds(const double& seconds);

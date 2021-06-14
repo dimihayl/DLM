@@ -468,7 +468,8 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
         return;
     }
     if(NumPW[usCh]){
-        printf("\033[1;31mERROR:\033[0m Due to a known existing bug, ones set, you are not allowed to change the number of partial waves. Sorry :(\n");
+        if(Notifications>=nError)
+          printf("\033[1;31mERROR:\033[0m Due to a known existing bug, ones set, you are not allowed to change the number of partial waves. Sorry :(\n");
         return;
     }
 
@@ -1817,7 +1818,7 @@ void CATS::ComputeWaveFunction(){
     //the same problem should occur for the source
     unsigned short NumThreads = omp_get_num_procs();
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
-    #pragma omp parallel for private(uMomBin,usCh,usPW) num_threads(NumThreads)
+    //#pragma omp parallel for private(uMomBin,usCh,usPW) num_threads(NumThreads)
     for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++){
         //compute to which MomBin, Polarization and PW corresponds this MPP,
         //i.e. map uMomBin, usCh and usPW to uMPP
@@ -1987,7 +1988,7 @@ printf("Momentum=%f\n",Momentum);
 DEBUG=omp_get_thread_num();
 }
 else{
-    #pragma omp critical
+    //#pragma omp critical
     {
     DEBUG=-1;
     }
@@ -2239,9 +2240,9 @@ DEBUG=-1;
             }
         }
 
-        #pragma omp atomic
+        //#pragma omp atomic
         CurrentStep++;
-        #pragma omp critical
+        //#pragma omp critical
         {
             Progress = double(CurrentStep)/TotalSteps;
             pTotal = int(Progress*100);
@@ -2300,7 +2301,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     DLM_Timer dlmTimer;
     unsigned short NumThreads = omp_get_num_procs();
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
-    #pragma omp parallel for private(Radius,CosTheta) num_threads(NumThreads)
+    //#pragma omp parallel for private(Radius,CosTheta) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         //Momentum = GetMomentum(uMomBin);
         for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
@@ -2313,9 +2314,9 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
                                                         EffectiveFunction(uMomBin, Radius, usCh);
             }
 
-            #pragma omp atomic
+            //#pragma omp atomic
             CurrentStep++;
-            #pragma omp critical
+            //#pragma omp critical
             {
                 Progress = double(CurrentStep)/TotalSteps;
                 pTotal = int(Progress*100);
@@ -2332,6 +2333,7 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
         }
     }
     if(Notifications>=nAll) printf("\r\033[K");
+    delete [] cdummy;
 }
 
 //! N.B. the units in this function (until the result is saved) are fm and GeV!!!
@@ -2815,7 +2817,7 @@ void CATS::FoldSourceAndWF(){
     unsigned short NumThreads = omp_get_num_procs();
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
     unsigned uMomBinSource;
-    #pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
+    //#pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         uMomBinSource = MomDepSource?uMomBin:0;
         kCorrFun[uMomBin] = 0;

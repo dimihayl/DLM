@@ -21,7 +21,7 @@
 #include "Fit/Chi2FCN.h"
 #endif
 
-class TH1F;
+class TH1;
 class TF1;
 
 class DLM_MultiFit{
@@ -43,7 +43,7 @@ public:
     unsigned short max_spectra;
     unsigned int totalpar;
     //DLM_Spectrum1D ** Spectra;
-    TH1F** HistoToFit;
+    TH1** HistoToFit;
     TF1** FitFunction;
     double** spec_par;
 
@@ -76,7 +76,7 @@ public:
     DLM_MultiFit(); //done
     ~DLM_MultiFit(); //done
 
-    bool AddSpectrum(TH1F* histo, TF1* fit); //done
+    bool AddSpectrum(TH1* histo, TF1* fit); //done
 
     void ClearSpectra();
     void ResetParRelations();

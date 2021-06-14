@@ -540,6 +540,8 @@ public:
         delete [] xVal;
         return true;
     }
+    //identical to the one before, but performs the operation faster
+    //only valid if the two histograms are of the same structure (else use the function above)
     bool DivideHistoBinByBin(const DLM_Histo& other, const bool witherror=true){
         if(!Initialized) {InitWarning(); return false;}
         if(!other.Initialized) {InitWarning(); return false;}
@@ -649,6 +651,31 @@ public:
         delete [] BinId;
         return RESULT/(Normalized?PhaseSpaceSize:1.);
     }
+    /*
+    //WORK IN PROGRESS
+    //does not extrapolate on the edges, takes full bins
+    Type FastIntegral(const double* xMin, const double* xMax,){
+        Type RESULT = 0;
+        if(!Initialized) {InitWarning(); return RESULT;}
+        unsigned* BinId = new unsigned [Dim];
+        Type VALUE;
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            GetBinCoordinates(uBin,BinId);
+            bool OutsideRange = true;
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+              OutsideRange *= (BinCenter[sDim][BinId[sDim]]<xMin[sDim] || BinCenter[sDim][BinId[sDim]]>xMax[sDim]);
+            }
+            if(OutsideRange) continue;
+            VALUE = BinValue[uBin];
+            if()
+            RESULT+=(BinValue[uBin]*(Normalized?GetBinSize(uBin):1));
+        }//uBin
+        delete [] BinId;
+        return RESULT;
+    }
+    */
+    //the following two rebin function are based on projecting the old histogram onto the new bins.
+    //it is rather slow operation, thus not advisable for very large or multidimensional histograms
     bool Rebin(DLM_Histo<Type>& other){
       if(other.Dim!=Dim){
         printf("\033[1;31mERROR:\033[0m DLM_Histo cannot perform the rebin (wrong dimension of the output)!\n");
