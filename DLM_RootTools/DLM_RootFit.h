@@ -1,6 +1,6 @@
 #include "TFitResultPtr.h"
 #include "Math/MinimizerOptions.h"
-#include "RtypesCore.h"
+//#include "RtypesCore.h"
 
 class TH1;
 class TF1;

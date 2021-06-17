@@ -23,11 +23,12 @@ public:
     void SetUnfoldBootstrap(const unsigned& numiter, const int& seedmin);
     void SetUnfoldSeconds(const double& seconds);
     void SetUnfoldMinutes(const double& minutes);
+    void SetFoldRange(const double& min, const double& max);
     void SetUnfoldRange(const double& min, const double& max);
     void SetSilentMode(const bool& silentmode);
     void SetPcOutput(const bool& pcoutput) {PcOutput=pcoutput;}
     //void SetOutput(const int& level, const TString& ouputfilename);
-    DLM_Histo<float>* Unfold();
+    DLM_Histo<float>* Unfold(const int& TYPE=0);
     DLM_Histo<float>* UnfoldDimi();
     //DLM_Histo<float>* UnfoldNew();
     DLM_Histo<float>* Fold();
@@ -49,8 +50,10 @@ private:
     double PrecisionWorst;
     double ReachedPrecision;
     double MaxTime;
-    double RangeMin;
-    double RangeMax;
+    double RangeMinF;
+    double RangeMaxF;
+    double RangeMinU;
+    double RangeMaxU;
     int SEEDmin;
     bool Silent;
     bool PcOutput;
