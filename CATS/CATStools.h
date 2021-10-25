@@ -135,6 +135,10 @@ public:
     const CatsParticle& GetParticle(const int& WhichParticle) const;
     const CatsLorentzVector& GetSum() const;
 protected:
+  //what might be possible to make more efficient, make pointers here
+  //at first glance there is no need to copy the particles, but make sure this is so!
+  //on second thought... at some point there is a boost performed, and perhaps it is not wise
+  //to boost the original particles. Thus the copy is needed.
     CatsParticle Particle1;
     CatsParticle Particle2;
     CatsLorentzVector ParticleSum;
@@ -145,6 +149,7 @@ public:
     CatsEvent(const int& pid1, const int& pid2);
     ~CatsEvent();
     void Reset();
+    //the particle is copied!
     void AddParticle(const CatsParticle& Particle);
     void ComputeParticlePairs(const bool& TauCorrection=false, const bool& BOOST=true);
     unsigned GetNumPairs() const;
@@ -186,6 +191,7 @@ class CatsDataBuffer{
 public:
     CatsDataBuffer(const unsigned& bsize, const int& pid1, const int& pid2);
     ~CatsDataBuffer();
+    //the event is pointed to
     void SetEvent(const unsigned& WhichEvent, const CatsEvent& Event);
     unsigned GetNumPairsSameEvent() const;
     unsigned GetNumPairsMixedEvent() const;

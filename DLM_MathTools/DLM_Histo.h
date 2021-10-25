@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "DLM_CppTools.h"
+#include "DLM_Random.h"
 //#include <stdint.h>
 //#include <complex>
 //#include <unistd.h>
@@ -272,6 +273,17 @@ protected:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 template <class Type> class DLM_Histo{
 public:
     DLM_Histo(){
@@ -305,6 +317,8 @@ public:
         Dim = dim;
         BinRange = new double* [Dim];
         BinValue = NULL;
+        CumulativeValue = NULL;
+        rangen = NULL;
         BinError = NULL;
         BinCenter = new double* [Dim];
         NumBins = new unsigned [Dim];
@@ -325,6 +339,7 @@ public:
         }
         InitPER();
         Initialized = false;
+        CumUpdated = false;
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const double* bins, const double* bincenter=NULL){
         if(sDim>=Dim) return;
@@ -360,6 +375,7 @@ public:
 
         }
         Initialized = false;
+        CumUpdated = false;
     }
     void SetUp(const unsigned short& sDim, const unsigned& numbins, const double& xmin, const double& xmax){
         if(sDim>=Dim) return;
@@ -390,6 +406,7 @@ public:
             }
         }
         Initialized = false;
+        CumUpdated = false;
     }
     bool Initialize(const bool& ZeroElements=true){
 //printf("Initialize 1: %i\n",Initialized);
@@ -405,6 +422,7 @@ public:
                 TotNumBins*=NumBins[sDim];
             }
             if(BinValue){delete [] BinValue; BinValue=NULL;}
+            if(CumulativeValue){delete [] CumulativeValue; CumulativeValue=NULL;}
             if(BinError){delete [] BinError; BinError=NULL;}
             BinValue = new Type[TotNumBins+2];
             BinError = new Type[TotNumBins];
@@ -419,6 +437,7 @@ public:
             BinValue[TotNumBins+1]=0;
         }
         Initialized = true;
+        CumUpdated = false;
 //printf("Initialize 3\n");
         return true;
     }
@@ -456,10 +475,13 @@ public:
     bool AddHisto(const DLM_Histo& other, const bool witherror=true, const Type& scale=1){
         if(!Initialized) {InitWarning(); return false;}
         if(!SameStructure(other)||!Initialized) return false;
-        for(unsigned uBin=0; uBin<TotNumBins; uBin++) BinValue[uBin] += scale*other.BinValue[uBin];
+        for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+          BinValue[uBin] += scale*other.BinValue[uBin];
+        }
         if(witherror)
             for(unsigned uBin=0; uBin<TotNumBins; uBin++)
                 BinError[uBin] = sqrt(BinError[uBin]*BinError[uBin]+scale*scale*other.BinError[uBin]*other.BinError[uBin]);
+        CumUpdated = false;
         return true;
     }
     bool AddWeightedHisto(const DLM_Histo& other, const Type& scale=1){
@@ -477,6 +499,7 @@ public:
             BinValue[uBin] *= VAR;
             BinError[uBin] = sqrt(VAR);
         }
+        CumUpdated = false;
         delete [] BinId;
         delete [] xVal;
         return true;
@@ -484,12 +507,15 @@ public:
     bool MultiplyHisto(const DLM_Histo& other, const bool witherror=true){
         if(!Initialized) {InitWarning(); return false;}
         if(!SameStructure(other)||!Initialized) return false;
-        for(unsigned uBin=0; uBin<TotNumBins; uBin++) BinValue[uBin] *= other.BinValue[uBin];
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+          BinValue[uBin] *= other.BinValue[uBin];
+        }
         if(witherror)
             for(unsigned uBin=0; uBin<TotNumBins; uBin++)
                 BinError[uBin] = sqrt(  pow(BinError[uBin]*other.BinError[uBin],2.)+
                                         pow(BinError[uBin]*other.BinValue[uBin],2.)+
                                         pow(BinValue[uBin]*other.BinError[uBin],2.));
+        CumUpdated = false;
         return true;
     }
     /*
@@ -538,6 +564,7 @@ public:
         }
         delete [] BinId;
         delete [] xVal;
+        CumUpdated = false;
         return true;
     }
     //identical to the one before, but performs the operation faster
@@ -562,6 +589,7 @@ public:
             else BinValue[uBin] /= other.BinValue[uBin];
         }
         delete [] BinId;
+        CumUpdated = false;
         return true;
     }
     void AddToAll(const Type& value, const Type& error=0){
@@ -570,6 +598,7 @@ public:
             BinValue[uBin]+=value;
             BinError[uBin]=Type(sqrt(double(BinError[uBin]*BinError[uBin])+double(error*error)));
         }
+        CumUpdated = false;
     }
     void Scale(const Type& scale){
         if(!Initialized) {InitWarning(); return;}
@@ -580,12 +609,14 @@ public:
         }
         BinValue[TotNumBins] *= scale;
         BinValue[TotNumBins+1] *= scale;
+        CumUpdated = false;
     }
     void ScaleBin(const unsigned& WhichTotBin, const Type& Value){
         if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins+2) return;
         BinValue[WhichTotBin] *= Value;
         BinError[WhichTotBin] *= Value;
+        CumUpdated = false;
     }
     void ScaleToBinSize(){
         if(!Initialized) {InitWarning(); return;}
@@ -595,6 +626,7 @@ public:
             BinValue[uBin] /= BinSize;
             BinError[uBin] /= BinSize;
         }
+        CumUpdated = false;
     }
     void RescaleAxis(const unsigned short& sDim, const double& scale, const bool& binwidth){
         if(!Initialized) {InitWarning(); return;}
@@ -610,7 +642,75 @@ public:
                 BinValue[uBin] /= scale;
                 BinError[uBin] /= scale;
             }
+            CumUpdated = false;
         }
+    }
+    void SetSeed(const unsigned& seed){
+      if(rangen) delete rangen;
+      rangen = new DLM_Random(seed);
+    }
+    void Sample(double* axisValues, const bool& UnderOverFlow=false){
+      if(!rangen) rangen = new DLM_Random(11);
+      unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
+      if(!CumulativeValue) UpdateCum();
+      double rannum = rangen->Uniform(0,double(CumulativeValue[TopBin]));
+      double value_down;
+      double value_up;
+      unsigned Fraction = 2;
+      unsigned Step = TopBin/Fraction;
+      unsigned BinCandidate = Step;
+      while(true){
+        //printf("BinCandidate = %u\n",BinCandidate);
+        if(BinCandidate==0) value_down = double(CumulativeValue[BinCandidate]);
+        else value_down = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate-1])*0.5;
+        if(BinCandidate==TopBin) value_up = double(CumulativeValue[BinCandidate]);
+        else value_up = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate+1])*0.5;
+        //printf(" value_down = %f\n",value_down);
+        //printf(" value_up = %f\n",value_up);
+        //printf(" rannum = %f\n",rannum);
+        if(value_up>=rannum && value_down<=rannum){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(BinCandidate,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+          }
+          delete [] BinId;
+          return;
+        }
+        else{
+          Fraction*=2;
+          Step=TopBin/Fraction;
+          if(Step==0)Step=1;
+        }
+
+        if(value_up<rannum) BinCandidate+=Step;
+        else BinCandidate-=Step;
+
+        if(BinCandidate==TopBin+1){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(TopBin,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+          }
+          delete [] BinId;
+          return;
+        }
+        if(BinCandidate==-1){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(0,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+          }
+          delete [] BinId;
+          return;
+        }
+      }
+    }
+    double Sample(const bool& UnderOverFlow=false){
+      if(Dim!=1) return 0;
+      double result;
+      Sample(&result,UnderOverFlow);
+      return result;
     }
     //xMin and xMax have size Dim, and each entry represents the min/max value to which the
     //corresponding dimension should be considered
@@ -692,6 +792,7 @@ public:
         }
         other.BinValue[uNewBin] = Integral(xMin,xMax,true);
       }
+      other.CumUpdated = false;
       delete [] xMin;
       delete [] xMax;
       delete [] BinId;
@@ -735,6 +836,7 @@ public:
         if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins) return;
         BinValue[WhichTotBin]=Val;
+        CumUpdated = false;
     }
      void SetBinError(const unsigned& WhichTotBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -746,6 +848,7 @@ public:
         for(unsigned uBin=0; uBin<TotNumBins; uBin++){
             BinValue[uBin]=Val;
         }
+        CumUpdated = false;
     }
      void SetBinErrorAll(const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -759,6 +862,7 @@ public:
         if(WhichTotBin>=TotNumBins) return;
         BinValue[WhichTotBin]+=Val;
         BinError[WhichTotBin]=Type(sqrt(double(BinError[WhichTotBin]*BinError[WhichTotBin])+double(Err*Err)));
+        CumUpdated = false;
     }
     void AddAt(const double* AxisValue, const Type& Val=1){
         if(!Initialized) {InitWarning(); return;}
@@ -768,11 +872,13 @@ public:
         }
         BinValue[GetTotBin(WhichBin)] += Val;
         delete [] WhichBin;
+        CumUpdated = false;
     }
 
     void SetBinContent(const unsigned* WhichBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
         SetBinContent(GetTotBin(WhichBin),Val);
+        CumUpdated = false;
     }
     void SetBinError(const unsigned* WhichBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -1160,6 +1266,7 @@ public:
         }
         BinValue[TotNumBins] = other.BinValue[TotNumBins];
         BinValue[TotNumBins+1] = other.BinValue[TotNumBins+1];
+        CumUpdated = false;
         return true;
     }
 //! FOR DIVISION/MULT:
@@ -1314,6 +1421,22 @@ protected:
         return true;
     }
 
+    //updates a single cumulative bin, assuming that WhichTotBin-1 is updated, as well as BinValue[WhichTotBin]
+    void UpdateCum(){
+      if(!Initialized) {InitWarning(); return;}
+      if(!CumulativeValue) CumulativeValue = new Type[TotNumBins+2];
+      for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+        if(uBin==0) CumulativeValue[uBin]=BinValue[uBin];
+        else CumulativeValue[uBin]=CumulativeValue[uBin-1]+BinValue[uBin];
+        if(BinValue[uBin]<0){
+          printf("\033[1;33mWARNING:\033[0m DLM_Histo cannot be used for sampling, due to negative entries!\n");
+          CumUpdated = false;
+          return;
+        }
+      }
+      CumUpdated = true;
+    }
+
     void InitPER(){
         NumPermutations = 1;
         for(unsigned short sDim=0; sDim<Dim; sDim++){
@@ -1358,6 +1481,10 @@ protected:
     unsigned NumPermutations;
     char** PER;
 
+    Type* CumulativeValue;
+    DLM_Random* rangen;
+
     bool Initialized;
+    bool CumUpdated;
 };
 #endif

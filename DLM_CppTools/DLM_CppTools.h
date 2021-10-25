@@ -3,6 +3,7 @@
 #define DLM_CppToolsH
 
 #include <sys/time.h>
+#include <iostream>
 
 extern long DLM_CppHelp_TimeS;
 extern long DLM_CppHelp_TimeUS;
@@ -31,5 +32,27 @@ public:
     long long Stop();
 };
 
-#endif
+template <typename TYPE>
+void ResizeArray(TYPE*& array, const unsigned& OldSize=0, const unsigned& NewSize=0){
+  unsigned CopyRange = NewSize>OldSize?OldSize:NewSize;
+  if(!array) CopyRange=0;
+  if(NewSize==0){
+    if(array){
+      delete [] array;
+      array = NULL;
+    }
+    return;
+  }
+  TYPE* temp = CopyRange ? new TYPE[CopyRange] : NULL;
+  for(unsigned uEl=0; uEl<CopyRange; uEl++){
+    temp[uEl] = array[uEl];
+  }
+  delete [] array;
+  array = new TYPE[NewSize];
+  for(unsigned uEl=0; uEl<CopyRange; uEl++){
+    array[uEl] = temp[uEl];
+  }
+  if(temp){delete[]temp;temp=NULL;}
+}
 
+#endif
