@@ -23,7 +23,9 @@ void DrawCentralInterval(TH1F*& h1, double Median, double LowReach, double UpRea
                          TH1F*& h1main, TH1F*& h1bLow, TH1F*& h1bLow2, TH1F*& h1bUp, TH1F*& h1bUp2, TH1F*& h1median);
 bool SameTH1structure(const TH1* h1, const TH1* h2);
 
+//divide two histograms regardless of their binning, saving the result at the passed pointer
 void DivideAnyTH1Fs(const TH1F* numerator, const TH1F* denominator, TH1F*& result, const bool& NormYield=true);
+//change the binning of ToBeAligned such as to match the binning of the Template
 void AlignTH1Fs(const TH1F* Template, TH1F*& ToBeAligned);
 
 //compute the PDF (i.e. errors) numeriacally, given: sum_i Norm_i * Num_i / Denom_i, where Num and Denom are histograms,
