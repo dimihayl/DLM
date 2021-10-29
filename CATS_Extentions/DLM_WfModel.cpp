@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include "string.h"
 
-//#include "DLM_WfModel.h"
+#include "DLM_WfModel.h"
 #include "CATS.h"
-//#include "CATSconstants.h"
+#include "DLM_Histo.h"
 
 #include <unistd.h>
 
@@ -1482,7 +1482,7 @@ DLM_Histo<complex<double>>*** Init_pXi_Haidenbauer(const char* InputFolder, CATS
 }
 
 
-DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS& Kitty, const int& TYPE=0){
+DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS& Kitty, const int& TYPE){
 
     double RadiusStepSize;
     double RadiusMinimum;
@@ -1698,13 +1698,13 @@ DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS& K
 
     return Histo;
 }
-DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS* Kitty, const int& TYPE=0){
+DLM_Histo<complex<double>>*** Init_pXi_ESC16_IS(const char* InputFolder, CATS* Kitty, const int& TYPE){
     return Init_pXi_ESC16_IS(InputFolder,*Kitty,TYPE);
 }
 
 //TYPE==0, some old WF,
 //TYPE==1, function from 2nd April 2019
-DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolder, CATS& Kitty, const int& TYPE=0){
+DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolder, CATS& Kitty, const int& TYPE){
 
     double RadiusStepSize;
     double RadiusMinimum;
@@ -1957,7 +1957,7 @@ DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolde
 
     return Histo;
 }
-DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolder, CATS* Kitty, const int& TYPE=0){
+DLM_Histo<complex<double>>*** Init_pXi_ESC16_Iavg_Coulomb(const char* InputFolder, CATS* Kitty, const int& TYPE){
     return Init_pXi_ESC16_Iavg_Coulomb(InputFolder,*Kitty,TYPE);
 }
 
@@ -2265,7 +2265,7 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS& Kitt
 
     return Histo;
 }
-DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS* Kitty, const int& TYPE=0){
+DLM_Histo<complex<double>>*** Init_pS0_ESC08(const char* InputFolder, CATS* Kitty, const int& TYPE){
     return Init_pS0_ESC08(InputFolder,*Kitty,TYPE);
 }
 
@@ -2435,7 +2435,7 @@ DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS& Kitt
 
     return Histo;
 }
-DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS* Kitty, const int& TYPE=0){
+DLM_Histo<complex<double>>*** Init_pS0_ESC16(const char* InputFolder, CATS* Kitty, const int& TYPE){
     return Init_pS0_ESC16(InputFolder,*Kitty,TYPE);
 }
 

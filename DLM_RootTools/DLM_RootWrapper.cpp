@@ -1,9 +1,11 @@
 
 #include "DLM_RootWrapper.h"
+#include "DLM_Histo.h"
 #include "TH2F.h"
 #include "TH1F.h"
 #include "TROOT.h"
 #include <unistd.h>
+
 
 DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
     if(!input){

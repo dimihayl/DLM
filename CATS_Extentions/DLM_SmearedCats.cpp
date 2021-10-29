@@ -1,5 +1,8 @@
 #include "DLM_SmearedCats.h"
 
+#include <complex>
+#include "gsl/gsl_sf_dawson.h"
+
 using namespace std;
 
 DLM_SmearedCats::DLM_SmearedCats(CATS** InCat, const unsigned& numCk):

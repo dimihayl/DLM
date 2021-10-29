@@ -1,11 +1,10 @@
 #ifndef DLM_CKDECOMP_H
 #define DLM_CKDECOMP_H
 
-#include "CATS.h"
-#include "CATStools.h"
-#include "DLM_ResponseMatrix.h"
+template <class Type> class DLM_Histo;
 
 class DLM_Ck;
+class DLM_ResponseMatrix;
 
 class DLM_CkDecomp{
 

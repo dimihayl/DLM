@@ -4,6 +4,7 @@
 
 #include "DLM_Ck.h"
 #include "DLM_CkModels.h"
+#include "CATS.h"
 
 DLM_Ck::DLM_Ck(const unsigned numbins,const double& kmin, const double& kmax):DLM_Histo(),NumSourcePar(0),NumPotPar(0){
     Kitty = NULL;

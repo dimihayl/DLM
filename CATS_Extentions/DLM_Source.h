@@ -2,7 +2,8 @@
 #ifndef DLM_SOURCE_H
 #define DLM_SOURCE_H
 
-#include "DLM_Histo.h"
+template <class Type> class DLM_Histo;
+template <class Type> class DLM_Histo1D;
 #include "CATStools.h"
 
 class DLM_Random;

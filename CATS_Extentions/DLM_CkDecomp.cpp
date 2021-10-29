@@ -5,6 +5,8 @@
 #include "DLM_Ck.h"
 #include "DLM_CkDecomp.h"
 #include "DLM_CkModels.h"
+#include "DLM_ResponseMatrix.h"
+#include "DLM_Histo.h"
 
 
 

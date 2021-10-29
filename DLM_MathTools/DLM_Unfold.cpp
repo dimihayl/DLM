@@ -2,6 +2,7 @@
 #include "DLM_Unfold.h"
 #include "DLM_CppTools.h"
 #include "DLM_RootWrapper.h"
+#include "DLM_Histo.h"
 
 #include "TRandom3.h"
 #include "TH1F.h"

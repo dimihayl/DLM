@@ -8,13 +8,571 @@
 #include "DLM_CppTools.h"
 
 TreParticle::TreParticle(TREPNI& database):Database(database){
-  
+  TreName = new char [Database.Len_PrtclName];
+  Mass = new float [3];
+  Width = new float [3];
+  Abundance = new float [3];
+  for(char i=0; i<3; i++){
+    Mass[i]=0;Width[i]=0;Abundance[i]=0;
+  }
+  NumDecays = 0;
+  Decay = NULL;
+}
+
+TreParticle::~TreParticle(){
+  delete [] TreName;
+  delete [] Mass;
+  delete [] Width;
+  delete [] Abundance;
+  if(Decay){
+    for(unsigned char uDec=0; uDec<NumDecays; uDec++){
+      if(Decay[uDec]){delete Decay[uDec];Decay[uDec]=NULL;}
+    }
+    delete[]Decay;
+    Decay=NULL;
+  }
 }
 
 
+std::string TreParticle::GetName() const{
+  return TreName;
+}
+
+float TreParticle::GetMass() const{
+  return Mass[1];
+}
+
+float TreParticle::GetMassLow() const{
+  return Mass[0];
+}
+
+float TreParticle::GetMassUp() const{
+  return Mass[2];
+}
+
+float TreParticle::GetWidth() const{
+  return Width[1];
+}
+
+float TreParticle::GetWidthLow() const{
+  return Width[0];
+}
+
+float TreParticle::GetWidthUp() const{
+  return Width[2];
+}
+
+float TreParticle::GetAbundance() const{
+  return Abundance[1];
+}
+
+float TreParticle::GetAbundanceLow() const{
+  return Abundance[0];
+}
+
+float TreParticle::GetAbundanceUp() const{
+  return Abundance[2];
+}
+
+unsigned char TreParticle::GetNumDecays() const{
+  return NumDecays;
+}
+
+const TREPNI* TreParticle::GetDatabase() const{
+  return &Database;
+}
+
+void TreParticle::AppendInBinary(std::ofstream& file){
+
+}
+
+void TreParticle::LoadFromBinary(std::ifstream& file){
+
+}
+
+void TreParticle::SetName(const char* name){
+  if(strlen(name)>=Database.Len_PrtclName){
+    static bool ShowMessage=true;
+    printf("\033[1;33mWARNING:\033[0m (TreParticle::SetName) The name of the particle is capped at %u characters\n",
+    unsigned(Database.Len_PrtclName));
+    if(Database.SingleError) ShowMessage=false;
+    return;
+  }
+  strcpy(TreName,name);
+}
+
+void TreParticle::SetMass(const float& mass){
+  Mass[1] = mass;
+  if(Mass[0]==Mass[2] && Mass[0]==0){
+    Mass[0] = Mass[1];
+    Mass[2] = Mass[1];
+  }
+}
+
+void TreParticle::SetMassLimit(const float& mass_low, const float& mass_up){
+  Mass[0] = mass_low;
+  Mass[2] = mass_up;
+  if(Mass[0]==Mass[2] && Mass[0]==0){
+    Mass[0] = Mass[1];
+    Mass[2] = Mass[1];
+  }
+}
+
+void TreParticle::SetWidth(const float& width){
+  Width[1] = width;
+  if(Width[0]==Width[2] && Width[0]==0){
+    Width[0] = Width[1];
+    Width[2] = Width[1];
+  }
+}
+
+void TreParticle::SetWidthLimit(const float& width_low, const float& width_up){
+  Width[0] = width_low;
+  Width[2] = width_up;
+  if(Width[0]==Width[2] && Width[0]==0){
+    Width[0] = Width[1];
+    Width[2] = Width[1];
+  }
+}
+
+void TreParticle::SetAbundance(const float& abundance){
+  Abundance[1] = abundance;
+  if(Abundance[0]==Abundance[2] && Abundance[0]==0){
+    Abundance[0] = Abundance[1];
+    Abundance[2] = Abundance[1];
+  }
+}
+
+void TreParticle::SetAbundanceLimit(const float& abundance_low, const float& abundance_up){
+  Abundance[0] = abundance_low;
+  Abundance[2] = abundance_up;
+  if(Abundance[0]==Abundance[2] && Abundance[0]==0){
+    Abundance[0] = Abundance[1];
+    Abundance[2] = Abundance[1];
+  }
+}
+
+TreChain* TreParticle::NewDecay(){
+  ResizeArray(Decay,NumDecays,NumDecays+1);
+  Decay[NumDecays] = new TreChain(*this);
+  return Decay[NumDecays++];
+}
+
+TreChain* TreParticle::GetDecay(const unsigned char& whichone){
+  return Decay[whichone];
+}
+
+void TreParticle::Print(){
+  printf("--- Particle information ---\n");
+  printf(" Name : %s\n",TreName);
+  printf(" Mass : %e +(%e) -(%e)\n", Mass[1], Mass[2]-Mass[1], Mass[1]-Mass[0]);
+  printf(" Width: %e +(%e) -(%e)\n", Mass[1], Width[2]-Width[1], Width[1]-Width[0]);
+  printf(" Abund: %e +(%e) -(%e)\n", Abundance[1], Abundance[2]-Abundance[1], Abundance[1]-Abundance[0]);
+  printf(" #decs: %u\n", NumDecays);
+  for(unsigned char uDec=0; uDec<NumDecays; uDec++){
+    printf("  -> ");
+    for(unsigned char uDaugh=0; uDaugh<Decay[uDec]->NumDaughters; uDaugh++){
+      if(uDaugh) printf(" ");
+      printf("%s", Decay[uDec]->Daughter[uDaugh]->TreName);
+    }
+    printf("\n");
+  }
 
 
+}
 
+TreChain::TreChain(TreParticle& mother):Mother(mother){
+  NumDaughters = 0;
+  Daughter = NULL;
+  Branching = new float [3];
+  Branching[0]=0;
+  Branching[1]=0;
+  Branching[2]=0;
+}
+TreChain::~TreChain(){
+  if(Daughter){delete[]Daughter;Daughter=NULL;NumDaughters=0;}
+  delete [] Branching;
+}
+
+void TreChain::AddDaughter(const TreParticle& daughter){
+  ResizeArray(Daughter,NumDaughters,NumDaughters+1);
+  Daughter[NumDaughters] = &daughter;
+  NumDaughters++;
+}
+
+std::string TreChain::GetName(){
+  std::string name;
+  name = Mother.GetName();
+  name += " -> ";
+  for(unsigned char uDaugh=0; uDaugh<NumDaughters; uDaugh++){
+    if(uDaugh) name += " ";
+    name += Daughter[uDaugh]->GetName();
+  }
+  return name;
+}
+
+void TreChain::SetBranching(const float& br){
+  Branching[1] = br;
+  if(Branching[0]==Branching[2] && Branching[0]==0){
+    Branching[0] = Branching[1];
+    Branching[2] = Branching[1];
+  }
+}
+
+void TreChain::SetBranchingLimit(const float& br_low, const float& br_up){
+  Branching[0] = br_low;
+  Branching[2] = br_up;
+  if(Branching[0]==Branching[2] && Branching[0]==0){
+    Branching[0] = Branching[1];
+    Branching[2] = Branching[1];
+  }
+}
+
+//void TreChain::SetDaughters(const unsigned char& numdaughters, const TreParticle* daughter){
+//  if(Daughters){delete[]Daughters;Daughters=NULL;NumDaughters=0;}
+//  Daughters = new TreParticle* [numdaughters];
+//  NumDaughters = numdaughters;
+//  for(unsigned char uch=0; uch<NumDaughters; uch++){
+//    Daughters[uch] = daughter[uch];
+//  }
+//}
+
+TREPNI::TREPNI(const unsigned short& version):Len_DtbsName(32),Len_PrtclName(24),
+Version(version),MaxMemSteps(1024),NumFunctions(64){
+
+  Particle = NULL;
+  DatabaseName = new char [Len_DtbsName];
+  NumParticles = 0;
+  MaxParticles = 0;
+  PrintLevel = 2;
+  SingleError = true;
+  ErrorOccured = new int[NumFunctions];
+  for(short us=0; us<NumFunctions; us++) ErrorOccured[us] = 0;
+  QA_passed = false;
+  TotAbundance = 0;
+}
+
+TREPNI::~TREPNI(){
+  delete [] DatabaseName;
+  delete [] ErrorOccured;
+  if(Particle){
+    for(unsigned uPart=0; uPart<MaxParticles; uPart++){
+      if(Particle[uPart]){
+        delete Particle[uPart];
+        Particle[uPart] = NULL;
+      }
+    }
+    delete [] Particle;
+    Particle = NULL;
+  }
+}
+
+bool TREPNI::QA(const int& type){
+  bool qa = true;
+  if(type<Full || type>Abundance){return false;}
+  if(type==Full || type==Name){
+    qa *= QA_Name();
+  }
+  if(type==Full || type==Daughters){
+    qa *= QA_Daughters();
+  }
+  if(type==Full || type==Mass){
+    qa *= QA_Mass();
+  }
+  if(type==Full || type==Width){
+    qa *= QA_Width();
+  }
+  if(type==Full || type==BR){
+    qa *= QA_BR();
+  }
+  if(type==Full || type==Abundance){
+    qa *= QA_Abundance();
+  }
+  QA_passed = qa;
+  return qa;
+}
+
+bool TREPNI::QA_Name(){
+  bool AllesGut = true;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    for(unsigned uPart2=uPart+1; uPart2<NumParticles; uPart2++){
+      if(strcmp(Particle[uPart]->TreName, Particle[uPart2]->TreName)==0){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) Multiple instances of particle '%s'\n",Particle[uPart]->TreName);
+        }
+        AllesGut = false;
+      }
+    }
+    if(strcmp(Particle[uPart]->TreName,"")==0){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The name of the particle cannot be blank\n");
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+    if(strncmp(Particle[uPart]->TreName,"anti_",5)==0){
+      static bool ShowMessage=true;
+      //printf("\033[1;35m%s %i\033[0m\n",name,int(ShowMessage));
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) Keyword 'anti_' is designated for anti-particles, "
+        "which are auto-generated. Please only define particles!\n");
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+    for(unsigned uChar=0; uChar<strlen(Particle[uPart]->TreName); uChar++){
+      if( strncmp(&Particle[uPart]->TreName[uChar]," ",1)==0 ||
+          strncmp(&Particle[uPart]->TreName[uChar],",",1)==0 ||
+          strncmp(&Particle[uPart]->TreName[uChar],".",1)==0 ||
+          strncmp(&Particle[uPart]->TreName[uChar],";",1)==0 ||
+          strncmp(&Particle[uPart]->TreName[uChar],"\"",1)==0 ||
+          strncmp(&Particle[uPart]->TreName[uChar],"'",1)==0 ||
+          strncmp(&Particle[uPart]->TreName[uChar],"\n",1)==0
+        ){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The special characters , . ; empty spaces "
+          "new lines or quation marks are not allowed within the naming convention.\n");
+          if(SingleError) ShowMessage=false;
+        }
+        AllesGut = false;
+      }
+    }
+  }
+  return AllesGut;
+}
+
+bool TREPNI::QA_Daughters(){
+  bool AllesGut = true;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    for(unsigned char uDec=0; uDec<Particle[uPart]->NumDecays; uDec++){
+      if(Particle[uPart]->Decay[uDec]->NumDaughters < 2){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The particle '%s' has a decay channel with less than 2 daughters\n",
+          Particle[uPart]->TreName);
+          if(SingleError) ShowMessage=false;
+        }
+        AllesGut = false;
+      }
+    }
+  }
+  return AllesGut;
+}
+
+bool TREPNI::QA_Mass(){
+  float MotherMass;
+  float MotherLow;
+  float MotherUp;
+  float DaughtersMass;
+  bool AllesGut = true;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    MotherMass = Particle[uPart]->Mass[1];
+    MotherLow = Particle[uPart]->Mass[0];
+    MotherUp = Particle[uPart]->Mass[2];
+    for(unsigned char uDec=0; uDec<Particle[uPart]->NumDecays; uDec++){
+      DaughtersMass = 0;
+      for(unsigned char uDaugh=0; uDaugh<Particle[uPart]->Decay[uDec]->NumDaughters; uDaugh++){
+        DaughtersMass += Particle[uPart]->Decay[uDec]->Daughter[uDaugh]->Mass[1];
+      }
+      if(MotherMass<DaughtersMass){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The decay %s is impossible (Mass checksum)\n",
+          Particle[uPart]->Decay[uDec]->GetName().c_str());
+          if(SingleError) ShowMessage=false;
+        }
+        AllesGut = false;
+      }
+    }
+    if(MotherMass<0){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) %s has negative mass\n",
+        Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+    if(MotherLow>MotherUp || MotherLow<0){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) Invalid mass range for %s\n",
+        Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+    if(MotherMass<MotherLow || MotherMass>MotherUp){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The %s mass is outside of the allowed range\n",
+        Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+  }
+  return AllesGut;
+}
+
+bool TREPNI::QA_Width(){
+  float MotherWidth;
+  float MotherLow;
+  float MotherUp;
+  bool AllesGut = true;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    MotherWidth = Particle[uPart]->Width[1];
+    MotherLow = Particle[uPart]->Width[0];
+    MotherUp = Particle[uPart]->Width[2];
+    if(MotherWidth<0){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) %s has negative decay width\n",
+        Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+    if(MotherLow>MotherUp || MotherLow<0){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) Invalid decay width range for %s\n",
+        Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+    if(MotherWidth<MotherLow || MotherWidth>MotherUp){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The %s decay width is outside of the allowed range\n",
+        Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+  }
+  return AllesGut;
+}
+
+bool TREPNI::QA_BR(){
+  bool AllesGut = true;
+  const float TotalBR = 100;
+  float MinBR = 0;
+  float MaxBR = 0;
+  float LowBR;
+  float UpBR;
+  float LowValue;
+  float MeanValue;
+  float UpValue;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    if(Particle[uPart]->NumDecays==0) continue;
+    MinBR = 0;
+    MaxBR = 0;
+    for(unsigned char uDec=0; uDec<Particle[uPart]->NumDecays; uDec++){
+      LowValue = Particle[uPart]->Decay[uDec]->Branching[0];
+      MeanValue = Particle[uPart]->Decay[uDec]->Branching[1];
+      UpValue = Particle[uPart]->Decay[uDec]->Branching[2];
+      if(MeanValue<0){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) %s has negative BR\n",
+          Particle[uPart]->Decay[uDec]->GetName().c_str());
+          if(SingleError) ShowMessage=false;
+        }
+        AllesGut = false;
+      }
+      if(LowValue>UpValue || LowValue<0){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) Invalid BR range for %s\n",
+          Particle[uPart]->Decay[uDec]->GetName().c_str());
+          if(SingleError) ShowMessage=false;
+        }
+        AllesGut = false;
+      }
+      if(MeanValue<LowValue || MeanValue>UpValue){
+        static bool ShowMessage=true;
+        if(PrintLevel>=1 && ShowMessage){
+          printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The %s BR is outside of the allowed range\n",
+          Particle[uPart]->Decay[uDec]->GetName().c_str());
+          if(SingleError) ShowMessage=false;
+        }
+        AllesGut = false;
+      }
+      MinBR += LowValue;
+      MaxBR += UpValue;
+    }
+    LowBR = MinBR + 0.16*(MaxBR-MinBR);
+    UpBR = MaxBR - 0.16*(MaxBR-MinBR);
+    if(LowBR>TotalBR || UpBR<TotalBR){
+      static bool ShowMessage=true;
+      if(PrintLevel>=1 && ShowMessage){
+        printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The BRs of '%s' do not sum up to 100%%\n",Particle[uPart]->TreName);
+        if(SingleError) ShowMessage=false;
+      }
+      AllesGut = false;
+    }
+  }
+  return AllesGut;
+}
+
+bool TREPNI::QA_Abundance(){
+  if(TotAbundance<=0){return true;}
+  bool AllesGut = true;
+  float MinAbund = 0;
+  float MaxAbund = 0;
+  float LowAbund;
+  float UpAbund;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    MinAbund += Particle[uPart]->Abundance[0];
+    MaxAbund += Particle[uPart]->Abundance[2];
+  }
+  LowAbund = MinAbund + 0.16*(MaxAbund-MinAbund);
+  UpAbund = MaxAbund - 0.16*(MaxAbund-MinAbund);
+  if(LowAbund>TotAbundance || UpAbund<TotAbundance){
+    static bool ShowMessage=true;
+    if(PrintLevel>=1 && ShowMessage){
+      printf("\033[1;31mERROR:\033[0m (TREPNI::QA) The total yield of all particles is outside the allowed limit\n");
+      if(SingleError) ShowMessage=false;
+    }
+    AllesGut = false;
+  }
+  return AllesGut;
+}
+
+void TREPNI::SetTotalYield(const float& totyield){
+  TotAbundance = totyield;
+}
+
+TreParticle* TREPNI::NewParticle(const char* name){
+  ResizeArray(Particle,NumParticles,NumParticles+1);
+  Particle[NumParticles] = new TreParticle(*this);
+  if(name){Particle[NumParticles]->SetName(name);}
+  return Particle[NumParticles++];
+}
+
+TreParticle* TREPNI::GetParticle(const unsigned& whichone){
+  return Particle[whichone];
+}
+
+TreParticle* TREPNI::GetParticle(const char* name){
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    if(strcmp(Particle[uPart]->TreName,name)==0){
+      return Particle[uPart];
+    }
+  }
+  return NULL;
+}
+
+unsigned TREPNI::GetNumParticles(){
+  return NumParticles;
+}
+
+/*
 //FuntionID = 0
 TREPNI::TREPNI(const unsigned short& version):Len_DtbsName(32),Len_PrtclName(24),
 Version(version),MaxMemSteps(1024),NumFunctions(64),MaxDecayCh(16),MaxDaughters(8){
@@ -330,3 +888,5 @@ void TREPNI::SetParticle(const char* name, const double& mass_min, const double&
   Gamma[3*id+1] = (gamma_min+gamma_max)*0.5;
   Gamma[3*id+2] = gamma_max;
 }
+
+*/

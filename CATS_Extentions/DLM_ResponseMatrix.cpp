@@ -1,4 +1,5 @@
 #include "DLM_ResponseMatrix.h"
+#include "DLM_Histo.h"
 
 void DLM_ResponseMatrix::DefaultConstructor(){
 
@@ -417,4 +418,3 @@ void RespMatrTest1(){
 
 }
 */
-

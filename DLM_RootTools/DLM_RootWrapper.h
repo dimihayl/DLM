@@ -1,7 +1,7 @@
 #ifndef DLM_ROOTWRAPPER_H
 #define DLM_ROOTWRAPPER_H
 
-#include "DLM_Histo.h"
+template <class Type> class DLM_Histo;
 
 class TH2F;
 class TH1F;

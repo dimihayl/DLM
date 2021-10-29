@@ -1,16 +1,13 @@
 #ifndef DLM_CKDECOMPOSITION_H
 #define DLM_CKDECOMPOSITION_H
 
-#include "CATS.h"
-#include "CATStools.h"
-#include "DLM_ResponseMatrix.h"
-#include "DLM_Ck.h"
 #include "DLM_CkDecomp.h"
-#include "DLM_Histo.h"
 
 class TH2F;
 class TH1F;
-//class DLM_Histo<float>;
+class DLM_Ck;
+class DLM_CkDecomp;
+template <class Type> class DLM_Histo;
 
 class DLM_CkDecomposition : public DLM_CkDecomp{
 

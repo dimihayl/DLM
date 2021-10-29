@@ -8,6 +8,8 @@
 #include "TH2F.h"
 #include "TH1F.h"
 
+#include "DLM_Histo.h"
+
 DLM_CkDecomposition::DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, const TH2F* hSigmaMatrix, const bool& InvertAxis):
     DLM_CkDecomp(name, numchildren, ckfunction){
 

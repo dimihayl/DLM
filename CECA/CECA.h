@@ -9,7 +9,7 @@ public:
   ~CECA();
 
 private:
-
+  
 }
 
 #endif // CECA_H

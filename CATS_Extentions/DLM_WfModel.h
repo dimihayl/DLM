@@ -4,6 +4,7 @@
 #include <complex>
 
 class CATS;
+template <class Type> class DLM_Histo;
 
 using namespace std;
 

@@ -1,13 +1,11 @@
 #ifndef DLM_SmearedCatsH
 #define DLM_SmearedCatsH
 
-#include "CATS.h"
-#include "TH2F.h"
-#include "DLM_ResponseMatrix.h"
+class CATS;
+class TH2F;
+class DLM_ResponseMatrix;
 
-#include <complex>
 
-#include "gsl/gsl_sf_dawson.h"
 
 //! NOTE THAT THIS THING SEEMS TO PERFORM VERY BADLY IN CASE THE RESPONSE MATRICES ARE
 //NOT WITH THE SAME BINNING AS THE DATA, SO TRY TO ALWAYS USE THE SAME BINNING
@@ -81,5 +79,3 @@ private:
 
 
 #endif
-
-

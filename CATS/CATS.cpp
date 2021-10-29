@@ -13,6 +13,8 @@
 #include "DLM_CppTools.h"
 #include "DLM_Histo.h"
 #include "CATSconstants.h"
+#include "CATStools.h"
+#include "DLM_Sort.h"
 
 #include <omp.h>
 #include <unistd.h>

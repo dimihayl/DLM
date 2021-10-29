@@ -2,7 +2,7 @@
 #define DLM_ResponseMatrixH
 
 #include "CATS.h"
-#include "DLM_Histo.h"
+template <class Type> class DLM_Histo;
 
 class DLM_ResponseMatrix{
 
@@ -68,4 +68,3 @@ private:
 void RespMatrTest1();
 
 #endif
-

@@ -1,8 +1,10 @@
 #ifndef DLM_CK_H
 #define DLM_CK_H
 
-#include "CATS.h"
-#include "CATStools.h"
+#include "DLM_Histo.h"
+//template <class Type> class DLM_Histo;
+
+class CATS;
 
 class DLM_Ck : public DLM_Histo<double>{
 

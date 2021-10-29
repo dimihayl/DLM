@@ -31,9 +31,8 @@
 #include <stdint.h>
 #include <complex>
 
-#include "DLM_Sort.h"
-#include "CATStools.h"
-//#include "DLM_Histo.h"
+template <class Element, typename Num> class DLM_Sort;
+template <class Type> class DLM_Histo;
 
 using namespace std;
 
@@ -51,6 +50,8 @@ typedef double (*CatsPotential)(double*);
 class CATS;
 class CATSelder;
 class CATSnode;
+class CATSparameters;
+class CatsDataBuffer;
 
 class CATS{
 friend class CATSelder;

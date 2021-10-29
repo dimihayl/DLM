@@ -2,7 +2,7 @@
 #ifndef DLM_UNFOLD_H
 #define DLM_UNFOLD_H
 
-#include "DLM_Histo.h"
+template <class Type> class DLM_Histo;
 #include "TString.h"
 
 class TH1F;
