@@ -739,19 +739,24 @@ public:
             GetBinCoordinates(uBin,BinId);
             double FractionInside=1;
             for(unsigned short sDim=0; sDim<Dim; sDim++){
+                const double& x_min = xMin[sDim];
+                const double& x_max = xMax[sDim];
+                double& b_low = BinRange[sDim][BinId[sDim]];
+                double& b_up = BinRange[sDim][BinId[sDim]+1];
                 //in case both xMin and xMax are outside of the bin
-                if(BinRange[sDim][BinId[sDim]]>=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]<xMax[sDim])
-                {continue;}
+                if(x_min<b_low && x_max>b_up)
+                {
+                  continue;}
                 //in case both xMin and xMax are within the bin
-                else if(BinRange[sDim][BinId[sDim]]<xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>=xMax[sDim]){
+                else if(x_min>=b_low && x_max<=b_up){
                     FractionInside *= ( (xMax[sDim]-xMin[sDim])/GetBinSize(sDim,BinId[sDim]) );
                 }
-                //in case xMax is within the bin
-                else if(BinRange[sDim][BinId[sDim]]>=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>=xMax[sDim] && BinRange[sDim][BinId[sDim]]<xMax[sDim]){
+                //in case xMax is within the bin, xMin is outside
+                else if(x_min<b_low && x_max>=b_low && x_max<=b_up){
                     FractionInside *= ( (xMax[sDim]-BinRange[sDim][BinId[sDim]])/GetBinSize(sDim,BinId[sDim]) );
                 }
-                //in case xMin is within the bin
-                else if(BinRange[sDim][BinId[sDim]]<xMin[sDim] && BinRange[sDim][BinId[sDim]+1]<=xMin[sDim] && BinRange[sDim][BinId[sDim]+1]>xMax[sDim]){
+                //in case xMin is within the bin, xMax is outside
+                else if(x_min>=b_low && x_min<=b_up && x_max>b_up){
                     FractionInside *= ( (BinRange[sDim][BinId[sDim]+1]-xMin[sDim])/GetBinSize(sDim,BinId[sDim]) );
                 }
                 else{
@@ -793,6 +798,7 @@ public:
 
     //the following two rebin function are based on projecting the old histogram onto the new bins.
     //it is rather slow operation, thus not advisable for very large or multidimensional histograms
+    //i.e. this is projected into other
     bool Rebin(DLM_Histo<Type>& other, const bool& Normalized=false){
       if(other.Dim!=Dim){
         printf("\033[1;31mERROR:\033[0m DLM_Histo cannot perform the rebin (wrong dimension of the output)!\n");
@@ -808,6 +814,8 @@ public:
           xMax[sDim] = other.BinRange[sDim][BinId[sDim]+1];
         }
         other.BinValue[uNewBin] = Integral(xMin,xMax,Normalized);
+printf("%u in %f : %f = %f\n",uNewBin,xMin[0],xMax[0],other.BinValue[uNewBin]);
+
         other.BinError[uNewBin] = INT_ERROR;
       }
       other.CumUpdated = false;

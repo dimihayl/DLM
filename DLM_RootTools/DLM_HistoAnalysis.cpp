@@ -345,6 +345,21 @@ void DivideAnyTH1Fs(const TH1F* numerator, const TH1F* denominator, TH1F*& resul
   delete reb_den;
 }
 
+void AlignTH1Fs(const TH1F* Template, TH1F*& ToBeAligned){
+  DLM_Histo<float>* dlm_tem = Convert_TH1F_DlmHisto(Template);
+  DLM_Histo<float>* dlm_aln = Convert_TH1F_DlmHisto(ToBeAligned);
+  DLM_Histo<float>* dlm_res = Convert_TH1F_DlmHisto(Template);
+
+  dlm_aln->Rebin(*dlm_res,false);
+  TString name = ToBeAligned->GetName();
+  delete ToBeAligned;
+  ToBeAligned = Convert_DlmHisto_TH1F(dlm_res,name);
+
+  delete dlm_tem;
+  delete dlm_aln;
+  delete dlm_res;
+}
+
 HistoAddRatios::HistoAddRatios(const unsigned numterms, const char* OutHistoName, const unsigned numbins, const double ylow, const double yup):
 NumTerms(numterms),NumBinsY(numbins),lowY(ylow),upY(yup){
   IgnoreUncertainty = NULL;

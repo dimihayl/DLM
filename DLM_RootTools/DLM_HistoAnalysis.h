@@ -24,7 +24,7 @@ void DrawCentralInterval(TH1F*& h1, double Median, double LowReach, double UpRea
 bool SameTH1structure(const TH1* h1, const TH1* h2);
 
 void DivideAnyTH1Fs(const TH1F* numerator, const TH1F* denominator, TH1F*& result, const bool& NormYield=true);
-
+void AlignTH1Fs(const TH1F* Template, TH1F*& ToBeAligned);
 
 //compute the PDF (i.e. errors) numeriacally, given: sum_i Norm_i * Num_i / Denom_i, where Num and Denom are histograms,
 //which represent COUNTS! I.e. the uncertainties are Poisson.
