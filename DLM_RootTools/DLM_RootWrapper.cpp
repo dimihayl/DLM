@@ -36,8 +36,15 @@ DLM_Histo<float>* Convert_TH2F_DlmHisto(const TH2F* input){
         for(unsigned uBinY=0; uBinY<NumBinsY; uBinY++){
             WhichBin[0] = uBinX;
             WhichBin[1] = uBinY;
-            dlmHisto->SetBinContent(WhichBin,input->GetBinContent(uBinX+1,uBinY+1));
-            dlmHisto->SetBinError(WhichBin,input->GetBinError(uBinX+1,uBinY+1));
+            if( input->GetBinContent(uBinX+1,uBinY+1)!=input->GetBinContent(uBinX+1,uBinY+1) ||
+                isinf(input->GetBinContent(uBinX+1,uBinY+1))){
+              dlmHisto->SetBinContent(WhichBin,0);
+              dlmHisto->SetBinError(WhichBin,0);
+            }
+            else{
+              dlmHisto->SetBinContent(WhichBin,input->GetBinContent(uBinX+1,uBinY+1));
+              dlmHisto->SetBinError(WhichBin,input->GetBinError(uBinX+1,uBinY+1));
+            }
         }
     }
     delete [] Xaxis_pars;
@@ -65,8 +72,15 @@ DLM_Histo<float>* Convert_TH1F_DlmHisto(const TH1F* input){
     unsigned WhichBin[1];
     for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){
         WhichBin[0] = uBinX;
-        dlmHisto->SetBinContent(WhichBin,input->GetBinContent(uBinX+1));
-        dlmHisto->SetBinError(WhichBin,input->GetBinError(uBinX+1));
+        if( input->GetBinContent(uBinX+1)!=input->GetBinContent(uBinX+1) ||
+            isinf(input->GetBinContent(uBinX+1))){
+          dlmHisto->SetBinContent(WhichBin,0);
+          dlmHisto->SetBinError(WhichBin,0);
+        }
+        else{
+          dlmHisto->SetBinContent(WhichBin,input->GetBinContent(uBinX+1));
+          dlmHisto->SetBinError(WhichBin,input->GetBinError(uBinX+1));
+        }
     }
     delete [] Xaxis_pars;
     return dlmHisto;
@@ -88,8 +102,15 @@ TH2F* Convert_DlmHisto_TH2F(const DLM_Histo<float>* input, const char* name){
         for(unsigned uBinY=0; uBinY<NumBinsY; uBinY++){
             WhichBin[0] = uBinX;
             WhichBin[1] = uBinY;
-            hROOT->SetBinContent(uBinX+1,uBinY+1,input->GetBinContent(WhichBin));
-            hROOT->SetBinError(uBinX+1,uBinY+1,input->GetBinError(WhichBin));
+            if( input->GetBinContent(WhichBin)!=input->GetBinContent(WhichBin) ||
+                isinf(input->GetBinContent(WhichBin))){
+              hROOT->SetBinContent(uBinX+1,uBinY+1,0);
+              hROOT->SetBinError(uBinX+1,uBinY+1,0);
+            }
+            else{
+              hROOT->SetBinContent(uBinX+1,uBinY+1,input->GetBinContent(WhichBin));
+              hROOT->SetBinError(uBinX+1,uBinY+1,input->GetBinError(WhichBin));
+            }
         }
     }
     return hROOT;
@@ -106,8 +127,16 @@ TH1F* Convert_DlmHisto_TH1F(const DLM_Histo<float>* input, const char* name){
     unsigned WhichBin[1];
     for(unsigned uBinX=0; uBinX<NumBinsX; uBinX++){
         WhichBin[0] = uBinX;
-        hROOT->SetBinContent(uBinX+1,input->GetBinContent(WhichBin));
-        hROOT->SetBinError(uBinX+1,input->GetBinError(WhichBin));
+        //printf("%u %e %e\n",uBinX,input->GetBinContent(WhichBin),input->GetBinError(WhichBin));
+        if( input->GetBinContent(WhichBin)!=input->GetBinContent(WhichBin) ||
+            isinf(input->GetBinContent(WhichBin))){
+          hROOT->SetBinContent(uBinX+1,0);
+          hROOT->SetBinError(uBinX+1,0);
+        }
+        else{
+          hROOT->SetBinContent(uBinX+1,input->GetBinContent(WhichBin));
+          hROOT->SetBinError(uBinX+1,input->GetBinError(WhichBin));
+        }
     }
     return hROOT;
 }

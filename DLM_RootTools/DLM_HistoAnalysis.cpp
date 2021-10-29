@@ -6,6 +6,8 @@
 #include "TH2F.h"
 #include "TH1D.h"
 #include "TRandom3.h"
+#include "DLM_Histo.h"
+#include "DLM_RootWrapper.h"
 
 #include "DLM_HistoAnalysis.h"
 
@@ -314,6 +316,33 @@ void DrawCentralInterval(TH1F*& h1, double Median, double LowReach, double UpRea
 
     h1median->SetBinContent(1, h1main->GetBinContent(h1main->FindBin(Median)));
 
+}
+
+void DivideAnyTH1Fs(const TH1F* numerator, const TH1F* denominator, TH1F*& result, const bool& NormYield){
+  DLM_Histo<float>* dlm_num = Convert_TH1F_DlmHisto(numerator);
+  DLM_Histo<float>* dlm_den = Convert_TH1F_DlmHisto(denominator);
+
+  if(NormYield){
+    dlm_num->ScaleToIntegral();
+    dlm_den->ScaleToIntegral();
+  }
+
+  DLM_Histo<float>* reb_num = Convert_TH1F_DlmHisto(result);
+  DLM_Histo<float>* reb_den = Convert_TH1F_DlmHisto(result);
+
+  dlm_num->Rebin(*reb_num,false);
+  dlm_den->Rebin(*reb_den,false);
+
+  reb_num[0] /= reb_den[0];
+
+  TString name = result->GetName();
+  delete result;
+  result = Convert_DlmHisto_TH1F(reb_num,name);
+
+  delete dlm_num;
+  delete dlm_den;
+  delete reb_num;
+  delete reb_den;
 }
 
 HistoAddRatios::HistoAddRatios(const unsigned numterms, const char* OutHistoName, const unsigned numbins, const double ylow, const double yup):

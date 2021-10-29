@@ -6,6 +6,8 @@
 #include <math.h>
 
 #include "DLM_CppTools.h"
+#include "DLM_Histo.h"
+#include "CATStools.h"
 
 TreParticle::TreParticle(TREPNI& database):Database(database){
   TreName = new char [Database.Len_PrtclName];
@@ -17,6 +19,7 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
   }
   NumDecays = 0;
   Decay = NULL;
+  MomPDF = NULL;
 }
 
 TreParticle::~TreParticle(){
@@ -31,6 +34,27 @@ TreParticle::~TreParticle(){
     delete[]Decay;
     Decay=NULL;
   }
+  if(MomPDF){
+    delete MomPDF;
+  }
+}
+
+void TreParticle::SetMomPDF(const DLM_Histo<float>& pdf){
+//we need to check if this pdf makes sence. It has to be 3 dim,
+//where each dimension represents pT, Eta, Phi
+  if(MomPDF){delete MomPDF; MomPDF = new DLM_Histo<float>(pdf);}
+}
+
+void TreParticle::FillMomXYZ(const float& xval, const float& yval, const float& zval){
+
+}
+
+void TreParticle::FillMomPtEtaPhi(const float& pt, const float& eta, const float& phi){
+
+}
+
+void TreParticle::FillMomPDF(CatsLorentzVector& cats_vector){
+
 }
 
 

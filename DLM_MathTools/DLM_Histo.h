@@ -43,14 +43,14 @@ public:
         if(NumBins==1){
             BinRange[0] = xmin; BinRange[1] = xmax;
             //BinValue[0] = (xmin+xmax)*0.5;
-            BinCenter[0] = 1.331e128;
+            BinCenter[0] = 1.331e121;
         }
         else{
             Type BinWidth = (xmax-xmin)/Type(NumBins);
 //printf("NumBins=%u; BinWidth=%f;\n",NumBins,BinWidth);
             for(unsigned uBin=0; uBin<=NumBins; uBin++){
                 BinRange[uBin] = xmin + Type(uBin)*BinWidth;
-                if(uBin!=NumBins) BinCenter[uBin] = 1.331e128;
+                if(uBin!=NumBins) BinCenter[uBin] = 1.331e121;
 //printf(" uBin=%u -> BR=%f\n",uBin, BinRange[uBin]);
             }
             //for(unsigned uBin=0; uBin<NumBins; uBin++){
@@ -126,7 +126,7 @@ public:
     }
     Type GetBinCenter(const unsigned& WhichBin) const{
         if(WhichBin>=NumBins) return 0;
-        if(BinCenter[WhichBin]!=1.331e128) return BinCenter[WhichBin];
+        if(BinCenter[WhichBin]!=1.331e121) return BinCenter[WhichBin];
         return 0.5*(BinRange[WhichBin]+BinRange[WhichBin+1]);
     }
     Type GetBinContent(const unsigned& WhichBin) const{
@@ -524,14 +524,14 @@ public:
         if(!SameStructure(other)||!other.Initialized) return false;
         if(witherror)
             for(unsigned uBin=0; uBin<TotNumBins; uBin++){
-                if(!other.BinValue[uBin]) BinError[uBin] = 1e128;
+                if(!other.BinValue[uBin]) BinError[uBin] = 1e121;
                 else BinError[uBin] = pow(other.BinValue[uBin],-2.)*
                                             sqrt(   pow(BinError[uBin]*other.BinError[uBin],2.)+
                                                     pow(BinError[uBin]*other.BinValue[uBin],2.)+
                                                     pow(BinValue[uBin]*other.BinError[uBin],2.));
             }
         for(unsigned uBin=0; uBin<TotNumBins; uBin++){
-            if(!other.BinValue[uBin]) BinValue[uBin] = 1e128;
+            if(!other.BinValue[uBin]) BinValue[uBin] = 1e121;
             else BinValue[uBin] /= other.BinValue[uBin];
         }
         return true;
@@ -548,7 +548,7 @@ public:
                 for(unsigned short sDim=0; sDim<Dim; sDim++){
                     xVal[sDim] = BinCenter[sDim][BinId[sDim]];
                 }
-                if(!other.Eval(xVal)) BinError[uBin] = 1e128;
+                if(!other.Eval(xVal)) BinError[uBin] = 1e121;
                 else BinError[uBin] = pow(other.Eval(xVal),-2.)*
                                             sqrt(   pow(BinError[uBin]*other.Eval(xVal,true),2.)+
                                                     pow(BinError[uBin]*other.Eval(xVal),2.)+
@@ -559,7 +559,7 @@ public:
             for(unsigned short sDim=0; sDim<Dim; sDim++){
                 xVal[sDim] = BinCenter[sDim][BinId[sDim]];
             }
-            if(!other.Eval(xVal)) BinValue[uBin] = 1e128;
+            if(!other.Eval(xVal)) BinValue[uBin] = 1e121;
             else BinValue[uBin] /= other.Eval(xVal);
         }
         delete [] BinId;
@@ -577,7 +577,7 @@ public:
         if(witherror)
             for(unsigned uBin=0; uBin<TotNumBins; uBin++){
                 GetBinCoordinates(uBin,BinId);
-                if(!other.BinValue[uBin]) BinError[uBin] = 1e128;
+                if(!other.BinValue[uBin]) BinError[uBin] = 1e121;
                 else BinError[uBin] = pow(other.BinValue[uBin],-2.)*
                                             sqrt(   pow(BinError[uBin]*other.BinError[uBin],2.)+
                                                     pow(BinError[uBin]*other.BinValue[uBin],2.)+
@@ -585,7 +585,7 @@ public:
             }
         for(unsigned uBin=0; uBin<TotNumBins; uBin++){
             GetBinCoordinates(uBin,BinId);
-            if(!other.BinValue[uBin]) BinValue[uBin] = 1e128;
+            if(!other.BinValue[uBin]) BinValue[uBin] = 1e121;
             else BinValue[uBin] /= other.BinValue[uBin];
         }
         delete [] BinId;
@@ -610,6 +610,18 @@ public:
         BinValue[TotNumBins] *= scale;
         BinValue[TotNumBins+1] *= scale;
         CumUpdated = false;
+    }
+    void ScaleToIntegral(const bool& UnderOverFlow=false){
+      if(!Initialized) {InitWarning(); return;}
+      Type TotInt = 0;
+      for(unsigned uBin=0; uBin<TotNumBins+2*UnderOverFlow; uBin++){
+        TotInt += BinValue[uBin];
+      }
+      for(unsigned uBin=0; uBin<TotNumBins+2*UnderOverFlow; uBin++){
+        BinValue[uBin] /= TotInt;
+        BinError[uBin] /= TotInt;
+      }
+      CumUpdated = false;
     }
     void ScaleBin(const unsigned& WhichTotBin, const Type& Value){
         if(!Initialized) {InitWarning(); return;}
@@ -716,6 +728,7 @@ public:
     //corresponding dimension should be considered
     Type Integral(const double* xMin, const double* xMax, const bool& Normalized=false){
         Type RESULT = 0;
+        INT_ERROR = 0;
         if(!Initialized) {InitWarning(); return RESULT;}
         unsigned* BinId = new unsigned [Dim];
         double PhaseSpaceSize = 1;
@@ -746,15 +759,20 @@ public:
                     break;
                 }
             }
+            INT_ERROR+=FractionInside*BinError[uBin]*(Normalized?GetBinSize(uBin):1.);
             RESULT+=FractionInside*BinValue[uBin]*(Normalized?GetBinSize(uBin):1.);
         }//uBin
         delete [] BinId;
+        INT_ERROR/(Normalized?PhaseSpaceSize:1.);
         return RESULT/(Normalized?PhaseSpaceSize:1.);
     }
-    /*
+    Type IntegralError(){
+      return INT_ERROR;
+    }
+
     //WORK IN PROGRESS
     //does not extrapolate on the edges, takes full bins
-    Type FastIntegral(const double* xMin, const double* xMax,){
+    Type FastIntegral(const double* xMin, const double* xMax, const bool& Normalized=false){
         Type RESULT = 0;
         if(!Initialized) {InitWarning(); return RESULT;}
         unsigned* BinId = new unsigned [Dim];
@@ -767,16 +785,15 @@ public:
             }
             if(OutsideRange) continue;
             VALUE = BinValue[uBin];
-            if()
             RESULT+=(BinValue[uBin]*(Normalized?GetBinSize(uBin):1));
         }//uBin
         delete [] BinId;
         return RESULT;
     }
-    */
+
     //the following two rebin function are based on projecting the old histogram onto the new bins.
     //it is rather slow operation, thus not advisable for very large or multidimensional histograms
-    bool Rebin(DLM_Histo<Type>& other){
+    bool Rebin(DLM_Histo<Type>& other, const bool& Normalized=false){
       if(other.Dim!=Dim){
         printf("\033[1;31mERROR:\033[0m DLM_Histo cannot perform the rebin (wrong dimension of the output)!\n");
         return false;
@@ -790,7 +807,8 @@ public:
           xMin[sDim] = other.BinRange[sDim][BinId[sDim]];
           xMax[sDim] = other.BinRange[sDim][BinId[sDim]+1];
         }
-        other.BinValue[uNewBin] = Integral(xMin,xMax,true);
+        other.BinValue[uNewBin] = Integral(xMin,xMax,Normalized);
+        other.BinError[uNewBin] = INT_ERROR;
       }
       other.CumUpdated = false;
       delete [] xMin;
@@ -799,6 +817,7 @@ public:
       return true;
     }
     //in each dim
+    //not really tested
     void Rebin(const unsigned* RebFactor){
       DLM_Histo<Type> RebinnedHisto;
       RebinnedHisto.SetUp(Dim);
@@ -816,7 +835,7 @@ public:
         delete [] BinRangeNew;
       }
       RebinnedHisto.Initialize();
-      Rebin(RebinnedHisto);
+      Rebin(RebinnedHisto, false);
       Copy(RebinnedHisto);
     }
     unsigned short GetDim() const{
@@ -1486,5 +1505,6 @@ protected:
 
     bool Initialized;
     bool CumUpdated;
+    Type INT_ERROR;
 };
 #endif

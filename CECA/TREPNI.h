@@ -58,6 +58,7 @@ public:
 private:
 
   const TREPNI& Database;
+  DLM_Histo<float>* MomPDF;
   char* TreName;
   float* Mass;
   float* Width;
