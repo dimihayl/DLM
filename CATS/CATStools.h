@@ -46,6 +46,7 @@ public:
     ~CatsLorentzVector();
 
     void Boost(const CatsLorentzVector& boostVec);
+    void BoostBack(const CatsLorentzVector& boostVec);
     //CatsLorentzVector GetBoost(const CatsLorentzVector& boostVec);
 
     double GetR() const;
@@ -76,11 +77,24 @@ public:
     double GetPz() const;
     double GetPtheta() const;
     double GetPphi() const;
+    double Gamma() const;
+    double Beta() const;
+    double BetaX() const;
+    double BetaY() const;
+    double BetaZ() const;
+
+
     void Set(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd,
              const double& engy, const double& xMom, const double& yMom, const double& zMom);
+    //sets the momentum components, keeping the MASS constant (reevaluates energy)
+    void SetMomXYZ(const double& xMom, const double& yMom, const double& zMom);
+    void SetTXYZ(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd);
+
+
     //rotates the Momentum vector in Phi
     void RotateMomPhi(const double& angle);
     void RenormSpacialCoordinates(const double& Renorm);
+    void Print();
     CatsLorentzVector const operator+(const CatsLorentzVector& other);
     CatsLorentzVector const operator-(const CatsLorentzVector& other);
     void operator=(const CatsLorentzVector& other);
@@ -101,6 +115,7 @@ protected:
     double beta;
 
     void Boost(const CatsLorentzVector& boostVec, const double* InVec, double* OutVec);
+    void BoostBack(const CatsLorentzVector& boostVec, const double* InVec, double* OutVec);
     void ComputeBetaGamma();
 };
 
@@ -115,12 +130,26 @@ public:
     int GetPid() const;
     double GetMass() const;
     double GetWidth() const;
+    //CatsParticle*& Decay(const unsigned& Nbody, const double* mass);
+    //propagate==true means that the coordinates of the mother will be shifted
+    //N.B. this is always done for the daughters
+    //to the point at which the decay occurs. The lifetime is assumed 1/Width. If width is zero, no propagation is done
+    //N.B. if also only works if we have a SetDecayRanGen activated!!!
+    //N.B. for the propagation to work, we need the correct unit conversion between space and momentum
+    //by default we assume that we work with MeV and fm, i.e. we have an hbarc conversion factor of c.a. 197 MeV*fm
+    //you can change this conversion by Set_hbarc, i.e. setting it to 1 assumes we work in natural units
+    CatsParticle* Decay(const double& mass1, const double& mass2, const bool& propagate=true);
+    void SetDecayRanGen(DLM_Random* rangen);
+    void SetDecayRanGen(DLM_Random& rangen);
+    void Set_hbarc(const double& HBARC);
     void operator=(const CatsParticle& other);
     void operator=(const CatsLorentzVector& other);
 protected:
     int Pid;
     double Mass;
     double Width;
+    DLM_Random* RanGen;
+    double hbarc;
 };
 
 //contains all info about the particles in their CM system.

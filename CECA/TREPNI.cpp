@@ -7,6 +7,7 @@
 
 #include "DLM_CppTools.h"
 #include "DLM_Histo.h"
+#include "DLM_Random.h"
 #include "CATStools.h"
 
 TreParticle::TreParticle(TREPNI& database):Database(database){
@@ -23,10 +24,10 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
 }
 
 TreParticle::~TreParticle(){
-  delete [] TreName;
-  delete [] Mass;
-  delete [] Width;
-  delete [] Abundance;
+  delete [] TreName; TreName=NULL;
+  delete [] Mass; Mass=NULL;
+  delete [] Width; Width=NULL;
+  delete [] Abundance; Abundance=NULL;
   if(Decay){
     for(unsigned char uDec=0; uDec<NumDecays; uDec++){
       if(Decay[uDec]){delete Decay[uDec];Decay[uDec]=NULL;}
@@ -36,13 +37,23 @@ TreParticle::~TreParticle(){
   }
   if(MomPDF){
     delete MomPDF;
+    MomPDF = NULL;
   }
 }
 
 void TreParticle::SetMomPDF(const DLM_Histo<float>& pdf){
-//we need to check if this pdf makes sence. It has to be 3 dim,
-//where each dimension represents pT, Eta, Phi
+  if(pdf.GetDim()>3){
+    static bool ShowMessage=true;
+    if(Database.PrintLevel>=1 && ShowMessage){
+      printf("\033[1;31mERROR:\033[0m (TreParticle::SetMomPDF) The momentum distribution must have 1,2 or 3 dimensions\n");
+    }
+    return;
+  }
   if(MomPDF){delete MomPDF; MomPDF = new DLM_Histo<float>(pdf);}
+}
+
+const DLM_Histo<float>* TreParticle::GetMomPDF() const{
+  return MomPDF;
 }
 
 void TreParticle::FillMomXYZ(const float& xval, const float& yval, const float& zval){
@@ -201,8 +212,6 @@ void TreParticle::Print(){
     }
     printf("\n");
   }
-
-
 }
 
 TreChain::TreChain(TreParticle& mother):Mother(mother){
@@ -274,11 +283,12 @@ Version(version),MaxMemSteps(1024),NumFunctions(64){
   for(short us=0; us<NumFunctions; us++) ErrorOccured[us] = 0;
   QA_passed = false;
   TotAbundance = 0;
+  RanGen = new DLM_Random(1);
 }
 
 TREPNI::~TREPNI(){
-  delete [] DatabaseName;
-  delete [] ErrorOccured;
+  delete [] DatabaseName; DatabaseName=NULL;
+  delete [] ErrorOccured; ErrorOccured=NULL;
   if(Particle){
     for(unsigned uPart=0; uPart<MaxParticles; uPart++){
       if(Particle[uPart]){
@@ -289,6 +299,7 @@ TREPNI::~TREPNI(){
     delete [] Particle;
     Particle = NULL;
   }
+  delete RanGen; RanGen=NULL;
 }
 
 bool TREPNI::QA(const int& type){
@@ -324,6 +335,7 @@ bool TREPNI::QA_Name(){
         static bool ShowMessage=true;
         if(PrintLevel>=1 && ShowMessage){
           printf("\033[1;31mERROR:\033[0m (TREPNI::QA) Multiple instances of particle '%s'\n",Particle[uPart]->TreName);
+          if(SingleError) ShowMessage=false;
         }
         AllesGut = false;
       }
@@ -572,6 +584,15 @@ void TREPNI::SetTotalYield(const float& totyield){
   TotAbundance = totyield;
 }
 
+float TREPNI::GetYield() const{
+  if(TotAbundance>0) return TotAbundance;
+  float yield = 0;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    yield += Particle[uPart]->GetAbundance();
+  }
+  return yield;
+}
+
 TreParticle* TREPNI::NewParticle(const char* name){
   ResizeArray(Particle,NumParticles,NumParticles+1);
   Particle[NumParticles] = new TreParticle(*this);
@@ -579,13 +600,28 @@ TreParticle* TREPNI::NewParticle(const char* name){
   return Particle[NumParticles++];
 }
 
-TreParticle* TREPNI::GetParticle(const unsigned& whichone){
+TreParticle* TREPNI::GetParticle(const unsigned& whichone) const{
   return Particle[whichone];
 }
 
-TreParticle* TREPNI::GetParticle(const char* name){
+TreParticle* TREPNI::GetParticle(const char* name) const{
   for(unsigned uPart=0; uPart<NumParticles; uPart++){
     if(strcmp(Particle[uPart]->TreName,name)==0){
+      return Particle[uPart];
+    }
+  }
+  return NULL;
+}
+
+//for the sampling, some node structure for log performance would be nice
+TreParticle* TREPNI::GetRandomParticle() const{
+  const float Yield = GetYield();
+  float RndYield = RanGen->Uniform(0,Yield);
+  float Yield_Last = 0;
+  float Yield_New = 0;
+  for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    Yield_New += Particle[uPart]->GetAbundance();
+    if(Yield_Last<=RndYield && RndYield<=Yield_New){
       return Particle[uPart];
     }
   }
@@ -595,6 +631,38 @@ TreParticle* TREPNI::GetParticle(const char* name){
 unsigned TREPNI::GetNumParticles(){
   return NumParticles;
 }
+
+void TREPNI::Randomize(){
+
+}
+
+void TREPNI::RandomizeMass(){
+
+}
+
+void TREPNI::RandomizeWidth(){
+
+}
+
+void TREPNI::RandomizeAbundance(){
+
+}
+
+void TREPNI::RandomizeBR(){
+
+}
+
+void TREPNI::SetSeed(const unsigned& seed){
+  RanGen->SetSeed(seed);
+}
+
+void TREPNI::SetPrintLevel(const char& lvl, const bool& single){
+  PrintLevel = lvl;
+  if(PrintLevel<0) PrintLevel=0;
+  if(PrintLevel>3) PrintLevel=3;
+  SingleError = single;
+}
+
 
 /*
 //FuntionID = 0

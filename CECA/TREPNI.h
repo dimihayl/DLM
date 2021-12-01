@@ -9,6 +9,7 @@ class TREPNI;
 class TreChain;
 template <class Type> class DLM_Histo;
 class CatsLorentzVector;
+class DLM_Random;
 
 //the idea of this class is to only be used by TREPNI. Thus, there are NO
 //set functions available for the outside world. Else we might end up f***ing up
@@ -37,10 +38,15 @@ public:
   TreParticle(TREPNI& database);//done
   ~TreParticle();//done
 
-  void SetMomPDF(const DLM_Histo<float>& pdf);
+  //N.B. the pdf is copied into TREPNI, which sometimes might take a while,
+  //so do not over-use this function. The decision to copy the pdf and not point to it
+  //is related to the fact that ultimately these particles will be saved into a file,
+  //so we better own all the information straight away.
+  void SetMomPDF(const DLM_Histo<float>& pdf);//done, the others below might not be needed
   void FillMomXYZ(const float& xval, const float& yval, const float& zval);
   void FillMomPtEtaPhi(const float& pt, const float& eta, const float& phi);
   void FillMomPDF(CatsLorentzVector& cats_vector);
+  const DLM_Histo<float>* GetMomPDF() const;
 
   //the QA of these setters is done from TREPNI
   void SetName(const char* name);//done
@@ -53,12 +59,24 @@ public:
   TreChain* NewDecay();//done W/O QA !!!
   TreChain* GetDecay(const unsigned char& whichone);//done W/O QA !!!
   void Print();
+
+  //randomize all
+  void Randomize();
+  void RandomizeMass();
+  void RandomizeWidth();
+  void RandomizeAbundance();
+  void RandomizeBR();
   ////////////////////////////////////////////////////////
 
 private:
 
   const TREPNI& Database;
-  DLM_Histo<float>* MomPDF;
+  //it is a 3D disto, given in terms of pT eta and phi
+  //by convention, the dimensions are [0] = pT, [1] = eta, [2] = phi
+  //the DIM can be reduced, i.e. 1D or 2D histos will be accepted, where if that is the case
+  //for 2D we will only have pT,eta (phi assumed flat)
+  //while for 1D we will only have pT (cos theta and phi both assumed flat)
+  const DLM_Histo<float>* MomPDF;
   char* TreName;
   float* Mass;
   float* Width;
@@ -89,6 +107,7 @@ void AddDaughter(const TreParticle& daughter);//done W/O QA !!!
 std::string GetName();//done W/O QA !!!
 void SetBranching(const float& br);//done W/O QA !!!
 void SetBranchingLimit(const float& br_low, const float& br_up);//done W/O QA !!!
+void RandomizeBR();
 ////////////////////////////////////////////////////////
 
 private:
@@ -111,13 +130,32 @@ public:
   //TREPNI(char* InputFile);
   ~TREPNI();
 
+//for the QA, perhaps introduce the required mother!!!
+//any decay chain should end with the mother!!!
   enum QA_type { Full, Name, Daughters, Mass, Width, BR, Abundance };
   bool QA(const int& type=0);//done
   void SetTotalYield(const float& totyield);//done
+  //n.b. if the TotalYield is not fixed, the return value is dynamically
+  //evaluated by summing up all yields of all particles
+  float GetYield() const;//done
   TreParticle* NewParticle(const char* name=NULL);//done W/O QA !!!
-  TreParticle* GetParticle(const unsigned& whichone);//done W/O QA !!!
-  TreParticle* GetParticle(const char* name);//done
+  TreParticle* GetParticle(const unsigned& whichone) const;//done W/O QA !!!
+  TreParticle* GetParticle(const char* name) const;//done
+  //based on abundance
+  TreParticle* GetRandomParticle() const;
   unsigned GetNumParticles();//done
+
+  //this randomizes all particles for:
+  //all properties, or just mass,width,abundance and their BRs
+  void Randomize();
+  void RandomizeMass();
+  void RandomizeWidth();
+  void RandomizeAbundance();
+  void RandomizeBR();
+  void SetSeed(const unsigned& seed);//done
+  //0-3, 3 is the most
+  void SetPrintLevel(const char& lvl, const bool& single=true);
+
 private:
   //an enum containing an ID of each function. To keep track, each time you
   //define a new function, add it here
@@ -142,6 +180,8 @@ private:
   //e.g. created externaly via web interface, you will not be allowed to load the code!
   bool QA_passed;
 
+  DLM_Random* RanGen;
+
   //if this paramter is >0, than the QA on the Abundance is enforced to
   //make sure the total Abundance sums up to this number. Otherwise the
   //Abundance is treated as a paramter with arbitrary units and the total Abundance
@@ -162,8 +202,7 @@ private:
 
   char* DatabaseName;
 
-  //0-3, 3 is the most
-  void SetPrintLevel(const char& lvl, const bool& single=true);
+
   //void SetParticle();
 
   //no two particles with the same name

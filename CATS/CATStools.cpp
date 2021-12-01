@@ -203,6 +203,22 @@ double CatsLorentzVector::GetPtheta() const{
 double CatsLorentzVector::GetPphi() const{
     return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 ? 0.0 : atan2(FourMomentum[2],FourMomentum[1]);
 }
+double CatsLorentzVector::Gamma() const{
+  return gamma;
+}
+double CatsLorentzVector::Beta() const{
+  return beta;
+}
+double CatsLorentzVector::BetaX() const{
+  return betaX;
+}
+double CatsLorentzVector::BetaY() const{
+  return betaY;
+}
+double CatsLorentzVector::BetaZ() const{
+  return betaZ;
+}
+
 void CatsLorentzVector::Set(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd,
              const double& engy, const double& xMom, const double& yMom, const double& zMom){
     FourSpace[0]=tCrd;
@@ -215,6 +231,22 @@ void CatsLorentzVector::Set(const double& tCrd, const double& xCrd, const double
     FourMomentum[3]=zMom;
     ComputeBetaGamma();
 }
+//N.B. Changes the momentum, keeping the mass constant! The energy is changed though
+void CatsLorentzVector::SetMomXYZ(const double& xMom, const double& yMom, const double& zMom){
+    FourMomentum[0]=sqrt(Magnitude*Magnitude+xMom*xMom+yMom*yMom+zMom*zMom);
+    FourMomentum[1]=xMom;
+    FourMomentum[2]=yMom;
+    FourMomentum[3]=zMom;
+    ComputeBetaGamma();
+}
+void CatsLorentzVector::SetTXYZ(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd){
+  FourSpace[0]=tCrd;
+  FourSpace[1]=xCrd;
+  FourSpace[2]=yCrd;
+  FourSpace[3]=zCrd;
+  ComputeBetaGamma();
+}
+
 void CatsLorentzVector::RotateMomPhi(const double& angle){
     double XNEW = FourMomentum[1]*cos(angle)-FourMomentum[2]*sin(angle);
     double YNEW = FourMomentum[2]*cos(angle)+FourMomentum[1]*sin(angle);
@@ -228,6 +260,11 @@ void CatsLorentzVector::RenormSpacialCoordinates(const double& Renorm){
     FourSpace[1]*=Renorm;
     FourSpace[2]*=Renorm;
     FourSpace[3]*=Renorm;
+}
+
+void CatsLorentzVector::Print(){
+  printf("(t,x,y,z)    = (%.2e, %.2e, %.2e, %.2e)\n",FourSpace[0],FourSpace[1],FourSpace[2],FourSpace[3]);
+  printf("(E,px,py,pz) = (%.2e, %.2e, %.2e, %.2e)\n",FourMomentum[0],FourMomentum[1],FourMomentum[2],FourMomentum[3]);
 }
 
 CatsLorentzVector const CatsLorentzVector::operator+(const CatsLorentzVector& other){
@@ -303,6 +340,23 @@ void CatsLorentzVector::Boost(const CatsLorentzVector& boostVec, const double* I
     OutVec[3] += boostVec.betaZ*(GammaDevGammaPlusOne*GammaMomBeta - GammaVec0);
     OutVec[0] = GammaVec0 - GammaMomBeta;
 }
+
+void CatsLorentzVector::BoostBack(const CatsLorentzVector& boostVec){
+    BoostBack(boostVec, FourSpace, FourSpace);
+    BoostBack(boostVec, FourMomentum, FourMomentum);
+    ComputeBetaGamma();
+}
+void CatsLorentzVector::BoostBack(const CatsLorentzVector& boostVec, const double* InVec, double* OutVec){
+    double GammaMomBeta = boostVec.gamma*(-InVec[1]*boostVec.betaX - InVec[2]*boostVec.betaY - InVec[3]*boostVec.betaZ);
+    double GammaVec0 = boostVec.gamma*InVec[0];
+    double GammaDevGammaPlusOne = boostVec.gamma/(boostVec.gamma+1);
+
+    OutVec[1] -= boostVec.betaX*(GammaDevGammaPlusOne*GammaMomBeta - GammaVec0);
+    OutVec[2] -= boostVec.betaY*(GammaDevGammaPlusOne*GammaMomBeta - GammaVec0);
+    OutVec[3] -= boostVec.betaZ*(GammaDevGammaPlusOne*GammaMomBeta - GammaVec0);
+    OutVec[0] = GammaVec0 - GammaMomBeta;
+}
+
 void CatsLorentzVector::ComputeBetaGamma(){
     Length2 = FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]+FourSpace[3]*FourSpace[3];
     Length = sqrt(Length2);
@@ -363,6 +417,8 @@ CatsParticle::CatsParticle(){
     Pid=0;
     Mass=0;
     Width=0;
+    RanGen = NULL;
+    hbarc = 197.3269602;
 }
 CatsParticle::~CatsParticle(){
 
@@ -385,7 +441,8 @@ void CatsParticle::SetPid(const int& pid){
 void CatsParticle::SetMass(const double& mass){
     Mass=mass;
     Set(FourSpace[0],FourSpace[1],FourSpace[2],FourSpace[3],
-        sqrt(Mass*Mass+GetP2()),FourMomentum[1],FourMomentum[2],FourMomentum[3]);
+        sqrt(Mass*Mass+FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]+FourMomentum[3]*FourMomentum[3]),
+        FourMomentum[1],FourMomentum[2],FourMomentum[3]);
 }
 void CatsParticle::SetWidth(const double& width){
     Width=width;
@@ -399,6 +456,92 @@ double CatsParticle::GetMass() const{
 double CatsParticle::GetWidth() const{
     return Width;
 }
+//two body decay
+CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, const bool& propagate){
+  CatsParticle* Daughters = NULL;
+  if(mass1+mass2>Mass){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: The daughters are heavier than the mother!\n");
+    return Daughters;
+  }
+  if(mass1<0||mass2<0){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative mass!\n");
+    return Daughters;
+  }
+
+//what happens with FourSpace[0]
+//-> we shift the time by gamma*time, which is the time that has passed in
+//this frame of reference
+  double DecaySpacePoint[4];
+  DecaySpacePoint[0] = FourSpace[0];
+  DecaySpacePoint[1] = FourSpace[1];
+  DecaySpacePoint[2] = FourSpace[2];
+  DecaySpacePoint[3] = FourSpace[3];
+  float TAU;
+  if(RanGen){
+    TAU = RanGen->Exponential(Width);
+    //TAU = 1./Width;
+    //MxGAMMA = Mass*Width;//RANDOM
+  }
+  else{
+    TAU = 1./Width;
+  }
+
+  if(Mass){
+    //this is beta*gamma*time, i.e. boost effect accounted for
+    DecaySpacePoint[0] += gamma/Width*hbarc;
+    DecaySpacePoint[1] += (FourMomentum[1])*TAU/Mass*hbarc;
+    DecaySpacePoint[2] += (FourMomentum[2])*TAU/Mass*hbarc;
+    DecaySpacePoint[3] += (FourMomentum[3])*TAU/Mass*hbarc;
+    //printf("shift = %.2e\n");
+  }
+
+  if(propagate){
+    SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
+  }
+
+  //this section over here is defined in the rest frame of the mother
+  Daughters = new CatsParticle[2];
+  Daughters[0].SetMass(mass1);
+  Daughters[1].SetMass(mass2);
+
+  const double DecM2 = (Mass*Mass-mass1*mass1-mass2*mass2);
+  const double kstar = sqrt((0.25*DecM2*DecM2-mass1*mass1*mass2*mass2)/(DecM2+mass1*mass1+mass2*mass2));
+
+  if(!RanGen){
+    Daughters[0].SetMomXYZ(0, 0, kstar);
+    Daughters[1].SetMomXYZ(0, 0, -kstar);
+  }
+  else{
+    const double cos_th = RanGen->Uniform(-1,1);
+    const double sin_th = sqrt(1.-cos_th*cos_th);
+    const double phi = RanGen->Uniform(0,2.*Pi);
+    Daughters[0].SetMomXYZ(kstar*cos(phi)*sin_th, kstar*sin(phi)*sin_th, kstar*cos_th);
+    Daughters[1].SetMomXYZ(kstar*cos(phi)*sin_th, kstar*sin(phi)*sin_th, kstar*cos_th);
+  }
+
+  //here we boost to move with the speed of the mother
+  //but since we actually want to 'revert' the boost, i.e.
+  //get back to the mother, one should boost with (-) sign.
+  Daughters[0].BoostBack(*this);
+  Daughters[1].BoostBack(*this);
+  //after we boost back to the LAB, we need to set the spacial coordinates
+  //of the daughters to be the same of the mother
+  Daughters[0].SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
+  Daughters[1].SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
+
+  return Daughters;
+}
+
+void CatsParticle::SetDecayRanGen(DLM_Random* rangen){
+  RanGen = rangen;
+}
+void CatsParticle::SetDecayRanGen(DLM_Random& rangen){
+  RanGen = &rangen;
+}
+void CatsParticle::Set_hbarc(const double& HBARC){
+  hbarc = HBARC;
+}
+
 void CatsParticle::operator=(const CatsParticle& other){
     CatsLorentzVector::operator = (other);
     Pid = other.Pid;

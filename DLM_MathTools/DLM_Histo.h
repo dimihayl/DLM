@@ -718,7 +718,7 @@ public:
         }
       }
     }
-    double Sample(const bool& UnderOverFlow=false){
+    double Sample(const bool& UnderOverFlow=false) const{
       if(Dim!=1) return 0;
       double result;
       Sample(&result,UnderOverFlow);
@@ -814,7 +814,7 @@ public:
           xMax[sDim] = other.BinRange[sDim][BinId[sDim]+1];
         }
         other.BinValue[uNewBin] = Integral(xMin,xMax,Normalized);
-printf("%u in %f : %f = %f\n",uNewBin,xMin[0],xMax[0],other.BinValue[uNewBin]);
+//printf("%u in %f : %f = %f\n",uNewBin,xMin[0],xMax[0],other.BinValue[uNewBin]);
 
         other.BinError[uNewBin] = INT_ERROR;
       }
@@ -848,6 +848,14 @@ printf("%u in %f : %f = %f\n",uNewBin,xMin[0],xMax[0],other.BinValue[uNewBin]);
     }
     unsigned short GetDim() const{
         return Dim;
+    }
+    void Rebin(const unsigned RebFactor){
+      unsigned* reb_fact = new unsigned [Dim];
+      for(unsigned short sDim=0; sDim<Dim; sDim++){
+        reb_fact[sDim] = RebFactor;
+      }
+      Rebin(reb_fact);
+      delete [] reb_fact;
     }
     unsigned GetNbins() const{
         if(!Initialized) {InitWarning(); return 0;}
@@ -1144,6 +1152,11 @@ printf("%u in %f : %f = %f\n",uNewBin,xMin[0],xMax[0],other.BinValue[uNewBin]);
         //Type* FunctionValue2 = new Type [Dim];
         //Type Normalization = new Type* [Dim];
         //Type TotalNorm=0;
+
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+          if(xVal[sDim]>GetUpEdge(sDim)) return 0;
+          if(xVal[sDim]<GetLowEdge(sDim)) return 0;
+        }
 
         for(unsigned short sDim=0; sDim<Dim; sDim++){
             //xBin[sDim] = new Type [2];

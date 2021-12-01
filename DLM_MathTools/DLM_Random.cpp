@@ -5,24 +5,41 @@ using namespace std;
 
 const double Pi(3.141592653589793);
 
-DLM_Random::DLM_Random(const unsigned& seed):SEED(seed){
-    std::random_device rd;  //Will be used to obtain a seed for the random number engine
-    MT_RanGen = new std::mt19937_64(SEED?SEED:rd());
-    RealDist = new std::uniform_real_distribution<> (0,1);
-    ExpDist = new std::exponential_distribution<> (1);
-    NormDist = new std::normal_distribution<> (0,1);
-    CauchyDist = new std::cauchy_distribution<> (0,1);
-    STAB_TEMP=NULL;
-    SKEW_TEMP=NULL;
-    SCAL_TEMP=NULL;
-    LOCA_TEMP=NULL;
+DLM_Random::DLM_Random(const unsigned& seed){
+  MT_RanGen=NULL;
+  RealDist=NULL;
+  ExpDist=NULL;
+  NormDist=NULL;
+  CauchyDist=NULL;
+  Init(seed);
 }
 DLM_Random::~DLM_Random(){
-    delete MT_RanGen;MT_RanGen=NULL;
-    delete RealDist;RealDist=NULL;
-    delete ExpDist;ExpDist=NULL;
-    delete NormDist;NormDist=NULL;
-    delete CauchyDist;CauchyDist=NULL;
+  Clean();
+}
+void DLM_Random::Init(const unsigned& seed){
+  SEED = seed;
+  std::random_device rd;  //Will be used to obtain a seed for the random number engine
+  MT_RanGen = new std::mt19937_64(SEED?SEED:rd());
+  RealDist = new std::uniform_real_distribution<> (0,1);
+  ExpDist = new std::exponential_distribution<> (1);
+  NormDist = new std::normal_distribution<> (0,1);
+  CauchyDist = new std::cauchy_distribution<> (0,1);
+  //STAB_TEMP=NULL;
+  //SKEW_TEMP=NULL;
+  //SCAL_TEMP=NULL;
+  //LOCA_TEMP=NULL;
+}
+void DLM_Random::Clean(){
+  if(MT_RanGen){delete MT_RanGen;MT_RanGen=NULL;}
+  if(RealDist){delete RealDist;RealDist=NULL;}
+  if(ExpDist){delete ExpDist;ExpDist=NULL;}
+  if(NormDist){delete NormDist;NormDist=NULL;}
+  if(CauchyDist){delete CauchyDist;CauchyDist=NULL;}
+}
+
+void DLM_Random::SetSeed(const unsigned& seed){
+  Clean();
+  Init(seed);
 }
 
 double DLM_Random::Uniform(const double& from, const double& to){
@@ -41,6 +58,9 @@ double DLM_Random::Cauchy(const double& mean, const double& sigma){
 }
 double DLM_Random::Exponential(const double& lambda){
     return (ExpDist[0](*MT_RanGen))/lambda;
+}
+double DLM_Random::Exp(const double& mean){
+    return (ExpDist[0](*MT_RanGen))*mean;
 }
 double DLM_Random::Stable(const double& stability, const double& location, const double& scale, const double& skewness){
     if(stability<=0||stability>2){

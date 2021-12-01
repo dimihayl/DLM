@@ -283,6 +283,22 @@ private:
     void Init();
 };
 
+//if the histo is 2D -> we evaluate k and r
+//if it is 1D -> we evaluate only r
+class DLM_HistoSource:public CatsSource{
+public:
+    //the histogram is NOT copied
+    DLM_HistoSource(DLM_Histo<float>* histo);
+    //this histogram is copied
+    DLM_HistoSource(DLM_Histo<float>& histo);
+    ~DLM_HistoSource();
+    double Eval(double* kxc);
+    double RootEval(double* x, double* kstar);
+private:
+    const bool MyOwnHisto;
+    DLM_Histo<float>* Histo;
+};
+
 
 /*
 //use DLM_CleverMcLevyReso as the baseline for a differential analysis

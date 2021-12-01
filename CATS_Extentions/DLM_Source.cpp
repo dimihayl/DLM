@@ -1701,8 +1701,9 @@ void DLM_CleverMcLevyResoTM::AddBGT_PR(const float& bgt,const float& a_cp){
             for(unsigned uBGT=0; uBGT<2; uBGT++){
                 tempfloat[uEntry][uBGT] = BGT_PR[uEntry][uBGT];
             }
+            delete [] BGT_PR[uEntry];
         }
-        delete BGT_PR;
+        delete [] BGT_PR;
         MaxBGT_PR += 100000;
         BGT_PR = new float* [MaxBGT_PR];
         for(unsigned uEntry=0; uEntry<MaxBGT_PR; uEntry++){
@@ -1714,6 +1715,10 @@ void DLM_CleverMcLevyResoTM::AddBGT_PR(const float& bgt,const float& a_cp){
         }
         //}
         //else{BGT_PR = new float* [MaxBGT_PR];for(unsigned uEntry=0; uEntry<MaxBGT_PR; uEntry++)BGT_PR[uEntry] = new float [2];}
+        for(unsigned uEntry=0; uEntry<NumBGT_PR; uEntry++){
+          delete [] tempfloat[uEntry];
+        }
+        delete [] tempfloat;
     }
     BGT_PR[NumBGT_PR][0] = bgt;
     BGT_PR[NumBGT_PR][1] = a_cp;
@@ -1729,8 +1734,9 @@ void DLM_CleverMcLevyResoTM::AddBGT_RP(const float& bgt,const float& a_cp){
             for(unsigned uBGT=0; uBGT<2; uBGT++){
                 tempfloat[uEntry][uBGT] = BGT_RP[uEntry][uBGT];
             }
+            delete [] BGT_RP[uEntry];
         }
-        delete BGT_RP;
+        delete [] BGT_RP;
         MaxBGT_RP += 100000;
         BGT_RP = new float* [MaxBGT_RP];
         for(unsigned uEntry=0; uEntry<MaxBGT_RP; uEntry++){
@@ -1742,6 +1748,10 @@ void DLM_CleverMcLevyResoTM::AddBGT_RP(const float& bgt,const float& a_cp){
         }
         //}
         //else{BGT_RP = new float* [MaxBGT_RP];for(unsigned uEntry=0; uEntry<MaxBGT_RP; uEntry++)BGT_RP[uEntry] = new float [2];}
+        for(unsigned uEntry=0; uEntry<NumBGT_RP; uEntry++){
+          delete [] tempfloat[uEntry];
+        }
+        delete [] tempfloat;
     }
     BGT_RP[NumBGT_RP][0] = bgt;
     BGT_RP[NumBGT_RP][1] = a_cp;
@@ -1757,8 +1767,9 @@ void DLM_CleverMcLevyResoTM::AddBGT_RR(const float& bgt0,const float& a_cp0,cons
             for(unsigned uBGT=0; uBGT<5; uBGT++){
                 tempfloat[uEntry][uBGT] = BGT_RR[uEntry][uBGT];
             }
+            delete [] BGT_RR[uEntry];
         }
-        delete BGT_RR;
+        delete [] BGT_RR;
         MaxBGT_RR += 100000;
         BGT_RR = new float* [MaxBGT_RR];
         for(unsigned uEntry=0; uEntry<MaxBGT_RR; uEntry++){
@@ -1770,6 +1781,10 @@ void DLM_CleverMcLevyResoTM::AddBGT_RR(const float& bgt0,const float& a_cp0,cons
         }
         //}
         //else{BGT_RR = new float* [MaxBGT_RR];for(unsigned uEntry=0; uEntry<MaxBGT_RR; uEntry++)BGT_RR[uEntry] = new float [5];}
+        for(unsigned uEntry=0; uEntry<NumBGT_RR; uEntry++){
+          delete [] tempfloat[uEntry];
+        }
+        delete [] tempfloat;
     }
     BGT_RR[NumBGT_RR][0] = bgt0;
     BGT_RR[NumBGT_RR][1] = a_cp0;
@@ -1974,4 +1989,40 @@ void DLM_CleverMcLevyResoTM::Init(){
     }
     Histo->Initialize();
     Histo->AddToAll(1e6);
+}
+
+
+DLM_HistoSource::DLM_HistoSource(DLM_Histo<float>* histo):MyOwnHisto(true){
+  if(histo->GetDim()>2){
+    Histo=NULL;
+    printf("\033[1;31mERROR:\033[0m DLM_HistoSource is broken (bad input)\n");
+  }
+  Histo = histo;
+}
+DLM_HistoSource::DLM_HistoSource(DLM_Histo<float>& histo):MyOwnHisto(false){
+  if(histo.GetDim()>2){
+    Histo=NULL;
+    printf("\033[1;31mERROR:\033[0m DLM_HistoSource is broken (bad input)\n");
+  }
+  Histo = new DLM_Histo<float>(histo);
+}
+DLM_HistoSource::~DLM_HistoSource(){
+  if(MyOwnHisto){
+    delete Histo;
+    Histo = NULL;
+  }
+}
+double DLM_HistoSource::Eval(double* kxc){
+  if(Histo->GetDim()==1){
+    return Histo->Eval(&kxc[1]);
+  }
+  else{
+    return Histo->Eval(kxc);
+  }
+}
+double DLM_HistoSource::RootEval(double* x, double* kstar){
+  double kxc[3];
+  kxc[0] = *kstar;
+  kxc[1] = *x;
+  return Eval(kxc);
 }
