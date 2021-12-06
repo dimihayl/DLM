@@ -69,6 +69,14 @@ public:
   //alpha is the Levy factor
   void SetSourceConvention(const char& srccnv);//done
   void SetDebugMode(const bool& debugmode);//done
+  //the time that each thread will run on its own, before communicating with the master class.
+  //This makes so that the AchievedYield will only be checked ones in this time period, i.e.
+  //the final TargetYield can be exceeded. Longer timeout maximizes single thread throughput,
+  //however the overall CPU throughput is optimized in steps of timeout, hence it is not good to go crazy long.
+  //also, the GoBabyGo will run for a minimum time set by the timeout.
+  //Unless there is a very good reason, do not change the default value!
+  //The time is given in seconds (integer!)
+  void SetThreadTimeout(const unsigned& seconds);
 
   //if num_threads=0, we will dynamically adjust based on efficiency
 //check if EMULT>=SDIM on start!!!
@@ -134,7 +142,13 @@ private:
   //[thread][mult]
   //inside we save, per thread, all particles that we generated
   //std::vector<std::vector<CatsLorentzVector>> CLV;
+
+  std::vector<CatsLorentzVector>* ParticleBuffer;
+
+
   DLM_Timer* ThreadClock;
+  //in seconds
+  unsigned Timeout;
   //
 
 

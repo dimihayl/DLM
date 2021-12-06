@@ -43,6 +43,8 @@ CECA::CECA(const TREPNI& database):Database(database),MaxThreads(std::thread::ha
   Old_RcP2 = NULL;
   Old_P1P2 = NULL;
   ThreadClock = new DLM_Timer [MaxThreads];
+  //30 seconds as a default timeout
+  Timeout = 30*10000000;
 }
 
 CECA::~CECA(){
@@ -191,9 +193,19 @@ void CECA::SetSourceConvention(const char& srccnv){
 void CECA::SetDebugMode(const bool& debugmode){
   DebugMode = debugmode;
 }
+void CECA::SetThreadTimeout(const unsigned& seconds){
+  Timeout = seconds?seconds:1;//a minimum of 1 second
+}
 
 void CECA::GoSingleCore(const unsigned& ThId){
+  ThreadClock[ThId].Start();
+  unsigned ExeTime;
+  do{
+    GenerateEvent();
 
+    ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
+  }
+  while(ExeTime<Timeout);
 }
 
 void CECA::OptimizeThreadCount(){
@@ -292,11 +304,18 @@ void CECA::GhettoTest1(const unsigned NumPairs, const float r_SP, const float p_
   //const float M_proton = (938+1116)*0.5;
   //const float M_reso = (1362+1462)*0.5;
   //const float tau_reso = (1.65+4.69)*0.5;
-  const float M_proton = 938;
-  const float M_reso = 1362;
-  const float tau_reso = 1.65;
+
+  //const float M_proton = 938;
+  //const float M_reso = 1362;
+  ////const float tau_reso = 1.65;
   //const float tau_reso = 5;
-  const float M_pi = 140;
+  //const float M_pi = 140;
+
+  const float M_proton = 140;
+  const float M_reso = 1124;
+  const float tau_reso = 1.5;
+  const float M_pi = 938;
+
   const float F_prim = 0.36;
   //const float F_prim = 1.0;
   //const float F_prim = 0.0;
@@ -304,8 +323,8 @@ void CECA::GhettoTest1(const unsigned NumPairs, const float r_SP, const float p_
 //some issue with the random numbers, EVEN if they have their own class....
 //bummer
   const unsigned NumThr = 7;
-  const double SP_rew = 0.6;
-  const double PK_rew = 0.9;
+  const double SP_rew = 1.0;
+  const double PK_rew = 0.0;
 
   const unsigned NumRadBins = 1024;
   const float RadMin = 0;
@@ -566,8 +585,12 @@ void CECA::GhettoTest1(const unsigned NumPairs, const float r_SP, const float p_
     double core_y = Particle2.GetY()-Particle1.GetY();
     double core_z = Particle2.GetZ()-Particle1.GetZ();
     double core_r = sqrt(core_x*core_x+core_y*core_y+core_z*core_z);
+    //funny thing, but for both old and new method to agree I need the same Tau as in CATStools Decay...
+    //so it will only really work if we fix the width
     double BGT_1 = Particle1.Beta()*Particle1.Gamma()/Particle1.GetWidth()*NuToFm;
     double BGT_2 = Particle2.Beta()*Particle2.Gamma()/Particle2.GetWidth()*NuToFm;
+    //double BGT_1 = Particle1.Beta()*Particle1.Gamma()*RanGen[ThId]->Exponential(Particle1.GetWidth())*NuToFm;
+    //double BGT_2 = Particle2.Beta()*Particle2.Gamma()*RanGen[ThId]->Exponential(Particle2.GetWidth())*NuToFm;
     double CosRcP1 = (core_x*Particle1.GetPx()+core_y*Particle1.GetPy()+core_z*Particle1.GetPz())
                     /(core_r*Particle1.GetP());
     double CosRcP2 = (core_x*Particle2.GetPx()+core_y*Particle2.GetPy()+core_z*Particle2.GetPz())

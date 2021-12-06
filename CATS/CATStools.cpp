@@ -478,8 +478,8 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   DecaySpacePoint[3] = FourSpace[3];
   float TAU;
   if(RanGen){
-    TAU = RanGen->Exponential(Width);
-    //TAU = 1./Width;
+    //TAU = RanGen->Exponential(Width);
+    TAU = 1./Width;
     //MxGAMMA = Mass*Width;//RANDOM
   }
   else{
@@ -488,7 +488,7 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
 
   if(Mass){
     //this is beta*gamma*time, i.e. boost effect accounted for
-    DecaySpacePoint[0] += gamma/Width*hbarc;
+    DecaySpacePoint[0] += gamma*TAU*hbarc;
     DecaySpacePoint[1] += (FourMomentum[1])*TAU/Mass*hbarc;
     DecaySpacePoint[2] += (FourMomentum[2])*TAU/Mass*hbarc;
     DecaySpacePoint[3] += (FourMomentum[3])*TAU/Mass*hbarc;

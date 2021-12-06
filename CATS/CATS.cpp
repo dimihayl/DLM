@@ -1378,7 +1378,7 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;
     }
-    if(NumPW[usCh] && usPW>=NumPW[usCh]){
+    if(NumPW && usPW>=NumPW[usCh]){
         if(Notifications>=nError)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
         return;

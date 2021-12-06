@@ -58,6 +58,8 @@ public:
   void SetAbundanceLimit(const float& abundance_low, const float& abundance_up);//done W/O QA !!!
   TreChain* NewDecay();//done W/O QA !!!
   TreChain* GetDecay(const unsigned char& whichone);//done W/O QA !!!
+  //a random decay channel based on current BR
+  TreChain* GetDecay();
   void Print();
 
   //randomize all
