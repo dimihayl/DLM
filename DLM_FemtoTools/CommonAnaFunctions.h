@@ -27,7 +27,8 @@ const double Mass_Xi0 = 1314.86;
 const double Mass_Xim1530 = 1535;
 const double MassOmega = 1672.45;
 const double Mass_d = 1875.613;
-
+const double Mass_Dch = 1869.62;
+const double Mass_D0 = 1864.84;
 
 class DLM_CommonAnaFunctions{
 

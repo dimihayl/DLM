@@ -45,6 +45,7 @@ CECA::CECA(const TREPNI& database):Database(database),MaxThreads(std::thread::ha
   ThreadClock = new DLM_Timer [MaxThreads];
   //30 seconds as a default timeout
   Timeout = 30*10000000;
+  NumSystVars = 1;
 }
 
 CECA::~CECA(){
@@ -183,6 +184,11 @@ void CECA::SetEventMult(const unsigned short& emult){
   EMULT = emult;
 }
 
+void CECA::SetSystVars(const unsigned& howmany){
+  if(!howmany) NumSystVars = 1;
+  else NumSystVars = howmany;
+}
+
 void CECA::SetSourceConvention(const char& srccnv){
   if(srccnv<0||srccnv>20){
     printf("ERROR srccnv\n");
@@ -197,15 +203,18 @@ void CECA::SetThreadTimeout(const unsigned& seconds){
   Timeout = seconds?seconds:1;//a minimum of 1 second
 }
 
-void CECA::GoSingleCore(const unsigned& ThId){
+unsigned CECA::GoSingleCore(const unsigned& ThId){
+  /*
   ThreadClock[ThId].Start();
   unsigned ExeTime;
+  unsigned NumMultiplets = 0;
   do{
-    GenerateEvent();
-
+    NumMultiplets += GenerateEvent();
     ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
   }
   while(ExeTime<Timeout);
+  return NumMultiplets;
+  */
 }
 
 void CECA::OptimizeThreadCount(){
@@ -249,8 +258,12 @@ void CECA::GoBabyGo(const unsigned& num_threads){
   }
 
   AchievedYield = 0;
+  const unsigned TargetPerSyst = TargetYield / NumSystVars;
+  unsigned AchievedSystYield = 0;
   //we iterate until we have our target yield
-  while(AchievedYield<TargetYield){
+  //this refers to the global yield, but also the minimum yiled per systematics
+  //the latter is done to minimize the bias within the yield of each syst. variation
+  while(AchievedYield<TargetYield || AchievedSystYield<TargetPerSyst){
     //we run each thread for a maximum of some preset amount of time
     #pragma omp parallel for
     for(unsigned uThread=0; uThread<NumThreads; uThread++){

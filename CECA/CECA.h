@@ -55,6 +55,12 @@ public:
   //if zero, than by default this is set to Dim*Dim
   void SetEventMult(const unsigned short& emult=0);//done
 
+  //the number of desired systematic variations
+  //dont go overboard, as generating a new variation within the database
+  //takes some time. The idea is that we equally split our TargetYield
+  //amoung each (random) systematic variation, done automatically in GoBabyGo
+  void SetSystVars(const unsigned& howmany);//done
+
   //0 = single particle (SP)
   //1 = nolan (NL)
   //2 = gaussian pair (GP)
@@ -77,6 +83,7 @@ public:
   //Unless there is a very good reason, do not change the default value!
   //The time is given in seconds (integer!)
   void SetThreadTimeout(const unsigned& seconds);
+  //void SetThreadTimeout(const unsigned& seconds);
 
   //if num_threads=0, we will dynamically adjust based on efficiency
 //check if EMULT>=SDIM on start!!!
@@ -122,6 +129,8 @@ private:
   //the upper limit refers to the femto limit, and information about
   //all particle pairs is still saved, e.g. for systematics
   float UpperLimit;
+  //the number of desired systematic variations
+  unsigned NumSystVars;
 
   //how many particles to simulate
   //it would be nice to have some basic auto-sampling to estimate how many
@@ -129,7 +138,8 @@ private:
   unsigned NumParticles;//this is not used so far...
 
   void GenerateEvent();
-  void GoSingleCore(const unsigned& ThId);
+  //returns the number of generated multiplets
+  unsigned GoSingleCore(const unsigned& ThId);
   void OptimizeThreadCount();
   void SaveBuffer();
 
