@@ -33,6 +33,10 @@ public:
   float GetAbundanceUp() const;//done
   unsigned char GetNumDecays() const;//done
   const TREPNI* GetDatabase() const;//done
+  //returns randomly a mother particle, based on the abundances
+  //of resonances decaying into that particle within the database
+  //N.B. THIS particle is also counted as a possible "mother", i.e. a primary
+  TreParticle* GetMother();//NOT NEEDED
 
   //these we can make private, ones the testing is done
   TreParticle(TREPNI& database);//done
@@ -43,10 +47,12 @@ public:
   //is related to the fact that ultimately these particles will be saved into a file,
   //so we better own all the information straight away.
   void SetMomPDF(const DLM_Histo<float>& pdf);//done, the others below might not be needed
+  void SetMomPDF(const float& width);//flat angles, Gaussian x,y,z with some width
   void FillMomXYZ(const float& xval, const float& yval, const float& zval);
   void FillMomPtEtaPhi(const float& pt, const float& eta, const float& phi);
   void FillMomPDF(CatsLorentzVector& cats_vector);
-  const DLM_Histo<float>* GetMomPDF() const;
+  DLM_Histo<float>* GetMomPDF() const;
+  void SampleMomXYZ(double* axisValues, const bool& UnderOverFlow=false) const;
 
   //the QA of these setters is done from TREPNI
   void SetName(const char* name);//done
@@ -57,9 +63,11 @@ public:
   void SetAbundance(const float& abundance);//done W/O QA !!!
   void SetAbundanceLimit(const float& abundance_low, const float& abundance_up);//done W/O QA !!!
   TreChain* NewDecay();//done W/O QA !!!
-  TreChain* GetDecay(const unsigned char& whichone);//done W/O QA !!!
+  TreChain* GetDecay(const unsigned char& whichone) const;//done W/O QA !!!
   //a random decay channel based on current BR
-  TreChain* GetDecay();
+  //the current decay chain is also saved within the class
+  TreChain* GetDecay() const;
+  //TreChain* GetCurrentDecay() const;//done
   void Print();
 
   //randomize all
@@ -78,14 +86,17 @@ private:
   //the DIM can be reduced, i.e. 1D or 2D histos will be accepted, where if that is the case
   //for 2D we will only have pT,eta (phi assumed flat)
   //while for 1D we will only have pT (cos theta and phi both assumed flat)
-  const DLM_Histo<float>* MomPDF;
+  DLM_Histo<float>* MomPDF;
+  float MomXYZ_Width;
   char* TreName;
+  //for the mass, width abund, etc., the [0],[1],[2] represent low,current,upper values
   float* Mass;
   float* Width;
   float* Abundance;
   unsigned char NumDecays;
   //important: the decay chains will be owned by the particle
   TreChain** Decay;
+  //TreChain* CurrentDecay;
 
   //in both cases, we assume that the streamer is set to the correct position
   void AppendInBinary(std::ofstream& file);
@@ -103,13 +114,22 @@ public:
   //check if the mass/widths are set up fine to make possible for this decay
   //bool QA() const;
 
+//const TreParticle* GetDaughter() const;
+
 //these we can make private, ones the testing is done
 //void SetDaughters(const unsigned char& numdaughters, const TreParticle* daughter);
 void AddDaughter(const TreParticle& daughter);//done W/O QA !!!
-std::string GetName();//done W/O QA !!!
+std::string GetName() const;//done W/O QA !!!
+//the branching of all chains within a particle should sum up to 100%
 void SetBranching(const float& br);//done W/O QA !!!
 void SetBranchingLimit(const float& br_low, const float& br_up);//done W/O QA !!!
+float GetBranching() const; //done
 void RandomizeBR();
+unsigned char GetNumDaughters() const;//done
+const TreParticle* GetMother() const;//done
+const TreParticle* GetDaughter(const unsigned char& whichone) const;//done
+const double* GetDaughterMasses() const;
+
 ////////////////////////////////////////////////////////
 
 private:
@@ -121,6 +141,7 @@ private:
   float* Branching;
   //important: the daughters are only addresses, and NOT owned by the decay chain
   const TreParticle** Daughter;
+  //double* DaughterMasses;
 
 };
 
@@ -135,7 +156,7 @@ public:
 //for the QA, perhaps introduce the required mother!!!
 //any decay chain should end with the mother!!!
   enum QA_type { Full, Name, Daughters, Mass, Width, BR, Abundance };
-  bool QA(const int& type=0);//done
+  bool QA(const int& type=0) const;//done
   void SetTotalYield(const float& totyield);//done
   //n.b. if the TotalYield is not fixed, the return value is dynamically
   //evaluated by summing up all yields of all particles
@@ -143,9 +164,10 @@ public:
   TreParticle* NewParticle(const char* name=NULL);//done W/O QA !!!
   TreParticle* GetParticle(const unsigned& whichone) const;//done W/O QA !!!
   TreParticle* GetParticle(const char* name) const;//done
+  TreParticle* GetParticle(const std::string& name) const;//done
   //based on abundance
   TreParticle* GetRandomParticle() const;
-  unsigned GetNumParticles();//done
+  unsigned GetNumParticles() const;//done
 
   //this randomizes all particles for:
   //all properties, or just mass,width,abundance and their BRs
@@ -180,7 +202,7 @@ private:
   //i.e. the data base needs to set up properly
   //it should also work in the other direction, if it is false when reading from a binary,
   //e.g. created externaly via web interface, you will not be allowed to load the code!
-  bool QA_passed;
+  //bool QA_passed;
 
   DLM_Random* RanGen;
 
@@ -208,22 +230,22 @@ private:
   //void SetParticle();
 
   //no two particles with the same name
-  bool QA_Name();//done
+  bool QA_Name() const;//done
   //checks if each decay channel has at least two daughters
-  bool QA_Daughters();//done
+  bool QA_Daughters() const;//done
   //the MEAN mass of the mother should be LARGER than the
   //sum of the MEAN masses of all daughters
-  bool QA_Mass();//done
-  bool QA_Width();//done
+  bool QA_Mass() const;//done
+  bool QA_Width() const;//done
   //the sum of all BRs (all decays per particle) sould be 100%, thus we damand
   //that 100% should be within 68% central interval of the uncertainties,
   //i.e. we have high probability of sampling meaningful BRs
-  bool QA_BR();//done
+  bool QA_BR() const;//done
   //the sum of the abundancies (of all particles) should sum up to TotAbundance, thus we demand
   //that 100% should be within 68% central interval of the uncertainties,
   //i.e. we have high probability of sampling meaningful abundancies
   //NOT relevent if TotAbundance<=0
-  bool QA_Abundance();//done
+  bool QA_Abundance() const;//done
 
   unsigned NumParticles;
   //for the mem allocation
@@ -233,6 +255,7 @@ private:
 //make a checksum function to add all abundancies
 
 };
+
 
 
 class TREPNI_old{

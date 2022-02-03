@@ -2238,7 +2238,6 @@ DEBUG=-1;
             for(unsigned uPoint=0; uPoint<SWFB; uPoint++){
                 EvalPoint[1] = ExternalWF[usCh][usPW]->GetBinCenter(1,uPoint);
                 WaveFunctionU[uMomBin][usCh][usPW][uPoint] = CPF[uMomBin]*ExternalWF[usCh][usPW]->Eval(EvalPoint)*FmToNu;
-
             }
         }
 

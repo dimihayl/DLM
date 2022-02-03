@@ -4,9 +4,14 @@
 
 #include <sys/time.h>
 #include <iostream>
+#include <string.h>
+#include <vector>
 
 extern long DLM_CppHelp_TimeS;
 extern long DLM_CppHelp_TimeUS;
+
+std::vector<std::string> ParseString(const std::string& text, const std::string& delim);
+std::vector<std::string> ParseString(const std::string& text, const std::vector<std::string>& delim);
 
 int ipow(int base, unsigned char exp);
 unsigned uipow(unsigned base, unsigned char exp);

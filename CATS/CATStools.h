@@ -72,6 +72,7 @@ public:
     double GetPhi() const;
     double GetTheta() const;
     double GetE() const;
+    double GetP(const int& xyz) const;
     double GetPx() const;
     double GetPy() const;
     double GetPz() const;
@@ -79,6 +80,7 @@ public:
     double GetPphi() const;
     double Gamma() const;
     double Beta() const;
+    double Beta(const int& xyz) const;
     double BetaX() const;
     double BetaY() const;
     double BetaZ() const;
@@ -88,6 +90,8 @@ public:
              const double& engy, const double& xMom, const double& yMom, const double& zMom);
     //sets the momentum components, keeping the MASS constant (reevaluates energy)
     void SetMomXYZ(const double& xMom, const double& yMom, const double& zMom);
+    void SetMXYZ(const double& mass, const double& xMom, const double& yMom, const double& zMom);
+    void SetMPtEtaPhi(const double& mass, const double& pt, const double& eta, const double& phi);
     void SetTXYZ(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd);
 
 
@@ -126,6 +130,7 @@ public:
     void ReadFromOscarFile(FILE *InFile);
     void SetPid(const int& pid);
     void SetMass(const double& mass);
+    void SetZeroMassEpsilon(const double& eps);
     void SetWidth(const double& width);
     int GetPid() const;
     double GetMass() const;
@@ -139,6 +144,8 @@ public:
     //by default we assume that we work with MeV and fm, i.e. we have an hbarc conversion factor of c.a. 197 MeV*fm
     //you can change this conversion by Set_hbarc, i.e. setting it to 1 assumes we work in natural units
     CatsParticle* Decay(const double& mass1, const double& mass2, const bool& propagate=true);
+    //for the Nbody decay. NOT DONE YET, WORKS ONLY WITH 2-BODY
+    CatsParticle* Decay(const unsigned char& Nbody, const double* mass, const bool& propagate=true);
     void SetDecayRanGen(DLM_Random* rangen);
     void SetDecayRanGen(DLM_Random& rangen);
     void Set_hbarc(const double& HBARC);
@@ -146,7 +153,9 @@ public:
     void operator=(const CatsLorentzVector& other);
 protected:
     int Pid;
-    double Mass;
+    //the mass will be concidered zero if below some limit
+    //(for numerical stability)
+    double ZeroMass;
     double Width;
     DLM_Random* RanGen;
     double hbarc;
@@ -226,9 +235,9 @@ public:
   CatsMultiplet(DLM_Random& ran_gen, const unsigned& nbody, const bool& copy_particles);
   //void SetParticle(const unsigned& which_one, CatsParticle& particle, );
   ~CatsMultiplet();
-  
+
   //KEEP THE TAU CORRECTION AS AN OPTION!!!
-  void ComputeMultiplets(const bool& TauCorrection=true);
+  void Compute(const bool& TauCorrection=true);
   CatsParticle* GetParticle(const int& ref_frame, const unsigned& which_one) const;
 
 //SO HERE: TRY TO SOMEHOW PUT THE GETQ (4-mom) DEFINITION + THE OPTION OF KSTAR (3-vec) FOR TWO_BODY CASE

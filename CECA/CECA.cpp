@@ -7,18 +7,83 @@
 #include "DLM_Histo.h"
 #include "DLM_Source.h"
 #include "DLM_CppTools.h"
+#include "DLM_MathFunctions.h"
 
 #include "omp.h"
 #include <unistd.h>
 #include <thread>
 
+CecaParticle::CecaParticle(){
+  cats = new CatsParticle();
+  //printf("new %p %p\n",cats,this);
+  trepni = NULL;
+  decay = NULL;
+}
+CecaParticle::CecaParticle(const CecaParticle &other){
+  //printf("copy\n");
+  CecaParticle();
+  *this=other;
+}
+CecaParticle::~CecaParticle(){
+  //printf("del %p %p\n",cats,this);
+  if(cats) {delete cats; cats = NULL;}
+}
+const TreParticle* CecaParticle::Trepni() const{
+  return trepni;
+}
+CatsParticle* CecaParticle::Cats() const{
+  return cats;
+}
+const TreChain* CecaParticle::Decay() const{
+  return decay;
+}
+void CecaParticle::SetTrepni(const TreParticle& prt_tre){
+  trepni = &prt_tre;
+}
+void CecaParticle::SetCats(const CatsParticle& prt_cats){
+  *cats = prt_cats;
+}
+void CecaParticle::SetDecay(const TreChain& prt_dec){
+  decay = &prt_dec;
+}
+void CecaParticle::SetTrepni(const TreParticle* prt_tre){
+  //printf("SetTrepni(const TreParticle* prt_tre)\n");
+  trepni = prt_tre;
+}
+void CecaParticle::SetCats(const CatsParticle* prt_cats){
+  *cats = *prt_cats;
+}
+void CecaParticle::SetDecay(const TreChain* prt_dec){
+  decay = prt_dec;
+}
+void CecaParticle::RandomDecay(){
+  if(trepni){
+    decay = trepni->GetDecay();
+  }
+}
+CecaParticle& CecaParticle::operator=(const CecaParticle& other){
+  //printf("=\n");
+  trepni = other.trepni;
+  if(!cats) cats = new CatsParticle();
+  *cats = *other.cats;
+  decay = other.decay;
+  return *this;
+}
+
+
 //! nothing done on the errors (single, level etc), do it afterwards
-CECA::CECA(const TREPNI& database):Database(database),MaxThreads(std::thread::hardware_concurrency()?std::thread::hardware_concurrency():1){
+CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_particles):
+//CECA::CECA(const TREPNI& database):
+  Database(database),MaxThreads(std::thread::hardware_concurrency()?std::thread::hardware_concurrency():1){
+
   Displacement = new float [3];
   DisplacementAlpha = new float [3];
-  Hadronization = new float [3];
-  HadronizationAlpha = new float [3];
+  //Hadronization = new float [3];
+  //HadronizationAlpha = new float [3];
+  Hadronization = 0;
+  HadronizationAlpha = 2;
   Tau = 0;
+  ProperTau = true;
   SDIM = 2;
   TargetYield = 100000;
   AchievedYield = 0;
@@ -45,14 +110,24 @@ CECA::CECA(const TREPNI& database):Database(database),MaxThreads(std::thread::ha
   ThreadClock = new DLM_Timer [MaxThreads];
   //30 seconds as a default timeout
   Timeout = 30*10000000;
-  NumSystVars = 1;
+  RanGen = new DLM_Random* [MaxThreads];
+  for(unsigned uTh=0; uTh<MaxThreads; uTh++){
+    RanGen[uTh] = new DLM_Random(uTh+1);
+  }
+  //NumSystVars = 1;
+  ListOfParticles = list_of_particles;
+  for(std::string& particle : ListOfParticles){
+    if(!Database.GetParticle(particle)){
+      printf("\033[1;31mERROR:\033[0m (CECA::CECA) The particle '%s' is not in the database\n",particle.c_str());
+    }
+  }
 }
 
 CECA::~CECA(){
   delete [] Displacement;
   delete [] DisplacementAlpha;
-  delete [] Hadronization;
-  delete [] HadronizationAlpha;
+  //delete [] Hadronization;
+  //delete [] HadronizationAlpha;
   //CLV.clear();
 
   ///////////////////////////////////////////////
@@ -69,6 +144,12 @@ CECA::~CECA(){
   if(Old_P1P2){delete Old_P1P2; Old_P1P2=NULL;}
   if(Old_source){delete Old_source; Old_source=NULL;}
   if(ThreadClock){delete [] ThreadClock; ThreadClock=NULL;}
+  if(RanGen){
+    for(unsigned uTh=0; uTh<MaxThreads; uTh++){
+      delete RanGen[uTh]; RanGen[uTh]=NULL;
+    }
+    delete [] RanGen; RanGen=NULL;
+  }
 }
 
 void CECA::SetDisplacementX(const float& width, const float& levy){
@@ -76,7 +157,7 @@ void CECA::SetDisplacementX(const float& width, const float& levy){
     printf("ERROR levy\n");
     return;
   }
-  Displacement[0] = width;
+  Displacement[0] = fabs(width);
   DisplacementAlpha[0] = levy;
 }
 
@@ -85,7 +166,7 @@ void CECA::SetDisplacementY(const float& width, const float& levy){
     printf("ERROR levy\n");
     return;
   }
-  Displacement[1] = width;
+  Displacement[1] = fabs(width);
   DisplacementAlpha[1] = levy;
 }
 
@@ -94,7 +175,7 @@ void CECA::SetDisplacementZ(const float& width, const float& levy){
     printf("ERROR levy\n");
     return;
   }
-  Displacement[2] = width;
+  Displacement[2] = fabs(width);
   DisplacementAlpha[2] = levy;
 }
 
@@ -110,7 +191,7 @@ void CECA::SetDisplacement(const float& width, const float& levy){
   SetDisplacementY(width,levy);
   SetDisplacementZ(width,levy);
 }
-
+/*
 void CECA::SetHadronizationX(const float& width, const float& levy){
   if(levy<1||levy>2){
     printf("ERROR levy\n");
@@ -143,20 +224,27 @@ void CECA::SetHadronizationT(const float& width, const float& levy){
   SetHadronizationX(width,levy);
   SetHadronizationY(width,levy);
 }
-
+*/
 //identical X,Y,Z
 void CECA::SetHadronization(const float& width, const float& levy){
-  SetHadronizationX(width,levy);
-  SetHadronizationY(width,levy);
-  SetHadronizationZ(width,levy);
+  //SetHadronizationX(width,levy);
+  //SetHadronizationY(width,levy);
+  //SetHadronizationZ(width,levy);
+  if(levy<1||levy>2){
+    printf("ERROR levy\n");
+    return;
+  }
+  Hadronization = fabs(width);
+  HadronizationAlpha = levy;
 }
 
-void CECA::SetTau(const float& tau){
+void CECA::SetTau(const float& tau, const bool& proper){
   if(tau<0){
     printf("ERROR tau\n");
     return;
   }
   Tau = tau;
+  ProperTau = proper;
 }
 
 void CECA::SetSourceDim(const unsigned char& sdim){
@@ -184,10 +272,10 @@ void CECA::SetEventMult(const unsigned short& emult){
   EMULT = emult;
 }
 
-void CECA::SetSystVars(const unsigned& howmany){
-  if(!howmany) NumSystVars = 1;
-  else NumSystVars = howmany;
-}
+//void CECA::SetSystVars(const unsigned& howmany){
+//  if(!howmany) NumSystVars = 1;
+//  else NumSystVars = howmany;
+//}
 
 void CECA::SetSourceConvention(const char& srccnv){
   if(srccnv<0||srccnv>20){
@@ -202,19 +290,26 @@ void CECA::SetDebugMode(const bool& debugmode){
 void CECA::SetThreadTimeout(const unsigned& seconds){
   Timeout = seconds?seconds:1;//a minimum of 1 second
 }
+//void CECA::SetSeed(const unsigned& seed){
+//  RanGen->SetSeed(seed);
+//}
 
+//returns the number of generated multiplets
 unsigned CECA::GoSingleCore(const unsigned& ThId){
-  /*
   ThreadClock[ThId].Start();
   unsigned ExeTime;
   unsigned NumMultiplets = 0;
   do{
+    if(DebugMode){
+      //printf("Single core event generator\n");
+      //printf("-> NumMult = %i; ExeTime = %u\n",NumMultiplets,ExeTime);
+    }
     NumMultiplets += GenerateEvent();
     ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
+    //if(DebugMode) printf("\n");
   }
   while(ExeTime<Timeout);
   return NumMultiplets;
-  */
 }
 
 void CECA::OptimizeThreadCount(){
@@ -226,6 +321,9 @@ void CECA::SaveBuffer(){
 }
 
 void CECA::GoBabyGo(const unsigned& num_threads){
+  if(!Database.QA()){
+      return;
+  }
   bool DynamicThreads;
   if(num_threads==0){
     NumThreads = omp_get_num_threads();
@@ -257,18 +355,31 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     printf(" Detected threads: %u\n",NumThreads);
   }
 
+  unsigned* BufferYield = new unsigned [NumThreads];
   AchievedYield = 0;
-  const unsigned TargetPerSyst = TargetYield / NumSystVars;
-  unsigned AchievedSystYield = 0;
+  //const unsigned TargetPerSyst = TargetYield / NumSystVars;
+  //unsigned AchievedSystYield = 0;
   //we iterate until we have our target yield
   //this refers to the global yield, but also the minimum yiled per systematics
   //the latter is done to minimize the bias within the yield of each syst. variation
-  while(AchievedYield<TargetYield || AchievedSystYield<TargetPerSyst){
+  //while(AchievedYield<TargetYield || AchievedSystYield<TargetPerSyst){
+  while(AchievedYield<TargetYield){
     //we run each thread for a maximum of some preset amount of time
     #pragma omp parallel for
     for(unsigned uThread=0; uThread<NumThreads; uThread++){
-      GoSingleCore(uThread);
+      BufferYield[uThread] = GoSingleCore(uThread);
     }
+    for(unsigned uThread=0; uThread<NumThreads; uThread++){
+      AchievedYield += BufferYield[uThread];
+      //AchievedSystYield += BufferYield[uThread];
+    }
+    if(DebugMode){
+      printf(" Achieved/Target Yield = %u / %u\n",AchievedYield,TargetYield);
+    }
+    //if(AchievedSystYield>=TargetPerSyst){
+    //  //Database.Randomize();
+    //  AchievedSystYield = 0;
+    //}
     //after the timeout, we optimize the thread count and, in case
     //TargetYield is not achieved yet, than we continue
     if(DynamicThreads) OptimizeThreadCount();
@@ -276,27 +387,266 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     SaveBuffer();
   }
 
+  delete [] BufferYield;
+}
+
+bool CECA::ParticleInList(const std::string& name) const{
+  for(std::string str : ListOfParticles){
+    if(str==name)
+      {return true;}
+  }
+  return false;
+}
+bool CECA::ParticleInList(const TreParticle* prt) const{
+  return ParticleInList(prt->GetName());
 }
 
 //generates all particles, propagates and decays into the particles of interest
 //and lastly builds up the
-void CECA::GenerateEvent(){
-  double axis_values[3];
-  for(unsigned short uMult=0; uMult<EMULT; uMult++){
-    //Get a random particle specie
-    //TreParticle* Particle = Database.GetRandomParticle();
-    //TreChain* Particle->GetRandomDecay();
+unsigned CECA::GenerateEvent(){
 
+    unsigned ThId = omp_get_thread_num();
 
-    //TEMP
-    //Test with pp interaction, where you only have 3 particles in the database:
-    //proton, Reso, pion
-    //hardcode all the fractions here, just try to simulate the propagation and
-    //final 2-particle source to see if it works
-    //TreParticle* Particle = Database.GetParticle();
-    //TreChain* Particle->GetRandomDecay();
+    //there was some issue using the objects
+    //a silly workaround: I will only keep track of pointers,
+    //however we will need to call delete for each object whenever required
+    std::vector<CecaParticle*> Primordial;
+    std::vector<CecaParticle*> Primary;
 
-  }
+    //while we create an event containing all final state speciies of interest
+    //N.B. so far no sanity check if this is even possible, i.e. an infinite loop is more than possible here!!!
+    while(true){
+      Primordial.clear();
+      for(unsigned short uMult=0; uMult<EMULT; uMult++){
+        //--- SELECT A PRIMORDIAL ---//
+        Primordial.push_back(new CecaParticle());
+        TreParticle* tre = Database.GetRandomParticle();
+        Primordial.back()->SetTrepni(tre);
+
+        //check if we need this guy, i.e. is it, or one of its daughters,
+        //a particle that we would like to study.
+        //N.B. if it is already the particle of interest, it will NOT be decaying
+        bool FSP_is_primordial = false;
+        FSP_is_primordial = ParticleInList(Primordial.back()->Trepni());
+        bool FSP_is_product = false;
+
+        if(Primordial.back()->Trepni()->GetNumDecays()){
+          //it should not happen, that our final state particle can decay
+          if(FSP_is_primordial){
+            printf("\033[1;33mWARNING:\033[0m (CECA::GenerateEvent) The final state particle '%s' has a decay channel. Ignoring!\n",Primordial.back()->Trepni()->GetName().c_str());
+          }
+          else{
+            //we select a decay chain of this particle
+            Primordial.back()->RandomDecay();
+            for(std::string& str : ListOfParticles){
+              for(unsigned uDaught=0; uDaught<Primordial.back()->Decay()->GetNumDaughters(); uDaught++){
+                FSP_is_product = ParticleInList(Primordial.back()->Decay()->GetDaughter(uDaught));
+              }
+              if(FSP_is_product) break;
+            }
+          }
+        }
+        else{
+          Primordial.back()->SetDecay(NULL);
+        }
+        bool Useless_particle = (!FSP_is_primordial&&!FSP_is_product);
+
+        //the particle will NOT be used
+        if(Useless_particle){
+          delete Primordial.back();
+          Primordial.pop_back();
+        }
+        //we end the uMult here, and will continue only after
+        //we have selected all of our primordials with which to work
+      }//uMult<EMULT
+
+      //at this point, we need to check if the primordials, and their decay chains,
+      //are providing the multiplets we need. If yes, we proceed with the
+      //momentum generation and propagation
+
+      //create a copy of the list of particles, and each time you find one
+      //you delete it from the list. If this list is empty at the end, it means
+      //we are okay, i.e. found all particles of interest
+      std::vector<std::string> particle_list = ListOfParticles;
+      //for(const TreParticle* particle : Primordial){
+      for(CecaParticle* particle : Primordial){
+        for(int iNeeded=0; iNeeded<particle_list.size(); iNeeded++){
+          //check if primary
+          if(particle->Trepni()->GetName()==particle_list.at(iNeeded)){
+            particle_list.erase(particle_list.begin()+iNeeded);
+          }
+          //check if decay product
+          else if(particle->Decay()){
+            unsigned char ndaugh = particle->Decay()->GetNumDaughters();
+            for(unsigned char uDaugh=0; uDaugh<ndaugh; uDaugh++){
+              std::string pname = particle->Decay()->GetDaughter(uDaugh)->GetName();
+              if(pname==particle_list.at(iNeeded)){
+                particle_list.erase(particle_list.begin()+iNeeded);
+                if(!particle_list.size()) break;
+              }
+            }
+          }
+        }
+      }
+      //we found all particles
+      if(particle_list.size()==0)
+        break;
+    }//the inifinite while loop
+
+    for(CecaParticle* primordial : Primordial){
+      //--- SAMPLE THE MOMENTUM ---//
+      double axisValues[3];
+      double& pT = axisValues[0];
+      double& eta = axisValues[1];
+      double& phi = axisValues[2];
+      double px,py,pz,ptot,sin_th,cos_th,cotg_th;
+
+      //if we sample from a predefined PDF
+      if(primordial->Trepni()->GetMomPDF()){
+        bool Auto_eta = true;
+        bool Auto_phi = true;
+        //Auto_pT = false;
+        if(primordial->Trepni()->GetMomPDF()->GetDim()>1)
+          Auto_eta = false;
+        if(primordial->Trepni()->GetMomPDF()->GetDim()>2)
+          Auto_phi = false;
+        primordial->Trepni()->GetMomPDF()->Sample(axisValues,true);
+
+        if(Auto_phi){
+          phi = RanGen[ThId]->Uniform(0,2.*Pi);
+        }
+        if(Auto_eta){
+          cos_th = RanGen[ThId]->Uniform(-1.,1.);
+          //sin always positive here
+          sin_th = sqrt(1.-cos_th*cos_th);
+          cotg_th = cos_th/sin_th;
+          //verified that this relation is true
+          //eta = -0.5*log((1.-cos_th)/(1.+cos_th));
+        }
+        else{
+          sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
+          cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
+        }
+        pz = pT*cotg_th;
+        ptot = sqrt(pT*pT+pz*pz);
+        px = ptot*cos(phi)*sin_th;
+        py = ptot*sin(phi)*sin_th;
+      }
+      //automatic sampling of all components, following Gaussian x,y,z of certain width
+      //if nothing is set, the width is assumed zero by default, so no motion at all
+      else{
+        primordial->Trepni()->SampleMomXYZ(axisValues,true);
+        px = axisValues[0];
+        py = axisValues[1];
+        pz = axisValues[2];
+      }
+
+      primordial->Cats()->SetMXYZ(primordial->Trepni()->GetMass(),px,py,pz);
+      primordial->Cats()->SetWidth(primordial->Trepni()->GetWidth());
+      primordial->Cats()->SetDecayRanGen(RanGen[ThId]);
+
+      //--- EMISSION ---//
+      //--- PROPAGATE BASED ON THE PROPERTIES OF THE CORE SOURCE ---//
+      double rd[3], beta[3], rtot[3];
+      double tau = Tau;
+      double rh = RanGen[ThId]->StableR(3,HadronizationAlpha,0,Hadronization);
+      if(ProperTau) tau *= primordial->Cats()->Gamma();
+      //add the displacement and the beta*tau components
+      for(int xyz=0; xyz<3; xyz++){
+        beta[xyz] = primordial->Cats()->Beta(xyz);
+        rd[xyz]  = RanGen[ThId]->Stable(DisplacementAlpha[xyz],0,Displacement[xyz]);
+        rtot[xyz] = rd[xyz]+beta[xyz]*tau;
+      }
+      //we need to add the hadronization part separately, as we demand it to have
+      //the same direction as the velocity, i.e. we need beta first
+      double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
+      for(int xyz=0; xyz<3; xyz++){
+        if(beta_tot) rtot[xyz]+=beta[xyz]/beta_tot*rh;
+      }
+      //the final position is saved. The time corresponds to the time elapsed
+      //in the laboratory
+      primordial->Cats()->SetTXYZ(tau,rtot[0],rtot[1],rtot[2]);
+
+      //--- DECAY OF RESONANCES + PROPAGATION OF THE MOTHERS ---/
+      //if the width is zero, the Decay function returns the daughters
+      bool IsResonance = true;
+      IsResonance = !ParticleInList(primordial->Trepni());
+
+      if(IsResonance){
+        CatsParticle* daughters =
+          primordial->Cats()->Decay(
+          primordial->Decay()->GetNumDaughters(),
+          primordial->Decay()->GetDaughterMasses(),
+          true);
+        for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
+          if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
+            //clv_primary.push_back(daughters[nd]);
+            //Primary.push_back(primordial.Decay()->GetDaughter(nd));
+            Primary.push_back(new CecaParticle());
+            Primary.back()->SetTrepni(primordial->Decay()->GetDaughter(nd));
+            Primary.back()->SetDecay(NULL);
+            Primary.back()->SetCats(daughters[nd]);
+          }
+        }
+        delete [] daughters;
+      }
+      else{
+        Primary.push_back(new CecaParticle());
+        *Primary.back() = *primordial;
+      }
+    }//iteration over all primordials
+
+    //BUILD THE MULTIPLETS, EVALUATE THEIR NUMBER AND RETURN THE CORRECT VALUE
+
+    //the array position of each particle, which is to be used to build the multiplet
+    //the length SDIM represents the number of particles in each multiplet
+    //e.g. 5 particles, SDIM=3 has to build all permutations: 012,013,014,023,024,034,123,124,134,234
+    std::vector<std::vector<unsigned>> Permutations = BinomialPermutations(Primary.size(),SDIM);
+    //the pid is a single permutation, e.g. {0,1,2}
+    for(std::vector<unsigned> pid : Permutations){
+//GHETTO: make multiplets and simply drop the output for the source as a function of rstar, no kstar, no shit
+//this so that you can show something next FemTUM
+      //these are all particles we need to include in a multiplet
+      printf("\n");
+      CatsLorentzVector boost_v;
+
+      CatsLorentzVector* prt_cm = new CatsLorentzVector[SDIM];
+
+      unsigned char ud=0;
+      for(unsigned ID : pid){
+        boost_v = boost_v+*(Primary.at(ID)->Cats());//
+        prt_cm[ud] = *Primary.at(ID)->Cats();
+        prt_cm[ud].Print();
+        ud++;
+      }
+      printf("-boost-\n");boost_v.Print();printf("-------\n");
+      for(unsigned char ud=0; ud<SDIM; ud++){
+        prt_cm[ud].Boost(boost_v);
+        prt_cm[ud].Print();
+      }
+
+      CatsLorentzVector cm_sumQA;
+      for(unsigned char ud=0; ud<SDIM; ud++){
+        cm_sumQA = cm_sumQA+prt_cm[ud];
+      }
+      printf("-boosted sum-\n");cm_sumQA.Print();printf("-------\n");
+      usleep(1000e3);
+
+NEXT_STEPS
+the tau correction, based on largest tau, and than build up R and Q, plot R for Q<FemtoLimit.
+test for two particles first!!!
+so plot rstar for femto pairs and see how it looks
+also plot the angles relevant for epos comparison
+
+      delete [] prt_cm;
+
+      //Primary
+      //CatsMultiplet Multiplet(*RanGen[ThId],SDIM,false);
+
+    }
+
+    return 0;
+
 }
 
 

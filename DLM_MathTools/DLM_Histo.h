@@ -662,7 +662,7 @@ public:
       rangen = new DLM_Random(seed);
     }
     void Sample(double* axisValues, const bool& UnderOverFlow=false){
-      if(!rangen) rangen = new DLM_Random(11);
+      if(!rangen) rangen = new DLM_Random(0);
       unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
       if(!CumulativeValue) UpdateCum();
       double rannum = rangen->Uniform(0,double(CumulativeValue[TopBin]));

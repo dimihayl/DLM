@@ -5,6 +5,10 @@
 
 using namespace std;
 
+const double HalfPi(1.570796326794897);
+const double Pi(3.141592653589793);
+const double TwoPi(6.283185307179586);
+
 double** factrl_array=NULL;
 
 double gammln(const double xx) {
@@ -38,4 +42,103 @@ double factrl(const unsigned n) {
         for (int i=1;i<171;i++) factrl_array[WhichThread][i] = i*factrl_array[WhichThread][i-1];
     }
 	return factrl_array[WhichThread][n];
+}
+
+double atanPhi(const double& y, const double& x){
+	if(x==0){
+		if(y>0) return HalfPi;
+		else if(y<0) return -HalfPi;
+		else return Pi;//actually it can be ANY number between 0 and TwoPi, so we take the average
+	}
+	else if(x>0&&y>0){
+		return atan(fabs(y/x));
+	}
+	else if(x<0&&y>0){
+		return Pi-atan(fabs(y/x));
+	}
+	else if(x<0&&y<0){
+		return Pi+atan(fabs(y/x));
+	}
+	else{
+		return TwoPi-atan(fabs(y/x));
+	}
+}
+double AnglePhi(const double& py, const double& px){
+	return atanPhi(py,px);
+}
+double AngleTheta(const double& pt, const double& pz){
+	if(pt<0) return 0;
+	if(!pz) return HalfPi;
+	else if(pz>0) return atan(pt/pz);
+	else return atan(pt/pz)+Pi;
+}
+double Pseudorapidity(const double& pt, const double& pz){
+	if(pt<0) return 0;
+	else if(pt==0) return 1000;
+	else return asinh(pz/pt);
+}
+double Transverse(const double& py, const double& px){
+	return sqrt(py*py+px*px);
+}
+/*
+void BinomialPermutations(const unsigned offset, const unsigned& k,
+													std::vector<std::vector<unsigned>>& permutations, std::vector<unsigned>& elements){
+	if(k==0){
+		std::vector<unsigned> dummy;
+		permutations.push_back(dummy);
+		//printf("End of the line\n");
+		return;
+	}
+	if(permutations.size()==0){
+		std::vector<unsigned> dummy;
+		permutations.push_back(dummy);
+	}
+	printf("Go on\n");
+  for(unsigned ui=offset; ui<=elements.size()-k; ui++){
+    permutations.back().push_back(ui);
+		printf("pb %u\n", ui);
+    BinomialPermutations(ui+1,k-1,permutations,elements);
+    permutations.back().pop_back();
+  }
+}
+std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const unsigned& k){
+	std::vector<std::vector<unsigned>> permutations;
+	if(k==0||k>N){return permutations;}
+
+	std::vector<unsigned> elements;
+	for(unsigned uN=0; uN<N; uN++){
+		elements.push_back(uN);
+	}
+	printf("Main body\n");
+	BinomialPermutations(0,k,permutations,elements);
+	return permutations;
+}
+*/
+
+///////////////////////
+
+void BinomialPermutations(unsigned offset, unsigned k, vector<unsigned>& elements, vector<vector<unsigned>>& permutations){
+  if (k==0) {
+    permutations.push_back(permutations.back());
+    return;
+  }
+  if(!permutations.size()){
+    permutations.emplace_back();
+  }
+  for (unsigned ui=offset; ui<=elements.size()-k; ui++){
+    permutations.back().push_back(elements[ui]);
+    BinomialPermutations(ui+1, k-1, elements, permutations);
+    permutations.back().pop_back();
+  }
+}
+
+std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const unsigned& k){
+  vector<unsigned> elements;
+  vector<vector<unsigned>> permutations;
+	if(k==0||k>N){return permutations;}
+
+  for (unsigned ui = 0; ui < N; ui++) { elements.push_back(ui); }
+  BinomialPermutations(0,k,elements,permutations);
+	permutations.pop_back();
+	return permutations;
 }

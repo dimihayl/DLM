@@ -50,6 +50,15 @@ int DLM_Random::Integer(const int& from, const int& to){
     if(from>=to) return from;
     return floor((RealDist[0](*MT_RanGen))*(to-from)+from);
 }
+int DLM_Random::Integer(const int& to){
+  return Integer(0,to);
+}
+int DLM_Random::Int(const int& from, const int& to){
+  return Integer(from,to+1);
+}
+int DLM_Random::Int(const int& to){
+  return Integer(0,to+1);
+}
 double DLM_Random::Gauss(const double& mean, const double& sigma){
     return (NormDist[0](*MT_RanGen))*sigma+mean;
 }

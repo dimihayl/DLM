@@ -8,6 +8,7 @@
 #include "DLM_CppTools.h"
 #include "DLM_Histo.h"
 #include "DLM_Random.h"
+#include "DLM_MathFunctions.h"
 #include "CATStools.h"
 
 TreParticle::TreParticle(TREPNI& database):Database(database){
@@ -20,7 +21,9 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
   }
   NumDecays = 0;
   Decay = NULL;
+  //CurrentDecay = NULL;
   MomPDF = NULL;
+  MomXYZ_Width = 0;
 }
 
 TreParticle::~TreParticle(){
@@ -51,8 +54,26 @@ void TreParticle::SetMomPDF(const DLM_Histo<float>& pdf){
   }
   if(MomPDF){delete MomPDF; MomPDF = new DLM_Histo<float>(pdf);}
 }
+void TreParticle::SetMomPDF(const float& width){
+  if(MomPDF){delete MomPDF; MomPDF = NULL;}
+  MomXYZ_Width = width;
+}
+void TreParticle::SampleMomXYZ(double* axisValues, const bool& UnderOverFlow) const{
+  if(MomPDF){MomPDF->Sample(axisValues,UnderOverFlow);}
+  else{
+    double& px = axisValues[0];
+    double& py = axisValues[1];
+    double& pz = axisValues[2];
+    px = Database.RanGen->Gauss(0,MomXYZ_Width);
+    py = Database.RanGen->Gauss(0,MomXYZ_Width);
+    pz = Database.RanGen->Gauss(0,MomXYZ_Width);
+    //pT = Transverse(py,px);
+    //eta = Pseudorapidity(pT,pz);
+    //phi = atanPhi(py,px);
+  }
+}
 
-const DLM_Histo<float>* TreParticle::GetMomPDF() const{
+DLM_Histo<float>* TreParticle::GetMomPDF() const{
   return MomPDF;
 }
 
@@ -98,6 +119,7 @@ float TreParticle::GetWidthUp() const{
 }
 
 float TreParticle::GetAbundance() const{
+  //printf("    GA %f\n",Abundance[1]);
   return Abundance[1];
 }
 
@@ -193,9 +215,23 @@ TreChain* TreParticle::NewDecay(){
   return Decay[NumDecays++];
 }
 
-TreChain* TreParticle::GetDecay(const unsigned char& whichone){
+TreChain* TreParticle::GetDecay(const unsigned char& whichone) const{
+  if(!Decay) return NULL;
+  //CurrentDecay = Decay[whichone];
   return Decay[whichone];
 }
+TreChain* TreParticle::GetDecay() const{
+  float rnd = Database.RanGen->Uniform(0,100);
+  float cum = 0;
+  for(unsigned char uDec=0; uDec<NumDecays; uDec++){
+    cum += Decay[uDec]->GetBranching();
+    if(cum>=rnd) return Decay[uDec];
+  }
+  return NULL;
+}
+//TreChain* TreParticle::GetCurrentDecay(){
+//  return CurrentDecay;
+//}
 
 void TreParticle::Print(){
   printf("--- Particle information ---\n");
@@ -221,9 +257,11 @@ TreChain::TreChain(TreParticle& mother):Mother(mother){
   Branching[0]=0;
   Branching[1]=0;
   Branching[2]=0;
+  //DaughterMasses = NULL;
 }
 TreChain::~TreChain(){
   if(Daughter){delete[]Daughter;Daughter=NULL;NumDaughters=0;}
+  //if(DaughterMasses){delete[]DaughterMasses;DaughterMasses=NULL;}
   delete [] Branching;
 }
 
@@ -231,9 +269,10 @@ void TreChain::AddDaughter(const TreParticle& daughter){
   ResizeArray(Daughter,NumDaughters,NumDaughters+1);
   Daughter[NumDaughters] = &daughter;
   NumDaughters++;
+  //if(DaughterMasses){delete[]DaughterMasses;DaughterMasses=NULL;}
 }
 
-std::string TreChain::GetName(){
+std::string TreChain::GetName() const{
   std::string name;
   name = Mother.GetName();
   name += " -> ";
@@ -261,6 +300,30 @@ void TreChain::SetBranchingLimit(const float& br_low, const float& br_up){
   }
 }
 
+float TreChain::GetBranching() const{
+  return Branching[1];
+}
+
+unsigned char TreChain::GetNumDaughters() const{
+  return NumDaughters;
+}
+const TreParticle* TreChain::GetMother() const{
+  return &Mother;
+}
+const TreParticle* TreChain::GetDaughter(const unsigned char& whichone) const{
+  if(whichone>=NumDaughters) return NULL;
+  return Daughter[whichone];
+}
+const double* TreChain::GetDaughterMasses() const{
+  //if(!DaughterMasses){
+    double* DaughterMasses = new double [NumDaughters];
+    for(unsigned char uDaugh=0; uDaugh<NumDaughters; uDaugh++){
+      DaughterMasses[uDaugh] = Daughter[uDaugh]->GetMass();
+    }
+  //}
+  return DaughterMasses;
+}
+
 //void TreChain::SetDaughters(const unsigned char& numdaughters, const TreParticle* daughter){
 //  if(Daughters){delete[]Daughters;Daughters=NULL;NumDaughters=0;}
 //  Daughters = new TreParticle* [numdaughters];
@@ -281,9 +344,9 @@ Version(version),MaxMemSteps(1024),NumFunctions(64){
   SingleError = true;
   ErrorOccured = new int[NumFunctions];
   for(short us=0; us<NumFunctions; us++) ErrorOccured[us] = 0;
-  QA_passed = false;
+  //QA_passed = false;
   TotAbundance = 0;
-  RanGen = new DLM_Random(1);
+  RanGen = new DLM_Random(0);
 }
 
 TREPNI::~TREPNI(){
@@ -302,7 +365,7 @@ TREPNI::~TREPNI(){
   delete RanGen; RanGen=NULL;
 }
 
-bool TREPNI::QA(const int& type){
+bool TREPNI::QA(const int& type) const{
   bool qa = true;
   if(type<Full || type>Abundance){return false;}
   if(type==Full || type==Name){
@@ -323,11 +386,11 @@ bool TREPNI::QA(const int& type){
   if(type==Full || type==Abundance){
     qa *= QA_Abundance();
   }
-  QA_passed = qa;
+  //QA_passed = qa;
   return qa;
 }
 
-bool TREPNI::QA_Name(){
+bool TREPNI::QA_Name() const{
   bool AllesGut = true;
   for(unsigned uPart=0; uPart<NumParticles; uPart++){
     for(unsigned uPart2=uPart+1; uPart2<NumParticles; uPart2++){
@@ -380,7 +443,7 @@ bool TREPNI::QA_Name(){
   return AllesGut;
 }
 
-bool TREPNI::QA_Daughters(){
+bool TREPNI::QA_Daughters() const{
   bool AllesGut = true;
   for(unsigned uPart=0; uPart<NumParticles; uPart++){
     for(unsigned char uDec=0; uDec<Particle[uPart]->NumDecays; uDec++){
@@ -398,7 +461,7 @@ bool TREPNI::QA_Daughters(){
   return AllesGut;
 }
 
-bool TREPNI::QA_Mass(){
+bool TREPNI::QA_Mass() const{
   float MotherMass;
   float MotherLow;
   float MotherUp;
@@ -454,7 +517,7 @@ bool TREPNI::QA_Mass(){
   return AllesGut;
 }
 
-bool TREPNI::QA_Width(){
+bool TREPNI::QA_Width() const{
   float MotherWidth;
   float MotherLow;
   float MotherUp;
@@ -494,7 +557,7 @@ bool TREPNI::QA_Width(){
   return AllesGut;
 }
 
-bool TREPNI::QA_BR(){
+bool TREPNI::QA_BR() const{
   bool AllesGut = true;
   const float TotalBR = 100;
   float MinBR = 0;
@@ -556,7 +619,7 @@ bool TREPNI::QA_BR(){
   return AllesGut;
 }
 
-bool TREPNI::QA_Abundance(){
+bool TREPNI::QA_Abundance() const{
   if(TotAbundance<=0){return true;}
   bool AllesGut = true;
   float MinAbund = 0;
@@ -588,7 +651,9 @@ float TREPNI::GetYield() const{
   if(TotAbundance>0) return TotAbundance;
   float yield = 0;
   for(unsigned uPart=0; uPart<NumParticles; uPart++){
+    //printf(" gy uPart=%u %p\n",uPart,Particle[uPart]);
     yield += Particle[uPart]->GetAbundance();
+    //printf("  %f\n",yield);
   }
   return yield;
 }
@@ -612,14 +677,20 @@ TreParticle* TREPNI::GetParticle(const char* name) const{
   }
   return NULL;
 }
+TreParticle* TREPNI::GetParticle(const std::string& name) const{
+  return GetParticle(name.c_str());
+}
 
 //for the sampling, some node structure for log performance would be nice
 TreParticle* TREPNI::GetRandomParticle() const{
+//printf("GetRandomParticle %p\n",Particle);
   const float Yield = GetYield();
+//printf(" %f\n",Yield);
   float RndYield = RanGen->Uniform(0,Yield);
   float Yield_Last = 0;
   float Yield_New = 0;
   for(unsigned uPart=0; uPart<NumParticles; uPart++){
+//printf("%u\n",uPart);
     Yield_New += Particle[uPart]->GetAbundance();
     if(Yield_Last<=RndYield && RndYield<=Yield_New){
       return Particle[uPart];
@@ -628,7 +699,7 @@ TreParticle* TREPNI::GetRandomParticle() const{
   return NULL;
 }
 
-unsigned TREPNI::GetNumParticles(){
+unsigned TREPNI::GetNumParticles() const{
   return NumParticles;
 }
 
@@ -651,6 +722,7 @@ void TREPNI::RandomizeAbundance(){
 void TREPNI::RandomizeBR(){
 
 }
+
 
 void TREPNI::SetSeed(const unsigned& seed){
   RanGen->SetSeed(seed);

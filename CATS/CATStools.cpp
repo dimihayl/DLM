@@ -11,6 +11,7 @@
 #include "CATSconstants.h"
 #include "CATS.h"
 #include "DLM_Random.h"
+#include "DLM_MathFunctions.h"
 
 #include <omp.h>
 
@@ -148,9 +149,9 @@ CatsLorentzVector::CatsLorentzVector(){
     FourSpace[2]=0;
     FourSpace[3]=0;
     FourMomentum[0]=0;
-    FourMomentum[0]=0;
-    FourMomentum[0]=0;
-    FourMomentum[0]=0;
+    FourMomentum[1]=0;
+    FourMomentum[2]=0;
+    FourMomentum[3]=0;
     Length=0;
     Length2=0;
     TotMom=0;
@@ -180,13 +181,18 @@ double CatsLorentzVector::GetZ() const{
     return FourSpace[3];
 }
 double CatsLorentzVector::GetTheta() const{
-    return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 && FourSpace[3] == 0.0 ? 0.0 : atan2(sqrt(FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]),FourSpace[3]);
+    //return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 && FourSpace[3] == 0.0 ? 0.0 : atan2(sqrt(FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]),FourSpace[3]);
+    return AngleTheta(sqrt(FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]),FourSpace[3]);
 }
 double CatsLorentzVector::GetPhi() const{
-    return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 ? 0.0 : atan2(FourSpace[2],FourSpace[1]);
+    //return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 ? 0.0 : atan2(FourSpace[2],FourSpace[1])+Pi;
+    return atanPhi(FourSpace[2],FourSpace[1]);
 }
 double CatsLorentzVector::GetE() const{
     return FourMomentum[0];
+}
+double CatsLorentzVector::GetP(const int& xyz) const{
+    return (xyz>=0&&xyz<3)?FourMomentum[xyz+1]:0;
 }
 double CatsLorentzVector::GetPx() const{
     return FourMomentum[1];
@@ -208,6 +214,14 @@ double CatsLorentzVector::Gamma() const{
 }
 double CatsLorentzVector::Beta() const{
   return beta;
+}
+double CatsLorentzVector::Beta(const int& xyz) const{
+  switch (xyz) {
+    case 0: return betaX;
+    case 1: return betaY;
+    case 2: return betaZ;
+    default : return 0;
+  }
 }
 double CatsLorentzVector::BetaX() const{
   return betaX;
@@ -239,12 +253,28 @@ void CatsLorentzVector::SetMomXYZ(const double& xMom, const double& yMom, const 
     FourMomentum[3]=zMom;
     ComputeBetaGamma();
 }
+void CatsLorentzVector::SetMXYZ(const double& mass, const double& xMom, const double& yMom, const double& zMom){
+    FourMomentum[0]=sqrt(mass*mass+xMom*xMom+yMom*yMom+zMom*zMom);
+    FourMomentum[1]=xMom;
+    FourMomentum[2]=yMom;
+    FourMomentum[3]=zMom;
+    ComputeBetaGamma();
+}
+void CatsLorentzVector::SetMPtEtaPhi(const double& mass, const double& pt, const double& eta, const double& phi){
+    //pz = pt*cotg_eta; cotg_eta = (1.-exp(-2.*eta))/(2.*exp(-eta)); verfied
+    double pz = pt*(1.-exp(-2.*eta))/(2.*exp(-eta));
+    double ptot = sqrt(pt*pt+pz*pz);
+    double sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
+    double px = ptot*cos(phi)*sin_th;
+    double py = ptot*sin(phi)*sin_th;
+    SetMXYZ(mass,px,py,pz);
+}
 void CatsLorentzVector::SetTXYZ(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd){
-  FourSpace[0]=tCrd;
-  FourSpace[1]=xCrd;
-  FourSpace[2]=yCrd;
-  FourSpace[3]=zCrd;
-  ComputeBetaGamma();
+    FourSpace[0]=tCrd;
+    FourSpace[1]=xCrd;
+    FourSpace[2]=yCrd;
+    FourSpace[3]=zCrd;
+    ComputeBetaGamma();
 }
 
 void CatsLorentzVector::RotateMomPhi(const double& angle){
@@ -415,7 +445,7 @@ double CatsLorentzVector::GetCosScatAngle() const{
 
 CatsParticle::CatsParticle(){
     Pid=0;
-    Mass=0;
+    ZeroMass=1e-32;
     Width=0;
     RanGen = NULL;
     hbarc = 197.3269602;
@@ -425,11 +455,12 @@ CatsParticle::~CatsParticle(){
 }
 void CatsParticle::ReadFromOscarFile(FILE *InFile){
     int ParticleNr;
+    double mass;
     if(
         !fscanf(InFile,"%i %i %lf %lf %lf %lf %lf %lf %lf %lf %lf",
         &ParticleNr,&Pid,
         &FourMomentum[1],&FourMomentum[2],&FourMomentum[3],&FourMomentum[0],
-        &Mass,
+        &mass,
         &FourSpace[1],&FourSpace[2],&FourSpace[3],&FourSpace[0])){
         printf("\033[1;33mWARNING!\033[0m Possible bad input-file, error when reading the OscarFile!\n");
     }
@@ -439,10 +470,13 @@ void CatsParticle::SetPid(const int& pid){
     Pid=pid;
 }
 void CatsParticle::SetMass(const double& mass){
-    Mass=mass;
+    //Mass=mass;
     Set(FourSpace[0],FourSpace[1],FourSpace[2],FourSpace[3],
-        sqrt(Mass*Mass+FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]+FourMomentum[3]*FourMomentum[3]),
+        sqrt(mass*mass+FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]+FourMomentum[3]*FourMomentum[3]),
         FourMomentum[1],FourMomentum[2],FourMomentum[3]);
+}
+void CatsParticle::SetZeroMassEpsilon(const double& eps){
+    ZeroMass = fabs(eps);
 }
 void CatsParticle::SetWidth(const double& width){
     Width=width;
@@ -451,7 +485,7 @@ int CatsParticle::GetPid() const{
     return Pid;
 }
 double CatsParticle::GetMass() const{
-    return Mass;
+    return fabs(Magnitude)<ZeroMass?0:Magnitude;
 }
 double CatsParticle::GetWidth() const{
     return Width;
@@ -459,13 +493,21 @@ double CatsParticle::GetWidth() const{
 //two body decay
 CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, const bool& propagate){
   CatsParticle* Daughters = NULL;
-  if(mass1+mass2>Mass){
+  if(mass1+mass2>GetMass()){
     printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: The daughters are heavier than the mother!\n");
-    return Daughters;
+    return NULL;
   }
   if(mass1<0||mass2<0){
     printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative mass!\n");
-    return Daughters;
+    return NULL;
+  }
+
+  if(Width==0){
+    return NULL;
+  }
+  else if(Width<0){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative width!\n");
+    return NULL;
   }
 
 //what happens with FourSpace[0]
@@ -478,20 +520,24 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   DecaySpacePoint[3] = FourSpace[3];
   float TAU;
   if(RanGen){
-    //TAU = RanGen->Exponential(Width);
-    TAU = 1./Width;
+    TAU = RanGen->Exponential(Width);
+    //TAU = 1./Width;
     //MxGAMMA = Mass*Width;//RANDOM
   }
   else{
     TAU = 1./Width;
   }
+  //printf( "TAU = 1./%.2f 1/MeV = %.2f fm -boost-> %.2f fm\n",1./TAU,TAU*hbarc,gamma*TAU*hbarc);
 
-  if(Mass){
+  if(GetMass()){
     //this is beta*gamma*time, i.e. boost effect accounted for
     DecaySpacePoint[0] += gamma*TAU*hbarc;
-    DecaySpacePoint[1] += (FourMomentum[1])*TAU/Mass*hbarc;
-    DecaySpacePoint[2] += (FourMomentum[2])*TAU/Mass*hbarc;
-    DecaySpacePoint[3] += (FourMomentum[3])*TAU/Mass*hbarc;
+    DecaySpacePoint[1] += (FourMomentum[1])*TAU/GetMass()*hbarc;
+    DecaySpacePoint[2] += (FourMomentum[2])*TAU/GetMass()*hbarc;
+    DecaySpacePoint[3] += (FourMomentum[3])*TAU/GetMass()*hbarc;
+    //for(int i=0; i<4; i++){
+    //  printf(" (%i) %.3f + %.3f = %.3f\n",i,FourSpace[i],i?(FourMomentum[i])*TAU/GetMass()*hbarc:gamma*TAU*hbarc,DecaySpacePoint[i]);
+    //}
     //printf("shift = %.2e\n");
   }
 
@@ -504,7 +550,7 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   Daughters[0].SetMass(mass1);
   Daughters[1].SetMass(mass2);
 
-  const double DecM2 = (Mass*Mass-mass1*mass1-mass2*mass2);
+  const double DecM2 = (GetMass()*GetMass()-mass1*mass1-mass2*mass2);
   const double kstar = sqrt((0.25*DecM2*DecM2-mass1*mass1*mass2*mass2)/(DecM2+mass1*mass1+mass2*mass2));
 
   if(!RanGen){
@@ -532,6 +578,14 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   return Daughters;
 }
 
+CatsParticle* CatsParticle::Decay(const unsigned char& Nbody, const double* mass, const bool& propagate){
+  if(Nbody!=2){
+    printf("CatsParticle::Decay WORKS ONLY FOR 2-BODY SO FAR, UPGRADE!!!!\n");
+    return NULL;
+  }
+  return Decay(mass[0],mass[1],propagate);
+}
+
 void CatsParticle::SetDecayRanGen(DLM_Random* rangen){
   RanGen = rangen;
 }
@@ -545,7 +599,8 @@ void CatsParticle::Set_hbarc(const double& HBARC){
 void CatsParticle::operator=(const CatsParticle& other){
     CatsLorentzVector::operator = (other);
     Pid = other.Pid;
-    Mass = other.Mass;
+    //Mass = other.Mass;
+    ZeroMass = other.ZeroMass;
     Width = other.Width;
 }
 void CatsParticle::operator=(const CatsLorentzVector& other){
@@ -1374,6 +1429,12 @@ double CatsSource::Eval(const double& Momentum, const double Radius, const doubl
         PARS[2] = Angle;
         return Eval(PARS);
 }
+
+
+
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////

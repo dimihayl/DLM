@@ -2,12 +2,28 @@
 #include "DLM_CppTools.h"
 
 #include <stdio.h>
-#include <string.h>
+//#include <string.h>
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <cerrno>
 #include <stdlib.h>
+
+std::vector<std::string> ParseString(const std::string& text, const std::string& delim){
+  std::vector<std::string> tokens;
+  size_t start = 0U;
+  size_t end = text.find(delim);
+  while (end != std::string::npos){
+    tokens.push_back(text.substr(start, end - start));
+    start = end + delim.length();
+    end = text.find(delim, start);
+  }
+  //std::string last = text.substr(start, end - start);
+  //if(last!="" && last !="\n") tokens.push_back(last);
+  tokens.push_back(text.substr(start, end - start));
+  return tokens;
+}
+
 
 int ipow(int base, unsigned char exp){
     int result = 1;
@@ -226,4 +242,3 @@ long long DLM_Timer::Stop(){
     return (((long long)(end.tv_sec) - (long long)(start.tv_sec))*1000000 +
             ((long long)(end.tv_usec) - (long long)(start.tv_usec)));
 }
-
