@@ -631,13 +631,13 @@ unsigned CECA::GenerateEvent(){
       }
       printf("-boosted sum-\n");cm_sumQA.Print();printf("-------\n");
       usleep(1000e3);
-
+/*
 NEXT_STEPS
 the tau correction, based on largest tau, and than build up R and Q, plot R for Q<FemtoLimit.
 test for two particles first!!!
 so plot rstar for femto pairs and see how it looks
 also plot the angles relevant for epos comparison
-
+*/
       delete [] prt_cm;
 
       //Primary
