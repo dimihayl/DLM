@@ -13,6 +13,7 @@ const double EulerConst = 0.57721566490153;
 //convert fm into natural units (1/MeV)
 const double FmToNu(5.067731237e-3);
 const double NuToFm(197.3269602);
+const double hbarc(197.3269602);
 const double RadToDeg(57.295779513082);
 const double DegToRad(0.017453292519943);
 

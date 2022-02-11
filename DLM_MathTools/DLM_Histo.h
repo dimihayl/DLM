@@ -909,7 +909,25 @@ public:
         delete [] WhichBin;
         CumUpdated = false;
     }
-
+    void AddAt(const double& xValue, const Type& Val){
+      if(!Initialized) {InitWarning(); return;}
+      if(Dim!=1) {printf("\033[1;33mWARNING:\033[0m DLM_Histo AddAt/Fill function failed, this set up works only for Dim=1!\n"); return;}
+      AddAt(&xValue,Val);
+    }
+    void AddAt(const double& xValue, const double& yValue, const Type& Val){
+      if(!Initialized) {InitWarning(); return;}
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo AddAt/Fill function failed, this set up works only for Dim=2!\n"); return;}
+      double axis[2];
+      axis[0] = xValue;
+      axis[1] = yValue;
+      AddAt(axis,Val);
+    }
+    void Fill(const double& xValue){
+      AddAt(xValue,1);
+    }
+    void Fill(const double& xValue, const double& yValue){
+      AddAt(xValue,yValue,1);
+    }
     void SetBinContent(const unsigned* WhichBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
         SetBinContent(GetTotBin(WhichBin),Val);

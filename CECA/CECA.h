@@ -22,6 +22,8 @@ public:
   ~CecaParticle();
   const TreParticle* Trepni() const;
   CatsParticle* Cats() const;
+  CatsParticle* Mother() const;
+
   const TreChain* Decay() const;
   void SetTrepni(const TreParticle& prt_tre);
   void SetCats(const CatsParticle& prt_cats);
@@ -30,12 +32,23 @@ public:
   void SetTrepni(const TreParticle* prt_tre);
   void SetCats(const CatsParticle* prt_cats);
   void SetDecay(const TreChain* prt_dec);
+  void SetOrigin(const char& origin);
+  void SetMother(const CatsParticle* mama);
+  bool IsUseful() const;//is of the required type
+  bool IsUsefulPrimordial() const;//+primordial
+  bool IsUsefulProduct() const;//+decay product
   CecaParticle& operator=(const CecaParticle& other);
 private:
   //n.b. the CatsParticle is owned!!!
   const TreParticle* trepni;
   CatsParticle* cats;
+  CatsParticle* mother;
   const TreChain* decay;
+  //1 - primordial of the required type
+  //2 - decay product of the required type
+  //-1 - primordial of non-required type
+  //-2 - decay product of non-required type
+  char Origin;
 };
 
 //we can create one CECA only with a specific database, that is not allowed to be modified
@@ -63,12 +76,14 @@ public:
   void SetHadronizationT(const float& width, const float& levy=2);//done
   //identical X,Y,Z
   void SetHadronization(const float& width, const float& levy=2);//done
+  void SetHadrFluctuation(const float& fluct);//done no QA
 
   //if proper == true, it means the time is defined in the rest frame
   //of the particle (i.e. property of the particle)
   //if false, the time is let to run in the LAB, i.e. we treat this parameter
   //as a property of the system itself
-  void SetTau(const float& tau, const bool& proper=true);//done
+  void SetTau(const float& tau, const float& fluct=0, const bool& proper=true);//done
+  void SetThermalKick(const float& kick);//done w/o qa
 
   //all source up to DIM will be evaluated
   void SetSourceDim(const unsigned char& sdim);//done
@@ -136,6 +151,28 @@ public:
   DLM_Histo<float>* Old_RcP2;
   DLM_Histo<float>* Old_P1P2;
 
+  DLM_Histo<float>* Ghetto_kstar;
+  DLM_Histo<float>* Ghetto_kstar_rstar;
+  DLM_Histo<float>* Ghetto_mT_rstar;
+  DLM_Histo<float>* GhettoFemto_rstar;
+  DLM_Histo<float>* GhettoFemto_mT_rstar;
+  DLM_Histo<float>* GhettoFemto_mT_kstar;
+  DLM_Histo<float>* Ghetto_mT_costh;
+  DLM_Histo<float>* GhettoSP_pT_th;
+
+  DLM_Histo<float>* Ghetto_RP_AngleRcP1;
+  DLM_Histo<float>* Ghetto_PR_AngleRcP2;
+
+  DLM_Histo<float>* Ghetto_RR_AngleRcP1;
+  DLM_Histo<float>* Ghetto_RR_AngleRcP2;
+  DLM_Histo<float>* Ghetto_RR_AngleP1P2;
+
+  //pp / pr / rp / rr
+  unsigned GhettoFemtoPrimReso[4];
+  unsigned GhettoPrimReso[4];
+  //unsigned GhettoSpPrim[2];
+
+
   DLM_CleverMcLevyResoTM* Old_source;
 
 
@@ -153,10 +190,13 @@ private:
   //XYZ
   float* Displacement;
   float* DisplacementAlpha;
-  float Hadronization;
-  float HadronizationAlpha;
+  float* Hadronization;
+  float* HadronizationAlpha;
+  float HadrFluct;
   float Tau;
+  float TauFluctuation;
   bool ProperTau;
+  float ThermalKick;
   unsigned char SDIM;
 //bug prone: if this is smaller then SDIM, we are up for trouble!
   unsigned short EMULT;

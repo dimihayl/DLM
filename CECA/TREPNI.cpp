@@ -16,8 +16,11 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
   Mass = new float [3];
   Width = new float [3];
   Abundance = new float [3];
+  Radius = new float [3];
+  RadSlope = new float [3];
   for(char i=0; i<3; i++){
     Mass[i]=0;Width[i]=0;Abundance[i]=0;
+    Radius[i]=0;RadSlope[i]=0;
   }
   NumDecays = 0;
   Decay = NULL;
@@ -31,6 +34,8 @@ TreParticle::~TreParticle(){
   delete [] Mass; Mass=NULL;
   delete [] Width; Width=NULL;
   delete [] Abundance; Abundance=NULL;
+  delete [] Radius; Radius=NULL;
+  delete [] RadSlope; RadSlope=NULL;
   if(Decay){
     for(unsigned char uDec=0; uDec<NumDecays; uDec++){
       if(Decay[uDec]){delete Decay[uDec];Decay[uDec]=NULL;}
@@ -131,6 +136,32 @@ float TreParticle::GetAbundanceUp() const{
   return Abundance[2];
 }
 
+float TreParticle::GetRadius() const{
+  //printf("    GA %f\n",Abundance[1]);
+  return Radius[1];
+}
+
+float TreParticle::GetRadiusLow() const{
+  return Radius[0];
+}
+
+float TreParticle::GetRadiusUp() const{
+  return Radius[2];
+}
+
+float TreParticle::GetRadiusSlope() const{
+  //printf("    GA %f\n",Abundance[1]);
+  return RadSlope[1];
+}
+
+float TreParticle::GetRadiusSlopeLow() const{
+  return RadSlope[0];
+}
+
+float TreParticle::GetRadiusSlopeUp() const{
+  return RadSlope[2];
+}
+
 unsigned char TreParticle::GetNumDecays() const{
   return NumDecays;
 }
@@ -206,6 +237,23 @@ void TreParticle::SetAbundanceLimit(const float& abundance_low, const float& abu
   if(Abundance[0]==Abundance[2] && Abundance[0]==0){
     Abundance[0] = Abundance[1];
     Abundance[2] = Abundance[1];
+  }
+}
+
+void TreParticle::SetRadius(const float& rad){
+  //QA!!!
+  Radius[1] = rad;
+  if(Radius[0]==Radius[2] && Radius[0]==0){
+    Radius[0] = Radius[1];
+    Radius[2] = Radius[1];
+  }
+}
+void TreParticle::SetRadiusSlope(const float& slope){
+  //QA!!!
+  RadSlope[1] = slope;
+  if(RadSlope[0]==RadSlope[2] && RadSlope[0]==0){
+    RadSlope[0] = RadSlope[1];
+    RadSlope[2] = RadSlope[1];
   }
 }
 

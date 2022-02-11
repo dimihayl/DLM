@@ -243,7 +243,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
             TFile* F_EposDisto_p_pReso;
             if(SourceVar%100==4||SourceVar%100==5) F_EposDisto_p_pReso = new TFile(CatsFilesFolder[0]+"/Source/EposAngularDist/Only3body_p_pReso_3body.root");
             else F_EposDisto_p_pReso = new TFile(CatsFilesFolder[0]+"/Source/EposAngularDist/EposDisto_p_pReso.root");
-//printf("F_EposDisto_p_pReso=%p (%s)\n",F_EposDisto_p_pReso,TString(CatsFilesFolder[0]+"/Source/EposAngularDist/Epos3body_p_pReso_3body.root").Data());
+//printf("F_EposDisto_p_pReso=%p (%s)\n",F_EposDisto_p_pReso,TString(CatsFilesFolder[0]+"/Source/EposAngularDist/").Data());
             TNtuple* T_EposDisto_p_pReso = (TNtuple*)F_EposDisto_p_pReso->Get("InfoTuple_ClosePairs");
             unsigned N_EposDisto_p_pReso = T_EposDisto_p_pReso->GetEntries();
             T_EposDisto_p_pReso->SetBranchAddress("k_D",&k_D);
@@ -267,6 +267,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
                 RanVal1 = RanGen.Exponential(fM2/(fP2*Tau2));
                 CleverMcLevyResoTM[0].AddBGT_PR(RanVal1,-cos(AngleRcP2));
                 CleverMcLevyResoTM[0].AddBGT_RP(RanVal1,cos(AngleRcP2));
+                //CleverMcLevyResoTM[0].AddBGT_PR(RanVal1,cos(AngleRcP2));
+                //CleverMcLevyResoTM[0].AddBGT_RP(RanVal1,-cos(AngleRcP2));
             }
             delete F_EposDisto_p_pReso;
 

@@ -31,6 +31,12 @@ public:
   float GetAbundance() const;//done
   float GetAbundanceLow() const;//done
   float GetAbundanceUp() const;//done
+  float GetRadius() const;//done
+  float GetRadiusLow() const;//done
+  float GetRadiusUp() const;//done
+  float GetRadiusSlope() const;//done
+  float GetRadiusSlopeLow() const;//done
+  float GetRadiusSlopeUp() const;//done
   unsigned char GetNumDecays() const;//done
   const TREPNI* GetDatabase() const;//done
   //returns randomly a mother particle, based on the abundances
@@ -60,6 +66,8 @@ public:
   void SetMassLimit(const float& mass_low, const float& mass_up);//done
   void SetWidth(const float& width);//done
   void SetWidthLimit(const float& width_low, const float& width_up);//done
+  void SetRadius(const float& rad);//done W/O QA !!!
+  void SetRadiusSlope(const float& slope);//done W/O QA !!!
   void SetAbundance(const float& abundance);//done W/O QA !!!
   void SetAbundanceLimit(const float& abundance_low, const float& abundance_up);//done W/O QA !!!
   TreChain* NewDecay();//done W/O QA !!!
@@ -93,6 +101,11 @@ private:
   float* Mass;
   float* Width;
   float* Abundance;
+  //the idea is that each particle has a size, and eventually no particles within its radius will be allowed to be produced
+  //at first this will include ANY particle, perhaps in the future think on level of quarks
+  //the blockadge will follow fermi-dirac, with a mean Radius and slope RadSlope
+  float* Radius;
+  float* RadSlope;
   unsigned char NumDecays;
   //important: the decay chains will be owned by the particle
   TreChain** Decay;

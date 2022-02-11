@@ -55,6 +55,7 @@ public:
     double GetP() const;
     double GetP2() const;
     double GetPt() const;
+    double GetMt() const;
 
     double Mag() const;
     double Mag2() const;

@@ -203,6 +203,12 @@ double CatsLorentzVector::GetPy() const{
 double CatsLorentzVector::GetPz() const{
     return FourMomentum[3];
 }
+double CatsLorentzVector::GetPt() const{
+    return sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]);
+}
+double CatsLorentzVector::GetMt() const{
+    return sqrt(FourMomentum[0]*FourMomentum[0]-FourMomentum[3]*FourMomentum[3]);
+}
 double CatsLorentzVector::GetPtheta() const{
     return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 && FourMomentum[3] == 0.0 ? 0.0 : atan2(sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]),FourMomentum[3]);
 }
@@ -420,9 +426,6 @@ double CatsLorentzVector::GetP() const{
 }
 double CatsLorentzVector::GetP2() const{
     return TotMom2;
-}
-double CatsLorentzVector::GetPt() const{
-    return sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]);
 }
 double CatsLorentzVector::Mag() const{
     return Magnitude;
