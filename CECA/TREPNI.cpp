@@ -63,15 +63,17 @@ void TreParticle::SetMomPDF(const float& width){
   if(MomPDF){delete MomPDF; MomPDF = NULL;}
   MomXYZ_Width = width;
 }
-void TreParticle::SampleMomXYZ(double* axisValues, const bool& UnderOverFlow) const{
-  if(MomPDF){MomPDF->Sample(axisValues,UnderOverFlow);}
+
+void TreParticle::SampleMomXYZ(double* axisValues, const bool& UnderOverFlow, DLM_Random* RanGen) const{
+  if(!RanGen) RanGen = Database.RanGen;
+  if(MomPDF){MomPDF->Sample(axisValues,UnderOverFlow,RanGen);}
   else{
     double& px = axisValues[0];
     double& py = axisValues[1];
     double& pz = axisValues[2];
-    px = Database.RanGen->Gauss(0,MomXYZ_Width);
-    py = Database.RanGen->Gauss(0,MomXYZ_Width);
-    pz = Database.RanGen->Gauss(0,MomXYZ_Width);
+    px = RanGen->Gauss(0,MomXYZ_Width);
+    py = RanGen->Gauss(0,MomXYZ_Width);
+    pz = RanGen->Gauss(0,MomXYZ_Width);
     //pT = Transverse(py,px);
     //eta = Pseudorapidity(pT,pz);
     //phi = atanPhi(py,px);
@@ -268,8 +270,9 @@ TreChain* TreParticle::GetDecay(const unsigned char& whichone) const{
   //CurrentDecay = Decay[whichone];
   return Decay[whichone];
 }
-TreChain* TreParticle::GetDecay() const{
-  float rnd = Database.RanGen->Uniform(0,100);
+TreChain* TreParticle::GetRandomDecay(DLM_Random* RanGen) const{
+  if(!RanGen) RanGen = Database.RanGen;
+  float rnd = RanGen->Uniform(0,100);
   float cum = 0;
   for(unsigned char uDec=0; uDec<NumDecays; uDec++){
     cum += Decay[uDec]->GetBranching();
@@ -730,11 +733,12 @@ TreParticle* TREPNI::GetParticle(const std::string& name) const{
 }
 
 //for the sampling, some node structure for log performance would be nice
-TreParticle* TREPNI::GetRandomParticle() const{
+TreParticle* TREPNI::GetRandomParticle(DLM_Random* rangen) const{
 //printf("GetRandomParticle %p\n",Particle);
+  if(!rangen) rangen = RanGen;
   const float Yield = GetYield();
 //printf(" %f\n",Yield);
-  float RndYield = RanGen->Uniform(0,Yield);
+  float RndYield = rangen->Uniform(0,Yield);
   float Yield_Last = 0;
   float Yield_New = 0;
   for(unsigned uPart=0; uPart<NumParticles; uPart++){

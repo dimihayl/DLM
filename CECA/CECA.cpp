@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <thread>
 
+
 CecaParticle::CecaParticle(){
   cats = new CatsParticle();
   //printf("new %p %p\n",cats,this);
@@ -67,9 +68,9 @@ void CecaParticle::SetMother(const CatsParticle* mama){
   if(!mother) mother = new CatsParticle();
   *mother = *mama;
 }
-void CecaParticle::RandomDecay(){
+void CecaParticle::RandomDecay(DLM_Random* RanGen){
   if(trepni){
-    decay = trepni->GetDecay();
+    decay = trepni->GetRandomDecay(RanGen);
   }
 }
 void CecaParticle::SetOrigin(const char& origin){
@@ -102,7 +103,6 @@ CecaParticle& CecaParticle::operator=(const CecaParticle& other){
 CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_particles):
 //CECA::CECA(const TREPNI& database):
   Database(database),MaxThreads(std::thread::hardware_concurrency()?std::thread::hardware_concurrency():1){
-
   Displacement = new float [3];
   DisplacementAlpha = new float [3];
   Hadronization = new float [3];
@@ -179,6 +179,8 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
       printf("\033[1;31mERROR:\033[0m (CECA::CECA) The particle '%s' is not in the database\n",particle.c_str());
     }
   }
+
+  GhettoInit();
 }
 
 CECA::~CECA(){
@@ -370,25 +372,41 @@ void CECA::SetDebugMode(const bool& debugmode){
 void CECA::SetThreadTimeout(const unsigned& seconds){
   Timeout = seconds?seconds:1;//a minimum of 1 second
 }
-//void CECA::SetSeed(const unsigned& seed){
-//  RanGen->SetSeed(seed);
-//}
+void CECA::SetSeed(const unsigned& thread, const unsigned& seed){
+  if(thread>=MaxThreads) return;
+  RanGen[thread]->SetSeed(seed);
+}
 
 //returns the number of generated multiplets
 unsigned CECA::GoSingleCore(const unsigned& ThId){
   ThreadClock[ThId].Start();
   unsigned ExeTime;
   unsigned NumMultiplets = 0;
+
+  unsigned DebugCounter=0;
+  if(DebugMode){
+    //#pragma omp critical
+    //{
+    //  printf("Single core event generator (%u)\n",ThId);
+    //  printf(" -> NumMult = %i; ExeTime = %u\n",NumMultiplets,ExeTime);
+    //}
+  }
+
+
   do{
-    if(DebugMode){
-      //printf("Single core event generator\n");
-      //printf("-> NumMult = %i; ExeTime = %u\n",NumMultiplets,ExeTime);
-    }
     NumMultiplets += GenerateEvent();
     ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
-    //if(DebugMode) printf("\n");
+    DebugCounter++;
   }
   while(ExeTime<Timeout);
+  if(DebugMode){
+    //#pragma omp critical
+    //{
+    //  printf(" -> The exectution finished after %u calls, generating %u multiplets\n",DebugCounter,NumMultiplets);
+    //  printf("\n");
+    //}
+  }
+
   return NumMultiplets;
 }
 
@@ -406,7 +424,7 @@ void CECA::GoBabyGo(const unsigned& num_threads){
   }
   bool DynamicThreads;
   if(num_threads==0){
-    NumThreads = omp_get_num_threads();
+    NumThreads = std::thread::hardware_concurrency();
     if(NumThreads>MaxThreads){
       printf("\033[1;33mWARNING:\033[0m omp_get_num_threads>hardware_concurrency (%u>%u),"
       "likely a bug (not affecting physics output), please contact the developers.\n",NumThreads,MaxThreads);
@@ -481,10 +499,28 @@ bool CECA::ParticleInList(const TreParticle* prt) const{
   return ParticleInList(prt->GetName());
 }
 
+unsigned CECA::GenerateEventTEMP(){
+  unsigned ThId = omp_get_thread_num();
+  std::vector<CecaParticle*> Primordial;
+  Primordial.clear();
+  for(int i=0; i<4; i++){
+    for(unsigned short uMult=0; uMult<EMULT; uMult++){
+      Primordial.push_back(new CecaParticle());
+      //delete Primordial.back();
+    }
+  }
+
+  for(CecaParticle* particle : Primordial){
+    delete particle;
+  }
+
+  return 0;
+}
+
+
 //generates all particles, propagates and decays into the particles of interest
 //and lastly builds up the
 unsigned CECA::GenerateEvent(){
-//printf("\n<<<Welcome to the generator>>>\n");
     unsigned ThId = omp_get_thread_num();
 
     //there was some issue using the objects
@@ -496,15 +532,14 @@ unsigned CECA::GenerateEvent(){
     //while we create an event containing all final state speciies of interest
     //N.B. so far no sanity check if this is even possible, i.e. an infinite loop is more than possible here!!!
     while(true){
-      //printf("Lets give it a shot\n");
+      for(CecaParticle* particle : Primordial) {delete particle;}
       Primordial.clear();
-      //printf("A fresh start\n");
       for(unsigned short uMult=0; uMult<EMULT; uMult++){
         //--- SELECT A PRIMORDIAL ---//
         Primordial.push_back(new CecaParticle());
-        TreParticle* tre = Database.GetRandomParticle();
+
+        TreParticle* tre = Database.GetRandomParticle(RanGen[ThId]);
         Primordial.back()->SetTrepni(tre);
-//std::cout<< Primordial.back()->Trepni()->GetName() << std::endl;
 
         //check if we need this guy, i.e. is it, or one of its daughters,
         //a particle that we would like to study.
@@ -520,21 +555,17 @@ unsigned CECA::GenerateEvent(){
           }
           else{
             //we select a decay chain of this particle
-            Primordial.back()->RandomDecay();
-            //for(std::string& str : ListOfParticles){
-              for(unsigned uDaught=0; uDaught<Primordial.back()->Decay()->GetNumDaughters(); uDaught++){
-                FSP_is_product = ParticleInList(Primordial.back()->Decay()->GetDaughter(uDaught));
-                if(FSP_is_product) break;
-              }
-              //if(FSP_is_product) break;
-            //}
+            Primordial.back()->RandomDecay(RanGen[ThId]);
+            for(unsigned uDaught=0; uDaught<Primordial.back()->Decay()->GetNumDaughters(); uDaught++){
+              FSP_is_product = ParticleInList(Primordial.back()->Decay()->GetDaughter(uDaught));
+              if(FSP_is_product) break;
+            }
           }
         }
         else{
           Primordial.back()->SetDecay(NULL);
         }
         bool Useless_particle = (!FSP_is_primordial&&!FSP_is_product);
-//printf("UP=%i\n",Useless_particle);
         //the particle will NOT be used
         if(Useless_particle){
           delete Primordial.back();
@@ -548,6 +579,7 @@ unsigned CECA::GenerateEvent(){
 
         //we end the uMult here, and will continue only after
         //we have selected all of our primordials with which to work
+
       }//uMult<EMULT
 
       //at this point, we need to check if the primordials, and their decay chains,
@@ -584,48 +616,15 @@ unsigned CECA::GenerateEvent(){
           if(FoundIt) break;
         }//particle
       }//iNeed
-//usleep(2000e3);
-      /*
-      //for(const TreParticle* particle : Primordial){
-      printf("Едно две три ... %lu %lu\n",particle_list.size(),ListOfParticles.size());
-      for(CecaParticle* particle : Primordial){
-        for(int iNeeded=particle_list.size()-1; iNeeded>=0; iNeeded--){
-          printf("On the lookout for %s\n",particle_list.at(iNeeded).c_str());
-          //check if primordial
-          if(particle->Trepni()->GetName()==particle_list.at(iNeeded)){
-            printf("Found a primordial %s\n",particle->Trepni()->GetName().c_str());
-            particle_list.erase(particle_list.begin()+iNeeded);
-            //iNeeded--; if(iNeeded<0) break;
-            printf(" - removed it from the list\n");
-          }
-          //check if decay product
-          else if(particle->Decay()){
-            printf("Found a decay %s\n",particle->Trepni()->GetName().c_str());
-            unsigned char ndaugh = particle->Decay()->GetNumDaughters();
-            for(unsigned char uDaugh=0; uDaugh<ndaugh; uDaugh++){
-              std::string pname = particle->Decay()->GetDaughter(uDaugh)->GetName();
-              if(pname==particle_list.at(iNeeded)){
-                printf("Found a primary %s\n",pname.c_str());
-                particle_list.erase(particle_list.begin()+iNeeded);
-                printf(" - removed it from the list\n");
-                if(!particle_list.size()) break;
-              }
-              else{
-                printf("A rejected %s\n",pname.c_str());
-              }
-            }
-          }
-        }
-      }
-      */
 
-      //printf("ела ме настигни ... \n");
       //we found all particles
       if(particle_list.size()==0)
         break;
+
     }//the inifinite while loop
-//printf("Out of the infinite loop\n");
+
     for(CecaParticle* primordial : Primordial){
+
       //--- SAMPLE THE MOMENTUM ---//
       double axisValues[3];
       double& pT = axisValues[0];
@@ -642,7 +641,7 @@ unsigned CECA::GenerateEvent(){
           Auto_eta = false;
         if(primordial->Trepni()->GetMomPDF()->GetDim()>2)
           Auto_phi = false;
-        primordial->Trepni()->GetMomPDF()->Sample(axisValues,true);
+        primordial->Trepni()->GetMomPDF()->Sample(axisValues,true,RanGen[ThId]);
 
         if(Auto_phi){
           phi = RanGen[ThId]->Uniform(0,2.*Pi);
@@ -669,7 +668,7 @@ unsigned CECA::GenerateEvent(){
       //automatic sampling of all components, following Gaussian x,y,z of certain width
       //if nothing is set, the width is assumed zero by default, so no motion at all
       else{
-        primordial->Trepni()->SampleMomXYZ(axisValues,true);
+        primordial->Trepni()->SampleMomXYZ(axisValues,true,RanGen[ThId]);
         px = axisValues[0];
         py = axisValues[1];
         pz = axisValues[2];
@@ -685,36 +684,24 @@ unsigned CECA::GenerateEvent(){
       primordial->Cats()->SetWidth(primordial->Trepni()->GetWidth());
       primordial->Cats()->SetDecayRanGen(RanGen[ThId]);
 
-      //printf("\n");
-      //primordial->Cats()->Print();
-
       //--- EMISSION ---//
       //--- PROPAGATE BASED ON THE PROPERTIES OF THE CORE SOURCE ---//
       double rd[3],beta[3],rtot[3],rh[3],mom[3];
       double energy;
       double tau = Tau;
-      //double rh[3];
-      //standard/original procedure
-      //double rh_len = RanGen[ThId]->StableR(3,HadronizationAlpha[0],0,Hadronization[0]);
       //the model where we assume the source is an ellipsoid around the displacement point,
       //and that direction of velocity is what determines the "crossing point" of the particle with the emission source
       double rh_len=-1;
-
       int ResampleCount = 1000;
+
+
       while(true){
         for(int xyz=0; xyz<3; xyz++){
-          //rh[xyz] = RanGen[ThId]->Gauss(0,Hadronization[xyz]);
-          //rh[xyz] = Hadronization[xyz];
-          //rh[xyz] = RanGen[ThId]->Gauss(Hadronization[xyz],Displacement[xyz]);
-          //rh[xyz] = RanGen[ThId]->Gauss(Hadronization[xyz],0);
-          //rh[xyz] = Hadronization[xyz];
-
           rd[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]);
           rh[xyz] = RanGen[ThId]->Gauss(Hadronization[xyz],Hadronization[xyz]*HadrFluct);
         }
         //this comes from the definition of an ellipsoid
         rh_len = sqrt(pow(rh[0]*sin_th*cos_phi,2.)+pow(rh[1]*sin_th*sin_phi,2.)+pow(rh[2]*cos_th,2.));
-        //rh_len = RanGen[ThId]->Gauss(rh_len,Displacement[2]*rh_len);
         tau += RanGen[ThId]->Gauss(0,TauFluctuation);
 
         if(ProperTau) tau *= primordial->Cats()->Gamma();
@@ -727,22 +714,12 @@ unsigned CECA::GenerateEvent(){
         }
         energy = sqrt(energy);
         for(int xyz=0; xyz<3; xyz++){
-          //beta[xyz] = primordial->Cats()->Beta(xyz);
-          //mom[xyz] = primordial->Cats()->GetP(xyz);
-          //beta[xyz] = RanGen[ThId]->Gauss(beta[xyz],0.075);
           beta[xyz] = mom[xyz]/energy;
-          //printf("beta %f --> %f\n",primordial->Cats()->Beta(xyz),beta[xyz]);
-          //usleep(200e3);
-
-          //rd[xyz]  = RanGen[ThId]->Stable(DisplacementAlpha[xyz],0,Displacement[xyz]);
           rtot[xyz] = rd[xyz]+beta[xyz]*tau;
-          //rtot[xyz] = beta[xyz]*tau;
-          //rh[xyz] = RanGen[ThId]->Stable(HadronizationAlpha[xyz],0,Hadronization[xyz]);
         }
         //we need to add the hadronization part separately, as we demand it to have
         //the same direction as the velocity, i.e. we need beta first
         double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
-//if(beta_tot>1)beta_tot=1;
         for(int xyz=0; xyz<3; xyz++){
           if(beta_tot) rtot[xyz]+=beta[xyz]/beta_tot*rh_len;
         }
@@ -750,12 +727,6 @@ unsigned CECA::GenerateEvent(){
         //the final position is saved. The time corresponds to the time elapsed
         //in the laboratory
         primordial->Cats()->SetTXYZ(tau,rtot[0],rtot[1],rtot[2]);
-
-        //if(ResampleCount<1000){
-        //  printf("  Resampled\n");
-        //  printf("   t,x,y,z (l) = %4.2f %4.2f %4.2f %4.2f (%4.2f)\n",tau,rtot[0],rtot[1],rtot[2],rh_len);
-        //  usleep(1000e3);
-        //}
 
         double p_tot,p_x,p_y,p_z;
         double dr_tot,dr_x,dr_y,dr_z;
@@ -799,28 +770,16 @@ unsigned CECA::GenerateEvent(){
             //this the projection of the unity vector. The denum. takes care of this unity.
             LorentzWeight[ip] = fabs(p_x*dr_x+p_y*dr_y+p_z*dr_z)/(p_tot*dr_tot);
             double lw2 = LorentzWeight[ip]*LorentzWeight[ip];
-            //if(LorentzWeight[ip]<0 || LorentzWeight[ip]>1){
-              //printf(" BIG BUG IN CECA::GenerateEvent --> LorentzWeight = %e\n",LorentzWeight[ip]);
-            //}
             double EffectiveSize = sqrt(lw2*ls2+(1.-lw2)*sz2);
             double FD = exp((dr_tot-EffectiveSize)/(EffectiveSize*Slope[ip]))+1.;
             RejectProb /= FD?FD:1;
-            //if(dr_tot<0.5){
-            //  printf("   p_tot = %5.0f; dr_tot = %5.2f; rp = %6.4f; lw = %5.3f; sz = %4.2f; esz = %4.2f\n",p_tot,dr_tot,RejectProb,LorentzWeight[ip],Size[ip],EffectiveSize);
-            //  usleep(500e3);
-            //}
           }//ip
         }//iter over primoridal2
-//RejectProb=0;
-//printf("RP = %f\n",RejectProb);
+
         if(RanGen[ThId]->Uniform(0,1)>=RejectProb){
           break;
         }
-        else{
-          //printf(" REJETED\n");
-          //printf("  t,x,y,z (l) = %4.2f %4.2f %4.2f %4.2f (%4.2f)\n",tau,rtot[0],rtot[1],rtot[2],rh_len);
-          //usleep(1000e3);
-        }
+
         if(ResampleCount<0){
           printf("\033[1;33mWARNING:\033[0m CECA::GenerateEvent says that it cannot separate the particles at the set requirement.\n");
           printf("   To solve the issue, verify there is enought displacement and the particle radius is not too large.\n");
@@ -829,12 +788,14 @@ unsigned CECA::GenerateEvent(){
         ResampleCount--;
       }//while(rh_len<0)
 
+
+
+
       //--- DECAY OF RESONANCES + PROPAGATION OF THE MOTHERS ---/
       //if the width is zero, the Decay function returns the daughters
       bool IsResonance = true;
       IsResonance = !ParticleInList(primordial->Trepni());
-      //printf("IR %i\n",IsResonance);
-//usleep(500e3);
+
       if(IsResonance){
         //primordial->Cats()->Print();
         CatsParticle* daughters =
@@ -842,8 +803,7 @@ unsigned CECA::GenerateEvent(){
           primordial->Decay()->GetNumDaughters(),
           primordial->Decay()->GetDaughterMasses(),
           true);
-        //primordial->Cats()->Print();
-        //printf(" is reso\n");
+
         for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
           if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
             //printf(" daughter found\n");
@@ -855,51 +815,30 @@ unsigned CECA::GenerateEvent(){
             Primary.back()->SetCats(daughters[nd]);
             Primary.back()->SetOrigin(2);
             Primary.back()->SetMother(primordial->Cats());
-            //Primary.back()->Cats()->Print();
-            //printf("\n\n");
-            //usleep(500e3);
           }
         }
         delete [] daughters;
       }
       else{
         Primary.push_back(new CecaParticle());
-        //printf("crash?\n");
         *Primary.back() = *primordial;
       }
-      //printf("IR END\n");
 
-      if(!GhettoSP_pT_th){
-        GhettoSP_pT_th = new DLM_Histo<float>();
-        GhettoSP_pT_th->SetUp(2);
-        GhettoSP_pT_th->SetUp(0,64,0,4096);
-        GhettoSP_pT_th->SetUp(1,64,-0.1,3.2);
-        GhettoSP_pT_th->Initialize();
-      }
       GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
     }//iteration over all primordials
-//printf("iter over primordials over\n");
     //BUILD THE MULTIPLETS, EVALUATE THEIR NUMBER AND RETURN THE CORRECT VALUE
 
     //the array position of each particle, which is to be used to build the multiplet
     //the length SDIM represents the number of particles in each multiplet
     //e.g. 5 particles, SDIM=3 has to build all permutations: 012,013,014,023,024,034,123,124,134,234
     std::vector<std::vector<unsigned>> Permutations = BinomialPermutations(Primary.size(),SDIM);
-    //printf("PERM %lu %lu\n",Primary.size(),Permutations.size());
     //the pid is a single permutation, e.g. {0,1,2}
     for(std::vector<unsigned> pid : Permutations){
 //GHETTO: make multiplets and simply drop the output for the source as a function of rstar, no kstar, no shit
 //this so that you can show something next FemTUM
       //these are all particles we need to include in a multiplet
-      //printf("\n");
       CatsLorentzVector boost_v;
-
-      //CatsLorentzVector* prt_cm = new CatsLorentzVector[SDIM];
       CecaParticle* prt_cm = new CecaParticle[SDIM];
-
-      //bool* is_promordial = new bool[SDIM];
-      //CatsLorentzVector* mother_cm = new CatsLorentzVector[SDIM];
-
       unsigned char ud=0;
       std::vector<float> cos_th;
       for(unsigned ID : pid){
@@ -909,30 +848,27 @@ unsigned CECA::GenerateEvent(){
         //is_promordial[ud] = Primary.at(ID)->IsUsefulPrimordial();
         if(Primary.at(ID)->IsUseful()==false){printf("How did this happen!?!?!\n");}
         cos_th.push_back(cos(prt_cm[ud].Cats()->GetTheta()));
-        //prt_cm[ud].Print();
         ud++;
       }
-      //printf("-boost-\n");boost_v.Print();printf("-------\n");
       for(unsigned char ud=0; ud<SDIM; ud++){
         prt_cm[ud].Cats()->Boost(boost_v);
         if(prt_cm[ud].Mother()) prt_cm[ud].Mother()->Boost(boost_v);
-        //prt_cm[ud].Print();
       }
 
       CatsLorentzVector cm_sumQA;
       for(unsigned char ud=0; ud<SDIM; ud++){
         cm_sumQA = cm_sumQA+*prt_cm[ud].Cats();
       }
-      //printf("-boosted sum-\n");cm_sumQA.Print();printf("-------\n");
-      //usleep(1000e3);
-/*
-NEXT_STEPS
-the tau correction, based on largest tau, and than build up R and Q, plot R for Q<FemtoLimit.
-test for two particles first!!!
-so plot rstar for femto pairs and see how it looks
-also plot the angles relevant for epos comparison
-*/
 
+
+//NEXT_STEPS
+//the tau correction, based on largest tau, and than build up R and Q, plot R for Q<FemtoLimit.
+//test for two particles first!!!
+//so plot rstar for femto pairs and see how it looks
+//also plot the angles relevant for epos comparison
+
+#pragma omp critical
+{
 //GHETTO, works for pairs only
 if(SDIM==2){
 //printf("INSIDE THE GHETTO\n");
@@ -950,43 +886,6 @@ double AngleP1P2=0;
 double AngleRcP1=0;
 double AngleRcP2=0;
 
-
-if(!Ghetto_RP_AngleRcP1){
-  Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
-  Ghetto_RP_AngleRcP1->SetUp(1);
-  Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
-  Ghetto_RP_AngleRcP1->Initialize();
-}
-if(!Ghetto_RP_AngleRcP1){
-  Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
-  Ghetto_RP_AngleRcP1->SetUp(1);
-  Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
-  Ghetto_RP_AngleRcP1->Initialize();
-}
-if(!Ghetto_PR_AngleRcP2){
-  Ghetto_PR_AngleRcP2 = new DLM_Histo<float>();
-  Ghetto_PR_AngleRcP2->SetUp(1);
-  Ghetto_PR_AngleRcP2->SetUp(0,128,0,Pi);
-  Ghetto_PR_AngleRcP2->Initialize();
-}
-if(!Ghetto_RR_AngleRcP1){
-  Ghetto_RR_AngleRcP1 = new DLM_Histo<float>();
-  Ghetto_RR_AngleRcP1->SetUp(1);
-  Ghetto_RR_AngleRcP1->SetUp(0,128,0,Pi);
-  Ghetto_RR_AngleRcP1->Initialize();
-}
-if(!Ghetto_RR_AngleRcP2){
-  Ghetto_RR_AngleRcP2 = new DLM_Histo<float>();
-  Ghetto_RR_AngleRcP2->SetUp(1);
-  Ghetto_RR_AngleRcP2->SetUp(0,128,0,Pi);
-  Ghetto_RR_AngleRcP2->Initialize();
-}
-if(!Ghetto_RR_AngleP1P2){
-  Ghetto_RR_AngleP1P2 = new DLM_Histo<float>();
-  Ghetto_RR_AngleP1P2->SetUp(1);
-  Ghetto_RR_AngleP1P2->SetUp(0,128,0,Pi);
-  Ghetto_RR_AngleP1P2->Initialize();
-}
 
 if(kstar<300){
 
@@ -1035,86 +934,6 @@ if(kstar<300){
 
 }
 
-
-const double NumMomBins = 32;
-const double MomMin = 0;
-const double MomMax = 2048;
-
-const double NumRadBins = 128;
-const double RadMin = 0;
-const double RadMax = 8;
-
-const double NumMtBins = 32;
-const double MtMin = 0;
-const double MtMax = 4096;
-
-if(!Ghetto_rstar){
-  Ghetto_rstar = new DLM_Histo<float>();
-  Ghetto_rstar->SetUp(1);
-  Ghetto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
-  Ghetto_rstar->Initialize();
-}
-if(!Ghetto_kstar){
-  Ghetto_kstar = new DLM_Histo<float>();
-  Ghetto_kstar->SetUp(1);
-  Ghetto_kstar->SetUp(0,NumMomBins,MomMin,MomMax);
-  Ghetto_kstar->Initialize();
-}
-if(!Ghetto_kstar_rstar){
-  Ghetto_kstar_rstar = new DLM_Histo<float>();
-  Ghetto_kstar_rstar->SetUp(2);
-  Ghetto_kstar_rstar->SetUp(0,NumMomBins,MomMin,MomMax);
-  Ghetto_kstar_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
-  Ghetto_kstar_rstar->Initialize();
-}
-
-if(!Ghetto_mT_rstar){
-  Ghetto_mT_rstar = new DLM_Histo<float>();
-  Ghetto_mT_rstar->SetUp(2);
-  Ghetto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
-  Ghetto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
-  Ghetto_mT_rstar->Initialize();
-}
-
-if(!GhettoFemto_rstar){
-  GhettoFemto_rstar = new DLM_Histo<float>();
-  GhettoFemto_rstar->SetUp(1);
-  GhettoFemto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
-  GhettoFemto_rstar->Initialize();
-}
-
-if(!Ghetto_mT_costh){
-  Ghetto_mT_costh = new DLM_Histo<float>();
-  Ghetto_mT_costh->SetUp(2);
-  Ghetto_mT_costh->SetUp(0,NumMtBins,MtMin,MtMax);
-  Ghetto_mT_costh->SetUp(1,128,-1,1);
-  Ghetto_mT_costh->Initialize();
-
-}
-
-if(!GhettoFemto_mT_rstar){
-  GhettoFemto_mT_rstar = new DLM_Histo<float>();
-  GhettoFemto_mT_rstar->SetUp(2);
-  GhettoFemto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
-  GhettoFemto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
-  GhettoFemto_mT_rstar->Initialize();
-}
-if(!GhettoFemto_mT_kstar){
-  GhettoFemto_mT_kstar = new DLM_Histo<float>();
-  GhettoFemto_mT_kstar->SetUp(2);
-  GhettoFemto_mT_kstar->SetUp(0,NumMtBins,MtMin,MtMax);
-  GhettoFemto_mT_kstar->SetUp(1,NumMomBins,MomMin,MomMax);
-  GhettoFemto_mT_kstar->Initialize();
-}
-
-
-//if(kstar<200){
-  //printf("\nA pair of\n");
-  //printf(" kstar = %.2f\n", kstar);
-  //printf(" rstar = %.2f\n", rstar);
-  //printf(" mT = %.2f\n", mT);
-  //printf("-------------------\n");
-  //usleep(500e3);
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
@@ -1123,8 +942,6 @@ if(!GhettoFemto_mT_kstar){
     Ghetto_mT_costh->Fill(mT,ct);
   }
   GhettoFemto_mT_kstar->Fill(mT,kstar);
-//printf("%i%i\n",is_promordial[0],is_promordial[1]);
-//usleep(200e3);
   GhettoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
   GhettoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
   GhettoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -1133,7 +950,6 @@ if(!GhettoFemto_mT_kstar){
   if(kstar<150){
     GhettoFemto_rstar->Fill(rstar);
     GhettoFemto_mT_rstar->Fill(mT,rstar);
-    //printf(" mT = %.2f\n", mT);
     GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -1143,24 +959,18 @@ if(!GhettoFemto_mT_kstar){
 }
 //printf("OUT OF THE GHETTO\n");
 ///////////////////////////
+}
 
 
       delete [] prt_cm;
-      //delete [] is_promordial;
-      //Primary
-      //CatsMultiplet Multiplet(*RanGen[ThId],SDIM,false);
-//printf("ALL BAD MEMORIES ARE GONE\n");
     }//permutations over possible multiplets
-//printf("We want to delete shit\n");
+
   for(CecaParticle* particle : Primordial){
     delete particle;
   }
-//printf("We did so for the primordials\n");
   for(CecaParticle* particle : Primary){
     delete particle;
   }
-//printf("We did so for the primaries\n");
-//printf("We will return %lu\n",Permutations.size());
   return Permutations.size();
 }
 
@@ -1619,4 +1429,123 @@ if(!prim1&&false){
 
   delete [] dlm_rstar;
   delete [] dlm_rcore;
+}
+
+void CECA::GhettoInit(){
+
+  const double NumMomBins = 32;
+  const double MomMin = 0;
+  const double MomMax = 2048;
+
+  const double NumRadBins = 128;
+  const double RadMin = 0;
+  const double RadMax = 16;
+
+  const double NumMtBins = 32;
+  const double MtMin = 0;
+  const double MtMax = 4096;
+
+  if(!Ghetto_RP_AngleRcP1){
+    Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
+    Ghetto_RP_AngleRcP1->SetUp(1);
+    Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
+    Ghetto_RP_AngleRcP1->Initialize();
+  }
+  if(!Ghetto_RP_AngleRcP1){
+    Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
+    Ghetto_RP_AngleRcP1->SetUp(1);
+    Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
+    Ghetto_RP_AngleRcP1->Initialize();
+  }
+  if(!Ghetto_PR_AngleRcP2){
+    Ghetto_PR_AngleRcP2 = new DLM_Histo<float>();
+    Ghetto_PR_AngleRcP2->SetUp(1);
+    Ghetto_PR_AngleRcP2->SetUp(0,128,0,Pi);
+    Ghetto_PR_AngleRcP2->Initialize();
+  }
+  if(!Ghetto_RR_AngleRcP1){
+    Ghetto_RR_AngleRcP1 = new DLM_Histo<float>();
+    Ghetto_RR_AngleRcP1->SetUp(1);
+    Ghetto_RR_AngleRcP1->SetUp(0,128,0,Pi);
+    Ghetto_RR_AngleRcP1->Initialize();
+  }
+  if(!Ghetto_RR_AngleRcP2){
+    Ghetto_RR_AngleRcP2 = new DLM_Histo<float>();
+    Ghetto_RR_AngleRcP2->SetUp(1);
+    Ghetto_RR_AngleRcP2->SetUp(0,128,0,Pi);
+    Ghetto_RR_AngleRcP2->Initialize();
+  }
+  if(!Ghetto_RR_AngleP1P2){
+    Ghetto_RR_AngleP1P2 = new DLM_Histo<float>();
+    Ghetto_RR_AngleP1P2->SetUp(1);
+    Ghetto_RR_AngleP1P2->SetUp(0,128,0,Pi);
+    Ghetto_RR_AngleP1P2->Initialize();
+  }
+
+  if(!GhettoSP_pT_th){
+    GhettoSP_pT_th = new DLM_Histo<float>();
+    GhettoSP_pT_th->SetUp(2);
+    GhettoSP_pT_th->SetUp(0,64,0,4096);
+    GhettoSP_pT_th->SetUp(1,64,-0.1,3.2);
+    GhettoSP_pT_th->Initialize();
+  }
+
+  if(!Ghetto_rstar){
+    Ghetto_rstar = new DLM_Histo<float>();
+    Ghetto_rstar->SetUp(1);
+    Ghetto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
+    Ghetto_rstar->Initialize();
+  }
+  if(!Ghetto_kstar){
+    Ghetto_kstar = new DLM_Histo<float>();
+    Ghetto_kstar->SetUp(1);
+    Ghetto_kstar->SetUp(0,NumMomBins,MomMin,MomMax);
+    Ghetto_kstar->Initialize();
+  }
+  if(!Ghetto_kstar_rstar){
+    Ghetto_kstar_rstar = new DLM_Histo<float>();
+    Ghetto_kstar_rstar->SetUp(2);
+    Ghetto_kstar_rstar->SetUp(0,NumMomBins,MomMin,MomMax);
+    Ghetto_kstar_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+    Ghetto_kstar_rstar->Initialize();
+  }
+
+  if(!Ghetto_mT_rstar){
+    Ghetto_mT_rstar = new DLM_Histo<float>();
+    Ghetto_mT_rstar->SetUp(2);
+    Ghetto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
+    Ghetto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+    Ghetto_mT_rstar->Initialize();
+  }
+
+  if(!GhettoFemto_rstar){
+    GhettoFemto_rstar = new DLM_Histo<float>();
+    GhettoFemto_rstar->SetUp(1);
+    GhettoFemto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
+    GhettoFemto_rstar->Initialize();
+  }
+
+  if(!Ghetto_mT_costh){
+    Ghetto_mT_costh = new DLM_Histo<float>();
+    Ghetto_mT_costh->SetUp(2);
+    Ghetto_mT_costh->SetUp(0,NumMtBins,MtMin,MtMax);
+    Ghetto_mT_costh->SetUp(1,128,-1,1);
+    Ghetto_mT_costh->Initialize();
+
+  }
+
+  if(!GhettoFemto_mT_rstar){
+    GhettoFemto_mT_rstar = new DLM_Histo<float>();
+    GhettoFemto_mT_rstar->SetUp(2);
+    GhettoFemto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
+    GhettoFemto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+    GhettoFemto_mT_rstar->Initialize();
+  }
+  if(!GhettoFemto_mT_kstar){
+    GhettoFemto_mT_kstar = new DLM_Histo<float>();
+    GhettoFemto_mT_kstar->SetUp(2);
+    GhettoFemto_mT_kstar->SetUp(0,NumMtBins,MtMin,MtMax);
+    GhettoFemto_mT_kstar->SetUp(1,NumMomBins,MomMin,MomMax);
+    GhettoFemto_mT_kstar->Initialize();
+  }
 }

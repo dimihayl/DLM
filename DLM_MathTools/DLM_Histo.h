@@ -299,6 +299,7 @@ public:
     DLM_Histo(const DLM_Histo& other):DLM_Histo(){
 //printf("DLM_Histo(const DLM_Histo& other)\n");
 //printf("BinValue=%p\n",BinValue);
+        ConstructorState();
         operator=(other);
     }
     ~DLM_Histo(){
@@ -661,11 +662,12 @@ public:
       if(rangen) delete rangen;
       rangen = new DLM_Random(seed);
     }
-    void Sample(double* axisValues, const bool& UnderOverFlow=false){
-      if(!rangen) rangen = new DLM_Random(0);
+    void Sample(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
+      if(!RanGen) RanGen = rangen;
+      if(!RanGen) RanGen = new DLM_Random(0);
       unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
       if(!CumulativeValue) UpdateCum();
-      double rannum = rangen->Uniform(0,double(CumulativeValue[TopBin]));
+      double rannum = RanGen->Uniform(0,double(CumulativeValue[TopBin]));
       double value_down;
       double value_up;
       unsigned Fraction = 2;
@@ -1415,6 +1417,7 @@ protected:
         PER = NULL;
         Initialized=false;
         Dim = 0;
+        rangen = NULL;
     }
     void CleanUp(){
 //printf("CleanUp %u dimensions\n",Dim);
@@ -1448,6 +1451,10 @@ protected:
                 delete [] PER[uPer]; PER[uPer]=NULL;
             }
             delete [] PER; PER=NULL;
+        }
+        if(rangen){
+          delete rangen;
+          rangen = NULL;
         }
         ConstructorState();
     }

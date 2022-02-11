@@ -28,7 +28,7 @@ public:
   void SetTrepni(const TreParticle& prt_tre);
   void SetCats(const CatsParticle& prt_cats);
   void SetDecay(const TreChain& prt_dec);
-  void RandomDecay();
+  void RandomDecay(DLM_Random* RanGen=NULL);
   void SetTrepni(const TreParticle* prt_tre);
   void SetCats(const CatsParticle* prt_cats);
   void SetDecay(const TreChain* prt_dec);
@@ -130,7 +130,7 @@ public:
   //Unless there is a very good reason, do not change the default value!
   //The time is given in seconds (integer!)
   void SetThreadTimeout(const unsigned& seconds);//done
-  //void SetSeed(const unsigned& seed);//done
+  void SetSeed(const unsigned& thread, const unsigned& seed);//done
   //void SetThreadTimeout(const unsigned& seconds);
 
   //if num_threads=0, we will dynamically adjust based on efficiency
@@ -225,6 +225,7 @@ private:
   bool ParticleInList(const std::string& name) const;
   bool ParticleInList(const TreParticle* prt) const;
   unsigned GenerateEvent();
+unsigned GenerateEventTEMP();
   //returns the number of generated multiplets
   unsigned GoSingleCore(const unsigned& ThId);
   void OptimizeThreadCount();
@@ -248,7 +249,7 @@ private:
   unsigned Timeout;
   //
 
-
+  void GhettoInit();
 
 };
 

@@ -58,7 +58,7 @@ public:
   void FillMomPtEtaPhi(const float& pt, const float& eta, const float& phi);
   void FillMomPDF(CatsLorentzVector& cats_vector);
   DLM_Histo<float>* GetMomPDF() const;
-  void SampleMomXYZ(double* axisValues, const bool& UnderOverFlow=false) const;
+  void SampleMomXYZ(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL) const;
 
   //the QA of these setters is done from TREPNI
   void SetName(const char* name);//done
@@ -74,7 +74,7 @@ public:
   TreChain* GetDecay(const unsigned char& whichone) const;//done W/O QA !!!
   //a random decay channel based on current BR
   //the current decay chain is also saved within the class
-  TreChain* GetDecay() const;
+  TreChain* GetRandomDecay(DLM_Random* RanGen=NULL) const;
   //TreChain* GetCurrentDecay() const;//done
   void Print();
 
@@ -179,7 +179,7 @@ public:
   TreParticle* GetParticle(const char* name) const;//done
   TreParticle* GetParticle(const std::string& name) const;//done
   //based on abundance
-  TreParticle* GetRandomParticle() const;
+  TreParticle* GetRandomParticle(DLM_Random* rangen=NULL) const;
   unsigned GetNumParticles() const;//done
 
   //this randomizes all particles for:
