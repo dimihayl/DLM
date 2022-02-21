@@ -4,12 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #include "DLM_CppTools.h"
 #include "DLM_Histo.h"
 #include "DLM_Random.h"
 #include "DLM_MathFunctions.h"
 #include "CATStools.h"
+#include "CATSconstants.h"
 
 TreParticle::TreParticle(TREPNI& database):Database(database){
   TreName = new char [Database.Len_PrtclName];
@@ -18,15 +20,25 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
   Abundance = new float [3];
   Radius = new float [3];
   RadSlope = new float [3];
+  DelayTau = new float [3];
   for(char i=0; i<3; i++){
     Mass[i]=0;Width[i]=0;Abundance[i]=0;
     Radius[i]=0;RadSlope[i]=0;
+    DelayTau[i]=0;
   }
   NumDecays = 0;
   Decay = NULL;
   //CurrentDecay = NULL;
-  MomPDF = NULL;
-  MomXYZ_Width = 0;
+  PtEtaPhi = NULL;
+  PxPyPz_Width = 0;
+  Acceptance_pT[0] = 0;
+  Acceptance_pT[1] = 1e128;
+  Acceptance_Eta[0] = -1e128;
+  Acceptance_Eta[1] = 1e128;
+  Acceptance_CosTh[0] = -1;
+  Acceptance_CosTh[1] = 1;
+  Acceptance_Phi[0] = 0;
+  Acceptance_Phi[1] = 2.*Pi;
 }
 
 TreParticle::~TreParticle(){
@@ -36,6 +48,7 @@ TreParticle::~TreParticle(){
   delete [] Abundance; Abundance=NULL;
   delete [] Radius; Radius=NULL;
   delete [] RadSlope; RadSlope=NULL;
+  delete [] DelayTau; DelayTau=NULL;
   if(Decay){
     for(unsigned char uDec=0; uDec<NumDecays; uDec++){
       if(Decay[uDec]){delete Decay[uDec];Decay[uDec]=NULL;}
@@ -43,56 +56,165 @@ TreParticle::~TreParticle(){
     delete[]Decay;
     Decay=NULL;
   }
-  if(MomPDF){
-    delete MomPDF;
-    MomPDF = NULL;
+  if(PtEtaPhi){
+    delete PtEtaPhi;
+    PtEtaPhi = NULL;
   }
 }
 
-void TreParticle::SetMomPDF(const DLM_Histo<float>& pdf){
+void TreParticle::SetPtEtaPhi(const DLM_Histo<float>& pdf){
   if(pdf.GetDim()>3){
     static bool ShowMessage=true;
     if(Database.PrintLevel>=1 && ShowMessage){
-      printf("\033[1;31mERROR:\033[0m (TreParticle::SetMomPDF) The momentum distribution must have 1,2 or 3 dimensions\n");
+      printf("\033[1;31mERROR:\033[0m (TreParticle::SetPtEtaPhi) The momentum distribution must have 1,2 or 3 dimensions\n");
     }
     return;
   }
-  if(MomPDF){delete MomPDF; MomPDF = new DLM_Histo<float>(pdf);}
+  if(PtEtaPhi){delete PtEtaPhi;}
+  PtEtaPhi = new DLM_Histo<float>(pdf);
 }
-void TreParticle::SetMomPDF(const float& width){
-  if(MomPDF){delete MomPDF; MomPDF = NULL;}
-  MomXYZ_Width = width;
+void TreParticle::SetPtEtaPhi(const float& width){
+  if(PtEtaPhi){delete PtEtaPhi; PtEtaPhi = NULL;}
+  PxPyPz_Width = width;
 }
 
-void TreParticle::SampleMomXYZ(double* axisValues, const bool& UnderOverFlow, DLM_Random* RanGen) const{
+void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const bool& UnderOverFlow) const{
   if(!RanGen) RanGen = Database.RanGen;
-  if(MomPDF){MomPDF->Sample(axisValues,UnderOverFlow,RanGen);}
+  if(PtEtaPhi){
+    PtEtaPhi->Sample(axisValues,UnderOverFlow,RanGen);
+    double pt = axisValues[0];
+    double eta = axisValues[1];
+    double phi = axisValues[2];
+    double& px = axisValues[0];
+    double& py = axisValues[1];
+    double& pz = axisValues[2];
+    double cos_th,sin_th,cotg_th,ptot;
+
+    bool Auto_eta = true;
+    bool Auto_phi = true;
+    if(PtEtaPhi->GetDim()>1)
+      Auto_eta = false;
+    if(PtEtaPhi->GetDim()>2)
+      Auto_phi = false;
+    //PtEtaPhi->Sample(axisValues,true,RanGen[ThId]);
+
+    if(Auto_phi){
+      phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
+    }
+    if(Auto_eta){
+      cos_th = RanGen->Uniform(Acceptance_CosTh[0],Acceptance_CosTh[1]);
+      //sin always positive here
+      sin_th = sqrt(1.-cos_th*cos_th);
+      cotg_th = cos_th/sin_th;
+      //verified that this relation is true
+      //eta = -0.5*log((1.-cos_th)/(1.+cos_th));
+    }
+    else{
+      sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
+      cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
+      cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
+    }
+    pz = pt*cotg_th;
+    ptot = sqrt(pt*pt+pz*pz);
+    px = ptot*cos(phi)*sin_th;
+    py = ptot*sin(phi)*sin_th;
+//pT = sqrt(px2+py2) = ptot*|sin_th|
+//theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
+  }
   else{
     double& px = axisValues[0];
     double& py = axisValues[1];
     double& pz = axisValues[2];
-    px = RanGen->Gauss(0,MomXYZ_Width);
-    py = RanGen->Gauss(0,MomXYZ_Width);
-    pz = RanGen->Gauss(0,MomXYZ_Width);
-    //pT = Transverse(py,px);
-    //eta = Pseudorapidity(pT,pz);
-    //phi = atanPhi(py,px);
+
+    double cos_th = RanGen->Uniform(Acceptance_CosTh[0],Acceptance_CosTh[1]);
+    double sin_th = sqrt(1.-cos_th*cos_th)+1e-128;
+    double tan_th = sin_th/cos_th;
+    double phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
+    double ptot,pt;
+    do{
+      ptot = sqrt(pow(RanGen->Gauss(0,PxPyPz_Width),2.)+pow(RanGen->Gauss(0,PxPyPz_Width),2.)+pow(RanGen->Gauss(0,PxPyPz_Width),2.));
+      pt = ptot*sin_th;
+    }
+    while(pt<Acceptance_pT[0]||pt>Acceptance_pT[1]);
+    px = ptot*cos(phi)*sin_th;
+    py = ptot*sin(phi)*sin_th;
+    pz = pt/tan_th;
   }
 }
 
-DLM_Histo<float>* TreParticle::GetMomPDF() const{
-  return MomPDF;
+void TreParticle::SetAcceptance_pT(const float& min, const float& max){
+  if(min>=max||max<=0){
+    printf("\033[1;33mWARNING:\033[0m (TreParticle::SetAcceptance_pT) Zero acceptance set\n");
+    Acceptance_pT[0] = 0;
+    Acceptance_pT[1] = 0;
+  }
+  Acceptance_pT[0] = min;
+  Acceptance_pT[1] = max;
 }
 
-void TreParticle::FillMomXYZ(const float& xval, const float& yval, const float& zval){
+void TreParticle::SetAcceptance_Eta(const float& min, const float& max){
+  if(min>=max){
+    printf("\033[1;33mWARNING:\033[0m (TreParticle::SetAcceptance_Eta) Zero acceptance set\n");
+    Acceptance_Eta[0] = 0;
+    Acceptance_Eta[1] = 0;
+    Acceptance_CosTh[0] = 0;
+    Acceptance_CosTh[1] = 0;
+  }
+  Acceptance_Eta[0] = min;
+  Acceptance_Eta[1] = max;
+  Acceptance_CosTh[0] = (1.-exp(-2.*min)/(1.+exp(-2.*min)));
+  Acceptance_CosTh[1] = (1.-exp(-2.*max)/(1.+exp(-2.*max)));
+}
+
+void TreParticle::SetAcceptance_Phi(const float& min, const float& max){
+  if(min>=max||max<=0){
+    printf("\033[1;33mWARNING:\033[0m (TreParticle::SetAcceptance_Phi) Zero acceptance set\n");
+    Acceptance_Phi[0] = 0;
+    Acceptance_Phi[1] = 0;
+  }
+  Acceptance_Phi[0] = min<0?0:min;
+  Acceptance_Phi[1] = max>2.*Pi?2.*Pi:max;
+}
+
+double TreParticle::AcceptanceMin_pT() const{
+  return Acceptance_pT[0];
+}
+double TreParticle::AcceptanceMax_pT() const{
+  return Acceptance_pT[1];
+}
+double TreParticle::AcceptanceMin_Eta() const{
+  return Acceptance_Eta[0];
+}
+double TreParticle::AcceptanceMax_Eta() const{
+  return Acceptance_Eta[1];
+}
+double TreParticle::AcceptanceMin_CosTh() const{
+  return Acceptance_CosTh[0];
+}
+double TreParticle::AcceptanceMax_CosTh() const{
+  return Acceptance_CosTh[1];
+}
+double TreParticle::AcceptanceMin_Phi() const{
+  return Acceptance_Phi[0];
+}
+double TreParticle::AcceptanceMax_Phi() const{
+  return Acceptance_Phi[1];
+}
+
+
+DLM_Histo<float>* TreParticle::GetPtEtaPhi() const{
+  return PtEtaPhi;
+}
+
+void TreParticle::FillPxPyPz(const float& xval, const float& yval, const float& zval){
 
 }
 
-void TreParticle::FillMomPtEtaPhi(const float& pt, const float& eta, const float& phi){
+void TreParticle::FillPtEtaPhi(const float& pt, const float& eta, const float& phi){
 
 }
 
-void TreParticle::FillMomPDF(CatsLorentzVector& cats_vector){
+void TreParticle::FillPtEtaPhi(CatsLorentzVector& cats_vector){
 
 }
 
@@ -162,6 +284,16 @@ float TreParticle::GetRadiusSlopeLow() const{
 
 float TreParticle::GetRadiusSlopeUp() const{
   return RadSlope[2];
+}
+
+float TreParticle::GetDelayTau() const{
+  return DelayTau[1];
+}
+float TreParticle::GetDelayTauLow() const{
+  return DelayTau[0];
+}
+float TreParticle::GetDelayTauUp() const{
+  return DelayTau[2];
 }
 
 unsigned char TreParticle::GetNumDecays() const{
@@ -256,6 +388,14 @@ void TreParticle::SetRadiusSlope(const float& slope){
   if(RadSlope[0]==RadSlope[2] && RadSlope[0]==0){
     RadSlope[0] = RadSlope[1];
     RadSlope[2] = RadSlope[1];
+  }
+}
+void TreParticle::SetDelayTau(const float& delay){
+  //QA!!!
+  DelayTau[1] = delay;
+  if(DelayTau[0]==DelayTau[2] && DelayTau[0]==0){
+    DelayTau[0] = DelayTau[1];
+    DelayTau[2] = DelayTau[1];
   }
 }
 

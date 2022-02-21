@@ -668,6 +668,7 @@ public:
       unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
       if(!CumulativeValue) UpdateCum();
       double rannum = RanGen->Uniform(0,double(CumulativeValue[TopBin]));
+      //printf("rn %f cvtp %f\n",rannum,CumulativeValue[TopBin]);
       double value_down;
       double value_up;
       unsigned Fraction = 2;
@@ -686,7 +687,8 @@ public:
           unsigned* BinId = new unsigned [Dim];
           GetBinCoordinates(BinCandidate,BinId);
           for(unsigned short sDim=0; sDim<Dim; sDim++){
-            axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
           }
           delete [] BinId;
           return;
@@ -704,7 +706,8 @@ public:
           unsigned* BinId = new unsigned [Dim];
           GetBinCoordinates(TopBin,BinId);
           for(unsigned short sDim=0; sDim<Dim; sDim++){
-            axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
           }
           delete [] BinId;
           return;
@@ -713,7 +716,8 @@ public:
           unsigned* BinId = new unsigned [Dim];
           GetBinCoordinates(0,BinId);
           for(unsigned short sDim=0; sDim<Dim; sDim++){
-            axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
           }
           delete [] BinId;
           return;
@@ -874,6 +878,16 @@ public:
         if(WhichTotBin>=TotNumBins) return;
         BinValue[WhichTotBin]=Val;
         CumUpdated = false;
+    }
+    void SetBinContent(const unsigned& WhichX, const unsigned& WhichY, const Type& Val){
+        if(!Initialized) {InitWarning(); return;}
+        if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo SetBinContent function failed, this set up works only for Dim=2!\n"); return;}
+        if(WhichX>=NumBins[0]) return;
+        if(WhichY>=NumBins[1]) return;
+        unsigned WhichBin[2];
+        WhichBin[0]=WhichX;
+        WhichBin[1]=WhichY;
+        SetBinContent(GetTotBin(WhichBin),Val);
     }
      void SetBinError(const unsigned& WhichTotBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -1493,6 +1507,7 @@ protected:
       for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
         if(uBin==0) CumulativeValue[uBin]=BinValue[uBin];
         else CumulativeValue[uBin]=CumulativeValue[uBin-1]+BinValue[uBin];
+        //printf("b%u %e %e\n",uBin,CumulativeValue[uBin],BinValue[uBin]);
         if(BinValue[uBin]<0){
           printf("\033[1;33mWARNING:\033[0m DLM_Histo cannot be used for sampling, due to negative entries!\n");
           CumUpdated = false;

@@ -1935,12 +1935,27 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
 //printf("CosRcP0 = %f\n",CosRcP0);
 //printf("CosRcP1 = %f\n",CosRcP1);
 //printf("CosP0P1 = %f\n",CosP0P1);
+//usleep(1000e3);
 //printf("\n");
 //}
 
+//static unsigned counter=0;
+//counter++;
+//double rad=RAD;
+//static double rad_avg=0;
+//rad_avg+=rad;
+//printf("r_core = %.1f (%.1f) --> ",RAD,rad_avg/double(counter));
                     //the sign convention is such, that r_core = primary_1 - primary_0
+
                     RAD = sqrt(RAD*RAD+BGT[0]*BGT[0]+BGT[1]*BGT[1]
                                -2.*RAD*BGT[0]*CosRcP0+2.*RAD*BGT[1]*CosRcP1-2.*BGT[0]*BGT[1]*CosP0P1);
+//static double RAD_avg=0;
+//RAD_avg+=RAD;
+
+//printf("r_star = %.1f (%.1f)\n",RAD,RAD_avg/double(counter));
+//printf(" sqrt(%.1f^2 + %.3f^2 + %.3f^2 - 2*%.1f*%.3f*%.3f + 2*%.1f*%.3f*%.3f - 2*%.3f*%.3f*%.3f)\n",
+//rad,BGT[0],BGT[1],rad,BGT[0],CosRcP0,rad,BGT[1],CosRcP1,BGT[0],BGT[1],CosP0P1);
+//usleep(100e3);
                     WhichBin[0] = Histo->GetBin(0,RAD);
                     TotBin = Histo->GetTotBin(WhichBin);
                     BinSize = Histo->GetBinSize(0,WhichBin[0]);

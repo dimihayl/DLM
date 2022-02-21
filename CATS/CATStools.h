@@ -95,6 +95,11 @@ public:
     void SetMPtEtaPhi(const double& mass, const double& pt, const double& eta, const double& phi);
     void SetTXYZ(const double& tCrd, const double& xCrd, const double& yCrd, const double& zCrd);
 
+    //propagates the particle for a time tau, moving along a straight line
+    //by default we consider that the time given is the proper time, meaning that we
+    //have gamma*tau for the propagation time
+    //if the proper time is false, we simply use tau
+    void Propagate(const double& tau, const bool& proper_time=true);
 
     //rotates the Momentum vector in Phi
     void RotateMomPhi(const double& angle);
@@ -147,6 +152,7 @@ public:
     CatsParticle* Decay(const double& mass1, const double& mass2, const bool& propagate=true);
     //for the Nbody decay. NOT DONE YET, WORKS ONLY WITH 2-BODY
     CatsParticle* Decay(const unsigned char& Nbody, const double* mass, const bool& propagate=true);
+    CatsParticle* DecaySimple(const unsigned char& Nbody, const double* mass, const bool& propagate=true);
     void SetDecayRanGen(DLM_Random* rangen);
     void SetDecayRanGen(DLM_Random& rangen);
     void Set_hbarc(const double& HBARC);

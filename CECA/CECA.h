@@ -37,6 +37,7 @@ public:
   bool IsUseful() const;//is of the required type
   bool IsUsefulPrimordial() const;//+primordial
   bool IsUsefulProduct() const;//+decay product
+  bool WithinAcceptance() const;
   CecaParticle& operator=(const CecaParticle& other);
 private:
   //n.b. the CatsParticle is owned!!!
@@ -132,6 +133,9 @@ public:
   void SetThreadTimeout(const unsigned& seconds);//done
   void SetSeed(const unsigned& thread, const unsigned& seed);//done
   //void SetThreadTimeout(const unsigned& seconds);
+  //true by default. Within a multiplet it propagates the particles until
+  //they all have the same tau component
+  void EqualizeFsiTime(const bool& yesno);//done
 
   //if num_threads=0, we will dynamically adjust based on efficiency
 //check if EMULT>=SDIM on start!!!
@@ -159,6 +163,12 @@ public:
   DLM_Histo<float>* GhettoFemto_mT_kstar;
   DLM_Histo<float>* Ghetto_mT_costh;
   DLM_Histo<float>* GhettoSP_pT_th;
+  DLM_Histo<float>* GhettoSP_pT_1;
+  DLM_Histo<float>* GhettoSP_pT_2;
+
+  DLM_Histo<float>* Ghetto_PP_AngleRcP1;
+  DLM_Histo<float>* Ghetto_PP_AngleRcP2;
+  DLM_Histo<float>* Ghetto_PP_AngleP1P2;
 
   DLM_Histo<float>* Ghetto_RP_AngleRcP1;
   DLM_Histo<float>* Ghetto_PR_AngleRcP2;
@@ -196,6 +206,7 @@ private:
   float Tau;
   float TauFluctuation;
   bool ProperTau;
+  bool EqualFsiTau;
   float ThermalKick;
   unsigned char SDIM;
 //bug prone: if this is smaller then SDIM, we are up for trouble!

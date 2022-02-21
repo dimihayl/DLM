@@ -210,10 +210,12 @@ double CatsLorentzVector::GetMt() const{
     return sqrt(FourMomentum[0]*FourMomentum[0]-FourMomentum[3]*FourMomentum[3]);
 }
 double CatsLorentzVector::GetPtheta() const{
-    return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 && FourMomentum[3] == 0.0 ? 0.0 : atan2(sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]),FourMomentum[3]);
+    //return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 && FourMomentum[3] == 0.0 ? 0.0 : atan2(sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]),FourMomentum[3]);
+    return AngleTheta(sqrt(FourMomentum[1]*FourMomentum[1]+FourMomentum[2]*FourMomentum[2]),FourMomentum[3]);
 }
 double CatsLorentzVector::GetPphi() const{
-    return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 ? 0.0 : atan2(FourMomentum[2],FourMomentum[1]);
+    //return FourMomentum[1] == 0.0 && FourMomentum[2] == 0.0 ? 0.0 : atan2(FourMomentum[2],FourMomentum[1]);
+    return atanPhi(FourMomentum[2],FourMomentum[1]);
 }
 double CatsLorentzVector::Gamma() const{
   return gamma;
@@ -281,6 +283,14 @@ void CatsLorentzVector::SetTXYZ(const double& tCrd, const double& xCrd, const do
     FourSpace[2]=yCrd;
     FourSpace[3]=zCrd;
     ComputeBetaGamma();
+}
+void CatsLorentzVector::Propagate(const double& tau, const bool& proper_time){
+    double GAMMA = proper_time?gamma:1;
+    FourSpace[0]+=GAMMA*tau;
+    FourSpace[1]+=GAMMA*betaX*tau;
+    FourSpace[2]+=GAMMA*betaY*tau;
+    FourSpace[3]+=GAMMA*betaZ*tau;
+    //ComputeBetaGamma();
 }
 
 void CatsLorentzVector::RotateMomPhi(const double& angle){
@@ -493,6 +503,53 @@ double CatsParticle::GetMass() const{
 double CatsParticle::GetWidth() const{
     return Width;
 }
+
+
+//two body decay
+CatsParticle* CatsParticle::DecaySimple(const unsigned char& Nbody, const double* mass, const bool& propagate){
+  /*
+  CatsParticle* Daughters = NULL;
+  double TotMass = 0;
+  double Excess = Magnitude;
+  for(int iB=0; iB<Nbody; iB++){
+    TotMass += mass[iB];
+    if(mass[iB]<0){
+      printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative mass!\n");
+      return NULL;
+    }
+  }
+  if(TotMass>GetMass()){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: The daughters are heavier than the mother!\n");
+    return NULL;
+  }
+  Excess -= TotMass;
+  //this will be added towards the kinetic energy of each daughter and the rest frame of the mother
+  double ExcessPerDaughter = Excess/double(Nbody);
+
+  if(Excess<0){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Possible bug, this should not happen!\n");
+    return NULL;
+  }
+
+  if(Nbody<2){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: At least two daughters required!\n");
+    return NULL;
+  }
+
+  if(Nbody==2){
+    return Decay(mass[0],mass[1],propagate);
+  }
+
+  Daughters = new CatsParticle[Nbody];
+  for(unsigned char cD=0; cD<Nbody; cD+=2){
+    TotMass -= mass[cD];
+    Decay(Nbody-1,,propagate);
+  }
+
+  return Daughters;
+  */
+}
+
 //two body decay
 CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, const bool& propagate){
   CatsParticle* Daughters = NULL;
@@ -505,13 +562,14 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
     return NULL;
   }
 
+  //negative Width corresponds to immediate decay
   if(Width==0){
     return NULL;
   }
-  else if(Width<0){
-    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative width!\n");
-    return NULL;
-  }
+//  else if(Width<0){
+//    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative width!\n");
+//    return NULL;
+//  }
 
 //what happens with FourSpace[0]
 //-> we shift the time by gamma*time, which is the time that has passed in
@@ -522,13 +580,16 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   DecaySpacePoint[2] = FourSpace[2];
   DecaySpacePoint[3] = FourSpace[3];
   float TAU;
-  if(RanGen){
+  if(RanGen&&Width>0){
     TAU = RanGen->Exponential(Width);
     //TAU = 1./Width;
     //MxGAMMA = Mass*Width;//RANDOM
   }
-  else{
+  else if(Width){
     TAU = 1./Width;
+  }
+  else{
+    TAU = 0;
   }
   //printf( "TAU = 1./%.2f 1/MeV = %.2f fm -boost-> %.2f fm\n",1./TAU,TAU*hbarc,gamma*TAU*hbarc);
 
@@ -565,7 +626,7 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
     const double sin_th = sqrt(1.-cos_th*cos_th);
     const double phi = RanGen->Uniform(0,2.*Pi);
     Daughters[0].SetMomXYZ(kstar*cos(phi)*sin_th, kstar*sin(phi)*sin_th, kstar*cos_th);
-    Daughters[1].SetMomXYZ(kstar*cos(phi)*sin_th, kstar*sin(phi)*sin_th, kstar*cos_th);
+    Daughters[1].SetMomXYZ(-kstar*cos(phi)*sin_th, -kstar*sin(phi)*sin_th, -kstar*cos_th);
   }
 
   //here we boost to move with the speed of the mother

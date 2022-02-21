@@ -86,6 +86,15 @@ bool CecaParticle::IsUsefulPrimordial() const{
 bool CecaParticle::IsUsefulProduct() const{
   return Origin==2;
 }//+decay product
+bool CecaParticle::WithinAcceptance() const{
+  if(cats->GetPt()<trepni->AcceptanceMin_pT()) return false;
+  if(cats->GetPt()>trepni->AcceptanceMax_pT()) return false;
+  if(cats->GetPseudoRap()<trepni->AcceptanceMin_Eta()) return false;
+  if(cats->GetPseudoRap()>trepni->AcceptanceMax_Eta()) return false;
+  if(cats->GetPphi()<trepni->AcceptanceMin_Phi()) return false;
+  if(cats->GetPphi()>trepni->AcceptanceMax_Phi()) return false;
+  return true;
+}
 CecaParticle& CecaParticle::operator=(const CecaParticle& other){
   //printf("=\n");
   trepni = other.trepni;
@@ -119,6 +128,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Tau = 0;
   TauFluctuation = 0;
   ProperTau = true;
+  EqualFsiTau = true;
   ThermalKick = 0;
   SDIM = 2;
   TargetYield = 100000;
@@ -149,11 +159,16 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   GhettoFemto_rstar = NULL;
   Ghetto_mT_costh = NULL;
   GhettoSP_pT_th = NULL;
+  GhettoSP_pT_1 = NULL;
+  GhettoSP_pT_2 = NULL;
   Ghetto_RP_AngleRcP1 = NULL;
   Ghetto_PR_AngleRcP2 = NULL;
   Ghetto_RR_AngleRcP1 = NULL;
   Ghetto_RR_AngleRcP2 = NULL;
   Ghetto_RR_AngleP1P2 = NULL;
+  Ghetto_PP_AngleRcP1 = NULL;
+  Ghetto_PP_AngleRcP2 = NULL;
+  Ghetto_PP_AngleP1P2 = NULL;
   GhettoFemto_mT_rstar = NULL;
   GhettoFemto_mT_kstar = NULL;
   GhettoPrimReso[0]=0;
@@ -209,11 +224,16 @@ CECA::~CECA(){
   if(GhettoFemto_rstar){delete GhettoFemto_rstar; GhettoFemto_rstar=NULL;}
   if(Ghetto_mT_costh){delete Ghetto_mT_costh; Ghetto_mT_costh=NULL;}
   if(GhettoSP_pT_th){delete GhettoSP_pT_th; GhettoSP_pT_th=NULL;}
+  if(GhettoSP_pT_1){delete GhettoSP_pT_1; GhettoSP_pT_1=NULL;}
+  if(GhettoSP_pT_2){delete GhettoSP_pT_2; GhettoSP_pT_2=NULL;}
   if(Ghetto_RP_AngleRcP1){delete Ghetto_RP_AngleRcP1; Ghetto_RP_AngleRcP1=NULL;}
   if(Ghetto_PR_AngleRcP2){delete Ghetto_PR_AngleRcP2; Ghetto_PR_AngleRcP2=NULL;}
   if(Ghetto_RR_AngleRcP1){delete Ghetto_RR_AngleRcP1; Ghetto_RR_AngleRcP1=NULL;}
   if(Ghetto_RR_AngleRcP2){delete Ghetto_RR_AngleRcP2; Ghetto_RR_AngleRcP2=NULL;}
   if(Ghetto_RR_AngleP1P2){delete Ghetto_RR_AngleP1P2; Ghetto_RR_AngleP1P2=NULL;}
+  if(Ghetto_PP_AngleRcP1){delete Ghetto_PP_AngleRcP1; Ghetto_PP_AngleRcP1=NULL;}
+  if(Ghetto_PP_AngleRcP2){delete Ghetto_PP_AngleRcP2; Ghetto_PP_AngleRcP2=NULL;}
+  if(Ghetto_PP_AngleP1P2){delete Ghetto_PP_AngleP1P2; Ghetto_PP_AngleP1P2=NULL;}
   if(GhettoFemto_mT_rstar){delete GhettoFemto_mT_rstar; GhettoFemto_mT_rstar=NULL;}
   if(GhettoFemto_mT_kstar){delete GhettoFemto_mT_kstar; GhettoFemto_mT_kstar=NULL;}
   if(ThreadClock){delete [] ThreadClock; ThreadClock=NULL;}
@@ -376,6 +396,9 @@ void CECA::SetSeed(const unsigned& thread, const unsigned& seed){
   if(thread>=MaxThreads) return;
   RanGen[thread]->SetSeed(seed);
 }
+void CECA::EqualizeFsiTime(const bool& yesno){
+  EqualFsiTau = yesno;
+}
 
 //returns the number of generated multiplets
 unsigned CECA::GoSingleCore(const unsigned& ThId){
@@ -419,6 +442,8 @@ void CECA::SaveBuffer(){
 }
 
 void CECA::GoBabyGo(const unsigned& num_threads){
+  GhettoInit();
+
   if(!Database.QA()){
       return;
   }
@@ -566,6 +591,7 @@ unsigned CECA::GenerateEvent(){
           Primordial.back()->SetDecay(NULL);
         }
         bool Useless_particle = (!FSP_is_primordial&&!FSP_is_product);
+
         //the particle will NOT be used
         if(Useless_particle){
           delete Primordial.back();
@@ -622,9 +648,8 @@ unsigned CECA::GenerateEvent(){
         break;
 
     }//the inifinite while loop
-
+return 0;
     for(CecaParticle* primordial : Primordial){
-
       //--- SAMPLE THE MOMENTUM ---//
       double axisValues[3];
       double& pT = axisValues[0];
@@ -632,16 +657,18 @@ unsigned CECA::GenerateEvent(){
       double& phi = axisValues[2];
       double px,py,pz,ptot,sin_th,cos_th,cotg_th,cos_phi,sin_phi;
 
+
+      /*
       //if we sample from a predefined PDF
-      if(primordial->Trepni()->GetMomPDF()){
+      if(primordial->Trepni()->GetPtEtaPhi()){
         bool Auto_eta = true;
         bool Auto_phi = true;
         //Auto_pT = false;
-        if(primordial->Trepni()->GetMomPDF()->GetDim()>1)
+        if(primordial->Trepni()->GetPtEtaPhi()->GetDim()>1)
           Auto_eta = false;
-        if(primordial->Trepni()->GetMomPDF()->GetDim()>2)
+        if(primordial->Trepni()->GetPtEtaPhi()->GetDim()>2)
           Auto_phi = false;
-        primordial->Trepni()->GetMomPDF()->Sample(axisValues,true,RanGen[ThId]);
+        primordial->Trepni()->GetPtEtaPhi()->Sample(axisValues,true,RanGen[ThId]);
 
         if(Auto_phi){
           phi = RanGen[ThId]->Uniform(0,2.*Pi);
@@ -657,18 +684,21 @@ unsigned CECA::GenerateEvent(){
         else{
           sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
           cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
-          cos_th = (1.-exp(-2.*eta)/(1.+exp(-2.*eta)));
+          cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
         }
         pz = pT*cotg_th;
         ptot = sqrt(pT*pT+pz*pz);
         px = ptot*cos(phi)*sin_th;
         py = ptot*sin(phi)*sin_th;
+//pT = sqrt(px2+py2) = ptot*|sin_th|
+//theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
 
       }
+      */
       //automatic sampling of all components, following Gaussian x,y,z of certain width
       //if nothing is set, the width is assumed zero by default, so no motion at all
-      else{
-        primordial->Trepni()->SampleMomXYZ(axisValues,true,RanGen[ThId]);
+      //else{
+        primordial->Trepni()->SamplePxPyPz(axisValues,RanGen[ThId],true);
         px = axisValues[0];
         py = axisValues[1];
         pz = axisValues[2];
@@ -676,7 +706,7 @@ unsigned CECA::GenerateEvent(){
         ptot = sqrt(px*px+py*py+pz*pz);
         cos_th = pz/ptot;
         sin_th = sqrt(1.-cos_th*cos_th);
-      }
+      //}
       cos_phi = px/(ptot*sin_th);
       sin_phi = py/(ptot*sin_th);
 
@@ -694,7 +724,7 @@ unsigned CECA::GenerateEvent(){
       double rh_len=-1;
       int ResampleCount = 1000;
 
-
+//primordial->Cats()->Print();
       while(true){
         for(int xyz=0; xyz<3; xyz++){
           rd[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]);
@@ -709,19 +739,39 @@ unsigned CECA::GenerateEvent(){
         energy=primordial->Cats()->Mag2();
         for(int xyz=0; xyz<3; xyz++){
           //thermal kick
+          //N.B. because of it, we need to reevaluate beta mom etc of the particle and
+          //we cannot use the primordial->Cats() !!!
           mom[xyz] = RanGen[ThId]->Gauss(primordial->Cats()->GetP(xyz),ThermalKick);
           energy += mom[xyz]*mom[xyz];
         }
         energy = sqrt(energy);
+        double mom_tot=0;
         for(int xyz=0; xyz<3; xyz++){
           beta[xyz] = mom[xyz]/energy;
           rtot[xyz] = rd[xyz]+beta[xyz]*tau;
+          mom_tot += mom[xyz]*mom[xyz];
         }
+        mom_tot = sqrt(mom_tot);
+
         //we need to add the hadronization part separately, as we demand it to have
         //the same direction as the velocity, i.e. we need beta first
         double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
         for(int xyz=0; xyz<3; xyz++){
           if(beta_tot) rtot[xyz]+=beta[xyz]/beta_tot*rh_len;
+        }
+
+        //in the last step, particles with delayed time of formation are set to be produced with
+        //a time offset. This offset is concidered to be given as proper time, and the particle
+        //is simply propagated in a straight line
+        if(primordial->Trepni()->GetDelayTau()){
+          double gamma = energy/primordial->Cats()->Mag();
+          //the time traveled evaluated in LAB
+          double dtau = gamma*primordial->Trepni()->GetDelayTau();
+          //printf("delayed by %f\n",dtau);
+          tau += dtau;
+          for(int xyz=0; xyz<3; xyz++){
+            rtot[xyz] += beta[xyz]*dtau;
+          }
         }
 
         //the final position is saved. The time corresponds to the time elapsed
@@ -745,6 +795,7 @@ unsigned CECA::GenerateEvent(){
           //moreover, this here is needed as we are inside the primoridal loop, and the entries
           //after the current primordial are still empty.
           if(prim[0]==prim[1]) break;
+
           //this is needed to avoid having RejectProb==1 for the first time we iterate
           if(!RejectProb) RejectProb=1;
           for(int ip=0; ip<2; ip++){
@@ -787,9 +838,7 @@ unsigned CECA::GenerateEvent(){
         }
         ResampleCount--;
       }//while(rh_len<0)
-
-
-
+//printf("while(rh_len<0)\n");
 
       //--- DECAY OF RESONANCES + PROPAGATION OF THE MOTHERS ---/
       //if the width is zero, the Decay function returns the daughters
@@ -806,15 +855,16 @@ unsigned CECA::GenerateEvent(){
 
         for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
           if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
-            //printf(" daughter found\n");
-            //clv_primary.push_back(daughters[nd]);
-            //Primary.push_back(primordial.Decay()->GetDaughter(nd));
             Primary.push_back(new CecaParticle());
             Primary.back()->SetTrepni(primordial->Decay()->GetDaughter(nd));
             Primary.back()->SetDecay(NULL);
             Primary.back()->SetCats(daughters[nd]);
             Primary.back()->SetOrigin(2);
             Primary.back()->SetMother(primordial->Cats());
+            if(!Primary.back()->WithinAcceptance()){
+              delete Primary.back();
+              Primary.pop_back();
+            }
           }
         }
         delete [] daughters;
@@ -822,12 +872,23 @@ unsigned CECA::GenerateEvent(){
       else{
         Primary.push_back(new CecaParticle());
         *Primary.back() = *primordial;
+        if(!Primary.back()->WithinAcceptance()){
+          delete Primary.back();
+          Primary.pop_back();
+        }
       }
 
       GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
+      if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(0)){
+        GhettoSP_pT_1->Fill(Primary.back()->Cats()->GetPt());
+      }
+      if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(1)){
+        GhettoSP_pT_2->Fill(Primary.back()->Cats()->GetPt());
+      }
     }//iteration over all primordials
-    //BUILD THE MULTIPLETS, EVALUATE THEIR NUMBER AND RETURN THE CORRECT VALUE
 
+
+    //BUILD THE MULTIPLETS, EVALUATE THEIR NUMBER AND RETURN THE CORRECT VALUE
     //the array position of each particle, which is to be used to build the multiplet
     //the length SDIM represents the number of particles in each multiplet
     //e.g. 5 particles, SDIM=3 has to build all permutations: 012,013,014,023,024,034,123,124,134,234
@@ -850,16 +911,79 @@ unsigned CECA::GenerateEvent(){
         cos_th.push_back(cos(prt_cm[ud].Cats()->GetTheta()));
         ud++;
       }
+
+      //the starting time of the interaction
+      //given by the last particle to form
+      double fsi_tau=-1e64;
+/*
+static unsigned pair_counter=0;
+static double r_avg=0;
+static double rstar_avg=0;
+static double runi_avg=0;
+CatsLorentzVector diff_lab = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+double dr_lab=diff_lab.GetR();
+*/
+
       for(unsigned char ud=0; ud<SDIM; ud++){
         prt_cm[ud].Cats()->Boost(boost_v);
         if(prt_cm[ud].Mother()) prt_cm[ud].Mother()->Boost(boost_v);
+        if(prt_cm[ud].Cats()->GetT()>fsi_tau){
+          fsi_tau = prt_cm[ud].Cats()->GetT();
+        }
       }
+
+//CatsLorentzVector diff_cm = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+//double dr_cm = diff_cm.GetR();
+
+      //unify the time of all particles. I.e. in their rest frame, tau should be the same
+      //if not, the particles that are formed earlier are propagated along a straight line until
+      //the time of formation of the last particle is reached
+      if(EqualFsiTau){
+        for(unsigned char ud=0; ud<SDIM; ud++){
+          double dtau = fsi_tau-prt_cm[ud].Cats()->GetT();
+          if(dtau<0){
+            printf("How did this dtau happen!?!?!\n");
+            continue;
+          }
+          if(fabs(dtau/fsi_tau)>1e-12){
+            //we propagate the particle in THIS frame of reference by dtau
+            prt_cm[ud].Cats()->Propagate(dtau,false);
+            //printf(" %s (%i %i) dtau = %f\n",
+            //prt_cm[ud].Trepni()->GetName().c_str(),
+            //prt_cm[ud].IsUseful(),
+            //prt_cm[ud].IsUsefulPrimordial(),
+            //dtau);
+            //usleep(500e3);
+          }
+        }
+      }
+
+/*
+CatsLorentzVector diff_uni = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+double dr_uni=diff_uni.GetR();
+double kstar = 0.5*diff_uni.GetP();
+if(kstar<200){
+  pair_counter++;
+  printf("--- Pair %u ---\n",pair_counter);
+  r_avg+=dr_lab;
+  printf("dr = %.2f (%.2f)\n",dr_lab,r_avg/double(pair_counter));
+  //printf("dt = %.2f\n",diff_lab.GetT());
+  printf("BOOST\n");
+  rstar_avg+=dr_cm;
+  printf("dr = %.2f (%.2f)\n",dr_cm,rstar_avg/double(pair_counter));
+  //printf("dt = %.2f\n",diff_cm.GetT());
+  printf("UNIFY\n");
+  runi_avg+=dr_uni;
+  printf("dr = %.2f (%.2f)\n",dr_uni,runi_avg/double(pair_counter));
+  //printf("dt = %.2f\n",diff_uni.GetT());
+  usleep(100e3);
+}
+*/
 
       CatsLorentzVector cm_sumQA;
       for(unsigned char ud=0; ud<SDIM; ud++){
         cm_sumQA = cm_sumQA+*prt_cm[ud].Cats();
       }
-
 
 //NEXT_STEPS
 //the tau correction, based on largest tau, and than build up R and Q, plot R for Q<FemtoLimit.
@@ -873,12 +997,26 @@ unsigned CECA::GenerateEvent(){
 if(SDIM==2){
 //printf("INSIDE THE GHETTO\n");
 CatsLorentzVector cm_rel = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+CatsLorentzVector cm_core;
+if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+  cm_core = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+}
+if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
+  cm_core = *prt_cm[1].Mother()-*prt_cm[0].Cats();
+}
+if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
+  cm_core = *prt_cm[1].Cats()-*prt_cm[0].Mother();
+}
+if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
+  cm_core = *prt_cm[1].Mother()-*prt_cm[0].Mother();
+}
+
 double drx,dry,drz;
 drx = cm_rel.GetX();
 dry = cm_rel.GetY();
 drz = cm_rel.GetZ();
 
-double kstar = cm_rel.GetP();
+double kstar = 0.5*cm_rel.GetP();
 double rstar = cm_rel.GetR();
 double mT = 0.5*boost_v.GetMt();
 
@@ -886,39 +1024,80 @@ double AngleP1P2=0;
 double AngleRcP1=0;
 double AngleRcP2=0;
 
+if(kstar<FemtoLimit){
 
-if(kstar<300){
+//static double rstar_avg=0;
+//static unsigned counter=0;
+//rstar_avg+=rstar;
+//counter++;
+//printf("rstar = %.1f (%.1f)\n",rstar,rstar_avg/double(counter));
+//usleep(100e3);
 
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+    double cosine = cm_core.GetX()*prt_cm[0].Cats()->GetPx()+
+                    cm_core.GetY()*prt_cm[0].Cats()->GetPy()+
+                    cm_core.GetZ()*prt_cm[0].Cats()->GetPz();
+    cosine /= (cm_core.GetR()*prt_cm[0].Cats()->GetP());
+    AngleRcP1 = acos(cosine);
 
+    cosine =        cm_core.GetX()*prt_cm[1].Cats()->GetPx()+
+                    cm_core.GetY()*prt_cm[1].Cats()->GetPy()+
+                    cm_core.GetZ()*prt_cm[1].Cats()->GetPz();
+    cosine /= (cm_core.GetR()*prt_cm[1].Cats()->GetP());
+    AngleRcP2 = acos(cosine);
+
+    cosine =  prt_cm[0].Cats()->GetPx()*prt_cm[1].Cats()->GetPx()+
+              prt_cm[0].Cats()->GetPy()*prt_cm[1].Cats()->GetPy()+
+              prt_cm[0].Cats()->GetPz()*prt_cm[1].Cats()->GetPz();
+    cosine /= (prt_cm[0].Cats()->GetP()*prt_cm[1].Cats()->GetP());//
+    if(cosine>1 || cosine<-1) cosine = round(cosine);
+    AngleP1P2 = acos(cosine);
+    if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)&&
+        prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
+          //printf("1 %f %f %f\n",AngleRcP1,AngleRcP2,AngleP1P2);
+          Ghetto_PP_AngleRcP1->Fill(AngleRcP1);
+          Ghetto_PP_AngleRcP2->Fill(AngleRcP2);
+          Ghetto_PP_AngleP1P2->Fill(AngleP1P2);
+          //printf("2\n");
+    }
+    if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)&&
+        prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
+          //printf("3\n");
+          Ghetto_PP_AngleRcP1->Fill(Pi-AngleRcP2);
+          Ghetto_PP_AngleRcP2->Fill(Pi-AngleRcP1);
+          Ghetto_PP_AngleP1P2->Fill(Pi-AngleP1P2);
+          //printf("4\n");
+    }
   }
   else if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
-    double cosine = cm_rel.GetX()*prt_cm[0].Mother()->GetPx()+
-                    cm_rel.GetY()*prt_cm[0].Mother()->GetPy()+
-                    cm_rel.GetZ()*prt_cm[0].Mother()->GetPz();
-    cosine /= (cm_rel.GetR()*prt_cm[0].Mother()->GetP());
+    double cosine = cm_core.GetX()*prt_cm[0].Mother()->GetPx()+
+                    cm_core.GetY()*prt_cm[0].Mother()->GetPy()+
+                    cm_core.GetZ()*prt_cm[0].Mother()->GetPz();
+    cosine /= (cm_core.GetR()*prt_cm[0].Mother()->GetP());
     AngleRcP1 = acos(cosine);
-    Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
+    if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)) Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
+    if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)) Ghetto_PR_AngleRcP2->Fill(Pi-AngleRcP1);
   }
   else if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
-    double cosine = cm_rel.GetX()*prt_cm[1].Mother()->GetPx()+
-                    cm_rel.GetY()*prt_cm[1].Mother()->GetPy()+
-                    cm_rel.GetZ()*prt_cm[1].Mother()->GetPz();
-    cosine /= (cm_rel.GetR()*prt_cm[1].Mother()->GetP());
+    double cosine = cm_core.GetX()*prt_cm[1].Mother()->GetPx()+
+                    cm_core.GetY()*prt_cm[1].Mother()->GetPy()+
+                    cm_core.GetZ()*prt_cm[1].Mother()->GetPz();
+    cosine /= (cm_core.GetR()*prt_cm[1].Mother()->GetP());
     AngleRcP2 = acos(cosine);
-    Ghetto_PR_AngleRcP2->Fill(AngleRcP2);
+    if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)) Ghetto_PR_AngleRcP2->Fill(AngleRcP2);
+    if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)) Ghetto_RP_AngleRcP1->Fill(Pi-AngleRcP2);
   }
   else if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
-    double cosine = cm_rel.GetX()*prt_cm[0].Mother()->GetPx()+
-                    cm_rel.GetY()*prt_cm[0].Mother()->GetPy()+
-                    cm_rel.GetZ()*prt_cm[0].Mother()->GetPz();
-    cosine /= (cm_rel.GetR()*prt_cm[0].Mother()->GetP());
+    double cosine = cm_core.GetX()*prt_cm[0].Mother()->GetPx()+
+                    cm_core.GetY()*prt_cm[0].Mother()->GetPy()+
+                    cm_core.GetZ()*prt_cm[0].Mother()->GetPz();
+    cosine /= (cm_core.GetR()*prt_cm[0].Mother()->GetP());
     AngleRcP1 = acos(cosine);
 
-    cosine =        cm_rel.GetX()*prt_cm[1].Mother()->GetPx()+
-                    cm_rel.GetY()*prt_cm[1].Mother()->GetPy()+
-                    cm_rel.GetZ()*prt_cm[1].Mother()->GetPz();
-    cosine /= (cm_rel.GetR()*prt_cm[1].Mother()->GetP());
+    cosine =        cm_core.GetX()*prt_cm[1].Mother()->GetPx()+
+                    cm_core.GetY()*prt_cm[1].Mother()->GetPy()+
+                    cm_core.GetZ()*prt_cm[1].Mother()->GetPz();
+    cosine /= (cm_core.GetR()*prt_cm[1].Mother()->GetP());
     AngleRcP2 = acos(cosine);
 
     cosine =  prt_cm[0].Mother()->GetPx()*prt_cm[1].Mother()->GetPx()+
@@ -926,14 +1105,21 @@ if(kstar<300){
               prt_cm[0].Mother()->GetPz()*prt_cm[1].Mother()->GetPz();
     cosine /= (prt_cm[0].Mother()->GetP()*prt_cm[1].Mother()->GetP());//
     AngleP1P2 = acos(cosine);
-
-    Ghetto_RR_AngleRcP1->Fill(AngleRcP1);
-    Ghetto_RR_AngleRcP2->Fill(AngleRcP2);
-    Ghetto_RR_AngleP1P2->Fill(AngleP1P2);
+    if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)&&
+        prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
+          Ghetto_RR_AngleRcP1->Fill(AngleRcP1);
+          Ghetto_RR_AngleRcP2->Fill(AngleRcP2);
+          Ghetto_RR_AngleP1P2->Fill(AngleP1P2);
+    }
+    if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)&&
+        prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
+          Ghetto_RR_AngleRcP1->Fill(Pi-AngleRcP2);
+          Ghetto_RR_AngleRcP2->Fill(Pi-AngleRcP1);
+          Ghetto_RR_AngleP1P2->Fill(Pi-AngleP1P2);
+    }
   }
 
 }
-
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
@@ -946,8 +1132,7 @@ if(kstar<300){
   GhettoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
   GhettoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
   GhettoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
-
-  if(kstar<150){
+  if(kstar<FemtoLimit){
     GhettoFemto_rstar->Fill(rstar);
     GhettoFemto_mT_rstar->Fill(mT,rstar);
     GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -961,10 +1146,8 @@ if(kstar<300){
 ///////////////////////////
 }
 
-
       delete [] prt_cm;
     }//permutations over possible multiplets
-
   for(CecaParticle* particle : Primordial){
     delete particle;
   }
@@ -1433,119 +1616,147 @@ if(!prim1&&false){
 
 void CECA::GhettoInit(){
 
-  const double NumMomBins = 32;
+  const double NumMomBins = 32*2;
   const double MomMin = 0;
-  const double MomMax = 2048;
+  const double MomMax = 640*4;
 
-  const double NumRadBins = 128;
+  const double NumRadBins = 256;
   const double RadMin = 0;
-  const double RadMax = 16;
+  const double RadMax = 32;
 
   const double NumMtBins = 32;
   const double MtMin = 0;
   const double MtMax = 4096;
 
-  if(!Ghetto_RP_AngleRcP1){
-    Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
-    Ghetto_RP_AngleRcP1->SetUp(1);
-    Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
-    Ghetto_RP_AngleRcP1->Initialize();
-  }
-  if(!Ghetto_RP_AngleRcP1){
-    Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
-    Ghetto_RP_AngleRcP1->SetUp(1);
-    Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
-    Ghetto_RP_AngleRcP1->Initialize();
-  }
-  if(!Ghetto_PR_AngleRcP2){
-    Ghetto_PR_AngleRcP2 = new DLM_Histo<float>();
-    Ghetto_PR_AngleRcP2->SetUp(1);
-    Ghetto_PR_AngleRcP2->SetUp(0,128,0,Pi);
-    Ghetto_PR_AngleRcP2->Initialize();
-  }
-  if(!Ghetto_RR_AngleRcP1){
-    Ghetto_RR_AngleRcP1 = new DLM_Histo<float>();
-    Ghetto_RR_AngleRcP1->SetUp(1);
-    Ghetto_RR_AngleRcP1->SetUp(0,128,0,Pi);
-    Ghetto_RR_AngleRcP1->Initialize();
-  }
-  if(!Ghetto_RR_AngleRcP2){
-    Ghetto_RR_AngleRcP2 = new DLM_Histo<float>();
-    Ghetto_RR_AngleRcP2->SetUp(1);
-    Ghetto_RR_AngleRcP2->SetUp(0,128,0,Pi);
-    Ghetto_RR_AngleRcP2->Initialize();
-  }
-  if(!Ghetto_RR_AngleP1P2){
-    Ghetto_RR_AngleP1P2 = new DLM_Histo<float>();
-    Ghetto_RR_AngleP1P2->SetUp(1);
-    Ghetto_RR_AngleP1P2->SetUp(0,128,0,Pi);
-    Ghetto_RR_AngleP1P2->Initialize();
-  }
+  if(Ghetto_RP_AngleRcP1) delete Ghetto_RP_AngleRcP1;
+  Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
+  Ghetto_RP_AngleRcP1->SetUp(1);
+  Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
+  Ghetto_RP_AngleRcP1->Initialize();
 
-  if(!GhettoSP_pT_th){
-    GhettoSP_pT_th = new DLM_Histo<float>();
-    GhettoSP_pT_th->SetUp(2);
-    GhettoSP_pT_th->SetUp(0,64,0,4096);
-    GhettoSP_pT_th->SetUp(1,64,-0.1,3.2);
-    GhettoSP_pT_th->Initialize();
-  }
+  if(Ghetto_RP_AngleRcP1) delete Ghetto_RP_AngleRcP1;
+  Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
+  Ghetto_RP_AngleRcP1->SetUp(1);
+  Ghetto_RP_AngleRcP1->SetUp(0,128,0,Pi);
+  Ghetto_RP_AngleRcP1->Initialize();
 
-  if(!Ghetto_rstar){
-    Ghetto_rstar = new DLM_Histo<float>();
-    Ghetto_rstar->SetUp(1);
-    Ghetto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
-    Ghetto_rstar->Initialize();
-  }
-  if(!Ghetto_kstar){
-    Ghetto_kstar = new DLM_Histo<float>();
-    Ghetto_kstar->SetUp(1);
-    Ghetto_kstar->SetUp(0,NumMomBins,MomMin,MomMax);
-    Ghetto_kstar->Initialize();
-  }
-  if(!Ghetto_kstar_rstar){
-    Ghetto_kstar_rstar = new DLM_Histo<float>();
-    Ghetto_kstar_rstar->SetUp(2);
-    Ghetto_kstar_rstar->SetUp(0,NumMomBins,MomMin,MomMax);
-    Ghetto_kstar_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
-    Ghetto_kstar_rstar->Initialize();
-  }
+  if(Ghetto_PR_AngleRcP2) delete Ghetto_PR_AngleRcP2;
+  Ghetto_PR_AngleRcP2 = new DLM_Histo<float>();
+  Ghetto_PR_AngleRcP2->SetUp(1);
+  Ghetto_PR_AngleRcP2->SetUp(0,128,0,Pi);
+  Ghetto_PR_AngleRcP2->Initialize();
 
-  if(!Ghetto_mT_rstar){
-    Ghetto_mT_rstar = new DLM_Histo<float>();
-    Ghetto_mT_rstar->SetUp(2);
-    Ghetto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
-    Ghetto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
-    Ghetto_mT_rstar->Initialize();
-  }
+  if(Ghetto_RR_AngleRcP1) delete Ghetto_RR_AngleRcP1;
+  Ghetto_RR_AngleRcP1 = new DLM_Histo<float>();
+  Ghetto_RR_AngleRcP1->SetUp(1);
+  Ghetto_RR_AngleRcP1->SetUp(0,128,0,Pi);
+  Ghetto_RR_AngleRcP1->Initialize();
 
-  if(!GhettoFemto_rstar){
-    GhettoFemto_rstar = new DLM_Histo<float>();
-    GhettoFemto_rstar->SetUp(1);
-    GhettoFemto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
-    GhettoFemto_rstar->Initialize();
-  }
+  if(Ghetto_RR_AngleRcP2) delete Ghetto_RR_AngleRcP2;
+  Ghetto_RR_AngleRcP2 = new DLM_Histo<float>();
+  Ghetto_RR_AngleRcP2->SetUp(1);
+  Ghetto_RR_AngleRcP2->SetUp(0,128,0,Pi);
+  Ghetto_RR_AngleRcP2->Initialize();
 
-  if(!Ghetto_mT_costh){
-    Ghetto_mT_costh = new DLM_Histo<float>();
-    Ghetto_mT_costh->SetUp(2);
-    Ghetto_mT_costh->SetUp(0,NumMtBins,MtMin,MtMax);
-    Ghetto_mT_costh->SetUp(1,128,-1,1);
-    Ghetto_mT_costh->Initialize();
+  if(Ghetto_RR_AngleP1P2) delete Ghetto_RR_AngleP1P2;
+  Ghetto_RR_AngleP1P2 = new DLM_Histo<float>();
+  Ghetto_RR_AngleP1P2->SetUp(1);
+  Ghetto_RR_AngleP1P2->SetUp(0,128,0,Pi);
+  Ghetto_RR_AngleP1P2->Initialize();
 
-  }
+  if(Ghetto_PP_AngleRcP1) delete Ghetto_PP_AngleRcP1;
+  Ghetto_PP_AngleRcP1 = new DLM_Histo<float>();
+  Ghetto_PP_AngleRcP1->SetUp(1);
+  Ghetto_PP_AngleRcP1->SetUp(0,128,0,Pi);
+  Ghetto_PP_AngleRcP1->Initialize();
 
-  if(!GhettoFemto_mT_rstar){
-    GhettoFemto_mT_rstar = new DLM_Histo<float>();
-    GhettoFemto_mT_rstar->SetUp(2);
-    GhettoFemto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
-    GhettoFemto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
-    GhettoFemto_mT_rstar->Initialize();
-  }
-  if(!GhettoFemto_mT_kstar){
-    GhettoFemto_mT_kstar = new DLM_Histo<float>();
-    GhettoFemto_mT_kstar->SetUp(2);
-    GhettoFemto_mT_kstar->SetUp(0,NumMtBins,MtMin,MtMax);
-    GhettoFemto_mT_kstar->SetUp(1,NumMomBins,MomMin,MomMax);
-    GhettoFemto_mT_kstar->Initialize();
-  }
+  if(Ghetto_PP_AngleRcP2) delete Ghetto_PP_AngleRcP2;
+  Ghetto_PP_AngleRcP2 = new DLM_Histo<float>();
+  Ghetto_PP_AngleRcP2->SetUp(1);
+  Ghetto_PP_AngleRcP2->SetUp(0,128,0,Pi);
+  Ghetto_PP_AngleRcP2->Initialize();
+
+  if(Ghetto_PP_AngleP1P2) delete Ghetto_PP_AngleP1P2;
+  Ghetto_PP_AngleP1P2 = new DLM_Histo<float>();
+  Ghetto_PP_AngleP1P2->SetUp(1);
+  Ghetto_PP_AngleP1P2->SetUp(0,128,0,Pi);
+  Ghetto_PP_AngleP1P2->Initialize();
+
+
+  if(GhettoSP_pT_th) delete GhettoSP_pT_th;
+  GhettoSP_pT_th = new DLM_Histo<float>();
+  GhettoSP_pT_th->SetUp(2);
+  GhettoSP_pT_th->SetUp(0,64,0,4096);
+  GhettoSP_pT_th->SetUp(1,64,-0.1,3.2);
+  GhettoSP_pT_th->Initialize();
+
+  if(GhettoSP_pT_1) delete GhettoSP_pT_1;
+  GhettoSP_pT_1 = new DLM_Histo<float>();
+  GhettoSP_pT_1->SetUp(1);
+  GhettoSP_pT_1->SetUp(0,64,0,4096);
+  GhettoSP_pT_1->Initialize();
+
+  if(GhettoSP_pT_2) delete GhettoSP_pT_2;
+  GhettoSP_pT_2 = new DLM_Histo<float>();
+  GhettoSP_pT_2->SetUp(1);
+  GhettoSP_pT_2->SetUp(0,64,0,4096);
+  GhettoSP_pT_2->Initialize();
+
+  if(Ghetto_rstar) delete Ghetto_rstar;
+  Ghetto_rstar = new DLM_Histo<float>();
+  Ghetto_rstar->SetUp(1);
+  Ghetto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
+  Ghetto_rstar->Initialize();
+
+  if(Ghetto_kstar) delete Ghetto_kstar;
+  Ghetto_kstar = new DLM_Histo<float>();
+  Ghetto_kstar->SetUp(1);
+  Ghetto_kstar->SetUp(0,NumMomBins,MomMin,MomMax);
+  Ghetto_kstar->Initialize();
+
+  if(Ghetto_kstar_rstar) delete Ghetto_kstar_rstar;
+  Ghetto_kstar_rstar = new DLM_Histo<float>();
+  Ghetto_kstar_rstar->SetUp(2);
+  Ghetto_kstar_rstar->SetUp(0,NumMomBins,MomMin,MomMax);
+  Ghetto_kstar_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+  Ghetto_kstar_rstar->Initialize();
+
+
+  if(Ghetto_mT_rstar) delete Ghetto_mT_rstar;
+  Ghetto_mT_rstar = new DLM_Histo<float>();
+  Ghetto_mT_rstar->SetUp(2);
+  Ghetto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
+  Ghetto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+  Ghetto_mT_rstar->Initialize();
+
+
+  if(GhettoFemto_rstar) delete GhettoFemto_rstar;
+  GhettoFemto_rstar = new DLM_Histo<float>();
+  GhettoFemto_rstar->SetUp(1);
+  GhettoFemto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
+  GhettoFemto_rstar->Initialize();
+
+
+  if(Ghetto_mT_costh) delete Ghetto_mT_costh;
+  Ghetto_mT_costh = new DLM_Histo<float>();
+  Ghetto_mT_costh->SetUp(2);
+  Ghetto_mT_costh->SetUp(0,NumMtBins,MtMin,MtMax);
+  Ghetto_mT_costh->SetUp(1,128,-1,1);
+  Ghetto_mT_costh->Initialize();
+
+
+  if(GhettoFemto_mT_rstar) delete GhettoFemto_mT_rstar;
+  GhettoFemto_mT_rstar = new DLM_Histo<float>();
+  GhettoFemto_mT_rstar->SetUp(2);
+  GhettoFemto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
+  GhettoFemto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+  GhettoFemto_mT_rstar->Initialize();
+
+  if(GhettoFemto_mT_kstar) delete GhettoFemto_mT_kstar;
+  GhettoFemto_mT_kstar = new DLM_Histo<float>();
+  GhettoFemto_mT_kstar->SetUp(2);
+  GhettoFemto_mT_kstar->SetUp(0,NumMtBins,MtMin,MtMax);
+  GhettoFemto_mT_kstar->SetUp(1,NumMomBins,MomMin,MomMax);
+  GhettoFemto_mT_kstar->Initialize();
+
 }

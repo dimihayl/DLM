@@ -37,6 +37,9 @@ public:
   float GetRadiusSlope() const;//done
   float GetRadiusSlopeLow() const;//done
   float GetRadiusSlopeUp() const;//done
+  float GetDelayTau() const;//done
+  float GetDelayTauLow() const;//done
+  float GetDelayTauUp() const;//done
   unsigned char GetNumDecays() const;//done
   const TREPNI* GetDatabase() const;//done
   //returns randomly a mother particle, based on the abundances
@@ -52,13 +55,27 @@ public:
   //so do not over-use this function. The decision to copy the pdf and not point to it
   //is related to the fact that ultimately these particles will be saved into a file,
   //so we better own all the information straight away.
-  void SetMomPDF(const DLM_Histo<float>& pdf);//done, the others below might not be needed
-  void SetMomPDF(const float& width);//flat angles, Gaussian x,y,z with some width
-  void FillMomXYZ(const float& xval, const float& yval, const float& zval);
-  void FillMomPtEtaPhi(const float& pt, const float& eta, const float& phi);
-  void FillMomPDF(CatsLorentzVector& cats_vector);
-  DLM_Histo<float>* GetMomPDF() const;
-  void SampleMomXYZ(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL) const;
+  void SetPtEtaPhi(const DLM_Histo<float>& pdf);//done, the others below might not be needed
+  void SetPtEtaPhi(const float& width);//flat angles, Gaussian x,y,z with some width
+  void FillPxPyPz(const float& xval, const float& yval, const float& zval);
+  void FillPtEtaPhi(const float& pt, const float& eta, const float& phi);
+  void FillPtEtaPhi(CatsLorentzVector& cats_vector);
+  DLM_Histo<float>* GetPtEtaPhi() const;
+  void SamplePxPyPz(double* axisValues, DLM_Random* RanGen=NULL, const bool& UnderOverFlow=false) const;
+
+  //does not work yet
+  void SetAcceptance_pT(const float& min, const float& max);
+  void SetAcceptance_Eta(const float& min, const float& max);
+  void SetAcceptance_Phi(const float& min, const float& max);
+  double AcceptanceMin_pT() const;
+  double AcceptanceMax_pT() const;
+  double AcceptanceMin_Eta() const;
+  double AcceptanceMax_Eta() const;
+  double AcceptanceMin_CosTh() const;
+  double AcceptanceMax_CosTh() const;
+  double AcceptanceMin_Phi() const;
+  double AcceptanceMax_Phi() const;
+
 
   //the QA of these setters is done from TREPNI
   void SetName(const char* name);//done
@@ -70,6 +87,8 @@ public:
   void SetRadiusSlope(const float& slope);//done W/O QA !!!
   void SetAbundance(const float& abundance);//done W/O QA !!!
   void SetAbundanceLimit(const float& abundance_low, const float& abundance_up);//done W/O QA !!!
+  //delay in the formation time. Useful for coalescence
+  void SetDelayTau(const float& delay);//done W/O QA !!!
   TreChain* NewDecay();//done W/O QA !!!
   TreChain* GetDecay(const unsigned char& whichone) const;//done W/O QA !!!
   //a random decay channel based on current BR
@@ -94,8 +113,8 @@ private:
   //the DIM can be reduced, i.e. 1D or 2D histos will be accepted, where if that is the case
   //for 2D we will only have pT,eta (phi assumed flat)
   //while for 1D we will only have pT (cos theta and phi both assumed flat)
-  DLM_Histo<float>* MomPDF;
-  float MomXYZ_Width;
+  DLM_Histo<float>* PtEtaPhi;
+  float PxPyPz_Width;
   char* TreName;
   //for the mass, width abund, etc., the [0],[1],[2] represent low,current,upper values
   float* Mass;
@@ -106,10 +125,15 @@ private:
   //the blockadge will follow fermi-dirac, with a mean Radius and slope RadSlope
   float* Radius;
   float* RadSlope;
+  float* DelayTau;
   unsigned char NumDecays;
   //important: the decay chains will be owned by the particle
   TreChain** Decay;
   //TreChain* CurrentDecay;
+  float Acceptance_pT[2];
+  float Acceptance_Eta[2];
+  float Acceptance_CosTh[2];
+  float Acceptance_Phi[2];
 
   //in both cases, we assume that the streamer is set to the correct position
   void AppendInBinary(std::ofstream& file);
