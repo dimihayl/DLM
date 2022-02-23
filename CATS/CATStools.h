@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <complex>
+#include <vector>
 
 class CatsParticle;
 class DLM_Random;
@@ -151,8 +152,8 @@ public:
     //you can change this conversion by Set_hbarc, i.e. setting it to 1 assumes we work in natural units
     CatsParticle* Decay(const double& mass1, const double& mass2, const bool& propagate=true);
     //for the Nbody decay. NOT DONE YET, WORKS ONLY WITH 2-BODY
-    CatsParticle* Decay(const unsigned char& Nbody, const double* mass, const bool& propagate=true);
-    CatsParticle* DecaySimple(const unsigned char& Nbody, const double* mass, const bool& propagate=true);
+    CatsParticle* Decay(const std::vector<double> masses, const bool& propagate=true);
+    CatsParticle* DecaySimple(const std::vector<double> masses, const bool& propagate=true);
     void SetDecayRanGen(DLM_Random* rangen);
     void SetDecayRanGen(DLM_Random& rangen);
     void Set_hbarc(const double& HBARC);

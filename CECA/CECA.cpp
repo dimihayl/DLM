@@ -648,8 +648,9 @@ unsigned CECA::GenerateEvent(){
         break;
 
     }//the inifinite while loop
-return 0;
+
     for(CecaParticle* primordial : Primordial){
+
       //--- SAMPLE THE MOMENTUM ---//
       double axisValues[3];
       double& pT = axisValues[0];
@@ -657,56 +658,14 @@ return 0;
       double& phi = axisValues[2];
       double px,py,pz,ptot,sin_th,cos_th,cotg_th,cos_phi,sin_phi;
 
+      primordial->Trepni()->SamplePxPyPz(axisValues,RanGen[ThId],true);
+      px = axisValues[0];
+      py = axisValues[1];
+      pz = axisValues[2];
+      ptot = sqrt(px*px+py*py+pz*pz);
+      cos_th = pz/ptot;
+      sin_th = sqrt(1.-cos_th*cos_th);
 
-      /*
-      //if we sample from a predefined PDF
-      if(primordial->Trepni()->GetPtEtaPhi()){
-        bool Auto_eta = true;
-        bool Auto_phi = true;
-        //Auto_pT = false;
-        if(primordial->Trepni()->GetPtEtaPhi()->GetDim()>1)
-          Auto_eta = false;
-        if(primordial->Trepni()->GetPtEtaPhi()->GetDim()>2)
-          Auto_phi = false;
-        primordial->Trepni()->GetPtEtaPhi()->Sample(axisValues,true,RanGen[ThId]);
-
-        if(Auto_phi){
-          phi = RanGen[ThId]->Uniform(0,2.*Pi);
-        }
-        if(Auto_eta){
-          cos_th = RanGen[ThId]->Uniform(-1.,1.);
-          //sin always positive here
-          sin_th = sqrt(1.-cos_th*cos_th);
-          cotg_th = cos_th/sin_th;
-          //verified that this relation is true
-          //eta = -0.5*log((1.-cos_th)/(1.+cos_th));
-        }
-        else{
-          sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
-          cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
-          cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
-        }
-        pz = pT*cotg_th;
-        ptot = sqrt(pT*pT+pz*pz);
-        px = ptot*cos(phi)*sin_th;
-        py = ptot*sin(phi)*sin_th;
-//pT = sqrt(px2+py2) = ptot*|sin_th|
-//theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
-
-      }
-      */
-      //automatic sampling of all components, following Gaussian x,y,z of certain width
-      //if nothing is set, the width is assumed zero by default, so no motion at all
-      //else{
-        primordial->Trepni()->SamplePxPyPz(axisValues,RanGen[ThId],true);
-        px = axisValues[0];
-        py = axisValues[1];
-        pz = axisValues[2];
-        //pT = sqrt(px*px+py*py+pz*pz);
-        ptot = sqrt(px*px+py*py+pz*pz);
-        cos_th = pz/ptot;
-        sin_th = sqrt(1.-cos_th*cos_th);
-      //}
       cos_phi = px/(ptot*sin_th);
       sin_phi = py/(ptot*sin_th);
 
@@ -724,7 +683,6 @@ return 0;
       double rh_len=-1;
       int ResampleCount = 1000;
 
-//primordial->Cats()->Print();
       while(true){
         for(int xyz=0; xyz<3; xyz++){
           rd[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]);
@@ -838,7 +796,6 @@ return 0;
         }
         ResampleCount--;
       }//while(rh_len<0)
-//printf("while(rh_len<0)\n");
 
       //--- DECAY OF RESONANCES + PROPAGATION OF THE MOTHERS ---/
       //if the width is zero, the Decay function returns the daughters
@@ -846,10 +803,8 @@ return 0;
       IsResonance = !ParticleInList(primordial->Trepni());
 
       if(IsResonance){
-        //primordial->Cats()->Print();
         CatsParticle* daughters =
           primordial->Cats()->Decay(
-          primordial->Decay()->GetNumDaughters(),
           primordial->Decay()->GetDaughterMasses(),
           true);
 
@@ -867,6 +822,7 @@ return 0;
             }
           }
         }
+
         delete [] daughters;
       }
       else{
@@ -885,6 +841,7 @@ return 0;
       if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(1)){
         GhettoSP_pT_2->Fill(Primary.back()->Cats()->GetPt());
       }
+
     }//iteration over all primordials
 
 
@@ -894,6 +851,10 @@ return 0;
     //e.g. 5 particles, SDIM=3 has to build all permutations: 012,013,014,023,024,034,123,124,134,234
     std::vector<std::vector<unsigned>> Permutations = BinomialPermutations(Primary.size(),SDIM);
     //the pid is a single permutation, e.g. {0,1,2}
+
+
+
+
     for(std::vector<unsigned> pid : Permutations){
 //GHETTO: make multiplets and simply drop the output for the source as a function of rstar, no kstar, no shit
 //this so that you can show something next FemTUM
@@ -915,14 +876,6 @@ return 0;
       //the starting time of the interaction
       //given by the last particle to form
       double fsi_tau=-1e64;
-/*
-static unsigned pair_counter=0;
-static double r_avg=0;
-static double rstar_avg=0;
-static double runi_avg=0;
-CatsLorentzVector diff_lab = *prt_cm[1].Cats()-*prt_cm[0].Cats();
-double dr_lab=diff_lab.GetR();
-*/
 
       for(unsigned char ud=0; ud<SDIM; ud++){
         prt_cm[ud].Cats()->Boost(boost_v);
@@ -931,9 +884,6 @@ double dr_lab=diff_lab.GetR();
           fsi_tau = prt_cm[ud].Cats()->GetT();
         }
       }
-
-//CatsLorentzVector diff_cm = *prt_cm[1].Cats()-*prt_cm[0].Cats();
-//double dr_cm = diff_cm.GetR();
 
       //unify the time of all particles. I.e. in their rest frame, tau should be the same
       //if not, the particles that are formed earlier are propagated along a straight line until
@@ -948,37 +898,9 @@ double dr_lab=diff_lab.GetR();
           if(fabs(dtau/fsi_tau)>1e-12){
             //we propagate the particle in THIS frame of reference by dtau
             prt_cm[ud].Cats()->Propagate(dtau,false);
-            //printf(" %s (%i %i) dtau = %f\n",
-            //prt_cm[ud].Trepni()->GetName().c_str(),
-            //prt_cm[ud].IsUseful(),
-            //prt_cm[ud].IsUsefulPrimordial(),
-            //dtau);
-            //usleep(500e3);
           }
         }
       }
-
-/*
-CatsLorentzVector diff_uni = *prt_cm[1].Cats()-*prt_cm[0].Cats();
-double dr_uni=diff_uni.GetR();
-double kstar = 0.5*diff_uni.GetP();
-if(kstar<200){
-  pair_counter++;
-  printf("--- Pair %u ---\n",pair_counter);
-  r_avg+=dr_lab;
-  printf("dr = %.2f (%.2f)\n",dr_lab,r_avg/double(pair_counter));
-  //printf("dt = %.2f\n",diff_lab.GetT());
-  printf("BOOST\n");
-  rstar_avg+=dr_cm;
-  printf("dr = %.2f (%.2f)\n",dr_cm,rstar_avg/double(pair_counter));
-  //printf("dt = %.2f\n",diff_cm.GetT());
-  printf("UNIFY\n");
-  runi_avg+=dr_uni;
-  printf("dr = %.2f (%.2f)\n",dr_uni,runi_avg/double(pair_counter));
-  //printf("dt = %.2f\n",diff_uni.GetT());
-  usleep(100e3);
-}
-*/
 
       CatsLorentzVector cm_sumQA;
       for(unsigned char ud=0; ud<SDIM; ud++){
@@ -1025,13 +947,6 @@ double AngleRcP1=0;
 double AngleRcP2=0;
 
 if(kstar<FemtoLimit){
-
-//static double rstar_avg=0;
-//static unsigned counter=0;
-//rstar_avg+=rstar;
-//counter++;
-//printf("rstar = %.1f (%.1f)\n",rstar,rstar_avg/double(counter));
-//usleep(100e3);
 
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
     double cosine = cm_core.GetX()*prt_cm[0].Cats()->GetPx()+
@@ -1109,12 +1024,16 @@ if(kstar<FemtoLimit){
         prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
           Ghetto_RR_AngleRcP1->Fill(AngleRcP1);
           Ghetto_RR_AngleRcP2->Fill(AngleRcP2);
+          //printf("RcP2 is core to %s\n",prt_cm[1].Trepni()->GetName().c_str());
+          //usleep(250e3);
           Ghetto_RR_AngleP1P2->Fill(AngleP1P2);
     }
     if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)&&
         prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
           Ghetto_RR_AngleRcP1->Fill(Pi-AngleRcP2);
           Ghetto_RR_AngleRcP2->Fill(Pi-AngleRcP1);
+          //printf("Pi-RcP2 is core to %s\n",prt_cm[0].Trepni()->GetName().c_str());
+          //usleep(250e3);
           Ghetto_RR_AngleP1P2->Fill(Pi-AngleP1P2);
     }
   }
@@ -1148,6 +1067,9 @@ if(kstar<FemtoLimit){
 
       delete [] prt_cm;
     }//permutations over possible multiplets
+
+
+
   for(CecaParticle* particle : Primordial){
     delete particle;
   }
@@ -1616,9 +1538,9 @@ if(!prim1&&false){
 
 void CECA::GhettoInit(){
 
-  const double NumMomBins = 32*2;
+  const double NumMomBins = 10*3;
   const double MomMin = 0;
-  const double MomMax = 640*4;
+  const double MomMax = 10*40;
 
   const double NumRadBins = 256;
   const double RadMin = 0;

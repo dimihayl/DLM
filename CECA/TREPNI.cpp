@@ -505,14 +505,12 @@ const TreParticle* TreChain::GetDaughter(const unsigned char& whichone) const{
   if(whichone>=NumDaughters) return NULL;
   return Daughter[whichone];
 }
-const double* TreChain::GetDaughterMasses() const{
-  //if(!DaughterMasses){
-    double* DaughterMasses = new double [NumDaughters];
-    for(unsigned char uDaugh=0; uDaugh<NumDaughters; uDaugh++){
-      DaughterMasses[uDaugh] = Daughter[uDaugh]->GetMass();
-    }
-  //}
-  return DaughterMasses;
+std::vector<double> TreChain::GetDaughterMasses() const{
+  std::vector<double> masses;
+  for(unsigned char uDaugh=0; uDaugh<NumDaughters; uDaugh++){
+    masses.push_back(Daughter[uDaugh]->GetMass());
+  }
+  return masses;
 }
 
 //void TreChain::SetDaughters(const unsigned char& numdaughters, const TreParticle* daughter){

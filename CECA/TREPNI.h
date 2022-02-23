@@ -4,6 +4,7 @@
 #define TREPNI_H
 
 #include <iostream>
+#include <vector>
 
 class TREPNI;
 class TreChain;
@@ -165,7 +166,7 @@ void RandomizeBR();
 unsigned char GetNumDaughters() const;//done
 const TreParticle* GetMother() const;//done
 const TreParticle* GetDaughter(const unsigned char& whichone) const;//done
-const double* GetDaughterMasses() const;
+std::vector<double> GetDaughterMasses() const;
 
 ////////////////////////////////////////////////////////
 

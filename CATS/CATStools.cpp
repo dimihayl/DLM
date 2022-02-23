@@ -506,7 +506,7 @@ double CatsParticle::GetWidth() const{
 
 
 //two body decay
-CatsParticle* CatsParticle::DecaySimple(const unsigned char& Nbody, const double* mass, const bool& propagate){
+CatsParticle* CatsParticle::DecaySimple(const std::vector<double> masses, const bool& propagate){
   /*
   CatsParticle* Daughters = NULL;
   double TotMass = 0;
@@ -642,12 +642,12 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   return Daughters;
 }
 
-CatsParticle* CatsParticle::Decay(const unsigned char& Nbody, const double* mass, const bool& propagate){
-  if(Nbody!=2){
+CatsParticle* CatsParticle::Decay(const std::vector<double> masses, const bool& propagate){
+  if(masses.size()!=2){
     printf("CatsParticle::Decay WORKS ONLY FOR 2-BODY SO FAR, UPGRADE!!!!\n");
     return NULL;
   }
-  return Decay(mass[0],mass[1],propagate);
+  return Decay(masses.at(0),masses.at(1),propagate);
 }
 
 void CatsParticle::SetDecayRanGen(DLM_Random* rangen){
