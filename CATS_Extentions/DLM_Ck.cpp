@@ -271,11 +271,25 @@ double DLM_Ck::Eval(const double& Momentum){
     }
 ///THIS IS STILL BUGGY, QUICK FIXED !!!!!!!!!!!!
     //const double Cf = DLM_Histo::Eval(&kf);
+
+    //--------> k*
+    //0....kf....(interpolation)..CutOff_kc...(unity)...
+    //value of the correlation function at the end of the femto region (kf)
     const double Cf = BinValue[GetBin(0,kf)-1];
     //printf("Cf = %f\n",Cf);
     if(CutOff_kc<0) return fabs(CutOff_kc);
-    if(CutOff_kc<=kf) return Cf;
+    if(CutOff_kc<=kf || Cf==1) return Cf;
+    //we have to make sure that the correlation becomes unity ones we cross the CutOff_kc value
+    if(Momentum>=CutOff_kc) return 1;
     double ReturnVal = ((Momentum-kf)-Cf*(Momentum-CutOff_kc))/(CutOff_kc-kf);
-    if(ReturnVal>1) ReturnVal=1;
+    //QA
+    if(Cf<1&&ReturnVal>1){
+      ReturnVal=1;
+      printf("\033[1;33mWARNING:\033[0m DLM_Ck::Eval got an error called Cf<1. Please share with the developers!\n");
+    }
+    if(Cf>1&&ReturnVal<1){
+      ReturnVal=1;
+      printf("\033[1;33mWARNING:\033[0m DLM_Ck::Eval got an error called Cf>1. Please share with the developers!\n");
+    }
     return ReturnVal;
 }
