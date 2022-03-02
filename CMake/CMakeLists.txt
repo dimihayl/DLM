@@ -38,7 +38,6 @@ include_directories(${ROOT_PATH}/include)
 add_library(CATSbasic SHARED 		${CATS_FOLDER}/CATS/CATS.cpp 
 					${CATS_FOLDER}/CATS/CATStools.cpp 
 					${CATS_FOLDER}/DLM_CppTools/DLM_CppTools.cpp
-					${CATS_FOLDER}/DLM_CppTools/DLM_OmpTools.cpp
 					${CATS_FOLDER}/DLM_MathTools/DLM_Histo.cpp)
 add_library(CATSextended SHARED 	${CATS_FOLDER}/DLM_RootTools/DLM_CRAB_PM.cpp
 					${CATS_FOLDER}/DLM_MathTools/DLM_Integration.cpp
@@ -114,7 +113,6 @@ install (FILES ${CATS_FOLDER}/CECA/CECA.h DESTINATION ${CATS_DESTINATION}/includ
 install (FILES ${CATS_FOLDER}/CECA/TREPNI.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_CppTools/DLM_Sort.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_CppTools/DLM_CppTools.h DESTINATION ${CATS_DESTINATION}/include)
-install (FILES ${CATS_FOLDER}/DLM_CppTools/DLM_OmpTools.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_CkDecomposition.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/CATS_Extentions/DLM_Fitters.h DESTINATION ${CATS_DESTINATION}/include)
 install (FILES ${CATS_FOLDER}/DLM_RootTools/DLM_SubPads.h DESTINATION ${CATS_DESTINATION}/include)
