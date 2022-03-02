@@ -55,6 +55,7 @@ public:
     //POT:
     //  "AV18"
     void SetUpCats_pp(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
+    void SetUpCats_ppic(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=200);
     void SetUpCats_pipi(CATS& Kitty, const TString& SOURCE, const int& SourceVar);
     void SetUpCats_pipi_broken(CATS& Kitty, const TString& SOURCE, const int& SourceVar);
     //POT:

@@ -63,27 +63,39 @@ public:
   //the width (X), alpha factor (Levy) related to the displacement source
   //the displ. is relative to the "perfect" collision point
   void SetDisplacementX(const float& width, const float& levy=2);//done
+  float GetDisplacementX() const;//done
   void SetDisplacementY(const float& width, const float& levy=2);//done
+  float GetDisplacementY() const;//done
   void SetDisplacementZ(const float& width, const float& levy=2);//done
+  float GetDisplacementZ() const;//done
   //identical X,Y
   void SetDisplacementT(const float& width, const float& levy=2);//done
+  float GetDisplacementT() const;//done
   //identical X,Y,Z
   void SetDisplacement(const float& width, const float& levy=2);//done
+  float GetDisplacement() const;//done
 
   void SetHadronizationX(const float& width, const float& levy=2);//done
+  float GetHadronizationX() const;//done
   void SetHadronizationY(const float& width, const float& levy=2);//done
+  float GetHadronizationY() const;//done
   void SetHadronizationZ(const float& width, const float& levy=2);//done
+  float GetHadronizationZ() const;//done
   //identical X,Y
   void SetHadronizationT(const float& width, const float& levy=2);//done
+  float GetHadronizationT() const;//done
   //identical X,Y,Z
   void SetHadronization(const float& width, const float& levy=2);//done
+  float GetHadronization() const;//done
   void SetHadrFluctuation(const float& fluct);//done no QA
+  float GetHadrFluctuation() const;//done
 
   //if proper == true, it means the time is defined in the rest frame
   //of the particle (i.e. property of the particle)
   //if false, the time is let to run in the LAB, i.e. we treat this parameter
   //as a property of the system itself
   void SetTau(const float& tau, const float& fluct=0, const bool& proper=true);//done
+  float GetTau() const;
   void SetThermalKick(const float& kick);//done w/o qa
 
   //all source up to DIM will be evaluated

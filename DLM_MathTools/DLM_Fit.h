@@ -27,7 +27,10 @@ template <class Type> class DLM_Histo;
 //  1)  LOCAL
 //      Everyting is evaluate locally (i.e. within the same process) and saved within this class
 //  2)  INTER-PROCESS
-//      Each solution can be executed as a separate process. To do this, we need to define 
+//      Each solution can be executed as a separate process. To do this, we need to have a mother process
+//      and an output folder with temp files. Each function call of Eval than creates a small temp file which
+//      is to be read out by the the mother. Ones the mother creates all required funciton calls, it deletes the temp files
+//      and continues the exectution.
 class DLM_Fit{
 public:
   DLM_Fit();

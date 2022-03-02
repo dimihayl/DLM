@@ -253,6 +253,9 @@ void CECA::SetDisplacementX(const float& width, const float& levy){
   Displacement[0] = fabs(width);
   DisplacementAlpha[0] = levy;
 }
+float CECA::GetDisplacementX() const{
+  return Displacement[0];
+}
 
 void CECA::SetDisplacementY(const float& width, const float& levy){
   if(levy<1||levy>2){
@@ -261,6 +264,9 @@ void CECA::SetDisplacementY(const float& width, const float& levy){
   }
   Displacement[1] = fabs(width);
   DisplacementAlpha[1] = levy;
+}
+float CECA::GetDisplacementY() const{
+  return Displacement[1];
 }
 
 void CECA::SetDisplacementZ(const float& width, const float& levy){
@@ -271,11 +277,17 @@ void CECA::SetDisplacementZ(const float& width, const float& levy){
   Displacement[2] = fabs(width);
   DisplacementAlpha[2] = levy;
 }
+float CECA::GetDisplacementZ() const{
+  return Displacement[2];
+}
 
 //identical X,Y
 void CECA::SetDisplacementT(const float& width, const float& levy){
   SetDisplacementX(width,levy);
   SetDisplacementY(width,levy);
+}
+float CECA::GetDisplacementT() const{
+  return sqrt(Displacement[0]*Displacement[0]+Displacement[1]*Displacement[1])/sqrt(2.);
 }
 
 //identical X,Y,Z
@@ -283,6 +295,9 @@ void CECA::SetDisplacement(const float& width, const float& levy){
   SetDisplacementX(width,levy);
   SetDisplacementY(width,levy);
   SetDisplacementZ(width,levy);
+}
+float CECA::GetDisplacement() const{
+  return sqrt(Displacement[0]*Displacement[0]+Displacement[1]*Displacement[1]+Displacement[2]*Displacement[2])/sqrt(3.);
 }
 
 void CECA::SetHadronizationX(const float& width, const float& levy){
@@ -293,6 +308,9 @@ void CECA::SetHadronizationX(const float& width, const float& levy){
   Hadronization[0] = width;
   HadronizationAlpha[0] = levy;
 }
+float CECA::GetHadronizationX() const{
+  return Hadronization[0];
+}
 
 void CECA::SetHadronizationY(const float& width, const float& levy){
   if(levy<1||levy>2){
@@ -301,6 +319,9 @@ void CECA::SetHadronizationY(const float& width, const float& levy){
   }
   Hadronization[1] = width;
   HadronizationAlpha[1] = levy;
+}
+float CECA::GetHadronizationY() const{
+  return Hadronization[1];
 }
 
 void CECA::SetHadronizationZ(const float& width, const float& levy){
@@ -311,11 +332,17 @@ void CECA::SetHadronizationZ(const float& width, const float& levy){
   Hadronization[2] = width;
   HadronizationAlpha[2] = levy;
 }
+float CECA::GetHadronizationZ() const{
+  return Hadronization[2];
+}
 
 //identical X,Y
 void CECA::SetHadronizationT(const float& width, const float& levy){
   SetHadronizationX(width,levy);
   SetHadronizationY(width,levy);
+}
+float CECA::GetHadronizationT() const{
+  return sqrt(Hadronization[0]*Hadronization[0]+Hadronization[1]*Hadronization[1])/sqrt(2.);
 }
 
 //identical X,Y,Z
@@ -330,9 +357,15 @@ void CECA::SetHadronization(const float& width, const float& levy){
   //Hadronization = fabs(width);
   //HadronizationAlpha = levy;
 }
+float CECA::GetHadronization() const{
+  return sqrt(Hadronization[0]*Hadronization[0]+Hadronization[1]*Hadronization[1]+Hadronization[2]*Hadronization[2])/sqrt(3.);
+}
 
 void CECA::SetHadrFluctuation(const float& fluct){
   HadrFluct = fluct;
+}
+float CECA::GetHadrFluctuation() const{
+  return HadrFluct;
 }
 
 void CECA::SetTau(const float& tau, const float& fluct, const bool& proper){
@@ -343,6 +376,9 @@ void CECA::SetTau(const float& tau, const float& fluct, const bool& proper){
   Tau = tau;
   TauFluctuation = fluct;
   ProperTau = proper;
+}
+float CECA::GetTau() const{
+  return Tau;
 }
 
 void CECA::SetThermalKick(const float& kick){
@@ -940,7 +976,18 @@ drz = cm_rel.GetZ();
 
 double kstar = 0.5*cm_rel.GetP();
 double rstar = cm_rel.GetR();
+double klab = 0.5*boost_v.GetP();
+double kT = 0.5*boost_v.GetPt();
+double m1 = prt_cm[0].Cats()->GetMass();
+double m2 = prt_cm[1].Cats()->GetMass();
+double mavg = (m1+m2)*0.5;
 double mT = 0.5*boost_v.GetMt();
+double mT_wrong = sqrt(kT*kT+mavg*mavg);
+//if(kstar<200&&mT>3000){
+//  printf("k*=%.0f; k=%.0f; kT=%.0f; mT=%.0f; mTw=%.0f (%.2f%%); m1=%.0f; m2=%.0f\n",kstar,klab,kT,mT,mT_wrong,fabs((mT_wrong-mT)/mT)*100,m1,m2);
+//  usleep(100e3);
+//}
+
 
 double AngleP1P2=0;
 double AngleRcP1=0;
@@ -1538,15 +1585,15 @@ if(!prim1&&false){
 
 void CECA::GhettoInit(){
 
-  const double NumMomBins = 10*3;
+  const double NumMomBins = 256;
   const double MomMin = 0;
-  const double MomMax = 10*40;
+  const double MomMax = 4096;
 
   const double NumRadBins = 256;
   const double RadMin = 0;
   const double RadMax = 32;
 
-  const double NumMtBins = 32;
+  const double NumMtBins = 64;
   const double MtMin = 0;
   const double MtMax = 4096;
 
