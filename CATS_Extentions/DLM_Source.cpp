@@ -1955,7 +1955,7 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
 //printf("r_star = %.1f (%.1f)\n",RAD,RAD_avg/double(counter));
 //printf(" sqrt(%.1f^2 + %.3f^2 + %.3f^2 - 2*%.1f*%.3f*%.3f + 2*%.1f*%.3f*%.3f - 2*%.3f*%.3f*%.3f)\n",
 //rad,BGT[0],BGT[1],rad,BGT[0],CosRcP0,rad,BGT[1],CosRcP1,BGT[0],BGT[1],CosP0P1);
-//usleep(100e3);
+//usleep(25e3);
                     WhichBin[0] = Histo->GetBin(0,RAD);
                     TotBin = Histo->GetTotBin(WhichBin);
                     BinSize = Histo->GetBinSize(0,WhichBin[0]);

@@ -196,7 +196,7 @@ public:
 
 
   DLM_CleverMcLevyResoTM* Old_source;
-
+  DLM_CleverMcLevyResoTM* SetUp_RSM;
 
 double GHETTO_ResoAbundance[2];
 double GHETTO_ResoMass[2];
