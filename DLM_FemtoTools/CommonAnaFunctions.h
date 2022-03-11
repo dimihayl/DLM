@@ -122,6 +122,7 @@ public:
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pXim();
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pOmegam();
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pipi();
+    DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_ppic();
 
 private:
     void Clean_CommonAnaFunctions();

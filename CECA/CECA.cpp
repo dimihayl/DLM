@@ -148,6 +148,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Old_rcore = NULL;
   Old_source = NULL;
   SetUp_RSM = NULL;
+  Buffer_RSM = NULL;
   Old_CosRcP1 = NULL;
   Old_CosRcP2 = NULL;
   Old_CosP1P2 = NULL;
@@ -456,6 +457,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
   do{
     NumMultiplets += GenerateEvent();
     ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
+    //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
   }
   while(ExeTime<Timeout);
@@ -480,7 +482,6 @@ void CECA::SaveBuffer(){
 
 void CECA::GoBabyGo(const unsigned& num_threads){
   GhettoInit();
-
   if(!Database.QA()){
       return;
   }
@@ -844,7 +845,6 @@ unsigned CECA::GenerateEvent(){
           primordial->Cats()->Decay(
           primordial->Decay()->GetDaughterMasses(),
           true);
-
         for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
           if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
             Primary.push_back(new CecaParticle());
@@ -857,9 +857,17 @@ unsigned CECA::GenerateEvent(){
               delete Primary.back();
               Primary.pop_back();
             }
+            else{
+              GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
+              if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(0)){
+                GhettoSP_pT_1->Fill(Primary.back()->Cats()->GetPt());
+              }
+              if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(1)){
+                GhettoSP_pT_2->Fill(Primary.back()->Cats()->GetPt());
+              }
+            }
           }
         }
-
         delete [] daughters;
       }
       else{
@@ -869,14 +877,15 @@ unsigned CECA::GenerateEvent(){
           delete Primary.back();
           Primary.pop_back();
         }
-      }
-
-      GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
-      if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(0)){
-        GhettoSP_pT_1->Fill(Primary.back()->Cats()->GetPt());
-      }
-      if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(1)){
-        GhettoSP_pT_2->Fill(Primary.back()->Cats()->GetPt());
+        else{
+          GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
+          if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(0)){
+            GhettoSP_pT_1->Fill(Primary.back()->Cats()->GetPt());
+          }
+          if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(1)){
+            GhettoSP_pT_2->Fill(Primary.back()->Cats()->GetPt());
+          }
+        }
       }
 
     }//iteration over all primordials
@@ -1032,7 +1041,7 @@ if(kstar<FemtoLimit){
           //printf("3\n");
           Ghetto_PP_AngleRcP1->Fill(Pi-AngleRcP2);
           Ghetto_PP_AngleRcP2->Fill(Pi-AngleRcP1);
-          Ghetto_PP_AngleP1P2->Fill(Pi-AngleP1P2);
+          Ghetto_PP_AngleP1P2->Fill(AngleP1P2);
           //printf("4\n");
     }
   }
@@ -1048,12 +1057,40 @@ if(kstar<FemtoLimit){
         BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_RP(BGT,cos(AngleRcP1));
       }
+      if(Buffer_RSM){
+        Buffer_RSM->push_back(new float[11]);
+        Buffer_RSM->back()[0]=110;
+        Buffer_RSM->back()[1]=kstar*2;
+        Buffer_RSM->back()[2]=prt_cm[0].Mother()->GetP();
+        Buffer_RSM->back()[3]=0;
+        Buffer_RSM->back()[4]=prt_cm[0].Mother()->GetMass();
+        Buffer_RSM->back()[5]=0;
+        Buffer_RSM->back()[6]=hbarc/prt_cm[0].Mother()->GetWidth();
+        Buffer_RSM->back()[7]=0;
+        Buffer_RSM->back()[8]=AngleRcP1;
+        Buffer_RSM->back()[9]=0;
+        Buffer_RSM->back()[10]=0;
+      }
     }
     if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)){
       Ghetto_PR_AngleRcP2->Fill(Pi-AngleRcP1);
       if(SetUp_RSM){
         BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_PR(BGT,cos(Pi-AngleRcP1));
+      }
+      if(Buffer_RSM){
+        Buffer_RSM->push_back(new float[11]);
+        Buffer_RSM->back()[0]=101;
+        Buffer_RSM->back()[1]=kstar*2;
+        Buffer_RSM->back()[2]=0;
+        Buffer_RSM->back()[3]=prt_cm[0].Mother()->GetP();
+        Buffer_RSM->back()[4]=0;
+        Buffer_RSM->back()[5]=prt_cm[0].Mother()->GetMass();
+        Buffer_RSM->back()[6]=0;
+        Buffer_RSM->back()[7]=hbarc/prt_cm[0].Mother()->GetWidth();
+        Buffer_RSM->back()[8]=0;
+        Buffer_RSM->back()[9]=Pi-AngleRcP1;
+        Buffer_RSM->back()[10]=0;
       }
     }
   }
@@ -1069,12 +1106,40 @@ if(kstar<FemtoLimit){
         BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_PR(BGT,cos(AngleRcP2));
       }
+      if(Buffer_RSM){
+        Buffer_RSM->push_back(new float[11]);
+        Buffer_RSM->back()[0]=101;
+        Buffer_RSM->back()[1]=kstar*2;
+        Buffer_RSM->back()[2]=0;
+        Buffer_RSM->back()[3]=prt_cm[1].Mother()->GetP();
+        Buffer_RSM->back()[4]=0;
+        Buffer_RSM->back()[5]=prt_cm[1].Mother()->GetMass();
+        Buffer_RSM->back()[6]=0;
+        Buffer_RSM->back()[7]=hbarc/prt_cm[1].Mother()->GetWidth();
+        Buffer_RSM->back()[8]=0;
+        Buffer_RSM->back()[9]=AngleRcP2;
+        Buffer_RSM->back()[10]=0;
+      }
     }
     if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
       Ghetto_RP_AngleRcP1->Fill(Pi-AngleRcP2);
       if(SetUp_RSM){
         BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_RP(BGT,cos(Pi-AngleRcP2));
+      }
+      if(Buffer_RSM){
+        Buffer_RSM->push_back(new float[11]);
+        Buffer_RSM->back()[0]=110;
+        Buffer_RSM->back()[1]=kstar*2;
+        Buffer_RSM->back()[2]=prt_cm[1].Mother()->GetP();
+        Buffer_RSM->back()[3]=0;
+        Buffer_RSM->back()[4]=prt_cm[1].Mother()->GetMass();
+        Buffer_RSM->back()[5]=0;
+        Buffer_RSM->back()[6]=hbarc/prt_cm[1].Mother()->GetWidth();
+        Buffer_RSM->back()[7]=0;
+        Buffer_RSM->back()[8]=Pi-AngleRcP2;
+        Buffer_RSM->back()[9]=0;
+        Buffer_RSM->back()[10]=0;
       }
     }
   }
@@ -1108,6 +1173,20 @@ if(kstar<FemtoLimit){
             BGT2 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
             SetUp_RSM->AddBGT_RR(BGT1,cos(AngleRcP1),BGT2,cos(AngleRcP2),cos(AngleP1P2));
           }
+          if(Buffer_RSM){
+            Buffer_RSM->push_back(new float[11]);
+            Buffer_RSM->back()[0]=111;
+            Buffer_RSM->back()[1]=kstar*2;
+            Buffer_RSM->back()[2]=prt_cm[0].Mother()->GetP();
+            Buffer_RSM->back()[3]=prt_cm[1].Mother()->GetP();
+            Buffer_RSM->back()[4]=prt_cm[0].Mother()->GetMass();
+            Buffer_RSM->back()[5]=prt_cm[1].Mother()->GetMass();
+            Buffer_RSM->back()[6]=hbarc/prt_cm[0].Mother()->GetWidth();
+            Buffer_RSM->back()[7]=hbarc/prt_cm[1].Mother()->GetWidth();
+            Buffer_RSM->back()[8]=AngleRcP1;
+            Buffer_RSM->back()[9]=AngleRcP2;
+            Buffer_RSM->back()[10]=AngleP1P2;
+          }
     }
     if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)&&
         prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
@@ -1115,11 +1194,25 @@ if(kstar<FemtoLimit){
           Ghetto_RR_AngleRcP2->Fill(Pi-AngleRcP1);
           //printf("Pi-RcP2 is core to %s\n",prt_cm[0].Trepni()->GetName().c_str());
           //usleep(250e3);
-          Ghetto_RR_AngleP1P2->Fill(Pi-AngleP1P2);
+          Ghetto_RR_AngleP1P2->Fill(AngleP1P2);
           if(SetUp_RSM){
             BGT1 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
             BGT2 = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
             SetUp_RSM->AddBGT_RR(BGT1,cos(Pi-AngleRcP2),BGT2,cos(Pi-AngleRcP1),cos(AngleP1P2));
+          }
+          if(Buffer_RSM){
+            Buffer_RSM->push_back(new float[11]);
+            Buffer_RSM->back()[0]=111;
+            Buffer_RSM->back()[1]=kstar*2;
+            Buffer_RSM->back()[2]=prt_cm[1].Mother()->GetP();
+            Buffer_RSM->back()[3]=prt_cm[0].Mother()->GetP();
+            Buffer_RSM->back()[4]=prt_cm[1].Mother()->GetMass();
+            Buffer_RSM->back()[5]=prt_cm[0].Mother()->GetMass();
+            Buffer_RSM->back()[6]=hbarc/prt_cm[1].Mother()->GetWidth();
+            Buffer_RSM->back()[7]=hbarc/prt_cm[0].Mother()->GetWidth();
+            Buffer_RSM->back()[8]=Pi-AngleRcP2;
+            Buffer_RSM->back()[9]=Pi-AngleRcP1;
+            Buffer_RSM->back()[10]=AngleP1P2;
           }
     }
   }

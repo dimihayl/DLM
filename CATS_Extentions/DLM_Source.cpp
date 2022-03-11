@@ -1929,13 +1929,15 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
                     }
 
 //if(ResoWeight[0]==1){
+//if(RAD*RAD+BGT[0]*BGT[0]+BGT[1]*BGT[1]
+//           -2.*RAD*BGT[0]*CosRcP0+2.*RAD*BGT[1]*CosRcP1-2.*BGT[0]*BGT[1]*CosP0P1<0){
 //printf("RAD = %f\n",RAD);
 //printf("BGT[0] = %f\n",BGT[0]);
 //printf("BGT[1] = %f\n",BGT[1]);
 //printf("CosRcP0 = %f\n",CosRcP0);
 //printf("CosRcP1 = %f\n",CosRcP1);
 //printf("CosP0P1 = %f\n",CosP0P1);
-//usleep(1000e3);
+//usleep(100e3);
 //printf("\n");
 //}
 
@@ -1974,6 +1976,10 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
         }
     }
     double RETVAL = Histo->Eval(RSS);
+    //if(Normalization*RETVAL<0||Normalization*RETVAL>1){
+    //  printf("RETVAL = %f*%f\n",Normalization,RETVAL);
+    //  usleep(1000e3);
+    //}
     return Normalization*RETVAL;
 
 }
