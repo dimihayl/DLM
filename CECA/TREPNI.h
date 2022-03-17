@@ -57,22 +57,19 @@ public:
   //is related to the fact that ultimately these particles will be saved into a file,
   //so we better own all the information straight away.
 
-  //these two are not optimal, as the "good" independent coordinates are either
-  //p,eta,phi or pT,pz,phi
-  void SetPtEtaPhi(const DLM_Histo<float>& pdf);//done, the others below might not be needed
-  void SetPtEtaPhi(const float& width);//flat angles, Gaussian x,y,z with some width
-
-  //the SetPtotEtaPhi and SetPtotPzPhi are the recommended functions to use!!!
-  void SetPtotEtaPhi(const DLM_Histo<float>& pdf);
-  void SetPtotEtaPhi(const float& width);
-
-  void SetPtotPzPhi(const DLM_Histo<float>& pdf);
-  void SetPtotPzPhi(const float& width);
+  void SetPtEtaPhi(const DLM_Histo<float>& pdf);
+  void SetPtotEtaPhi(const DLM_Histo<float>& pdf);//done, the others below might not be needed
+  void SetPxPyPz(const float& widthX, const float& widthY, const float& widthZ);
+  void SetPtPz(const float& widthT, const float& widthZ);
+  void SetPz(const float& widthZ);
+  void SetPtPzPhi(const DLM_Histo<float>& pdf);
 
   void FillPxPyPz(const float& xval, const float& yval, const float& zval);
-  void FillPtEtaPhi(const float& pt, const float& eta, const float& phi);
-  void FillPtEtaPhi(CatsLorentzVector& cats_vector);
+  //void FillPtEtaPhi(const float& pt, const float& eta, const float& phi);
+  //void FillPtEtaPhi(CatsLorentzVector& cats_vector);
   DLM_Histo<float>* GetPtEtaPhi() const;
+  DLM_Histo<float>* GetPtotEtaPhi() const;
+  DLM_Histo<float>* GetPtPzPhi() const;
   void SamplePxPyPz(double* axisValues, DLM_Random* RanGen=NULL, const bool& UnderOverFlow=false) const;
 
   //does not work yet
@@ -120,13 +117,17 @@ public:
 private:
 
   const TREPNI& Database;
-  //it is a 3D disto, given in terms of pT eta and phi
+  //it is a 3D disto, given in terms of p,eta,phi or pt,pz,phi, or pt,eta,phi
   //by convention, the dimensions are [0] = pT, [1] = eta, [2] = phi
   //the DIM can be reduced, i.e. 1D or 2D histos will be accepted, where if that is the case
   //for 2D we will only have pT,eta (phi assumed flat)
   //while for 1D we will only have pT (cos theta and phi both assumed flat)
+  DLM_Histo<float>* PtPzPhi;
+  DLM_Histo<float>* PtotEtaPhi;
   DLM_Histo<float>* PtEtaPhi;
-  float PxPyPz_Width;
+  //
+  //float PxPyPz_Width;
+  float Px_Width,Py_Width,Pz_Width;
   char* TreName;
   //for the mass, width abund, etc., the [0],[1],[2] represent low,current,upper values
   float* Mass;
