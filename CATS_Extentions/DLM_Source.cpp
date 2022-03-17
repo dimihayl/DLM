@@ -105,6 +105,20 @@ double DoubleGaussSource(double* Pars){
 
 }
 
+double NormDoubleGaussSource(double* Pars){
+  return Pars[6]*DoubleGaussSource(Pars);
+}
+//[3]*DGS(size1 [0],size2 [1],weight1 [2])
+double NormDoubleGaussSourceTF1(double* x, double* Pars){
+  double PARS[7];
+  PARS[0] = 0;
+  PARS[1] = *x;
+  PARS[2] = 0;
+  for(int i=0; i<4; i++)
+    PARS[3+i] = Pars[i];
+  return NormDoubleGaussSource(PARS);
+}
+
 double GaussCauchySource(double* Pars){
     //double& Momentum = Pars[0];
     double& Radius = Pars[1];

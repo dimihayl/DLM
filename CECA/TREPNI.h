@@ -56,8 +56,19 @@ public:
   //so do not over-use this function. The decision to copy the pdf and not point to it
   //is related to the fact that ultimately these particles will be saved into a file,
   //so we better own all the information straight away.
+
+  //these two are not optimal, as the "good" independent coordinates are either
+  //p,eta,phi or pT,pz,phi
   void SetPtEtaPhi(const DLM_Histo<float>& pdf);//done, the others below might not be needed
   void SetPtEtaPhi(const float& width);//flat angles, Gaussian x,y,z with some width
+
+  //the SetPtotEtaPhi and SetPtotPzPhi are the recommended functions to use!!!
+  void SetPtotEtaPhi(const DLM_Histo<float>& pdf);
+  void SetPtotEtaPhi(const float& width);
+
+  void SetPtotPzPhi(const DLM_Histo<float>& pdf);
+  void SetPtotPzPhi(const float& width);
+
   void FillPxPyPz(const float& xval, const float& yval, const float& zval);
   void FillPtEtaPhi(const float& pt, const float& eta, const float& phi);
   void FillPtEtaPhi(CatsLorentzVector& cats_vector);

@@ -20,6 +20,8 @@ double CauchySource_v2(double* Pars);
 double ExponentialSource(double* Pars);
 
 double DoubleGaussSource(double* Pars);
+double NormDoubleGaussSource(double* Pars);
+double NormDoubleGaussSourceTF1(double* x, double* Pars);
 double GaussCauchySource(double* Pars);
 //double LevyIntegral1D(double* Pars);
 double LevySource3D_2particle(double* Pars);
@@ -215,6 +217,8 @@ public:
     DLM_CleverMcLevyResoTM();
     ~DLM_CleverMcLevyResoTM();
     double Eval(double* Pars);
+    //[0] = scale (width)
+    //[1] = alpha (Cauchy -- Gauss)
     double RootEval(double* x, double* Pars);
     double RootEvalNorm(double* x, double* Pars);
 

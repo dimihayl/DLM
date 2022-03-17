@@ -10,6 +10,7 @@
 #include "DLM_Potentials.h"
 #include "DLM_WfModel.h"
 #include "DLM_Random.h"
+#include "DLM_HistoAnalysis.h"
 
 #include "TString.h"
 #include "TH2F.h"
@@ -18,6 +19,8 @@
 #include "TGraph.h"
 #include "TNtuple.h"
 #include "TVector3.h"
+#include "TF1.h"
+#include "TH1F.h"
 
 DLM_CommonAnaFunctions::DLM_CommonAnaFunctions():NumCleverLevyObjects(7){
     //Simple_Reso = NULL;
@@ -3750,6 +3753,112 @@ DLM_CleverMcLevyResoTM* DLM_CommonAnaFunctions::GetCleverMcLevyResoTM_pipi(){
 DLM_CleverMcLevyResoTM* DLM_CommonAnaFunctions::GetCleverMcLevyResoTM_ppic(){
     return &CleverMcLevyResoTM[6];
 }
+
+DLM_CleverMcLevyResoTM* DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int& SourceVar){
+  DLM_CleverMcLevyResoTM* MagicSource = new DLM_CleverMcLevyResoTM();
+  MagicSource->InitStability(1,2-1e-6,2+1e-6);
+  MagicSource->InitScale(38,0.15,2.0);
+  MagicSource->InitRad(257*2,0,64);
+  MagicSource->InitType(2);
+  MagicSource->SetUpReso(0,0.6438);
+  MagicSource->SetUpReso(1,0.476);
+
+  const double k_CutOff = int(int(SourceVar)/10)*10.;
+  const int SVAR = SourceVar%10;
+  int PPid,PRid,RPid,RRid;
+  //EPOS
+  if(SVAR==0){
+    PPid = 0;
+    PRid = 1;
+    RPid = 10;
+    RPid = 11;
+  }
+  //CECA
+  else if(SVAR==1){
+    PPid = 100;
+    PRid = 101;
+    RPid = 110;
+    RPid = 111;
+  }
+  else{
+    printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+    delete MagicSource;
+    return NULL;
+  }
+
+  Float_t Type;
+  Float_t k_D;
+  Float_t fP1;
+  Float_t fP2;
+  Float_t fM1;
+  Float_t fM2;
+  Float_t Tau1;
+  Float_t Tau2;
+  Float_t AngleRcP1;
+  Float_t AngleRcP2;
+  Float_t AngleP1P2;
+  DLM_Random RanGen(11);
+  double RanVal1;
+  double RanVal2;
+  double RanVal3;
+
+  TFile* F_EposDisto_LK = new TFile(CatsFilesFolder[0]+"/Source/EposAngularDist/LK_ALL.root");
+  TNtuple* T_EposDisto_LK = (TNtuple*)F_EposDisto_LK->Get("nt_LK");
+  T_EposDisto_LK->SetBranchAddress("Type",&Type);
+  T_EposDisto_LK->SetBranchAddress("k_D",&k_D);
+  T_EposDisto_LK->SetBranchAddress("P1",&fP1);
+  T_EposDisto_LK->SetBranchAddress("P2",&fP2);
+  T_EposDisto_LK->SetBranchAddress("M1",&fM1);
+  T_EposDisto_LK->SetBranchAddress("M2",&fM2);
+  T_EposDisto_LK->SetBranchAddress("Tau1",&Tau1);
+  T_EposDisto_LK->SetBranchAddress("Tau2",&Tau2);
+  T_EposDisto_LK->SetBranchAddress("AngleRcP1",&AngleRcP1);
+  T_EposDisto_LK->SetBranchAddress("AngleRcP2",&AngleRcP2);
+  T_EposDisto_LK->SetBranchAddress("AngleP1P2",&AngleP1P2);
+
+  for(unsigned uEntry=0; uEntry<T_EposDisto_LK->GetEntries(); uEntry++){
+      T_EposDisto_LK->GetEntry(uEntry);
+      if(Type==PPid){
+        continue;
+      }
+      else if(Type==PRid){
+        Tau1 = 0;
+        Tau2 = 3.66;
+        fM2 = 1054;
+        if(k_D>k_CutOff) continue;
+        RanVal2 = RanGen.Exponential(fM2/(fP2*Tau2));
+        MagicSource->AddBGT_PR(RanVal2,cos(AngleRcP2));
+      }
+      else if(Type==PRid){
+        Tau1 = 4.69;
+        Tau2 = 0;
+        fM1 = 1463;
+        if(k_D>k_CutOff) continue;
+        RanVal1 = RanGen.Exponential(fM1/(fP1*Tau1));
+        MagicSource->AddBGT_RP(RanVal1,cos(AngleRcP1));
+      }
+      else if(Type==RRid){
+        Tau1 = 4.69;
+        Tau2 = 3.66;
+        fM1 = 1463;
+        fM2 = 1054;
+
+        if(k_D>k_CutOff) continue;
+        RanVal1 = RanGen.Exponential(fM1/(fP1*Tau1));
+        RanVal2 = RanGen.Exponential(fM2/(fP2*Tau2));
+        MagicSource->AddBGT_RR(RanVal1,cos(AngleRcP1),RanVal2,cos(AngleRcP2),cos(AngleP1P2));
+      }
+      else{
+        continue;
+      }
+  }
+  delete F_EposDisto_LK;
+
+  MagicSource->InitNumMcIter(1000000);
+
+  return MagicSource;
+}
+
 void DLM_CommonAnaFunctions::SetCatsFilesFolder(const TString& folder){
     CatsFilesFolder[0] = folder;
 }
@@ -3846,6 +3955,25 @@ void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, C
     graph.Write("",TObject::kOverwrite);
     delete RootFile;
 }
+
+double Get_reff(TH1F* hsource, const float lambda, const float CEI){
+  TH1F* hfit4325 = (TH1F*)hsource->Clone("hfit4325");
+  hfit4325->Scale(1./hfit4325->Integral(),"width");
+
+  double lowerlimit;
+  double upperlimit;
+  GetCentralInterval(*hfit4325, CEI, lowerlimit, upperlimit, true);
+
+  TF1* fit4325 = new TF1("fit4325","[0]*4.*TMath::Pi()*x*x*pow(4.*TMath::Pi()*[1]*[1],-1.5)*exp(-(x*x)/(4.*[1]*[1]))+1.-[0]",lowerlimit,upperlimit);
+  fit4325->FixParameter(1,lambda);
+  fit4325->SetParameter(1,hfit4325->GetMean()/2.3);
+  fit4325->SetParLimits(1,hfit4325->GetMean()/10.,hfit4325->GetMean()*2.);
+
+  hfit4325->Fit(fit4325,"Q, S, N, R, M");
+
+  return fit4325->GetParameter(1);
+}
+
 
 /*
 void DLM_CommonAnaFunctions::Clean_CommonAnaFunctions(){
