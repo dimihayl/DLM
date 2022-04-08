@@ -126,6 +126,7 @@ public:
 
 
     DLM_CleverMcLevyResoTM* GaussCoreRsm_LK(const int& SourceVar);
+    DLM_CleverMcLevyResoTM* GaussCoreRsm_pK(const int& SourceVar);
 
 private:
     void Clean_CommonAnaFunctions();

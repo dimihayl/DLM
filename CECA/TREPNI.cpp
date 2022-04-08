@@ -144,6 +144,15 @@ void TreParticle::SetPz(const float& widthZ){
   Pz_Width = widthZ;
 }
 
+//in this function, we have several possiblities.
+//if PtPzPhi is defined:
+//  we sample all if available, if phi is missing => flat, if Pz is missing we use the Pz_Width
+//if PtotEtaPhi is defined:
+//  we sample all if available, if phi is missing => flat, if eta is missing we sample from flat cos_theta and evaluate eta this way
+//if PtEtaPhi is defined (N.B. these are not independent coordinates!!!):
+//  we sample all if available, if phi is missing => flat,
+//  if eta is missing, we sample z (NOT eta or theta) using Pz_Width, in order to restore the "good" coordinate system
+//Whenever we need to sample Pz, if Pz_Width==0 we through out a warning
 void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const bool& UnderOverFlow) const{
   if(!RanGen) RanGen = Database.RanGen;
   if(PtEtaPhi){

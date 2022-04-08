@@ -6,6 +6,8 @@
 
 #include "DLM_Histo.h"
 #include "DLM_Random.h"
+#include "DLM_CppTools.h"
+#include "DLM_MathFunctions.h"
 
 DLM_Fit::DLM_Fit():MaxThreads(std::thread::hardware_concurrency()?std::thread::hardware_concurrency():1){
 
@@ -20,6 +22,9 @@ DLM_Fit::DLM_Fit():MaxThreads(std::thread::hardware_concurrency()?std::thread::h
   Model = new std::vector<DLM_Histo<float>*> ();
   Solution = new std::vector<DLM_FitSolution> ();
   BestSols = new std::vector<DLM_FitSolution> ();
+  Par = new std::vector<float> ();
+  ParL = new std::vector<float> ();
+  ParU = new std::vector<float> ();
   NumBestSols = 0;
   NumWildCards = 8;
   NumThreads = MaxThreads;
@@ -33,6 +38,9 @@ DLM_Fit::DLM_Fit():MaxThreads(std::thread::hardware_concurrency()?std::thread::h
 DLM_Fit::~DLM_Fit(){
   if(DataLow){delete[]DataLow;DataLow=NULL;}
   if(DataUp){delete[]DataUp;DataUp=NULL;}
+  if(Par){delete[]Par;Par=NULL;}
+  if(ParL){delete[]ParL;ParL=NULL;}
+  if(ParU){delete[]ParU;ParU=NULL;}
   if(Model){
     for(DLM_Histo<float>* mdl : *Model){
       if(mdl){delete mdl; mdl=NULL;}
@@ -85,9 +93,20 @@ bool DLM_Fit::SetUp(const unsigned& numdata, const unsigned& numpars){
 //??? do some check on numpars
   NumData = numdata;
   NumPars = numpars;
+  Par->resize(numpars);
+  ParL->resize(numpars);
+  ParU->resize(numpars);
+  for(float& par : *Par){
+    par = 0;
+  }
+  for(float& lim : *ParL){
+    lim = -1e64;
+  }
+  for(float& lim : *ParU){
+    lim = 1e64;
+  }
 
   return true;
-
 }
 
 bool DLM_Fit::SetData(const unsigned& WhichSet, DLM_Histo<float>& data){
@@ -195,12 +214,59 @@ void DLM_Fit::SetNumWildCards(const unsigned& num){
   NumWildCards = num;
 }
 
-void DLM_Fit::WalkAround(){
+//we will walk along "lines" in the parameter space, connecting two solutions (0 and i).
+void DLM_Fit::PrepareForWalk(){
+  unsigned ThId = omp_get_thread_num();
+  //order the solutions according to their chi2 value
   OrderSolutions();
+  //the best chi2 from all solutions so far
+  double BestChi2 = Solution->at(0).Chi2;
+  //the DeltaChi2 corresponding to 1sigma with respect to our best solution
+  double DeltaChi2 = GetDeltaChi2(1.,Npar(true));
+  //A target is the ID of a solution that we want to use as the 0-th solution for the walk
+  //initally, all of the best (NumBestSols) number of solutions are potential targets
+  //than, we randomly select only a fraction (NumWildCards) of them. The best solution is always selected.
+  std::vector<unsigned> Targets;
+  //this is vector that helps us select our targets. At first, it contains all (NumBestSols) solutions
+  //and than each time we select a new real target, we push this ID into the Target and erase it from
+  //the PotentialTargets, thus by the next random sample we wont duplicate
+  std::vector<unsigned> PotentialTargets;
+  for(unsigned uBS=0; uBS<NumBestSols; uBS++){
+    PotentialTargets.push_back(uBS);
+  }
 
-  //add the new solutions
-  //order the solutions
+  for(unsigned uWild=0; uWild<NumWildCards; uWild++){
+    if(uWild==0){
+      Targets.push_back(0);
+      PotentialTargets.erase(PotentialTargets.begin());
+    }
+    else{
+      unsigned target = RanGen[ThId]->Integer(PotentialTargets.size());
+      Targets.push_back(PotentialTargets.at(target));
+      PotentialTargets.erase(PotentialTargets.begin()+target);
+    }
+  }
+
+  for(unsigned target : Targets){
+    DLM_FitSolution& sol1 = Solution->at(target);
+    for(unsigned uBS=0; uBS<NumBestSols; uBS++){
+      //we must have two differen elements
+      if(uBS==target) continue;
+      //we have to check if this combi was already used before.
+      //if uBS is a target that was already checked, this is indeed the case
+      if(uBS<target && ElementInVector(Targets,uBS)) continue;
+      DLM_FitSolution& sol2 = Solution->at(uBS);
+      //sol1 and sol2 represents the two sets of parameters, along the line of which
+      //the next iteration will be done
+
+    }
+  }
 }
+
+void DLM_Fit::WanderAround(){
+
+}
+
 void DLM_Fit::OrderSolutions(){
 
 }
@@ -216,4 +282,14 @@ void DLM_Fit::SetNumThreads(const unsigned& num){
 void DLM_Fit::SetSeed(const unsigned& thread, const unsigned& seed){
   if(thread>=MaxThreads) return;
   RanGen[thread]->SetSeed(seed);
+}
+
+unsigned DLM_Fit::Npar(const bool& free_pars) const{
+  if(!free_pars) return NumPars;
+  unsigned num_pars = NumPars;
+  for(unsigned uPar=0; uPar<NumPars; uPar++){
+    //if both of these numbers are zero
+    if( ParL->at(uPar)==0 && ParU->at(uPar)==0 ) num_pars--;
+  }
+  return num_pars;
 }
