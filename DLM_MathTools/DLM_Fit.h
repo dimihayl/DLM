@@ -117,7 +117,7 @@ public:
   float Nsigma() const;
   unsigned Ndf() const;
   unsigned Npts() const;
-  unsigned Npar(const bool& free_pars=true) const;
+  unsigned Npar(const bool& free_pars=true) const;//done
   float GetParameter() const;
   float GetParError() const;
   float GetParLowLimit() const;
@@ -134,10 +134,15 @@ private:
   void OrderSolutions();
 
 //std::vector<DLM_FitSolution>& desired_walks
-  //creates a list for the set of parameters that are to be tested next,
-  //and than exectutes each one of them in parallel, either on a single machine or as a job
-  void WalkAround();
-
+  //creates a list for the set of parameters that are to be tested next
+  void PrepareForWalk();
+  //starts the evaluation of the parameters from above
+  //this is done either in parallel, on a single machine, or as a job
+  void WanderAround();
+  //collects all the data from the 'wandering'
+  //trivial if the wandering was done locally, otherwise the output of each
+  //job has to be read out first.
+  void MemoryLane();
 
 /*
   //parameters
@@ -152,6 +157,12 @@ private:
   //variables
   std::vector<float> Var;
 */
+  std::vector<float>* Par;
+  //Lower/Upper limit. Those are set to zero if the paremter is fixed
+  std::vector<float>* ParL;
+  std::vector<float>* ParU;
+
+
 
   std::vector<float>* DataLow;
   std::vector<float>* DataUp;

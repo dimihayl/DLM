@@ -13,6 +13,14 @@ extern long DLM_CppHelp_TimeUS;
 std::vector<std::string> ParseString(const std::string& text, const std::string& delim);
 std::vector<std::string> ParseString(const std::string& text, const std::vector<std::string>& delim);
 
+template <typename VT>
+bool ElementInVector(std::vector<VT>& vec, const VT& elem){
+  for(VT& el : vec){
+    if(el==elem) return true;
+  }
+  return false;
+}
+
 int ipow(int base, unsigned char exp);
 unsigned uipow(unsigned base, unsigned char exp);
 

@@ -3859,6 +3859,187 @@ DLM_CleverMcLevyResoTM* DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int& Sourc
   return MagicSource;
 }
 
+
+//the cut off scale in k*, for which the angular distributions from EPOS
+//are evaluated. 200 MeV works okay, you can go up to 300 MeV for systematic checks
+const double k_CutOff = 200;
+
+//to be used for the NTuple later on
+Float_t k_D;
+Float_t fP1;
+Float_t fP2;
+Float_t fM1;
+Float_t fM2;
+Float_t Tau1;
+Float_t Tau2;
+Float_t AngleRcP1;
+Float_t AngleRcP2;
+Float_t AngleP1P2;
+//random generator dimi style. The input is incompatible with the ROOT random generator,
+//do not mix and match, do not ask me how I know this. Ask Bernie.
+//11 is the seed, you can change that to you favorite number
+DLM_Random RanGen(11);
+//dummies to save random shit
+double RanVal1;
+double RanVal2;
+double RanVal3;
+double RanCos;
+double MeanP1=0;
+
+
+
+
+
+
+
+DLM_CleverMcLevyResoTM* DLM_CommonAnaFunctions::GaussCoreRsm_pK(const int& SourceVar){
+  DLM_CleverMcLevyResoTM* MagicSource = new DLM_CleverMcLevyResoTM();
+  MagicSource->InitStability(1,2-1e-6,2+1e-6);
+  MagicSource->InitScale(38,0.15,2.0);
+  MagicSource->InitRad(257*2,0,64);
+  MagicSource->InitType(2);
+  MagicSource->SetUpReso(0,0.6422);
+  MagicSource->SetUpReso(1,0.476);
+
+  const double k_CutOff = int(int(SourceVar)/10)*10.;
+  const int SVAR = SourceVar%10;
+  int PPid,PRid,RPid,RRid;
+  //EPOS
+  if(SVAR==0){
+    PPid = 0;
+    PRid = 1;
+    RPid = 10;
+    RPid = 11;
+  }
+  //CECA
+  else if(SVAR==1){
+    PPid = 100;
+    PRid = 101;
+    RPid = 110;
+    RPid = 111;
+  }
+  else{
+    printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+    delete MagicSource;
+    return NULL;
+  }
+
+  Float_t Type;
+  Float_t k_D;
+  Float_t fP1;
+  Float_t fP2;
+  Float_t fM1;
+  Float_t fM2;
+  Float_t Tau1;
+  Float_t Tau2;
+  Float_t AngleRcP1;
+  Float_t AngleRcP2;
+  Float_t AngleP1P2;
+  DLM_Random RanGen(11);
+  double RanVal1;
+  double RanVal2;
+  double RanVal3;
+
+  TFile* F_EposDisto_pReso_Kaon = new TFile(CatsFilesFolder[0]+"/Source/EposAngularDist/ForRamona_pReso_Kaon.root");
+  TNtuple* T_EposDisto_pReso_Kaon = (TNtuple*)F_EposDisto_pReso_Kaon->Get("InfoTuple_ClosePairs");
+  unsigned N_EposDisto_pReso_Kaon = T_EposDisto_pReso_Kaon->GetEntries();
+  T_EposDisto_pReso_Kaon->SetBranchAddress("k_D",&k_D);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("P1",&fP1);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("P2",&fP2);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("M1",&fM1);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("M2",&fM2);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("Tau1",&Tau1);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("Tau2",&Tau2);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("AngleRcP1",&AngleRcP1);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("AngleRcP2",&AngleRcP2);
+  T_EposDisto_pReso_Kaon->SetBranchAddress("AngleP1P2",&AngleP1P2);
+  gROOT->cd();
+  //iterate over the ntuple
+  for(unsigned uEntry=0; uEntry<N_EposDisto_pReso_Kaon; uEntry++){
+      //get each entry
+      T_EposDisto_pReso_Kaon->GetEntry(uEntry);
+      //disregard the entry of you are outside the desired k*
+      if(k_D>k_CutOff) continue;
+      Tau1 = 1.65;
+      Tau2 = 0;
+      fM1 = 1362;
+      RanVal1 = RanGen.Exponential(fM1/(fP1*Tau1));
+      MagicSource->AddBGT_RP(RanVal1,cos(AngleRcP1));
+  }
+  delete T_EposDisto_pReso_Kaon;
+  delete F_EposDisto_pReso_Kaon;
+
+  TFile* F_EposDisto_p_KaonReso = new TFile(CatsFilesFolder[0]+"/Source/EposAngularDist/ForRamona_p_KaonReso.root");
+  TNtuple* T_EposDisto_p_KaonReso = (TNtuple*)F_EposDisto_p_KaonReso->Get("InfoTuple_ClosePairs");
+  unsigned N_EposDisto_p_KaonReso = T_EposDisto_p_KaonReso->GetEntries();
+  T_EposDisto_p_KaonReso->SetBranchAddress("k_D",&k_D);
+  T_EposDisto_p_KaonReso->SetBranchAddress("P1",&fP1);
+  T_EposDisto_p_KaonReso->SetBranchAddress("P2",&fP2);
+  T_EposDisto_p_KaonReso->SetBranchAddress("M1",&fM1);
+  T_EposDisto_p_KaonReso->SetBranchAddress("M2",&fM2);
+  T_EposDisto_p_KaonReso->SetBranchAddress("Tau1",&Tau1);
+  T_EposDisto_p_KaonReso->SetBranchAddress("Tau2",&Tau2);
+  T_EposDisto_p_KaonReso->SetBranchAddress("AngleRcP1",&AngleRcP1);
+  T_EposDisto_p_KaonReso->SetBranchAddress("AngleRcP2",&AngleRcP2);
+  T_EposDisto_p_KaonReso->SetBranchAddress("AngleP1P2",&AngleP1P2);
+  gROOT->cd();
+  //iterate over the ntuple
+  for(unsigned uEntry=0; uEntry<N_EposDisto_p_KaonReso; uEntry++){
+      //get each entry
+      T_EposDisto_p_KaonReso->GetEntry(uEntry);
+      //disregard the entry of you are outside the desired k*
+      if(k_D>k_CutOff) continue;
+      Tau1 = 0;
+      Tau2 = 3.66;
+      fM2 = 1054;
+      RanVal2 = RanGen.Exponential(fM2/(fP2*Tau2));
+      MagicSource->AddBGT_PR(RanVal2,cos(AngleRcP2));
+  }
+  delete T_EposDisto_p_KaonReso;
+  delete F_EposDisto_p_KaonReso;
+
+
+  TFile* F_EposDisto_pReso_KaonReso = new TFile(CatsFilesFolder[0]+"/Source/EposAngularDist/ForRamona_pReso_KaonReso.root");
+  //TFile* F_EposDisto_pReso_KaonReso = new TFile(TString::Format("%s/CatsFiles/Source/EposAngularDist/EposDisto_pReso_dReso.root",GetCernBoxDimi()));
+
+  TNtuple* T_EposDisto_pReso_KaonReso = (TNtuple*)F_EposDisto_pReso_KaonReso->Get("InfoTuple_ClosePairs");
+  unsigned N_EposDisto_pReso_KaonReso = T_EposDisto_pReso_KaonReso->GetEntries();
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("k_D",&k_D);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("P1",&fP1);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("P2",&fP2);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("M1",&fM1);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("M2",&fM2);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("Tau1",&Tau1);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("Tau2",&Tau2);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("AngleRcP1",&AngleRcP1);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("AngleRcP2",&AngleRcP2);
+  T_EposDisto_pReso_KaonReso->SetBranchAddress("AngleP1P2",&AngleP1P2);
+  gROOT->cd();
+  //iterate over the ntuple
+  for(unsigned uEntry=0; uEntry<N_EposDisto_pReso_KaonReso; uEntry++){
+      //get each entry
+      T_EposDisto_pReso_KaonReso->GetEntry(uEntry);
+      //disregard the entry of you are outside the desired k*
+      if(k_D>k_CutOff) continue;
+      Tau1 = 1.65;
+      fM1 = 1362;
+      RanVal1 = RanGen.Exponential(fM1/(fP1*Tau1));
+      Tau2 = 3.66;
+      fM2 = 1054;
+      RanVal2 = RanGen.Exponential(fM2/(fP2*Tau2));
+      //check the signs
+      MagicSource->AddBGT_RR(RanVal1,cos(AngleRcP1),RanVal2,cos(AngleRcP2),cos(AngleP1P2));
+  }
+  delete T_EposDisto_pReso_KaonReso;
+  delete F_EposDisto_pReso_KaonReso;
+
+  MagicSource->InitNumMcIter(1000000);
+
+  return MagicSource;
+}
+
+
+
 void DLM_CommonAnaFunctions::SetCatsFilesFolder(const TString& folder){
     CatsFilesFolder[0] = folder;
 }

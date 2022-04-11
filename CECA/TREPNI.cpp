@@ -29,8 +29,12 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
   NumDecays = 0;
   Decay = NULL;
   //CurrentDecay = NULL;
+  PtotEtaPhi = NULL;
+  PtPzPhi = NULL;
   PtEtaPhi = NULL;
-  PxPyPz_Width = 0;
+  Px_Width = 0;
+  Py_Width = 0;
+  Pz_Width = 0;
   Acceptance_pT[0] = 0;
   Acceptance_pT[1] = 1e128;
   Acceptance_Eta[0] = -1e128;
@@ -56,6 +60,14 @@ TreParticle::~TreParticle(){
     delete[]Decay;
     Decay=NULL;
   }
+  if(PtotEtaPhi){
+    delete PtotEtaPhi;
+    PtotEtaPhi = NULL;
+  }
+  if(PtPzPhi){
+    delete PtPzPhi;
+    PtPzPhi = NULL;
+  }
   if(PtEtaPhi){
     delete PtEtaPhi;
     PtEtaPhi = NULL;
@@ -70,14 +82,77 @@ void TreParticle::SetPtEtaPhi(const DLM_Histo<float>& pdf){
     }
     return;
   }
-  if(PtEtaPhi){delete PtEtaPhi;}
+  if(PtotEtaPhi){delete PtotEtaPhi; PtotEtaPhi = NULL;}
+  if(PtPzPhi){delete PtPzPhi; PtPzPhi = NULL;}
+  if(PtEtaPhi){delete PtEtaPhi; PtEtaPhi = NULL;}
+  Px_Width=0;Py_Width=0;Pz_Width=0;
   PtEtaPhi = new DLM_Histo<float>(pdf);
 }
-void TreParticle::SetPtEtaPhi(const float& width){
+void TreParticle::SetPtotEtaPhi(const DLM_Histo<float>& pdf){
+  if(pdf.GetDim()>3){
+    printf("\033[1;31mERROR:\033[0m (TreParticle::SetPtotEtaPhi) The momentum distribution must have 1,2 or 3 dimensions\n");
+    return;
+  }
+  if(PtotEtaPhi){delete PtotEtaPhi; PtotEtaPhi = NULL;}
+  if(PtPzPhi){delete PtPzPhi; PtPzPhi = NULL;}
   if(PtEtaPhi){delete PtEtaPhi; PtEtaPhi = NULL;}
-  PxPyPz_Width = width;
+  Px_Width=0;Py_Width=0;Pz_Width=0;
+  PtotEtaPhi = new DLM_Histo<float>(pdf);
+}
+void TreParticle::SetPtPzPhi(const DLM_Histo<float>& pdf){
+  if(pdf.GetDim()>3){
+    printf("\033[1;31mERROR:\033[0m (TreParticle::SetPtotEtaPhi) The momentum distribution must have 1,2 or 3 dimensions\n");
+    return;
+  }
+  if(PtotEtaPhi){delete PtotEtaPhi; PtotEtaPhi = NULL;}
+  if(PtPzPhi){delete PtPzPhi; PtPzPhi = NULL;}
+  if(PtEtaPhi){delete PtEtaPhi; PtEtaPhi = NULL;}
+  Px_Width=0;Py_Width=0;Pz_Width=0;
+  PtPzPhi = new DLM_Histo<float>(pdf);
 }
 
+void TreParticle::SetPxPyPz(const float& widthX, const float& widthY, const float& widthZ){
+  if(PtotEtaPhi){delete PtotEtaPhi; PtotEtaPhi = NULL;}
+  if(PtPzPhi){delete PtPzPhi; PtPzPhi = NULL;}
+  if(PtEtaPhi){delete PtEtaPhi; PtEtaPhi = NULL;}
+  Px_Width=widthX;Py_Width=widthY;Pz_Width=widthZ;
+}
+void TreParticle::SetPtPz(const float& widthT, const float& widthZ){
+  if(PtotEtaPhi){delete PtotEtaPhi; PtotEtaPhi = NULL;}
+  if(PtPzPhi){delete PtPzPhi; PtPzPhi = NULL;}
+  if(PtEtaPhi){delete PtEtaPhi; PtEtaPhi = NULL;}
+  Px_Width=widthT;Py_Width=widthT;Pz_Width=widthZ;
+}
+void TreParticle::SetPz(const float& widthZ){
+  if( PtEtaPhi==NULL && PtPzPhi==NULL ){
+    printf("\033[1;31mERROR:\033[0m (TreParticle::SetPz) The width of Pz can only be set in case we have ONLY set the pT distribution.\n");
+    return;
+  }
+  if( PtEtaPhi ){
+    if( PtEtaPhi->GetDim()!=1 ){
+      printf("\033[1;31mERROR:\033[0m (TreParticle::SetPz) The width of Pz can only be set in case we have ONLY set the pT distribution.\n");
+      return;
+    }
+  }
+  if( PtPzPhi ){
+    if( PtPzPhi->GetDim()!=1 ){
+      printf("\033[1;31mERROR:\033[0m (TreParticle::SetPz) The width of Pz can only be set in case we have ONLY set the pT distribution.\n");
+      return;
+    }
+  }
+  Px_Width=0;Py_Width=0;
+  Pz_Width = widthZ;
+}
+
+//in this function, we have several possiblities.
+//if PtPzPhi is defined:
+//  we sample all if available, if phi is missing => flat, if Pz is missing we use the Pz_Width
+//if PtotEtaPhi is defined:
+//  we sample all if available, if phi is missing => flat, if eta is missing we sample from flat cos_theta and evaluate eta this way
+//if PtEtaPhi is defined (N.B. these are not independent coordinates!!!):
+//  we sample all if available, if phi is missing => flat,
+//  if eta is missing, we sample z (NOT eta or theta) using Pz_Width, in order to restore the "good" coordinate system
+//Whenever we need to sample Pz, if Pz_Width==0 we through out a warning
 void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const bool& UnderOverFlow) const{
   if(!RanGen) RanGen = Database.RanGen;
   if(PtEtaPhi){
@@ -101,25 +176,100 @@ void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const boo
     if(Auto_phi){
       phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
     }
+    //we actually should generate z
     if(Auto_eta){
-      cos_th = RanGen->Uniform(Acceptance_CosTh[0],Acceptance_CosTh[1]);
-      //sin always positive here
-      sin_th = sqrt(1.-cos_th*cos_th);
-      cotg_th = cos_th/sin_th;
-      //verified that this relation is true
-      //eta = -0.5*log((1.-cos_th)/(1.+cos_th));
+      if(Pz_Width==0){
+        printf("\033[1;33mWARNING:\033[0m (TreParticle::SamplePxPyPz) Pz=0, did you forgot to use SetPz?\n");
+      }
+      pz = RanGen->Gauss(0,Pz_Width);
+      ptot = sqrt(pt*pt+pz*pz);
+      cos_th = pz/ptot;
+      cotg_th = pz/pt;
+      sin_th = pt/ptot;
     }
     else{
       sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
       cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
       cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
+      pz = pt*cotg_th;
+      ptot = sqrt(pt*pt+pz*pz);
     }
-    pz = pt*cotg_th;
-    ptot = sqrt(pt*pt+pz*pz);
     px = ptot*cos(phi)*sin_th;
     py = ptot*sin(phi)*sin_th;
-//pT = sqrt(px2+py2) = ptot*|sin_th|
-//theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
+  //pT = sqrt(px2+py2) = ptot*|sin_th|
+  //theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
+  }//PtEtaPhi
+  else if(PtPzPhi){
+    PtPzPhi->Sample(axisValues,UnderOverFlow,RanGen);
+    double pt = axisValues[0];
+    double PZ = axisValues[1];
+    double phi = axisValues[2];
+    double& px = axisValues[0];
+    double& py = axisValues[1];
+    double& pz = axisValues[2];
+    double eta,cos_th,sin_th,cotg_th,ptot;
+
+    bool Auto_z = true;
+    bool Auto_phi = true;
+    if(PtPzPhi->GetDim()>1)
+      Auto_z = false;
+    if(PtPzPhi->GetDim()>2)
+      Auto_phi = false;
+
+    if(Auto_phi){
+      phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
+    }
+    if(Auto_z){
+      if(Pz_Width==0){
+        printf("\033[1;33mWARNING:\033[0m (TreParticle::SamplePxPyPz) Pz=0, did you forgot to use SetPz?\n");
+      }
+      pz = RanGen->Gauss(0,Pz_Width);
+    }
+    else{
+      pz = PZ;
+    }
+    ptot = sqrt(pt*pt+pz*pz);
+    cos_th = pz/ptot;
+    cotg_th = pz/pt;
+    sin_th = pt/ptot;
+    px = ptot*cos(phi)*sin_th;
+    py = ptot*sin(phi)*sin_th;
+  }//PtPzPhi
+  else if(PtotEtaPhi){
+    PtotEtaPhi->Sample(axisValues,UnderOverFlow,RanGen);
+    double ptot = axisValues[0];
+    double eta = axisValues[1];
+    double phi = axisValues[2];
+    double& px = axisValues[0];
+    double& py = axisValues[1];
+    double& pz = axisValues[2];
+    double cos_th,sin_th;
+
+    bool Auto_eta = true;
+    bool Auto_phi = true;
+    if(PtPzPhi->GetDim()>1)
+      Auto_eta = false;
+    if(PtPzPhi->GetDim()>2)
+      Auto_phi = false;
+
+    if(Auto_phi){
+      phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
+    }
+    //we actually sample costheta
+    if(Auto_eta){
+      cos_th = RanGen->Uniform(Acceptance_CosTh[0],Acceptance_CosTh[1]);
+      //sin always positive here
+      sin_th = sqrt(1.-cos_th*cos_th);
+      //verified that this relation is true
+      //eta = -0.5*log((1.-cos_th)/(1.+cos_th));
+    }
+    else{
+      sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
+      cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
+    }
+    px = ptot*cos(phi)*sin_th;
+    py = ptot*sin(phi)*sin_th;
+    pz = ptot*cos_th;
   }
   else{
     double& px = axisValues[0];
@@ -132,7 +282,7 @@ void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const boo
     double phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
     double ptot,pt;
     do{
-      ptot = sqrt(pow(RanGen->Gauss(0,PxPyPz_Width),2.)+pow(RanGen->Gauss(0,PxPyPz_Width),2.)+pow(RanGen->Gauss(0,PxPyPz_Width),2.));
+      ptot = sqrt(pow(RanGen->Gauss(0,Px_Width),2.)+pow(RanGen->Gauss(0,Py_Width),2.)+pow(RanGen->Gauss(0,Pz_Width),2.));
       pt = ptot*sin_th;
     }
     while(pt<Acceptance_pT[0]||pt>Acceptance_pT[1]);
@@ -205,18 +355,24 @@ double TreParticle::AcceptanceMax_Phi() const{
 DLM_Histo<float>* TreParticle::GetPtEtaPhi() const{
   return PtEtaPhi;
 }
+DLM_Histo<float>* TreParticle::GetPtotEtaPhi() const{
+  return PtotEtaPhi;
+}
+DLM_Histo<float>* TreParticle::GetPtPzPhi() const{
+  return PtPzPhi;
+}
 
 void TreParticle::FillPxPyPz(const float& xval, const float& yval, const float& zval){
 
 }
 
-void TreParticle::FillPtEtaPhi(const float& pt, const float& eta, const float& phi){
+//void TreParticle::FillPtEtaPhi(const float& pt, const float& eta, const float& phi){
 
-}
+//}
 
-void TreParticle::FillPtEtaPhi(CatsLorentzVector& cats_vector){
+//void TreParticle::FillPtEtaPhi(CatsLorentzVector& cats_vector){
 
-}
+//}
 
 
 std::string TreParticle::GetName() const{

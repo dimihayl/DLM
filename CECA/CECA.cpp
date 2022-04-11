@@ -1717,15 +1717,15 @@ if(!prim1&&false){
 
 void CECA::GhettoInit(){
 
-  const double NumMomBins = 20*3;
+  const double NumMomBins = 256;
   const double MomMin = 0;
-  const double MomMax = 800;
+  const double MomMax = 4096;
 
   const double NumRadBins = 256*8;
   const double RadMin = 0;
   const double RadMax = 32*8;
 
-  const double NumMtBins = 64;
+  const double NumMtBins = 32;
   const double MtMin = 0;
   const double MtMax = 4096;
 
