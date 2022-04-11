@@ -123,6 +123,8 @@ public:
   float GetParLowLimit() const;
   float GetParUpLimit() const;
   float GetParRange() const;
+  bool ParIsFree(const unsigned& uPar) const;
+  bool ParIsFixed(const unsigned& uPar) const;
 private:
   //DLM_Histo<float>* Data;
   //DLM_Histo<float>* Model;

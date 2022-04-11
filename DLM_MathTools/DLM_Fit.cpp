@@ -9,6 +9,7 @@
 #include "DLM_CppTools.h"
 #include "DLM_MathFunctions.h"
 
+
 DLM_Fit::DLM_Fit():MaxThreads(std::thread::hardware_concurrency()?std::thread::hardware_concurrency():1){
 
   FitFnct = NULL;
@@ -217,12 +218,39 @@ void DLM_Fit::SetNumWildCards(const unsigned& num){
 //we will walk along "lines" in the parameter space, connecting two solutions (0 and i).
 void DLM_Fit::PrepareForWalk(){
   unsigned ThId = omp_get_thread_num();
+
+  //completely random
+  if(Solution->size()<NumBestSols){
+    if(Solution->size()){
+      printf("\033[1;31mFATAL ERROR:\033[0m (DLM_Fit::PrepareForWalk) Solution->size() shows a bug, contact the developers!\n");
+      return;
+    }
+
+    //setting NumBestSols initial random solutions
+    for(unsigned uBS=0; uBS<NumBestSols; uBS++){
+      Solution->push_back(DLM_FitSolution());
+      for(unsigned uPar=0; uPar<NumPars; uPar++){
+        if( ParIsFixed(uPar) ){
+          //the set value
+          Solution->back().Par->push_back(Par->at(uPar));
+        }
+        else{
+          //a uniform random value within the limits of the parameter
+          Solution->back().Par->push_back(RanGen[ThId]->Uniform(ParL->at(uPar),ParU->at(uPar)));
+        }
+      }
+    }
+
+    return;
+  }
+
   //order the solutions according to their chi2 value
   OrderSolutions();
   //the best chi2 from all solutions so far
-  double BestChi2 = Solution->at(0).Chi2;
+  //double BestChi2 = Solution->at(0).Chi2;
   //the DeltaChi2 corresponding to 1sigma with respect to our best solution
   double DeltaChi2 = GetDeltaChi2(1.,Npar(true));
+  //const unsigned NumFreePars = Npar(true);
   //A target is the ID of a solution that we want to use as the 0-th solution for the walk
   //initally, all of the best (NumBestSols) number of solutions are potential targets
   //than, we randomly select only a fraction (NumWildCards) of them. The best solution is always selected.
@@ -257,8 +285,33 @@ void DLM_Fit::PrepareForWalk(){
       if(uBS<target && ElementInVector(Targets,uBS)) continue;
       DLM_FitSolution& sol2 = Solution->at(uBS);
       //sol1 and sol2 represents the two sets of parameters, along the line of which
-      //the next iteration will be done
+      //the parameters for the next soltion are evaluated in GetSuitableParameters
 
+      float L_i = 0;
+      for(unsigned uPar=0; uPar<NumPars; uPar++){
+        L_i += pow(sol1.Par->at(uPar)-sol2.Par->at(uPar),2.);
+      }
+      L_i = sqrt(L_i);
+
+      if(sol2.Chi2==sol1.Chi2){
+        printf("\033[1;31mFATAL ERROR:\033[0m (DLM_Fit::PrepareForWalk) sol2.Chi2==sol1.Chi2 shows a bug, contact the developers!\n");
+        return;
+      }
+      float L_tot = DeltaChi2/(sol2.Chi2-sol1.Chi2)*L_i;
+      if(L_tot<0){
+        printf("\033[1;31mFATAL ERROR:\033[0m (DLM_Fit::PrepareForWalk) L_tot<0 shows a bug, contact the developers!\n");
+        return;
+      }
+
+      //the random magnitude to be used
+      //the sign will tell us in which direction to go
+      float RndMag = RanGen[ThId]->Gauss(0,L_tot);
+
+      //Solution->push_back(sol1.GetSuitableParameters(sol2,NumFreePars,RanGen[ThId]));
+
+      ///!!!! NB AT THE END MAKE SURE TO SET THE FIXED PARS EXPLICITELY TO THEIR VALUE
+      //NEEDED TO AVOID NUMERICAL FLUCTUATIONS AROUND THE MUST VALUE !!!
+      //AS QA VERIFY THAT ACTUALLY THEY ARE AT LEAST CLOSE TO THE MUST VALUE AFTER THIS PROCEDURE ENDS
     }
   }
 }
@@ -284,12 +337,19 @@ void DLM_Fit::SetSeed(const unsigned& thread, const unsigned& seed){
   RanGen[thread]->SetSeed(seed);
 }
 
+bool DLM_Fit::ParIsFixed(const unsigned& uPar) const{
+  //if both of these numbers are zero
+  return (ParL->at(uPar)==0 && ParU->at(uPar)==0);
+}
+bool DLM_Fit::ParIsFree(const unsigned& uPar) const{
+  return !ParIsFixed(uPar);
+}
+
 unsigned DLM_Fit::Npar(const bool& free_pars) const{
   if(!free_pars) return NumPars;
   unsigned num_pars = NumPars;
   for(unsigned uPar=0; uPar<NumPars; uPar++){
-    //if both of these numbers are zero
-    if( ParL->at(uPar)==0 && ParU->at(uPar)==0 ) num_pars--;
+    if( ParIsFixed(uPar) ) num_pars--;
   }
   return num_pars;
 }
