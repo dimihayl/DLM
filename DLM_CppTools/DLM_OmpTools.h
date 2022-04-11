@@ -1,0 +1,4 @@
+
+
+unsigned GetNumThreads();
+unsigned GetOptimalThreads();
