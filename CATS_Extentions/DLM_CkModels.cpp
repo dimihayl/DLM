@@ -466,11 +466,15 @@ double ComplexLednicky_Identical_Singlet_InvScatLen(const double& Momentum, cons
 }
 double ComplexLednicky_Singlet(const double& Momentum, const double* SourcePar, const double* PotPar){
     complex<double> ScatLen(PotPar[0],PotPar[1]);
-    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false);
+    return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false,false);
 }
 double ComplexLednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar){
     complex<double> ScatLen(PotPar[0],PotPar[1]);
     return GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false,true);
+}
+double ComplexLednicky_Singlet_doublegaussian_lambda(const double& Momentum, const double* SourcePar, const double* PotPar){
+    complex<double> ScatLen(PotPar[0],PotPar[1]);
+    return SourcePar[3]*(SourcePar[2]*GeneralLednicky(Momentum,SourcePar[0],ScatLen,PotPar[2],0,0,true,false,false)+(1-SourcePar[2])*GeneralLednicky(Momentum,SourcePar[1],ScatLen,PotPar[2],0,0,true,false,false))+1.-SourcePar[3];
 }
 double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar){
     complex<double> ScatLen1(PotPar[0],PotPar[1]);

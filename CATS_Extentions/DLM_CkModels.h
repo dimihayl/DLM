@@ -54,6 +54,7 @@ double ComplexLednicky_Singlet(const double& Momentum, const double* SourcePar, 
 double ComplexLednicky_Singlet_InvScatLen(const double& Momentum, const double* SourcePar, const double* PotPar);
 double ComplexLednicky_Identical_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
 double ComplexLednicky_Triplet(const double& Momentum, const double* SourcePar, const double* PotPar);
+double ComplexLednicky_Singlet_doublegaussian_lambda(const double& Momentum, const double* SourcePar, const double* PotPar);
 
 double Lednicky_2channel(const double& Momentum, const double* SourcePar, const double* PotPar);
 
