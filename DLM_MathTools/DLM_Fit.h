@@ -7,8 +7,9 @@ template <class Type> class DLM_Histo;
 class DLM_Random;
 
 struct DLM_FitSolution{
-  DLM_FitSolution(){Par = new std::vector<float> (); Chi2=-1; ID=0;}
-  ~DLM_FitSolution(){delete Par;}
+  DLM_FitSolution();
+  DLM_FitSolution(const DLM_FitSolution& other);
+  ~DLM_FitSolution();
   std::vector<float>* Par;
   //if negative: not evaluated yet
   float Chi2;
@@ -16,11 +17,14 @@ struct DLM_FitSolution{
   bool operator>(const DLM_FitSolution& other) const{return Chi2>other.Chi2;}
   bool operator<(const DLM_FitSolution& other) const{return Chi2<other.Chi2;}
   bool operator==(const DLM_FitSolution& other) const{return Chi2==other.Chi2;}
-  void operator=(const DLM_FitSolution& other) {
-    Par=other.Par;
-    Chi2=other.Chi2;
-    ID=other.ID;
-  }
+  DLM_FitSolution operator-(const DLM_FitSolution& other) const;
+  DLM_FitSolution operator+(const DLM_FitSolution& other) const;
+  void Add(const DLM_FitSolution& other, const float& scale);
+  void operator+=(const DLM_FitSolution& other);
+  void operator-=(const DLM_FitSolution& other);
+  void operator*=(const float& value);
+  //void operator=(const DLM_FitSolution& other);
+  DLM_FitSolution& operator=(const DLM_FitSolution& other);
   //the final name is basename + ID.dfs
   void SaveToFile(const char* basename);
   //execute a scipt that can evaluate this process
@@ -55,7 +59,7 @@ struct DLM_FitSolution{
 //      and continues the exectution.
 class DLM_Fit{
 public:
-  DLM_Fit();
+  DLM_Fit(const unsigned num_threads=0);
   ~DLM_Fit();
 
   //resets all about the function and requires later a specific number of data sets and parameters
@@ -76,6 +80,7 @@ public:
   //evaluates the function for a certain set of parameters
   //it is the function used internally for fitting
   //returns the Model DLM_Histo within this class, which contains the output
+  //!!!! THIS FUNCTION IS NOT THREAD-SAFE
   std::vector<DLM_Histo<float>*> Eval(const std::vector<float>& pars);
 
 
@@ -90,9 +95,18 @@ public:
   //the limit to break is either that our first 10 solutions are identical (i.e. no dependence on parameters)
   //or we are in a situation where within the first 100 best solutions we have at least 68 that end up within
   //the 1 sigma band with respect to the best solution
+  //This function is automatically using OMP for multi-threading, however it is by itself NOT threadsafe,
+  //i.e. it should be called only once!!
   void Fit();
 
   void SetParLimits(const unsigned& WhichPar, const float& min, const float& max);
+  //only these orders of magnitudes will be scanned
+  //N.B. This function can conflict with the SetParLimits, be careful in usage!!!
+  //this function is used to navigate the random sampling in the beginning better
+  //N.B. we still allow the main algorithm to test any values within the ParLimits
+  void SetParOrdMag(const unsigned& WhichPar, const int& min, const int& max);
+  void SetParMinMag(const unsigned& WhichPar, const int& min);
+  void SetParMaxMag(const unsigned& WhichPar, const int& max);
   void SetParameter(const unsigned& WhichPar, const float& val);
   void FixParameter(const unsigned& WhichPar, const float& val);
 
@@ -125,6 +139,11 @@ public:
   float GetParRange() const;
   bool ParIsFree(const unsigned& uPar) const;
   bool ParIsFixed(const unsigned& uPar) const;
+
+  bool DEBUG_PrepareForWalk();
+  void DEBUG_WanderAround(){WanderAround();}
+  std::vector<DLM_FitSolution>* DEBUG_GetSolution() {return Solution;}
+
 private:
   //DLM_Histo<float>* Data;
   //DLM_Histo<float>* Model;
@@ -132,19 +151,24 @@ private:
   void (*FitFnct)(const std::vector<float>&, std::vector<DLM_Histo<float>*>&);
   unsigned NumPars;
   unsigned NumData;
+  bool InterProcess;
 
   void OrderSolutions();
 
 //std::vector<DLM_FitSolution>& desired_walks
   //creates a list for the set of parameters that are to be tested next
-  void PrepareForWalk();
+  bool PrepareForWalk();
   //starts the evaluation of the parameters from above
   //this is done either in parallel, on a single machine, or as a job
   void WanderAround();
+  //the basis function of Eval, that is threadsafe
+  bool ProbePars(const std::vector<float>* pars, const unsigned& ThId);
   //collects all the data from the 'wandering'
   //trivial if the wandering was done locally, otherwise the output of each
   //job has to be read out first.
   void MemoryLane();
+  //the thread id of the currently best solution saved
+  unsigned ThIdBestSol();
 
 /*
   //parameters
@@ -163,19 +187,22 @@ private:
   //Lower/Upper limit. Those are set to zero if the paremter is fixed
   std::vector<float>* ParL;
   std::vector<float>* ParU;
+  std::vector<float>* ParOL;
+  std::vector<float>* ParOU;
 
 
 
   std::vector<float>* DataLow;
   std::vector<float>* DataUp;
 
-
-  float chi2;
-  unsigned NumDataPts;
+  unsigned ThIdSol;
+  float* chi2;
+  unsigned* NumDataPts;
 
   //should have the dim of the variables
   std::vector<DLM_Histo<float>*>* Data;
-  std::vector<DLM_Histo<float>*>* Model;
+  //std::vector<DLM_Histo<float>*>* Model;
+  std::vector<DLM_Histo<float>*>** Model;
 
   //saves the paramters and chi2 of each function call. This vector is ordered
   //according to the chi2 only after we find the best solution and will be used
@@ -184,7 +211,7 @@ private:
   //keeps track of the best solutions found so far
   //this vector contains the parameters and chi2, and is ordered
   //such that the last element is has the worst chi2
-  std::vector<DLM_FitSolution>* BestSols;
+  //std::vector<DLM_FitSolution>* BestSols;
   unsigned NumWildCards;
   unsigned NumBestSols;
 
