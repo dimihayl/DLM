@@ -844,7 +844,7 @@ unsigned CECA::GenerateEvent(){
         CatsParticle* daughters =
           primordial->Cats()->Decay(
           primordial->Decay()->GetDaughterMasses(),
-          true);
+          false);
         for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
           if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
             Primary.push_back(new CecaParticle());
@@ -853,6 +853,13 @@ unsigned CECA::GenerateEvent(){
             Primary.back()->SetCats(daughters[nd]);
             Primary.back()->SetOrigin(2);
             Primary.back()->SetMother(primordial->Cats());
+//CatsParticle prm = (*primordial->Cats());
+//CatsLorentzVector DIFF = daughters[nd]-prm;
+//if(DIFF.GetR()==0){
+//printf("TROUBLE!!!!\n");
+//usleep(1000e3);
+//}
+
             if(!Primary.back()->WithinAcceptance()){
               delete Primary.back();
               Primary.pop_back();
@@ -971,12 +978,29 @@ if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
 }
 if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
   cm_core = *prt_cm[1].Mother()-*prt_cm[0].Cats();
+  //double dr_mother = (*prt_cm[1].Mother()-*prt_cm[1].Cats()).GetR();
+  //printf(" dr_mother = %.3e\n",dr_mother);
+  //if(dr_mother==0){
+  //  printf("Detailed info:\n");
+  //  printf(" Mother mass: %.0f\n",prt_cm[1].Mother()->GetMass());
+  //  printf(" Daughter mass: %.0f\n",prt_cm[1].Cats()->GetMass());
+  //  prt_cm[1].Mother()->Print();
+  //  prt_cm[1].Cats()->Print();
+  //  printf("--------------\n");
+  //  usleep(500e3);
+  //}
 }
 if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
   cm_core = *prt_cm[1].Cats()-*prt_cm[0].Mother();
+  //double dr_mother = (*prt_cm[0].Mother()-*prt_cm[0].Cats()).GetR();
+  //printf(" dr_mother = %.3e\n",dr_mother);
 }
 if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
   cm_core = *prt_cm[1].Mother()-*prt_cm[0].Mother();
+  //double dr_mother1 = (*prt_cm[0].Mother()-*prt_cm[0].Cats()).GetR();
+  //printf(" dr_mother1 = %.3e\n",dr_mother1);
+  //double dr_mother2 = (*prt_cm[1].Mother()-*prt_cm[1].Cats()).GetR();
+  //printf(" dr_mother2 = %.3e\n",dr_mother2);
 }
 
 double drx,dry,drz;
@@ -986,6 +1010,7 @@ drz = cm_rel.GetZ();
 
 double kstar = 0.5*cm_rel.GetP();
 double rstar = cm_rel.GetR();
+double rcore = cm_core.GetR();
 double klab = 0.5*boost_v.GetP();
 double kT = 0.5*boost_v.GetPt();
 double m1 = prt_cm[0].Cats()->GetMass();
@@ -995,6 +1020,15 @@ double mT = 0.5*boost_v.GetMt();
 double mT_wrong = sqrt(kT*kT+mavg*mavg);
 //if(kstar<200&&mT>3000){
 //  printf("k*=%.0f; k=%.0f; kT=%.0f; mT=%.0f; mTw=%.0f (%.2f%%); m1=%.0f; m2=%.0f\n",kstar,klab,kT,mT,mT_wrong,fabs((mT_wrong-mT)/mT)*100,m1,m2);
+//  usleep(100e3);
+//}
+//static int counter=0;
+//static double mean = 0;
+//if(kstar<FemtoLimit && fabs(rstar-rcore)>1e-12){
+//  printf(" rcore = %.2f --> %.2f (dr = %.3f)\n",rcore,rstar,rstar-rcore);
+//  mean += fabs(rstar-rcore);
+//  counter++;
+//  printf(" current mean = %f\n",(mean)/double(counter));
 //  usleep(100e3);
 //}
 

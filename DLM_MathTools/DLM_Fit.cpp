@@ -684,9 +684,12 @@ bool DLM_Fit::PrepareForWalk(){
     //if(Solution->size()>=256){
     //  if(Solution->at(Solution->size()-256).Chi2 - Solution->back().Chi2 <= DeltaChi2) return true;
     //}
-    if( Solution->at(Solution->size()-NumBestSols).Chi2 - Solution->back().Chi2 <= DeltaChi2) return true;
+    //if( Solution->at(Solution->size()-NumBestSols*NumBestSols).Chi2 - Solution->back().Chi2 <= DeltaChi2) return true;
     //if( Solution->back().Chi2 == Solution->at(Solution->size()-2).Chi2) return true;
-
+//we can make different convergence strategies.
+//1. Precision: 1-5, makes the number above fixed to 10^p, demands that we have at least that num of entries
+//2. Chi2 (or nsigma): until you reach that number. In case you cant, revert back to 1
+//3. Hit: until you manage to go through the errors of all bins. If you fail: revert back to 1
 
     unsigned BestSolIdUp = Solution->size()-1;
     unsigned BestSolIdLow = Solution->size()-NumBestSols;

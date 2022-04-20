@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "gsl_sf_gamma.h"
 
@@ -552,6 +553,7 @@ CatsParticle* CatsParticle::DecaySimple(const std::vector<double> masses, const 
 
 //two body decay
 CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, const bool& propagate){
+//printf("CatsParticle::Decay %i\n",propagate);
   CatsParticle* Daughters = NULL;
   if(mass1+mass2>GetMass()){
     printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: The daughters are heavier than the mother!\n");
@@ -591,9 +593,9 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   else{
     TAU = 0;
   }
-  //printf( "TAU = 1./%.2f 1/MeV = %.2f fm -boost-> %.2f fm\n",1./TAU,TAU*hbarc,gamma*TAU*hbarc);
-
+//printf("Alles gut\n");
   if(GetMass()){
+    //printf( "TAU = 1./%.2f 1/MeV = %.2f fm -boost-> %.2f fm\n",1./TAU,TAU*hbarc,gamma*TAU*hbarc);
     //this is beta*gamma*time, i.e. boost effect accounted for
     DecaySpacePoint[0] += gamma*TAU*hbarc;
     DecaySpacePoint[1] += (FourMomentum[1])*TAU/GetMass()*hbarc;
@@ -601,11 +603,18 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
     DecaySpacePoint[3] += (FourMomentum[3])*TAU/GetMass()*hbarc;
     //for(int i=0; i<4; i++){
     //  printf(" (%i) %.3f + %.3f = %.3f\n",i,FourSpace[i],i?(FourMomentum[i])*TAU/GetMass()*hbarc:gamma*TAU*hbarc,DecaySpacePoint[i]);
-    //}
     //printf("shift = %.2e\n");
+    //}
+    //usleep(200e3);
   }
+  //else{
+    //printf("GetMass() == %f\n",GetMass());
+    //usleep(200e3);
+  //}
+
 
   if(propagate){
+    //printf("PROPAGATE\n");
     SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
   }
 
