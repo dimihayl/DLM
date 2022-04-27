@@ -181,6 +181,9 @@ double CatsLorentzVector::GetY() const{
 double CatsLorentzVector::GetZ() const{
     return FourSpace[3];
 }
+double CatsLorentzVector::GetR(const int& xyz) const{
+    return (xyz>=0&&xyz<3)?FourSpace[xyz+1]:0;
+}
 double CatsLorentzVector::GetTheta() const{
     //return FourSpace[1] == 0.0 && FourSpace[2] == 0.0 && FourSpace[3] == 0.0 ? 0.0 : atan2(sqrt(FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]),FourSpace[3]);
     return AngleTheta(sqrt(FourSpace[1]*FourSpace[1]+FourSpace[2]*FourSpace[2]),FourSpace[3]);
@@ -593,6 +596,13 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   else{
     TAU = 0;
   }
+
+//static double avg_TAU = 0;
+//avg_TAU+=TAU;
+//static int count_tau = 0;
+//count_tau++;
+//printf("%.2f (%.2f)\n",TAU*hbarc,avg_TAU*hbarc/double(count_tau));
+
 //printf("Alles gut\n");
   if(GetMass()){
     //printf( "TAU = 1./%.2f 1/MeV = %.2f fm -boost-> %.2f fm\n",1./TAU,TAU*hbarc,gamma*TAU*hbarc);

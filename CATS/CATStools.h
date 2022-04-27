@@ -71,6 +71,7 @@ public:
     double GetX() const;
     double GetY() const;
     double GetZ() const;
+    double GetR(const int& xyz) const;
     double GetPhi() const;
     double GetTheta() const;
     double GetE() const;

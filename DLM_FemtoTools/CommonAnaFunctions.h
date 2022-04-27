@@ -6,6 +6,7 @@ template <class Type> class DLM_Histo;
 class TString;
 class TH1F;
 class TH2F;
+class TF1;
 class CATS;
 class DLM_CleverLevy;
 class DLM_CleverMcLevyReso;
@@ -144,6 +145,8 @@ void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, DLM_C
 void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, CATS* Kitty);
 void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, CATS* Kitty, const unsigned& NumBins, const double& rMin, const double& rMax, const double& lambda=1, const bool& FourPi=true);
 double Get_reff(TH1F* hsource, const float lambda=1, const float CEI=0.9);
+double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda=1, const float CEI=0.9);
+
 /*
 class DLM_Analyzer{
 

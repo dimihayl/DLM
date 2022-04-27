@@ -4138,6 +4138,12 @@ void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, C
 }
 
 double Get_reff(TH1F* hsource, const float lambda, const float CEI){
+  TF1* fit_temp;
+  double result = Get_reff_TF1(hsource,fit_temp,lambda,CEI);
+  delete fit_temp;
+  return result;
+}
+double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda, const float CEI){
   TH1F* hfit4325 = (TH1F*)hsource->Clone("hfit4325");
   hfit4325->Scale(1./hfit4325->Integral(),"width");
 
@@ -4152,9 +4158,11 @@ double Get_reff(TH1F* hsource, const float lambda, const float CEI){
 
   hfit4325->Fit(fit4325,"Q, S, N, R, M");
 
+  fsource = fit4325;
+  delete hfit4325;
+
   return fit4325->GetParameter(1);
 }
-
 
 /*
 void DLM_CommonAnaFunctions::Clean_CommonAnaFunctions(){
