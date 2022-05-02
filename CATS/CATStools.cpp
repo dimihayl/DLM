@@ -459,6 +459,57 @@ double CatsLorentzVector::GetScatAngle() const{
 double CatsLorentzVector::GetCosScatAngle() const{
     return (FourSpace[1]*FourMomentum[1]+FourSpace[2]*FourMomentum[2]+FourSpace[3]*FourMomentum[3])/(GetR()*GetP());
 }
+double CatsLorentzVector::GetCosAngleR(const CatsLorentzVector& other) const{
+  if(!(GetR()*other.GetR())) return 0;
+  return (FourSpace[1]*other.FourSpace[1]+FourSpace[2]*other.FourSpace[2]+FourSpace[3]*other.FourSpace[3])/(GetR()*other.GetR());
+}
+double CatsLorentzVector::GetCosAngleP(const CatsLorentzVector& other) const{
+  if(!(GetP()*other.GetP())) return 0;
+  return (FourMomentum[1]*other.FourMomentum[1]+FourMomentum[2]*other.FourMomentum[2]+FourMomentum[3]*other.FourMomentum[3])/(GetP()*other.GetP());
+}
+double CatsLorentzVector::GetCosAngleRP(const CatsLorentzVector& other) const{
+  if(!(GetR()*other.GetP())) return 0;
+  return (FourSpace[1]*other.FourMomentum[1]+FourSpace[2]*other.FourMomentum[2]+FourSpace[3]*other.FourMomentum[3])/(GetR()*other.GetP());
+}
+double CatsLorentzVector::GetAngleR(const CatsLorentzVector& other) const{
+  double CosAngle = GetCosAngleR(other);
+  if(CosAngle<-1||CosAngle>1) return 0;
+  return acos(CosAngle);
+}
+double CatsLorentzVector::GetAngleP(const CatsLorentzVector& other) const{
+  double CosAngle = GetCosAngleP(other);
+  if(CosAngle<-1||CosAngle>1) return 0;
+  return acos(CosAngle);
+}
+double CatsLorentzVector::GetAngleRP(const CatsLorentzVector& other) const{
+  double CosAngle = GetCosAngleRP(other);
+  if(CosAngle<-1||CosAngle>1) return 0;
+  return acos(CosAngle);
+}
+double CatsLorentzVector::GetCosAngleR(const CatsLorentzVector* other) const{
+  if(other==NULL) return 0;
+  return GetCosAngleR(*other);
+}
+double CatsLorentzVector::GetCosAngleP(const CatsLorentzVector* other) const{
+  if(other==NULL) return 0;
+  return GetCosAngleP(*other);
+}
+double CatsLorentzVector::GetCosAngleRP(const CatsLorentzVector* other) const{
+  if(other==NULL) return 0;
+  return GetCosAngleRP(*other);
+}
+double CatsLorentzVector::GetAngleR(const CatsLorentzVector* other) const{
+  if(other==NULL) return 0;
+  return GetAngleR(*other);
+}
+double CatsLorentzVector::GetAngleP(const CatsLorentzVector* other) const{
+  if(other==NULL) return 0;
+  return GetAngleP(*other);
+}
+double CatsLorentzVector::GetAngleRP(const CatsLorentzVector* other) const{
+  if(other==NULL) return 0;
+  return GetAngleRP(*other);
+}
 
 CatsParticle::CatsParticle(){
     Pid=0;

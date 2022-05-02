@@ -66,6 +66,21 @@ public:
     //returns the angle between the spacial and momentum vector
     double GetScatAngle() const;
     double GetCosScatAngle() const;
+    //get the spacial-spacial, momentum-momentum, or spacial-momentum angle
+    //between two CatsLorentzVector objects
+    double GetCosAngleR(const CatsLorentzVector& other) const;
+    double GetCosAngleP(const CatsLorentzVector& other) const;
+    double GetCosAngleRP(const CatsLorentzVector& other) const;
+    double GetAngleR(const CatsLorentzVector& other) const;
+    double GetAngleP(const CatsLorentzVector& other) const;
+    double GetAngleRP(const CatsLorentzVector& other) const;
+
+    double GetCosAngleR(const CatsLorentzVector* other) const;
+    double GetCosAngleP(const CatsLorentzVector* other) const;
+    double GetCosAngleRP(const CatsLorentzVector* other) const;
+    double GetAngleR(const CatsLorentzVector* other) const;
+    double GetAngleP(const CatsLorentzVector* other) const;
+    double GetAngleRP(const CatsLorentzVector* other) const;
 
     double GetT() const;
     double GetX() const;

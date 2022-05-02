@@ -469,6 +469,14 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS*
 
 
 //TYPE==0 is NLO13, TYPE==1 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19
+//if TYPE is two digti: XY, X is the setting for 1S0, Y for 3S1,
+//where both can be {1,2,3} = {ORIGINAL, CSB, FineTune}
+//CSB = charge symmetry breaking included, FineTine is where the 3S1 scattreing ampitude is reduced to 1.3
+//To make the tests for the files provided by JH in April 2022, we need:
+//131600: test the effect of reducing the f0 in 3S1
+//221600: test the effect of CSB
+//231600: test the effect of CSB only in 1S0, where 3S1 is the new fine tune
+//211600: test the effect of CSB only in 1S0
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF){
     double RadiusStepSize;
     double RadiusMinimum;
@@ -658,7 +666,8 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         strcat(InputFileName[f3P2], "NLO3P2.data");
         strcat(InputFileName[f3D1], "NLO3d1.data");
     }
-    else if(TYPE==1){
+    //the 1S0 for the fine tune is not changed
+    else if(TYPE==1||TYPE==11||TYPE==31){
         char strCutOff[16];
         sprintf(strCutOff,"19_%i/",CUTOFF);
         for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
@@ -693,6 +702,96 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         strcat(InputFileName[f3P0], "LO3P0.data");
         strcat(InputFileName[f3P2], "LO3P2.data");
         strcat(InputFileName[f3D1], "LO3d1.data");
+    }
+    //the 1S0 for the fine tune is not changed
+    else if(TYPE==12||TYPE==32){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++){
+          if(uFile==f3S1){//this is set differently in this case
+            strcat(InputFileName[f3S1], "19_CSB/");
+          }
+          else strcat(InputFileName[uFile], strCutOff);
+        }
+
+        strcat(InputFileName[f1S0], "NLO1s0.data");
+        strcat(InputFileName[f3S1], "csbN193s1.600");
+        strcat(InputFileName[fP1], "NLOPU.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
+    }
+    else if(TYPE==21){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++){
+          if(uFile==f1S0){//this is set differently in this case
+            strcat(InputFileName[f1S0], "19_CSB/");
+          }
+          else strcat(InputFileName[uFile], strCutOff);
+        }
+
+        strcat(InputFileName[f1S0], "csbN191s0.600");
+        strcat(InputFileName[f3S1], "LO3s1.data");
+        strcat(InputFileName[fP1], "NLOPU.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
+    }
+    else if(TYPE==22){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++){
+          if(uFile==f1S0||uFile==f3S1){//this is set differently in this case
+            strcat(InputFileName[f1S0], "19_CSB/");
+          }
+          else strcat(InputFileName[uFile], strCutOff);
+        }
+
+        strcat(InputFileName[f1S0], "csbN191s0.600");
+        strcat(InputFileName[f3S1], "csbN193s1.600");
+        strcat(InputFileName[fP1], "NLOPU.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
+    }
+    //the 1S0 for the fine tune is not changed
+    else if(TYPE==13||TYPE==33){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++){
+          if(uFile==f3S1){//this is set differently in this case
+            strcat(InputFileName[f3S1], "19_FineTunes/");
+          }
+          else strcat(InputFileName[uFile], strCutOff);
+        }
+
+        strcat(InputFileName[f1S0], "LO1s0.data");
+        strcat(InputFileName[f3S1], "WN193s1.600");
+        strcat(InputFileName[fP1], "NLOPU.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
+    }
+    else if(TYPE==23){
+        char strCutOff[16];
+        sprintf(strCutOff,"19_%i/",CUTOFF);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++){
+          if(uFile==f3S1){//this is set differently in this case
+            strcat(InputFileName[f3S1], "19_FineTunes/");
+          }
+          else if(uFile==f1S0){
+            strcat(InputFileName[f1S0], "19_CSB/");
+          }
+          else strcat(InputFileName[uFile], strCutOff);
+        }
+
+        strcat(InputFileName[f1S0], "csbN191s0.600");
+        strcat(InputFileName[f3S1], "WN193s1.600");
+        strcat(InputFileName[fP1], "NLOPU.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
     }
     else{
         printf("YOU BROKE SOMETHING in Init_pL_Haidenbauer2019\n");
