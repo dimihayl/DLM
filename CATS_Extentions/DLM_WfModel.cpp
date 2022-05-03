@@ -732,7 +732,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         }
 
         strcat(InputFileName[f1S0], "csbN191s0.600");
-        strcat(InputFileName[f3S1], "LO3s1.data");
+        strcat(InputFileName[f3S1], "NLO3s1.data");
         strcat(InputFileName[fP1], "NLOPU.data");
         strcat(InputFileName[f3P0], "NLO3P0.data");
         strcat(InputFileName[f3P2], "NLO3P2.data");
@@ -766,7 +766,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
           else strcat(InputFileName[uFile], strCutOff);
         }
 
-        strcat(InputFileName[f1S0], "LO1s0.data");
+        strcat(InputFileName[f1S0], "NLO1s0.data");
         strcat(InputFileName[f3S1], "WN193s1.600");
         strcat(InputFileName[fP1], "NLOPU.data");
         strcat(InputFileName[f3P0], "NLO3P0.data");
