@@ -709,7 +709,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         sprintf(strCutOff,"19_%i/",CUTOFF);
         for(unsigned uFile=0; uFile<NumFiles; uFile++){
           if(uFile==f3S1){//this is set differently in this case
-            strcat(InputFileName[f3S1], "19_CSB/");
+            strcat(InputFileName[uFile], "19_CSB/");
           }
           else strcat(InputFileName[uFile], strCutOff);
         }
@@ -726,7 +726,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         sprintf(strCutOff,"19_%i/",CUTOFF);
         for(unsigned uFile=0; uFile<NumFiles; uFile++){
           if(uFile==f1S0){//this is set differently in this case
-            strcat(InputFileName[f1S0], "19_CSB/");
+            strcat(InputFileName[uFile], "19_CSB/");
           }
           else strcat(InputFileName[uFile], strCutOff);
         }
@@ -743,7 +743,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         sprintf(strCutOff,"19_%i/",CUTOFF);
         for(unsigned uFile=0; uFile<NumFiles; uFile++){
           if(uFile==f1S0||uFile==f3S1){//this is set differently in this case
-            strcat(InputFileName[f1S0], "19_CSB/");
+            strcat(InputFileName[uFile], "19_CSB/");
           }
           else strcat(InputFileName[uFile], strCutOff);
         }
@@ -781,7 +781,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
             strcat(InputFileName[f3S1], "19_FineTunes/");
           }
           else if(uFile==f1S0){
-            strcat(InputFileName[f1S0], "19_CSB/");
+            strcat(InputFileName[uFile], "19_CSB/");
           }
           else strcat(InputFileName[uFile], strCutOff);
         }
