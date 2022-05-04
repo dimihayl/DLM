@@ -89,6 +89,11 @@ public:
   float GetHadronization() const;//done
   void SetHadrFluctuation(const float& fluct);//done no QA
   float GetHadrFluctuation() const;//done
+  //this should be false, however during testing it was found out that the
+  //EPOS model is doing exactly that (propagating the primordial resonances to the decay point)
+  //this makes the angles that we extract to equal those between rstar and XX, not rcore and XX
+  //This function was introduced only with the intent of testing these effects!!!
+  void SetPropagateMother(const bool& yesno);//done
 
   //if proper == true, it means the time is defined in the rest frame
   //of the particle (i.e. property of the particle)
@@ -99,6 +104,7 @@ public:
   void SetThermalKick(const float& kick);//done w/o qa
 
   //all source up to DIM will be evaluated
+//THIS SHOULD BE FIX BY THE PARTICLE LIST
   void SetSourceDim(const unsigned char& sdim);//done
   //the yield of multipletes in the highest dimension
   //e.g. if DIM is set to 3, this will be the target for 3-body yield
@@ -221,6 +227,8 @@ private:
   bool ProperTau;
   bool EqualFsiTau;
   float ThermalKick;
+  bool PropagateMother;
+//THIS SHOULD BE FIX BY THE PARTICLE LIST
   unsigned char SDIM;
 //bug prone: if this is smaller then SDIM, we are up for trouble!
   unsigned short EMULT;

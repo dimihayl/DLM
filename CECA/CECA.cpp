@@ -130,6 +130,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   ProperTau = true;
   EqualFsiTau = true;
   ThermalKick = 0;
+  PropagateMother = false;
   SDIM = 2;
   TargetYield = 100000;
   AchievedYield = 0;
@@ -368,6 +369,9 @@ void CECA::SetHadrFluctuation(const float& fluct){
 }
 float CECA::GetHadrFluctuation() const{
   return HadrFluct;
+}
+void CECA::SetPropagateMother(const bool& yesno){
+  PropagateMother = yesno;
 }
 
 void CECA::SetTau(const float& tau, const float& fluct, const bool& proper){
@@ -686,9 +690,9 @@ unsigned CECA::GenerateEvent(){
         break;
 
     }//the inifinite while loop
-
+//int which_prim=-1;
     for(CecaParticle* primordial : Primordial){
-
+//which_prim++;
       //--- SAMPLE THE MOMENTUM ---//
       double axisValues[3];
       double& pT = axisValues[0];
@@ -700,6 +704,7 @@ unsigned CECA::GenerateEvent(){
       px = axisValues[0];
       py = axisValues[1];
       pz = axisValues[2];
+
       ptot = sqrt(px*px+py*py+pz*pz);
       cos_th = pz/ptot;
       sin_th = sqrt(1.-cos_th*cos_th);
@@ -773,6 +778,16 @@ unsigned CECA::GenerateEvent(){
         //the final position is saved. The time corresponds to the time elapsed
         //in the laboratory
         primordial->Cats()->SetTXYZ(tau,rtot[0],rtot[1],rtot[2]);
+/*
+if(which_prim==0){
+  primordial->Cats()->SetTXYZ(tau,0,0,1);
+  primordial->Cats()->SetMomXYZ(0,0,20);
+}
+else if(which_prim==1){
+  primordial->Cats()->SetTXYZ(tau,0,0,-1);
+  primordial->Cats()->SetMomXYZ(0,0,-20);
+}
+*/
 
         double p_tot,p_x,p_y,p_z;
         double dr_tot,dr_x,dr_y,dr_z;
@@ -844,7 +859,13 @@ unsigned CECA::GenerateEvent(){
         CatsParticle* daughters =
           primordial->Cats()->Decay(
           primordial->Decay()->GetDaughterMasses(),
-          false);
+          PropagateMother);
+
+//CatsLorentzVector diff0 = daughters[0]-(*primordial->Cats());
+//CatsLorentzVector diff1 = daughters[1]-(*primordial->Cats());
+//printf("Angle DIF:MOM = %.0f and %.0f deg\n",diff0.GetAngleRP(primordial->Cats()),diff1.GetAngleRP(primordial->Cats()));
+//usleep(100e3);
+
         for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
           if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
             Primary.push_back(new CecaParticle());
@@ -905,9 +926,6 @@ unsigned CECA::GenerateEvent(){
     std::vector<std::vector<unsigned>> Permutations = BinomialPermutations(Primary.size(),SDIM);
     //the pid is a single permutation, e.g. {0,1,2}
 
-
-
-
     for(std::vector<unsigned> pid : Permutations){
 //GHETTO: make multiplets and simply drop the output for the source as a function of rstar, no kstar, no shit
 //this so that you can show something next FemTUM
@@ -930,6 +948,32 @@ unsigned CECA::GenerateEvent(){
       //given by the last particle to form
       double fsi_tau=-1e64;
 
+/*
+double tau;
+static double avg_tau = 0;
+static int count_tau = 0;
+for(unsigned char ud=0; ud<SDIM; ud++){
+  if(prt_cm[ud].IsUsefulProduct()){
+    tau = (prt_cm[ud].Cats()->GetT()-prt_cm[ud].Mother()->GetT())/prt_cm[ud].Mother()->Gamma();
+    avg_tau+=tau;
+    count_tau++;
+    printf("tau = %.3f avg_tau = %.3f\n",tau,avg_tau/double(count_tau));
+  }
+}
+*/
+/*
+double ang_ds_pm_before[2];
+ang_ds_pm_before[0] = 1000;
+ang_ds_pm_before[1] = 1000;
+if(prt_cm[0].Mother()){
+  CatsLorentzVector diff_tmp = (*prt_cm[0].Cats())-(*prt_cm[0].Mother());
+  ang_ds_pm_before[0] = diff_tmp.GetAngleRP(prt_cm[0].Mother());
+}
+if(prt_cm[1].Mother()){
+  CatsLorentzVector diff_tmp = (*prt_cm[1].Cats())-(*prt_cm[1].Mother());
+  ang_ds_pm_before[1] = diff_tmp.GetAngleRP(prt_cm[1].Mother());
+}
+*/
       for(unsigned char ud=0; ud<SDIM; ud++){
         prt_cm[ud].Cats()->Boost(boost_v);
         if(prt_cm[ud].Mother()) prt_cm[ud].Mother()->Boost(boost_v);
@@ -938,6 +982,20 @@ unsigned CECA::GenerateEvent(){
         }
       }
 
+/*
+double tauB;
+static double avg_tauB = 0;
+static int count_tauB = 0;
+for(unsigned char ud=0; ud<SDIM; ud++){
+  if(prt_cm[ud].IsUsefulProduct()){
+    tauB = (prt_cm[ud].Cats()->GetT()-prt_cm[ud].Mother()->GetT())/prt_cm[ud].Mother()->Gamma();
+    avg_tauB+=tauB;
+    count_tauB++;
+    printf("-->BOOST %.3f avg %.3f\n",tauB,avg_tauB/double(count_tauB));
+  }
+}
+printf("EqualFsiTau = %i\n",EqualFsiTau);
+*/
       //unify the time of all particles. I.e. in their rest frame, tau should be the same
       //if not, the particles that are formed earlier are propagated along a straight line until
       //the time of formation of the last particle is reached
@@ -954,7 +1012,43 @@ unsigned CECA::GenerateEvent(){
           }
         }
       }
+/*
+double tauC;
+static double avg_tauC = 0;
+static int count_tauC = 0;
+for(unsigned char ud=0; ud<SDIM; ud++){
+  if(prt_cm[ud].IsUsefulProduct()){
+    tauC = (prt_cm[ud].Cats()->GetT()-prt_cm[ud].Mother()->GetT())/prt_cm[ud].Mother()->Gamma();
+    avg_tauC+=tauC;
+    count_tauC++;
+    printf(".....EQT %.3f avg %.3f\n",tauC,avg_tauC/double(count_tauC));
+  }
+}
+//usleep(500e3);
+*/
 
+/*
+double ang_ds_pm_after[2];
+ang_ds_pm_after[0] = 1000;
+ang_ds_pm_after[1] = 1000;
+if(prt_cm[0].Mother()){
+  CatsLorentzVector diff_tmp = (*prt_cm[0].Cats())-(*prt_cm[0].Mother());
+  ang_ds_pm_after[0] = diff_tmp.GetAngleRP(prt_cm[0].Mother())*RadToDeg;
+}
+if(prt_cm[1].Mother()){
+  CatsLorentzVector diff_tmp = (*prt_cm[1].Cats())-(*prt_cm[1].Mother());
+  ang_ds_pm_after[1] = diff_tmp.GetAngleRP(prt_cm[1].Mother())*RadToDeg;
+}
+
+if(ang_ds_pm_before[0]<1000&&ang_ds_pm_after[0]){
+  printf("0 : %.3f deg --> %.3f deg\n",ang_ds_pm_before[0],ang_ds_pm_after[0]);
+  usleep(100e3);
+}
+if(ang_ds_pm_before[1]<1000&&ang_ds_pm_after[1]){
+  printf("1 : %.3f deg --> %.3f deg\n",ang_ds_pm_before[1],ang_ds_pm_after[1]);
+  usleep(100e3);
+}
+*/
       CatsLorentzVector cm_sumQA;
       for(unsigned char ud=0; ud<SDIM; ud++){
         cm_sumQA = cm_sumQA+*prt_cm[ud].Cats();
@@ -973,8 +1067,40 @@ if(SDIM==2){
 //printf("INSIDE THE GHETTO\n");
 CatsLorentzVector cm_rel = *prt_cm[1].Cats()-*prt_cm[0].Cats();
 CatsLorentzVector cm_core;
+
+//double tauP1,tauP2;
+//double avg_tauP1,avg_tauP2;
+//static double avg_tauP2 = 0;
+//static int count_p1 = 0;
+//static int count_p2 = 0;
+//static int count_p1p2 = 0;
+
+double bgt[2],tau1,tau0;
+double bgt0,bgt1;
+double RAD;
+double CosRcP0;
+double CosRcP1;
+double CosP0P1;
+
+double s0[3];
+double s1[3];
+double rc[3];
+double rs[3];
+double rs_qa[3];
+
+int MultiDeal = 0;
+
 if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
   cm_core = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+  bgt[0] = 0;
+  bgt[1] = 0;
+  bgt0 = 0;
+  bgt1 = 0;
+  for(int i=0; i<3; i++){
+    s0[i]=0;
+    s1[i]=0;
+  }
+  MultiDeal++;
 }
 if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
   cm_core = *prt_cm[1].Mother()-*prt_cm[0].Cats();
@@ -989,11 +1115,60 @@ if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
   //  printf("--------------\n");
   //  usleep(500e3);
   //}
+
+  //count_p2++;
+  //tauP2 = (prt_cm[1].Cats()->GetT()-prt_cm[1].Mother()->GetT())/prt_cm[1].Mother()->Gamma();
+  //avg_tauP2 += tauP2;
+  //printf("tauP2 = %.2f (%.2f)\n",tauP2,double(avg_tauP2)/double(count_p2));
+  //usleep(50e3);
+
+  tau1 = (prt_cm[1].Cats()->GetT()-prt_cm[1].Mother()->GetT())/prt_cm[1].Mother()->Gamma();
+  CatsLorentzVector& P1 = *prt_cm[1].Mother();
+  bgt[0] = 0;
+  bgt[1] = P1.Beta()*P1.Gamma()*tau1;
+
+  CatsLorentzVector diff_s = *prt_cm[1].Cats() - *prt_cm[1].Mother();
+  //CatsLorentzVector diff_s = *prt_cm[1].Mother() - *prt_cm[1].Cats();
+  //CosRcP1 = (cm_core.GetX()*P1.GetX()+cm_core.GetY()*P1.GetY()+cm_core.GetZ()*P1.GetZ())/(cm_core.GetR()*P1.GetR());
+  //CosRcP1 = (cm_core.GetX()*diff_s.GetX()+cm_core.GetY()*diff_s.GetY()+cm_core.GetZ()*diff_s.GetZ())/(cm_core.GetR()*diff_s.GetR());
+  CosRcP1 = (cm_core.GetX()*P1.GetPx()+cm_core.GetY()*P1.GetPy()+cm_core.GetZ()*P1.GetPz())/(cm_core.GetR()*P1.GetP());
+  CosRcP0 = 0;
+  CosP0P1 = 0;
+  bgt0 = 0;
+  bgt1 = diff_s.GetR();
+
+  for(int i=0; i<3; i++){
+    s0[i]=0;
+    s1[i]=diff_s.GetR(i);
+  }
+  MultiDeal++;
 }
 if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
   cm_core = *prt_cm[1].Cats()-*prt_cm[0].Mother();
   //double dr_mother = (*prt_cm[0].Mother()-*prt_cm[0].Cats()).GetR();
   //printf(" dr_mother = %.3e\n",dr_mother);
+
+  tau0 = (prt_cm[0].Cats()->GetT()-prt_cm[0].Mother()->GetT())/prt_cm[0].Mother()->Gamma();
+  CatsLorentzVector& P0 = *prt_cm[0].Mother();
+  bgt[0] = P0.Beta()*P0.Gamma()*tau0;
+  bgt[1] = 0;
+
+  CatsLorentzVector diff_s = *prt_cm[0].Cats() - *prt_cm[0].Mother();
+  //CatsLorentzVector diff_s = *prt_cm[0].Mother() - *prt_cm[0].Cats();
+  //CosRcP0 = (cm_core.GetX()*P0.GetX()+cm_core.GetY()*P0.GetY()+cm_core.GetZ()*P0.GetZ())/(cm_core.GetR()*P0.GetR());
+  //CosRcP0 = (cm_core.GetX()*diff_s.GetX()+cm_core.GetY()*diff_s.GetY()+cm_core.GetZ()*diff_s.GetZ())/(cm_core.GetR()*diff_s.GetR());
+  CosRcP0 = (cm_core.GetX()*P0.GetPx()+cm_core.GetY()*P0.GetPy()+cm_core.GetZ()*P0.GetPz())/(cm_core.GetR()*P0.GetP());
+  CosRcP1 = 0;
+  CosP0P1 = 0;
+
+  bgt0 = diff_s.GetR();
+  bgt1 = 0;
+
+  for(int i=0; i<3; i++){
+    s0[i]=diff_s.GetR(i);
+    s1[i]=0;
+  }
+  MultiDeal++;
 }
 if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
   cm_core = *prt_cm[1].Mother()-*prt_cm[0].Mother();
@@ -1001,7 +1176,48 @@ if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
   //printf(" dr_mother1 = %.3e\n",dr_mother1);
   //double dr_mother2 = (*prt_cm[1].Mother()-*prt_cm[1].Cats()).GetR();
   //printf(" dr_mother2 = %.3e\n",dr_mother2);
+
+  CatsLorentzVector& P0 = *prt_cm[0].Mother();
+  tau0 = (prt_cm[0].Cats()->GetT()-prt_cm[0].Mother()->GetT())/prt_cm[0].Mother()->Gamma();
+  bgt[0] = P0.Beta()*P0.Gamma()*tau0;
+
+  CatsLorentzVector& P1 = *prt_cm[1].Mother();
+  tau1 = (prt_cm[1].Cats()->GetT()-prt_cm[1].Mother()->GetT())/prt_cm[1].Mother()->Gamma();
+  bgt[1] = P1.Beta()*P1.Gamma()*tau1;
+
+  CatsLorentzVector diff_s0 = *prt_cm[0].Cats() - *prt_cm[0].Mother();
+  CatsLorentzVector diff_s1 = *prt_cm[1].Cats() - *prt_cm[1].Mother();
+
+  CosRcP0 = cm_core.GetCosAngleRP(P0);
+  CosRcP1 = cm_core.GetCosAngleRP(P1);
+  CosP0P1 = P0.GetCosAngleP(P1);
+
+  bgt0 = diff_s0.GetR();
+  bgt1 = diff_s1.GetR();
+
+  for(int i=0; i<3; i++){
+    s0[i]=diff_s0.GetR(i);
+    s1[i]=diff_s1.GetR(i);
+  }
+  MultiDeal++;
 }
+
+if(MultiDeal==0||MultiDeal>1){
+  printf("MD = %i\n",MultiDeal);
+  usleep(2000e3);
+}
+for(int i=0; i<3; i++){
+  rc[i] = cm_core.GetR(i);
+  rs[i] = cm_rel.GetR(i);
+  rs_qa[i] = rc[i]-s0[i]+s1[i];
+}
+
+RAD = cm_core.GetR();
+RAD = sqrt(RAD*RAD+bgt[0]*bgt[0]+bgt[1]*bgt[1]
+           -2.*RAD*bgt[0]*CosRcP0+2.*RAD*bgt[1]*CosRcP1-2.*bgt[0]*bgt[1]*CosP0P1);
+
+
+
 
 double drx,dry,drz;
 drx = cm_rel.GetX();
@@ -1022,15 +1238,34 @@ double mT_wrong = sqrt(kT*kT+mavg*mavg);
 //  printf("k*=%.0f; k=%.0f; kT=%.0f; mT=%.0f; mTw=%.0f (%.2f%%); m1=%.0f; m2=%.0f\n",kstar,klab,kT,mT,mT_wrong,fabs((mT_wrong-mT)/mT)*100,m1,m2);
 //  usleep(100e3);
 //}
-//static int counter=0;
-//static double mean = 0;
+static int counter=0;
+static double mean = 0;
+static int counterRAD=0;
+static double meanRAD = 0;
 //if(kstar<FemtoLimit && fabs(rstar-rcore)>1e-12){
-//  printf(" rcore = %.2f --> %.2f (dr = %.3f)\n",rcore,rstar,rstar-rcore);
-//  mean += fabs(rstar-rcore);
-//  counter++;
-//  printf(" current mean = %f\n",(mean)/double(counter));
-//  usleep(100e3);
-//}
+if(kstar<FemtoLimit){
+//if(kstar<FemtoLimit&&prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
+/*
+  printf("----------------\n");
+  printf(" BGT0: %.3f true: %.3f\n",bgt[0],bgt0);
+  printf(" BGT1: %.3f true: %.3f\n",bgt[1],bgt1);
+  printf(" rcore = %.3f --> %.3f (dr = %.3f)\n",rcore,rstar,rstar-rcore);
+  printf(" RSM           --> %.3f (dr = %.3f)\n",RAD,RAD-rcore);
+  double rs_mag = sqrt(rs[0]*rs[0]+rs[1]*rs[1]+rs[2]*rs[2]);
+  double rsQA_mag = sqrt(rs_qa[0]*rs_qa[0]+rs_qa[1]*rs_qa[1]+rs_qa[2]*rs_qa[2]);
+  printf(" rstar (true,RAD,rs,rsQA) = (%.3f %.3f %.3f %.3f)\n",rstar,RAD,rs_mag,rsQA_mag);
+  mean += (rstar);
+  //if(CosRcP1&&!CosP0P1){
+  //mean += acos(CosRcP1);
+  counter++;
+  //}
+  meanRAD += (RAD);
+  counterRAD++;
+  printf(" current mean = %f vs %f\n",(mean)/double(counter),(meanRAD)/double(counterRAD));
+
+  usleep(1000e3);
+*/
+}
 
 
 double AngleP1P2=0;
@@ -1041,21 +1276,24 @@ double BGT,BGT1,BGT2;
 if(kstar<FemtoLimit){
 
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
-    double cosine = cm_core.GetX()*prt_cm[0].Cats()->GetPx()+
-                    cm_core.GetY()*prt_cm[0].Cats()->GetPy()+
-                    cm_core.GetZ()*prt_cm[0].Cats()->GetPz();
-    cosine /= (cm_core.GetR()*prt_cm[0].Cats()->GetP());
+    //double cosine = cm_core.GetX()*prt_cm[0].Cats()->GetPx()+
+    //                cm_core.GetY()*prt_cm[0].Cats()->GetPy()+
+    //                cm_core.GetZ()*prt_cm[0].Cats()->GetPz();
+    double cosine = cm_core.GetCosAngleRP(prt_cm[0].Cats());
+    //cosine /= (cm_core.GetR()*prt_cm[0].Cats()->GetP());
     AngleRcP1 = acos(cosine);
 
-    cosine =        cm_core.GetX()*prt_cm[1].Cats()->GetPx()+
-                    cm_core.GetY()*prt_cm[1].Cats()->GetPy()+
-                    cm_core.GetZ()*prt_cm[1].Cats()->GetPz();
+    //cosine =        cm_core.GetX()*prt_cm[1].Cats()->GetPx()+
+    //                cm_core.GetY()*prt_cm[1].Cats()->GetPy()+
+    //                cm_core.GetZ()*prt_cm[1].Cats()->GetPz();
+    cosine = cm_core.GetCosAngleRP(prt_cm[1].Cats());
     cosine /= (cm_core.GetR()*prt_cm[1].Cats()->GetP());
     AngleRcP2 = acos(cosine);
 
-    cosine =  prt_cm[0].Cats()->GetPx()*prt_cm[1].Cats()->GetPx()+
-              prt_cm[0].Cats()->GetPy()*prt_cm[1].Cats()->GetPy()+
-              prt_cm[0].Cats()->GetPz()*prt_cm[1].Cats()->GetPz();
+    //cosine =  prt_cm[0].Cats()->GetPx()*prt_cm[1].Cats()->GetPx()+
+    //          prt_cm[0].Cats()->GetPy()*prt_cm[1].Cats()->GetPy()+
+    //          prt_cm[0].Cats()->GetPz()*prt_cm[1].Cats()->GetPz();
+    cosine = prt_cm[0].Cats()->GetCosAngleP(prt_cm[1].Cats());
     cosine /= (prt_cm[0].Cats()->GetP()*prt_cm[1].Cats()->GetP());//
     if(cosine>1 || cosine<-1) cosine = round(cosine);
     AngleP1P2 = acos(cosine);
@@ -1080,10 +1318,11 @@ if(kstar<FemtoLimit){
     }
   }
   else if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
-    double cosine = cm_core.GetX()*prt_cm[0].Mother()->GetPx()+
-                    cm_core.GetY()*prt_cm[0].Mother()->GetPy()+
-                    cm_core.GetZ()*prt_cm[0].Mother()->GetPz();
-    cosine /= (cm_core.GetR()*prt_cm[0].Mother()->GetP());
+    //double cosine = cm_core.GetX()*prt_cm[0].Mother()->GetPx()+
+    //                cm_core.GetY()*prt_cm[0].Mother()->GetPy()+
+    //                cm_core.GetZ()*prt_cm[0].Mother()->GetPz();
+    double cosine = cm_core.GetCosAngleRP(prt_cm[0].Mother());
+    //cosine /= (cm_core.GetR()*prt_cm[0].Mother()->GetP());
     AngleRcP1 = acos(cosine);
     if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)){
       Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
@@ -1129,10 +1368,11 @@ if(kstar<FemtoLimit){
     }
   }
   else if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
-    double cosine = cm_core.GetX()*prt_cm[1].Mother()->GetPx()+
-                    cm_core.GetY()*prt_cm[1].Mother()->GetPy()+
-                    cm_core.GetZ()*prt_cm[1].Mother()->GetPz();
-    cosine /= (cm_core.GetR()*prt_cm[1].Mother()->GetP());
+    //double cosine = cm_core.GetX()*prt_cm[1].Mother()->GetPx()+
+    //                cm_core.GetY()*prt_cm[1].Mother()->GetPy()+
+    //                cm_core.GetZ()*prt_cm[1].Mother()->GetPz();
+    double cosine = cm_core.GetCosAngleRP(prt_cm[1].Mother());
+    //cosine /= (cm_core.GetR()*prt_cm[1].Mother()->GetP());
     AngleRcP2 = acos(cosine);
     if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
       Ghetto_PR_AngleRcP2->Fill(AngleRcP2);
@@ -1178,22 +1418,25 @@ if(kstar<FemtoLimit){
     }
   }
   else if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
-    double cosine = cm_core.GetX()*prt_cm[0].Mother()->GetPx()+
-                    cm_core.GetY()*prt_cm[0].Mother()->GetPy()+
-                    cm_core.GetZ()*prt_cm[0].Mother()->GetPz();
-    cosine /= (cm_core.GetR()*prt_cm[0].Mother()->GetP());
+    //double cosine = cm_core.GetX()*prt_cm[0].Mother()->GetPx()+
+    //                cm_core.GetY()*prt_cm[0].Mother()->GetPy()+
+    //                cm_core.GetZ()*prt_cm[0].Mother()->GetPz();
+    double cosine = cm_core.GetCosAngleRP(prt_cm[0].Mother());
+    //cosine /= (cm_core.GetR()*prt_cm[0].Mother()->GetP());
     AngleRcP1 = acos(cosine);
 
-    cosine =        cm_core.GetX()*prt_cm[1].Mother()->GetPx()+
-                    cm_core.GetY()*prt_cm[1].Mother()->GetPy()+
-                    cm_core.GetZ()*prt_cm[1].Mother()->GetPz();
-    cosine /= (cm_core.GetR()*prt_cm[1].Mother()->GetP());
+    //cosine =        cm_core.GetX()*prt_cm[1].Mother()->GetPx()+
+    //                cm_core.GetY()*prt_cm[1].Mother()->GetPy()+
+    //                cm_core.GetZ()*prt_cm[1].Mother()->GetPz();
+    cosine = cm_core.GetCosAngleRP(prt_cm[1].Mother());
+    //cosine /= (cm_core.GetR()*prt_cm[1].Mother()->GetP());
     AngleRcP2 = acos(cosine);
 
-    cosine =  prt_cm[0].Mother()->GetPx()*prt_cm[1].Mother()->GetPx()+
-              prt_cm[0].Mother()->GetPy()*prt_cm[1].Mother()->GetPy()+
-              prt_cm[0].Mother()->GetPz()*prt_cm[1].Mother()->GetPz();
-    cosine /= (prt_cm[0].Mother()->GetP()*prt_cm[1].Mother()->GetP());//
+    //cosine =  prt_cm[0].Mother()->GetPx()*prt_cm[1].Mother()->GetPx()+
+    //          prt_cm[0].Mother()->GetPy()*prt_cm[1].Mother()->GetPy()+
+    //          prt_cm[0].Mother()->GetPz()*prt_cm[1].Mother()->GetPz();
+    cosine = prt_cm[0].Mother()->GetCosAngleP(prt_cm[1].Mother());
+    //cosine /= (prt_cm[0].Mother()->GetP()*prt_cm[1].Mother()->GetP());//
     AngleP1P2 = acos(cosine);
     if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)&&
         prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
