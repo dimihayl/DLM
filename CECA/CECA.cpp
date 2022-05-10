@@ -149,6 +149,8 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Old_rcore = NULL;
   Old_source = NULL;
   SetUp_RSM = NULL;
+  SetUp_RSM_UNI = NULL;
+  SetUp_RSM_BB = NULL;
   Buffer_RSM = NULL;
   Old_CosRcP1 = NULL;
   Old_CosRcP2 = NULL;
@@ -160,6 +162,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_kstar_rstar = NULL;
   Ghetto_mT_rstar = NULL;
   GhettoFemto_rstar = NULL;
+  GhettoFemto_rcore = NULL;
   Ghetto_mT_costh = NULL;
   GhettoSP_pT_th = NULL;
   GhettoSP_pT_1 = NULL;
@@ -173,6 +176,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_PP_AngleRcP2 = NULL;
   Ghetto_PP_AngleP1P2 = NULL;
   GhettoFemto_mT_rstar = NULL;
+  GhettoFemto_mT_rcore = NULL;
   GhettoFemto_mT_kstar = NULL;
   GhettoPrimReso[0]=0;
   GhettoPrimReso[1]=0;
@@ -225,6 +229,7 @@ CECA::~CECA(){
   if(Ghetto_kstar_rstar){delete Ghetto_kstar_rstar; Ghetto_kstar_rstar=NULL;}
   if(Ghetto_mT_rstar){delete Ghetto_mT_rstar; Ghetto_mT_rstar=NULL;}
   if(GhettoFemto_rstar){delete GhettoFemto_rstar; GhettoFemto_rstar=NULL;}
+  if(GhettoFemto_rcore){delete GhettoFemto_rcore; GhettoFemto_rcore=NULL;}
   if(Ghetto_mT_costh){delete Ghetto_mT_costh; Ghetto_mT_costh=NULL;}
   if(GhettoSP_pT_th){delete GhettoSP_pT_th; GhettoSP_pT_th=NULL;}
   if(GhettoSP_pT_1){delete GhettoSP_pT_1; GhettoSP_pT_1=NULL;}
@@ -238,6 +243,7 @@ CECA::~CECA(){
   if(Ghetto_PP_AngleRcP2){delete Ghetto_PP_AngleRcP2; Ghetto_PP_AngleRcP2=NULL;}
   if(Ghetto_PP_AngleP1P2){delete Ghetto_PP_AngleP1P2; Ghetto_PP_AngleP1P2=NULL;}
   if(GhettoFemto_mT_rstar){delete GhettoFemto_mT_rstar; GhettoFemto_mT_rstar=NULL;}
+  if(GhettoFemto_mT_rcore){delete GhettoFemto_mT_rcore; GhettoFemto_mT_rcore=NULL;}
   if(GhettoFemto_mT_kstar){delete GhettoFemto_mT_kstar; GhettoFemto_mT_kstar=NULL;}
   if(ThreadClock){delete [] ThreadClock; ThreadClock=NULL;}
   if(RanGen){
@@ -1026,6 +1032,14 @@ if(kstar<FemtoLimit){
         BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_RP(BGT,cos(AngleRcP1));
       }
+      if(SetUp_RSM_UNI){
+        BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+        SetUp_RSM_UNI->AddBGT_RP(BGT,RanGen[ThId]->Uniform(-1,1));
+      }
+      if(SetUp_RSM_BB){
+        BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+        SetUp_RSM_BB->AddBGT_RP(BGT,-1.);
+      }
       if(Buffer_RSM){
         Buffer_RSM->push_back(new float[11]);
         Buffer_RSM->back()[0]=110;
@@ -1046,6 +1060,14 @@ if(kstar<FemtoLimit){
       if(SetUp_RSM){
         BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_PR(BGT,cos(Pi-AngleRcP1));
+      }
+      if(SetUp_RSM_UNI){
+        BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+        SetUp_RSM_UNI->AddBGT_PR(BGT,RanGen[ThId]->Uniform(-1,1));
+      }
+      if(SetUp_RSM_BB){
+        BGT = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+        SetUp_RSM_BB->AddBGT_PR(BGT,1.);
       }
       if(Buffer_RSM){
         Buffer_RSM->push_back(new float[11]);
@@ -1072,6 +1094,14 @@ if(kstar<FemtoLimit){
         BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_PR(BGT,cos(AngleRcP2));
       }
+      if(SetUp_RSM_UNI){
+        BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+        SetUp_RSM_UNI->AddBGT_PR(BGT,RanGen[ThId]->Uniform(-1,1));
+      }
+      if(SetUp_RSM_BB){
+        BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+        SetUp_RSM_BB->AddBGT_PR(BGT,1.);
+      }
       if(Buffer_RSM){
         Buffer_RSM->push_back(new float[11]);
         Buffer_RSM->back()[0]=101;
@@ -1092,6 +1122,14 @@ if(kstar<FemtoLimit){
       if(SetUp_RSM){
         BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
         SetUp_RSM->AddBGT_RP(BGT,cos(Pi-AngleRcP2));
+      }
+      if(SetUp_RSM_UNI){
+        BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+        SetUp_RSM_UNI->AddBGT_RP(BGT,RanGen[ThId]->Uniform(-1,1));
+      }
+      if(SetUp_RSM_BB){
+        BGT = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+        SetUp_RSM_BB->AddBGT_RP(BGT,-1.);
       }
       if(Buffer_RSM){
         Buffer_RSM->push_back(new float[11]);
@@ -1128,6 +1166,22 @@ if(kstar<FemtoLimit){
             BGT2 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
             SetUp_RSM->AddBGT_RR(BGT1,cos(AngleRcP1),BGT2,cos(AngleRcP2),cos(AngleP1P2));
           }
+          if(SetUp_RSM_UNI){
+            BGT1 = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+            BGT2 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+            CatsLorentzVector clvp1;
+            CatsLorentzVector clvp2;
+            CatsLorentzVector clvrc;
+            clvrc.SetTXYZ(0,1,0,0);
+            clvp1.SetTXYZ(0,RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1));
+            clvp2.SetTXYZ(0,RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1));
+            SetUp_RSM->AddBGT_RR(BGT1,clvrc.GetCosAngleR(clvp1),BGT2,clvrc.GetCosAngleR(clvp2),clvp1.GetCosAngleR(clvp2));
+          }
+          if(SetUp_RSM_BB){
+            BGT1 = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+            BGT2 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+            SetUp_RSM->AddBGT_RR(BGT1,-1.0,BGT2,1.0,-1.0);
+          }
           if(Buffer_RSM){
             Buffer_RSM->push_back(new float[11]);
             Buffer_RSM->back()[0]=111;
@@ -1155,6 +1209,23 @@ if(kstar<FemtoLimit){
             BGT2 = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
             SetUp_RSM->AddBGT_RR(BGT1,cos(Pi-AngleRcP2),BGT2,cos(Pi-AngleRcP1),cos(AngleP1P2));
           }
+          if(SetUp_RSM_UNI){
+            BGT1 = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+            BGT2 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+            CatsLorentzVector clvp1;
+            CatsLorentzVector clvp2;
+            CatsLorentzVector clvrc;
+            clvrc.SetTXYZ(0,1,0,0);
+            clvp1.SetTXYZ(0,RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1));
+            clvp2.SetTXYZ(0,RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1),RanGen[ThId]->Gauss(0,1));
+            SetUp_RSM->AddBGT_RR(BGT1,clvrc.GetCosAngleR(clvp1),BGT2,clvrc.GetCosAngleR(clvp2),clvp1.GetCosAngleR(clvp2));
+          }
+          if(SetUp_RSM_BB){
+            BGT1 = RanGen[ThId]->Exponential(prt_cm[0].Mother()->GetWidth()*prt_cm[0].Mother()->GetMass()/prt_cm[0].Mother()->GetP())*hbarc;
+            BGT2 = RanGen[ThId]->Exponential(prt_cm[1].Mother()->GetWidth()*prt_cm[1].Mother()->GetMass()/prt_cm[1].Mother()->GetP())*hbarc;
+            SetUp_RSM->AddBGT_RR(BGT1,-1.0,BGT2,1.0,-1.0);
+          }
+
           if(Buffer_RSM){
             Buffer_RSM->push_back(new float[11]);
             Buffer_RSM->back()[0]=111;
@@ -1188,6 +1259,12 @@ if(kstar<FemtoLimit){
   if(kstar<FemtoLimit){
     GhettoFemto_rstar->Fill(rstar);
     GhettoFemto_mT_rstar->Fill(mT,rstar);
+    //N.B. without this if statement, we get a different rcore, as it depends on the mass of the particles
+    //i.e. the core is not the same for all species, even if the single particle emission IS the same
+    if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+      GhettoFemto_rcore->Fill(rcore);
+      GhettoFemto_mT_rcore->Fill(mT,rcore);
+    }
     GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -1792,6 +1869,11 @@ void CECA::GhettoInit(){
   GhettoFemto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
   GhettoFemto_rstar->Initialize();
 
+  if(GhettoFemto_rcore) delete GhettoFemto_rcore;
+  GhettoFemto_rcore = new DLM_Histo<float>();
+  GhettoFemto_rcore->SetUp(1);
+  GhettoFemto_rcore->SetUp(0,NumRadBins,RadMin,RadMax);
+  GhettoFemto_rcore->Initialize();
 
   if(Ghetto_mT_costh) delete Ghetto_mT_costh;
   Ghetto_mT_costh = new DLM_Histo<float>();
@@ -1807,6 +1889,13 @@ void CECA::GhettoInit(){
   GhettoFemto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
   GhettoFemto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
   GhettoFemto_mT_rstar->Initialize();
+
+  if(GhettoFemto_mT_rcore) delete GhettoFemto_mT_rcore;
+  GhettoFemto_mT_rcore = new DLM_Histo<float>();
+  GhettoFemto_mT_rcore->SetUp(2);
+  GhettoFemto_mT_rcore->SetUp(0,NumMtBins,MtMin,MtMax);
+  GhettoFemto_mT_rcore->SetUp(1,NumRadBins,RadMin,RadMax);
+  GhettoFemto_mT_rcore->Initialize();
 
   if(GhettoFemto_mT_kstar) delete GhettoFemto_mT_kstar;
   GhettoFemto_mT_kstar = new DLM_Histo<float>();

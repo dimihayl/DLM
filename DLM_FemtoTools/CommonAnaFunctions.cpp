@@ -227,7 +227,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
         //EPOS, 2 is with fixed mass, 3 is with EPOS mass, 4 is 3 body with fixed mass, 5 is 3 body with EPOS mass
         else{
 //printf("Hello 2\n");
-            const double k_CutOff = int(int(SourceVar)/10)*10.;
+            const double k_CutOff = fabs(int(int(SourceVar)/10)*10.);
             Float_t k_D;
             Float_t fP1;
             Float_t fP2;
@@ -263,15 +263,22 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
                 T_EposDisto_p_pReso->GetEntry(uEntry);
                 Tau1 = 0;
                 Tau2 = 1.65;
-                if(SourceVar%100==2){
+                if(fabs(SourceVar%100)==2){
                     fM2 = 1362;
                 }
                 if(k_D>k_CutOff) continue;
                 RanVal1 = RanGen.Exponential(fM2/(fP2*Tau2));
-                CleverMcLevyResoTM[0].AddBGT_PR(RanVal1,-cos(AngleRcP2));
-                CleverMcLevyResoTM[0].AddBGT_RP(RanVal1,cos(AngleRcP2));
-                //CleverMcLevyResoTM[0].AddBGT_PR(RanVal1,cos(AngleRcP2));
-                //CleverMcLevyResoTM[0].AddBGT_RP(RanVal1,-cos(AngleRcP2));
+                //wrong sign (e.g. SourceVar==202)
+                if(SourceVar>0){
+                  CleverMcLevyResoTM[0].AddBGT_PR(RanVal1,-cos(AngleRcP2));
+                  CleverMcLevyResoTM[0].AddBGT_RP(RanVal1,cos(AngleRcP2));
+                }
+                //correct sign (e.g. SourceVar==-202)
+                else{
+                  CleverMcLevyResoTM[0].AddBGT_PR(RanVal1,cos(AngleRcP2));
+                  CleverMcLevyResoTM[0].AddBGT_RP(RanVal1,-cos(AngleRcP2));
+                }
+
             }
             delete F_EposDisto_p_pReso;
 
@@ -295,7 +302,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
                 T_EposDisto_pReso_pReso->GetEntry(uEntry);
                 Tau1 = 1.65;
                 Tau2 = 1.65;
-                if(SourceVar%100==2){
+                if(fabs(SourceVar%100)==2){
                     fM1 = 1362;
                     fM2 = 1362;
                 }

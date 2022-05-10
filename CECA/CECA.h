@@ -177,7 +177,9 @@ public:
   DLM_Histo<float>* Ghetto_kstar_rstar;
   DLM_Histo<float>* Ghetto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_rstar;
+  DLM_Histo<float>* GhettoFemto_rcore;
   DLM_Histo<float>* GhettoFemto_mT_rstar;
+  DLM_Histo<float>* GhettoFemto_mT_rcore;
   DLM_Histo<float>* GhettoFemto_mT_kstar;
   DLM_Histo<float>* Ghetto_mT_costh;
   DLM_Histo<float>* GhettoSP_pT_th;
@@ -203,6 +205,8 @@ public:
 
   DLM_CleverMcLevyResoTM* Old_source;
   DLM_CleverMcLevyResoTM* SetUp_RSM;
+  DLM_CleverMcLevyResoTM* SetUp_RSM_UNI;
+  DLM_CleverMcLevyResoTM* SetUp_RSM_BB;
   std::vector<float*>* Buffer_RSM;
 
 double GHETTO_ResoAbundance[2];

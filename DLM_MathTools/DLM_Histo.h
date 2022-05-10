@@ -475,13 +475,32 @@ public:
     }
     bool AddHisto(const DLM_Histo& other, const bool witherror=true, const Type& scale=1){
         if(!Initialized) {InitWarning(); return false;}
-        if(!SameStructure(other)||!Initialized) return false;
-        for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
-          BinValue[uBin] += scale*other.BinValue[uBin];
+        if(!other.Initialized) {InitWarning(); return false;}
+        if(SameStructure(other)){
+          for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+            BinValue[uBin] += scale*other.BinValue[uBin];
+          }
+          if(witherror)
+              for(unsigned uBin=0; uBin<TotNumBins; uBin++)
+                  BinError[uBin] = sqrt(BinError[uBin]*BinError[uBin]+scale*scale*other.BinError[uBin]*other.BinError[uBin]);
         }
-        if(witherror)
-            for(unsigned uBin=0; uBin<TotNumBins; uBin++)
-                BinError[uBin] = sqrt(BinError[uBin]*BinError[uBin]+scale*scale*other.BinError[uBin]*other.BinError[uBin]);
+        else{
+          if(other.Dim!=Dim) {return false;}
+          unsigned* BinId = new unsigned [Dim];
+          double* xVal = new double [Dim];
+          for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+              GetBinCoordinates(uBin,BinId);
+              for(unsigned short sDim=0; sDim<Dim; sDim++){
+                  xVal[sDim] = BinCenter[sDim][BinId[sDim]];
+              }
+              BinValue[uBin] += scale*other.Eval(xVal);
+              if(witherror){
+                BinError[uBin] = sqrt(BinError[uBin]*BinError[uBin]+scale*scale*other.Eval(xVal,true)*other.Eval(xVal,true));
+              }
+          }
+          delete [] BinId;
+          delete [] xVal;
+        }
         CumUpdated = false;
         return true;
     }
@@ -507,15 +526,38 @@ public:
     }
     bool MultiplyHisto(const DLM_Histo& other, const bool witherror=true){
         if(!Initialized) {InitWarning(); return false;}
-        if(!SameStructure(other)||!Initialized) return false;
-        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
-          BinValue[uBin] *= other.BinValue[uBin];
+        if(!other.Initialized) {InitWarning(); return false;}
+        //do the operation bin by bin
+        if(SameStructure(other)){
+          for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            BinValue[uBin] *= other.BinValue[uBin];
+          }
+          if(witherror)
+              for(unsigned uBin=0; uBin<TotNumBins; uBin++)
+                  BinError[uBin] = sqrt(  pow(BinError[uBin]*other.BinError[uBin],2.)+
+                                          pow(BinError[uBin]*other.BinValue[uBin],2.)+
+                                          pow(BinValue[uBin]*other.BinError[uBin],2.));
         }
-        if(witherror)
-            for(unsigned uBin=0; uBin<TotNumBins; uBin++)
-                BinError[uBin] = sqrt(  pow(BinError[uBin]*other.BinError[uBin],2.)+
-                                        pow(BinError[uBin]*other.BinValue[uBin],2.)+
-                                        pow(BinValue[uBin]*other.BinError[uBin],2.));
+        //not tested
+        else{
+          if(other.Dim!=Dim) {return false;}
+          unsigned* BinId = new unsigned [Dim];
+          double* xVal = new double [Dim];
+          for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+              GetBinCoordinates(uBin,BinId);
+              for(unsigned short sDim=0; sDim<Dim; sDim++){
+                  xVal[sDim] = BinCenter[sDim][BinId[sDim]];
+              }
+              BinValue[uBin] *= other.Eval(xVal);
+              if(witherror){
+                BinError[uBin] = sqrt(  pow(BinError[uBin]*other.Eval(xVal,true),2.)+
+                                        pow(BinError[uBin]*other.Eval(xVal),2.)+
+                                        pow(BinValue[uBin]*other.Eval(xVal,true),2.));
+              }
+          }
+          delete [] BinId;
+          delete [] xVal;
+        }
         CumUpdated = false;
         return true;
     }
