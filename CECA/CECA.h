@@ -32,6 +32,7 @@ public:
   void SetTrepni(const TreParticle* prt_tre);
   void SetCats(const CatsParticle* prt_cats);
   void SetDecay(const TreChain* prt_dec);
+  //0 - useless, 1 - primordial, 2 - decay product
   void SetOrigin(const char& origin);
   void SetMother(const CatsParticle* mama);
   bool IsUseful() const;//is of the required type
@@ -196,6 +197,8 @@ public:
   DLM_Histo<float>* Ghetto_RR_AngleRcP1;
   DLM_Histo<float>* Ghetto_RR_AngleRcP2;
   DLM_Histo<float>* Ghetto_RR_AngleP1P2;
+
+  DLM_Histo<float>* Ghetto_ScatteringAngle;
 
   //pp / pr / rp / rr
   unsigned GhettoFemtoPrimReso[4];

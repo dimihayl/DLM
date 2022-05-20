@@ -27,6 +27,7 @@ double GetNsigma(const double& chi2, const double& ndf);
 //evaluate the difference that is needed in Chi2, that builds up a
 //significance of nsigma. This is done based on the number of fit parameters.
 double GetDeltaChi2(const double& nsigma, const unsigned& nfreepars);
+double GetPvalFromNsig(const double& nsigma);
 
 std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const unsigned& k);
 

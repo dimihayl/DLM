@@ -208,6 +208,10 @@ double GetDeltaChi2(const double& nsigma, const unsigned& nfreepars){
   return 1e128;
 }
 
+double GetPvalFromNsig(const double& nsigma){
+	return GetPval(GetDeltaChi2(nsigma,1),1);
+}
+
 /*
 void BinomialPermutations(const unsigned offset, const unsigned& k,
 													std::vector<std::vector<unsigned>>& permutations, std::vector<unsigned>& elements){

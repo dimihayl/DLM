@@ -175,6 +175,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_PP_AngleRcP1 = NULL;
   Ghetto_PP_AngleRcP2 = NULL;
   Ghetto_PP_AngleP1P2 = NULL;
+  Ghetto_ScatteringAngle = NULL;
   GhettoFemto_mT_rstar = NULL;
   GhettoFemto_mT_rcore = NULL;
   GhettoFemto_mT_kstar = NULL;
@@ -239,6 +240,7 @@ CECA::~CECA(){
   if(Ghetto_RR_AngleRcP1){delete Ghetto_RR_AngleRcP1; Ghetto_RR_AngleRcP1=NULL;}
   if(Ghetto_RR_AngleRcP2){delete Ghetto_RR_AngleRcP2; Ghetto_RR_AngleRcP2=NULL;}
   if(Ghetto_RR_AngleP1P2){delete Ghetto_RR_AngleP1P2; Ghetto_RR_AngleP1P2=NULL;}
+  if(Ghetto_ScatteringAngle){delete Ghetto_ScatteringAngle; Ghetto_ScatteringAngle=NULL;}
   if(Ghetto_PP_AngleRcP1){delete Ghetto_PP_AngleRcP1; Ghetto_PP_AngleRcP1=NULL;}
   if(Ghetto_PP_AngleRcP2){delete Ghetto_PP_AngleRcP2; Ghetto_PP_AngleRcP2=NULL;}
   if(Ghetto_PP_AngleP1P2){delete Ghetto_PP_AngleP1P2; Ghetto_PP_AngleP1P2=NULL;}
@@ -690,6 +692,8 @@ unsigned CECA::GenerateEvent(){
         break;
 
     }//the inifinite while loop
+
+
     for(CecaParticle* primordial : Primordial){
       //--- SAMPLE THE MOMENTUM ---//
       double axisValues[3];
@@ -776,6 +780,7 @@ unsigned CECA::GenerateEvent(){
         //the final position is saved. The time corresponds to the time elapsed
         //in the laboratory
         primordial->Cats()->SetTXYZ(tau,rtot[0],rtot[1],rtot[2]);
+        primordial->Cats()->SetMomXYZ(mom[0],mom[1],mom[2]);
 
         double p_tot,p_x,p_y,p_z;
         double dr_tot,dr_x,dr_y,dr_z;
@@ -1243,7 +1248,9 @@ if(kstar<FemtoLimit){
     }
   }
 
-}
+Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
+
+}//femto particles
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
@@ -1796,6 +1803,12 @@ void CECA::GhettoInit(){
   Ghetto_RR_AngleP1P2->SetUp(1);
   Ghetto_RR_AngleP1P2->SetUp(0,128,0,Pi);
   Ghetto_RR_AngleP1P2->Initialize();
+
+  if(Ghetto_ScatteringAngle) delete Ghetto_ScatteringAngle;
+  Ghetto_ScatteringAngle = new DLM_Histo<float>();
+  Ghetto_ScatteringAngle->SetUp(1);
+  Ghetto_ScatteringAngle->SetUp(0,128,0,Pi);
+  Ghetto_ScatteringAngle->Initialize();
 
   if(Ghetto_PP_AngleRcP1) delete Ghetto_PP_AngleRcP1;
   Ghetto_PP_AngleRcP1 = new DLM_Histo<float>();

@@ -454,9 +454,12 @@ double CatsLorentzVector::GetRapidity() const{
     return 0.5*log((FourMomentum[0]+FourMomentum[3])/(FourMomentum[0]-FourMomentum[3]));
 }
 double CatsLorentzVector::GetScatAngle() const{
-    return acos(GetCosScatAngle());
+  double CosAngle = GetCosScatAngle();
+  if(CosAngle<-1||CosAngle>1) return 0;
+  return acos(CosAngle);
 }
 double CatsLorentzVector::GetCosScatAngle() const{
+    if(!(GetR()*GetP())) return 0;
     return (FourSpace[1]*FourMomentum[1]+FourSpace[2]*FourMomentum[2]+FourSpace[3]*FourMomentum[3])/(GetR()*GetP());
 }
 double CatsLorentzVector::GetCosAngleR(const CatsLorentzVector& other) const{

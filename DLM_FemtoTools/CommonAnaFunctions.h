@@ -1,6 +1,8 @@
 #ifndef COMMONANAFUNCTIONS_H
 #define COMMONANAFUNCTIONS_H
 
+#include <iostream>
+
 template <class Type> class DLM_Histo;
 
 class TString;
@@ -128,6 +130,7 @@ public:
 
     DLM_CleverMcLevyResoTM* GaussCoreRsm_LK(const int& SourceVar);
     DLM_CleverMcLevyResoTM* GaussCoreRsm_pK(const int& SourceVar);
+    DLM_CleverMcLevyResoTM* GaussCoreRsm_pp(const int& SourceVar);
 
 private:
     void Clean_CommonAnaFunctions();
@@ -146,7 +149,20 @@ void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, CATS*
 void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, CATS* Kitty, const unsigned& NumBins, const double& rMin, const double& rMax, const double& lambda=1, const bool& FourPi=true);
 double Get_reff(TH1F* hsource, const float lambda=1, const float CEI=0.9);
 double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda=1, const float CEI=0.9);
+double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff);
 
+//quick way to set up the pp or pL source with default settings (default meaning RUN2 paper)
+//flag X0 is the RSM with the correct sign, flag X1 is the RSM with wrong sign (original)
+//flag 0X is the EPOS angulars, flag 1X is flat angles
+void BasicSetUp_MS(DLM_CleverMcLevyResoTM& MagicSource, double frac1, double frac2);
+void SetUp_RSMflat_pp(DLM_CleverMcLevyResoTM& MagicSource);
+void SetUp_RSM_pp(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFolder, const int flag=0);
+void SetUp_RSMflat_pL(DLM_CleverMcLevyResoTM& MagicSource);
+void SetUp_RSM_pL(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFolder, const int flag=0);
+void SetUp_RSMflat_pXi(DLM_CleverMcLevyResoTM& MagicSource);
+void SetUp_RSM_pXi(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFolder, const int flag=0);
+void SetUp_RSMflat_pOmega(DLM_CleverMcLevyResoTM& MagicSource);
+void SetUp_RSM_pOmega(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFolder, const int flag=0);
 /*
 class DLM_Analyzer{
 
