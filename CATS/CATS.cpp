@@ -783,13 +783,13 @@ double CATS::GetChannelWeight(const unsigned short& usCh) const{
 }
 
 void CATS::SetStartRad(const double& srad){
-    if(StartRad==fabs(srad)) return;
-    StartRad = fabs(srad);
+    if(StartRad==fabs(srad)*FmToNu) return;
+    StartRad = fabs(srad)*FmToNu;
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
 }
 double CATS::GetStartRad() const{
-    return StartRad;
+    return StartRad*NuToFm;
 }
 
 void CATS::SetEpsilonProp(const double& epsp){
@@ -824,7 +824,7 @@ void CATS::SetMaxRad(const double& maxrad){
 }
 
 double CATS::GetMaxRad() const{
-    return MaxRad;
+    return MaxRad*NuToFm;
 }
 
 void CATS::SetMaxRho(const double& maxrho){
