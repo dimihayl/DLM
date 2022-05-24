@@ -2930,6 +2930,8 @@ void DLM_CommonAnaFunctions::GetPurities_L(const TString& DataSample, const int&
         else if(Variation==1) PurityLambda = 0.936;//spline fits 4th June 2020
         else if(Variation==2) PurityLambda = 0.936-0.006;//with uncertainties
         else if(Variation==3) PurityLambda = 0.936+0.006;//with uncertainties
+        else if(Variation==4) PurityLambda = 0.953;//the purity as published in PLB (lower limit)
+        else if(Variation==5) PurityLambda = 0.963;//the purity as published in PLB (upper limit)
         else if(Variation==-1) PurityLambda = 1.0;//use for SB corrected correlations
         else PurityLambda = 0.9595;
     }
@@ -3024,7 +3026,7 @@ void DLM_CommonAnaFunctions::GetFractions_p(const TString& DataSample, const int
         pp_f1 = 0.125;
     }
     //Variation reflects the mT bin
-    else if("pp13TeV_HM_BernieSource"){
+    else if(DataSample=="pp13TeV_HM_BernieSource"){
       std::vector<double> pp_primary = { 0.82, 0.81, 0.81, 0.81, 0.81, 0.82, 0.83 };
       pp_f0 = pp_primary.at((Variation/10)%10);
       pp_f1 = 0.7*(1.-pp_f0);
@@ -3071,6 +3073,7 @@ void DLM_CommonAnaFunctions::GetFractions_L(const TString& DataSample, const int
         case 4 : Modify_SigL=1.4; break;
         default : Modify_SigL=1; break;
     }
+    //this gives info about ratio of Xim to Xi0, absolute as we now assume it to be 50:50
     switch((Variation/10)%3){
         case 0 : Modify_XiL=1; break;
         case 1 : Modify_XiL=0.8;break;
@@ -3079,6 +3082,7 @@ void DLM_CommonAnaFunctions::GetFractions_L(const TString& DataSample, const int
     }
     //this only works assuming zero material
     //do not use for newer interations!
+    //i.e. the 0.95 variation comes from the lower pT, which results in a bit different primary fraction
     switch((Variation/10)/3){
         case 0 : Modify_PrimFrac=1; break;
         case 1 : Modify_PrimFrac=0.95;break;
@@ -3240,13 +3244,15 @@ void DLM_CommonAnaFunctions::SetUpLambdaPars_pXim(const TString& DataSample, con
     lambda_pars[2] =    Purities_p[0]*Fraction_p[0]*Purities_Xim[2]*Fraction_Xim[2];
     lambda_pars[4] =    Purities_p[0]*Purities_Xim[4]+Purities_p[3]*Purities_Xim[0]+Purities_p[3]*Purities_Xim[4];
     lambda_pars[3] =    1.-lambda_pars[0]-lambda_pars[1]-lambda_pars[2]-lambda_pars[4];
-
-    //double SUM=0;
-    //for(unsigned uLam=0; uLam<5; uLam++){
-    //    printf("λ(pΞ)_%u = %.1f\n",uLam,lambda_pars[uLam]*100.);
-    //    SUM+=lambda_pars[uLam]*100.;
-    //}
-    //printf("SUM: %.1f\n------------\n",SUM);
+/*
+    double SUM=0;
+    printf("pp * fp * pxi * fxi = %.3f * %.3f * %.3f * %.3f\n",Purities_p[0],Fraction_p[0],Purities_Xim[0],Fraction_Xim[0]);
+    for(unsigned uLam=0; uLam<5; uLam++){
+        printf("λ(pΞ)_%u = %.1f\n",uLam,lambda_pars[uLam]*100.);
+        SUM+=lambda_pars[uLam]*100.;
+    }
+    printf("SUM: %.1f\n------------\n",SUM);
+    */
 }
 
 //        DataPeriod=="pp13TeV"?  :
