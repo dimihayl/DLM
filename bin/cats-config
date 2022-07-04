@@ -5,7 +5,7 @@ CATSSYS=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 CATSSYS=$(dirname $CATSSYS)
 
 usage="\
-Usage: cats-config [--libs-basic] [--libs-extended] [--libs-dev]\
+Usage: cats-config [--libs]\
  [--libdir] [--incdir] [--version] [--help]"
 
 if test $# -eq 0; then
@@ -19,14 +19,8 @@ while test $# -gt 0; do
   *)    optarg= ;;
   esac
   case $1 in
-    --libs-basic)
-      out="${CATSSYS}/lib -lCATSbasic"
-      ;;
-    --libs-extended)
-      out="${CATSSYS}/lib -lCATSbasic -lCATSextended"
-      ;;
-    --libs-dev)
-      out="${CATSSYS}/lib -lCATSbasic -lCATSextended -lCATSdev"
+    --libs)
+      out="${CATSSYS}/lib -lCATS"
       ;;
     --libdir)
       out="${CATSSYS}/lib"
@@ -35,15 +29,13 @@ while test $# -gt 0; do
       out="${CATSSYS}/include"
       ;;
     --version)
-      out="CATS 2.25"
+      out="CATS 3"
       ;;
     --help)
       ### Print a help message
       echo "Usage: cats-config [options]"
       echo ""
-      echo "  --libs-basic          Print regular CATS libraries"
-      echo "  --libs-extended       Print regular CATS libraries and the CATSextentions"
-      echo "  --libs-dev            Print the libraries of the full CATS repository"
+      echo "  --libs                Print the CATS libraries"
       echo "  --libdir              Print the library directory"
       echo "  --incdir              Print the header directory"
       echo "  --version             Print the CATS version"

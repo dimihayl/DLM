@@ -15,6 +15,27 @@ class bcolors:
 
 #def create_cmake(PATH_DLM,PATH_CATS,PATH_GSL_INC,PATH_GSL_LIB,PATH_ROOT):
 
+def yes():
+    answer = ''
+    while True:
+        answer = input()
+        if answer=='abort':
+            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+            return False
+        elif answer.lower()=="y" or answer.lower()=="yes":
+            answer='y'
+        elif answer.lower()=="n" or answer.lower()=="no":
+            answer='n'
+        else:
+            answer=''
+
+        if answer=='y':
+            return True
+        elif answer=='n':
+            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+            return False
+        else:
+            print(' yes/no (y/n) answers only: ', end = '')
 
 
 def is_gsl_include_okay(PATH_GSL_INC):
@@ -61,40 +82,63 @@ def get_gsl_lib(PATH_GSL_LIB):
     return PATH_GSL_LIB
 
 
+def add_to_bashrc(OS_CMD):
+    #print(subprocess.call(OS_CMD))
+    #return True
+    #if os.system(OS_CMD)!=0:
+    #    print(bcolors.WARNING+' The command "'+OS_CMD+'" cannot be executed'+bcolors.ENDC)
+    #    return False
+    if not os.path.exists('~/.bashrcX'):
+        if os.system('touch ~/.bashrcX')!=0:
+            print(bcolors.WARNING+' The ~/.bashrc does not exist and cannot be created'+bcolors.ENDC)
+            return False
+    bashrc_file = open('~/.bashrcX', 'r')
+    Lines = bashrc_file.readlines()
+    for line in Lines:
+        if OS_CMD in line:
+            print(bcolors.OKGREEN+' The command "'+OS_CMD+'" already exists in ~/.bashrc'+bcolors.ENDC)
+            return True
+    bashrc_file.close()
+    bashrc_file = open('~/.bashrcX','a')
+    bashrc_file.write(OS_CMD)
+    bashrc_file.close()
+    print(bcolors.OKGREEN+' The command "'+OS_CMD+'" added to ~/.bashrc'+bcolors.ENDC)
+    return True
 
 
 def quick_install(type):
     print(bcolors.BOLD+'CATS installer'+bcolors.ENDC)
     print(' To work properly, this files has to be executed from the DLM repository!')
     print(' Type "abort" to terminate the script.')
+
+    allowed_types = ["basic","root","dev","compile","clean"]
+    if len(type)!=2 or type[1] not in allowed_types:
+        print('--------------------')
+        print('Run this script using '+bcolors.BOLD+bcolors.OKCYAN+'"python3 quick_install.py ARG"'+bcolors.ENDC)
+        print('The following options for '+bcolors.BOLD+bcolors.OKCYAN+'"ARG"'+bcolors.ENDC+' are available:')
+        print(bcolors.BOLD+bcolors.OKCYAN+' "basic"'+bcolors.ENDC+':    Installs CATS and its extensions.')
+        print('             Requries the GSL package.')
+        print(bcolors.BOLD+bcolors.OKCYAN+' "root"'+bcolors.ENDC+':     Installs "basic" and the any extenstions using ROOT.')
+        print('             Requries the GSL package and ROOT framework.')
+        print(bcolors.BOLD+bcolors.OKCYAN+' "dev"'+bcolors.ENDC+':      Installs "root", the CECA framework (development version),')
+        print('             and several tools in development used by the group of Prof. Fabbietti at TUM.')
+        print('             Requries the GSL package, ROOT framework and OpenMP.')
+        print(bcolors.BOLD+bcolors.OKCYAN+' "compile"'+bcolors.ENDC+':  Compiles the existing installation.')
+        print(bcolors.BOLD+bcolors.OKCYAN+' "clean"'+bcolors.ENDC+':    Deletes the installation.')
+        return;
+
     print(' Continue? (y/n) ', end = '')
-    answer = ''
-    while True:
-        answer = input()
-        if answer=='abort':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-        elif answer.lower()=="y" or answer.lower()=="yes":
-            answer='y'
-        elif answer.lower()=="n" or answer.lower()=="no":
-            answer='n'
-        else:
-            answer=''
-
-        if answer=='y':
-            break
-        elif answer=='n':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-        else:
-            print(' yes/no (y/n) answers only: ', end = '')
-
-    install_mode = 'basic'
-    if len(type)==2:
-        install_mode = type[1]
-    elif len(type)>2:
-        print(bcolors.FAIL+'Too many input arguments, only one required!'+bcolors.ENDC)
+    bashrc_lines = []
+    if not yes():
         return
+
+    install_mode = type[1]
+    #install_mode = 'basic'
+    #if len(type)==2:
+    #    install_mode = type[1]
+    #elif len(type)>2:
+    #    print(bcolors.FAIL+'Too many input arguments, only one required!'+bcolors.ENDC)
+    #    return
 
     #basic installs CATS + its non-root extensions
     #root includes any extensions that include ROOT
@@ -153,6 +197,11 @@ def quick_install(type):
             print(bcolors.WARNING+' ROOT found, but is not loaded in the environment'+bcolors.ENDC)
             print('  Solution (1): "source $PATH_ROOT/thisroot.sh" before using CATS')
             print('  Solution (2): Add the above command in your ~/.bashrc')
+            bashrc_lines.append('source '+PATH_ROOT+'/thisroot.sh')
+            #print('   Do you want to apply (2) automatically? (y/n) ', end = '')
+            #if yes():
+            #    add_to_bashrc('source '+PATH_ROOT+'/thisroot.sh')
+
     #ROOT
         #remove the /bin
         PATH_ROOT = PATH_ROOT[0:-4]
@@ -253,29 +302,13 @@ def quick_install(type):
     print('  GSL (include): '+PATH_GSL_INC)
     print('  GSL (lib): '+PATH_GSL_LIB)
     print(' Are these setting OKAY? (y/n) ', end = '')
-    answer = ''
-    while True:
-        answer = input()
-        if answer=='abort':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-        elif answer.lower()=="y" or answer.lower()=="yes":
-            answer='y'
-        elif answer.lower()=="n" or answer.lower()=="no":
-            answer='n'
-        else:
-            answer=''
-
-        if answer=='y':
-            break
-        elif answer=='n':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-        else:
-            print(' yes/no (y/n) answers only: ', end = '')
+    if not yes():
+        return
 
     print('--------------------')
     print(bcolors.BOLD+'Setup the installation folder'+bcolors.ENDC)
+
+    OnlyHeader = ['CATSconstants','DLM_Sort','DLM_Histo']
 
     IncDir = []
     IncDir.append('CATS')
@@ -284,28 +317,30 @@ def quick_install(type):
     IncDir.append('DLM_MathTools')
     if install_lvl>=1:
         IncDir.append('DLM_RootTools')
-        IncDir.append('DLM_FemtoTools')
     if install_lvl>=2:
+        IncDir.append('DLM_FemtoTools')
         IncDir.append('CECA')
     IncFile={}
     for dir in IncDir:
         if dir=='CATS':
-            IncFile[dir] = ['CATS', 'CATStools']
+            IncFile[dir] = ['CATS', 'CATStools', 'CATSconstants']
         if dir=='CATS_Extentions':
             IncFile[dir] = ['DLM_Ck', 'DLM_ResponseMatrix', 'DLM_CkDecomp', 'DLM_Source', 'DLM_StefanoPotentials', 'DLM_Potentials', 'DLM_CkModels', 'DLM_WfModel']
             if install_lvl>=1:
                 IncFile[dir].extend(['DLM_CkDecomposition', 'DLM_Fitters'])
         if dir=='DLM_CppTools':
-            IncFile[dir] = ['DLM_CppTools']
+            IncFile[dir] = ['DLM_CppTools','DLM_Sort']
             if install_lvl>=2:
                 IncFile[dir].extend(['DLM_OmpTools'])
         if dir=='DLM_MathTools':
-            IncFile[dir] = ['DLM_Histo','DLM_Integration','DLM_Random','DLM_Bessel','DLM_MathFunctions','DLM_Unfold','DLM_Fit','DLM_RootFinder']
+            IncFile[dir] = ['DLM_Histo','DLM_Integration','DLM_Random','DLM_Bessel','DLM_MathFunctions','DLM_Fit','DLM_RootFinder']
+            if install_lvl>=1:
+                IncFile[dir].extend(['DLM_Unfold'])
         if dir=='DLM_RootTools':
             if install_lvl>=1:
                 IncFile[dir] = ['DLM_CRAB_PM','DLM_SubPads','DLM_DrawingTools','DLM_HistoAnalysis','DLM_RootWrapper','DLM_MultiFit','DLM_DecayMatrix','DLM_RootFit']
         if dir=='DLM_FemtoTools':
-            if install_lvl>=1:
+            if install_lvl>=2:
                 IncFile[dir] = ['CommonAnaFunctions']
         if dir=='CECA':
             if install_lvl>=2:
@@ -319,26 +354,8 @@ def quick_install(type):
         if len(os.listdir(PATH_CATS)) != 0:
             print(bcolors.WARNING+' The installation folder is not empty, it will be DELETED!'+bcolors.ENDC)
             print('Proceed? (y/n) ', end = '')
-            answer = ''
-            while True:
-                answer = input()
-                if answer=='abort':
-                    print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-                    return
-                elif answer.lower()=="y" or answer.lower()=="yes":
-                    answer='y'
-                elif answer.lower()=="n" or answer.lower()=="no":
-                    answer='n'
-                else:
-                    answer=''
-
-                if answer=='y':
-                    break
-                elif answer=='n':
-                    print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-                    return
-                else:
-                    print(' yes/no (y/n) answers only: ', end = '')
+            if not yes():
+                return
         os.system('rm -rf '+PATH_CATS)
     os.mkdir(PATH_CATS)
     print(' Folder '+PATH_CATS+' created')
@@ -357,7 +374,7 @@ def quick_install(type):
     cmakelists.write('SET(PROJECT_NAME "CATS3")\n')
     cmakelists.write('\n')
     cmakelists.write('project(${PROJECT_NAME})\n')
-    cmakelists.write('# SET PATHS #\n')
+    cmakelists.write('# SET PADLM_OmpToolsTHS #\n')
     cmakelists.write('SET(DLM_REPO "'+PATH_DLM+'")\n')
     cmakelists.write('SET(CATS_INSTALL "'+PATH_CATS+'")\n')
     cmakelists.write('SET(GSL_INCLUDE "'+PATH_GSL_INC+'")\n')
@@ -379,7 +396,10 @@ def quick_install(type):
 
     cmakelists.write('add_library(CATS SHARED   \n')
     for dir in IncDir:
+        #print(IncFile[dir])
         for file in IncFile[dir]:
+            if file in OnlyHeader:
+                continue
             cmakelists.write('              ${DLM_REPO}/'+dir+'/'+file+'.cpp\n')
     cmakelists.write('              )\n')
 
@@ -431,26 +451,8 @@ def quick_install(type):
     #return
 
     print(' Proceed? (y/n) ', end = '')
-    answer = ''
-    while True:
-        answer = input()
-        if answer=='abort':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-        elif answer.lower()=="y" or answer.lower()=="yes":
-            answer='y'
-        elif answer.lower()=="n" or answer.lower()=="no":
-            answer='n'
-        else:
-            answer=''
-
-        if answer=='y':
-            break
-        elif answer=='n':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-        else:
-            print(' yes/no (y/n) answers only: ', end = '')
+    if not yes():
+        return
 
     #os.system('cd install/CMake/')
     os.chdir('./install/CMake/')
@@ -464,6 +466,10 @@ def quick_install(type):
         print(bcolors.FAIL+'"make install" failed'+bcolors.ENDC)
         return
     print(bcolors.OKGREEN+'CATS was successfully installed!'+bcolors.ENDC)
-
+    bashrc_lines.append('export LD_LIBRARY_PATH=$('+PATH_CATS+'/bin/cats-config --libdir)${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}')
+    if len(bashrc_lines)>0:
+        print('Recommended to add these lines to your ~/.bashrc')
+        for line in bashrc_lines:
+            print(' '+line)
 
 quick_install(sys.argv)

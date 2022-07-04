@@ -189,7 +189,8 @@ Bool_t DLM_SubPads::AddSubPad(Float_t Left, Float_t Right, Float_t Bottom, Float
     if(NumSubPads>=MaxSubPads) AllocMoreMemForSubPad();
     SubPad[NumSubPads] = new TPad(TString::Format("SubPad%i", NumSubPads),
                                   TString::Format("SubPad%i", NumSubPads),
-                                  Left, Top, Right, Bottom);//ltrb
+                                  //Left, Top, Right, Bottom);//ltrb
+                                  Left, Bottom, Right, Top);//ltrb
 
     SubPadPostion[NumSubPads] = new Float_t [4];
     ScaleFactor[NumSubPads] = new Float_t [2];
