@@ -111,6 +111,11 @@ def quick_install(type):
     print(' To work properly, this files has to be executed from the DLM repository!')
     print(' Type "abort" to terminate the script.')
 
+    SCRIPT_NAME = type[0]
+    SCRIPT_REL_PATH = os.path.dirname(SCRIPT_NAME)
+    SCRIPT_PATH = os.path.abspath(SCRIPT_REL_PATH)
+    os.chdir(SCRIPT_PATH)
+
     allowed_types = ["basic","root","dev","compile","clean"]
     if len(type)!=2 or type[1] not in allowed_types:
         print('--------------------')
@@ -127,10 +132,11 @@ def quick_install(type):
         print(bcolors.BOLD+bcolors.OKCYAN+' "clean"'+bcolors.ENDC+':    Deletes the installation.')
         return;
 
-    print(' Continue? (y/n) ', end = '')
-    bashrc_lines = []
-    if not yes():
-        return
+    if type[1]!="compile" and type[1]!="clean":
+        print(' Continue? (y/n) ', end = '')
+        bashrc_lines = []
+        if not yes():
+            return
 
     install_mode = type[1]
     #install_mode = 'basic'
@@ -143,7 +149,7 @@ def quick_install(type):
     #basic installs CATS + its non-root extensions
     #root includes any extensions that include ROOT
     #dev the full repository is installed
-    if install_mode!='basic' and install_mode!='root' and install_mode!='dev':
+    if install_mode!='basic' and install_mode!='root' and install_mode!='dev' and install_mode!='compile' and install_mode!='clean':
         print(bcolors.FAIL+'Supported installation types: basic, root or dev'+bcolors.ENDC)
         return
 
@@ -155,6 +161,36 @@ def quick_install(type):
     elif install_mode=='dev':
         install_lvl=2
 
+
+    #path to the DLM repository
+    OS_OUT = os.popen('pwd')
+    PATH_DLM = OS_OUT.read()
+    PATH_DLM = PATH_DLM.replace('\n','')
+    #path to the installation folder for CATS
+    PATH_CATS = PATH_DLM+'/install'
+    PATH_CATS_CMAKE = PATH_CATS+'/CMake'
+
+
+    if install_mode=='compile' or install_mode=='clean':
+        if not os.path.exists(PATH_CATS_CMAKE):
+            print(bcolors.FAIL+'The installation folder "'+PATH_CATS_CMAKE+'" does not exist'+bcolors.ENDC)
+            return
+        os.chdir('./install/CMake/')
+        if install_mode=='compile':
+            if os.system('make -j'+str(multiprocessing.cpu_count())):
+                print(bcolors.FAIL+'"make" failed'+bcolors.ENDC)
+                return
+            if os.system('make install'):
+                print(bcolors.FAIL+'"make install" failed'+bcolors.ENDC)
+                return
+            print(bcolors.OKGREEN+'CATS was successfully compiled!'+bcolors.ENDC)
+            return
+        else:
+            if os.system('make clean'):
+                print(bcolors.FAIL+'"make clean" failed'+bcolors.ENDC)
+                return
+            print(bcolors.OKGREEN+'CATS was successfully removed!'+bcolors.ENDC)
+            return
     #root installation
     root_loaded = True;
     PATH_ROOT = "root:"
@@ -281,13 +317,7 @@ def quick_install(type):
         print(' Suggestion: intall using "sudo apt-get install libomp-dev"')
         return
 
-    #path to the DLM repository
-    OS_OUT = os.popen('pwd')
-    PATH_DLM = OS_OUT.read()
-    PATH_DLM = PATH_DLM.replace('\n','')
-    #path to the installation folder for CATS
-    PATH_CATS = PATH_DLM+'/install'
-    PATH_CATS_CMAKE = PATH_CATS+'/CMake'
+
 
     time.sleep(1)
     print('--------------------')

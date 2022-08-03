@@ -980,11 +980,23 @@ public:
       axis[1] = yValue;
       AddAt(axis,Val);
     }
+    void AddAt(const double& xValue, const double& yValue, const double& zValue, const Type& Val){
+      if(!Initialized) {InitWarning(); return;}
+      if(Dim!=3) {printf("\033[1;33mWARNING:\033[0m DLM_Histo AddAt/Fill function failed, this set up works only for Dim=3!\n"); return;}
+      double axis[3];
+      axis[0] = xValue;
+      axis[1] = yValue;
+      axis[2] = zValue;
+      AddAt(axis,Val);
+    }
     void Fill(const double& xValue){
       AddAt(xValue,1);
     }
     void Fill(const double& xValue, const double& yValue){
       AddAt(xValue,yValue,1);
+    }
+    void Fill(const double& xValue, const double& yValue, const double& zValue){
+      AddAt(xValue,yValue,zValue,1);
     }
     void SetBinContent(const unsigned* WhichBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -1026,6 +1038,24 @@ public:
         if(WhichTotBin>=TotNumBins+2) return 0;
         return BinValue[WhichTotBin];
     }
+    Type GetBinContent(const unsigned& WhichX, const unsigned& WhichY) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        if(Dim!=2)return 0;
+        unsigned WhichBin[2];
+        WhichBin[0] = WhichX;
+        WhichBin[1] = WhichY;
+        return GetBinContent(GetTotBin(WhichBin));
+    }
+    Type GetBinContent(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        if(Dim!=3)return 0;
+        unsigned WhichBin[3];
+        WhichBin[0] = WhichX;
+        WhichBin[1] = WhichY;
+        WhichBin[2] = WhichZ;
+        return GetBinContent(GetTotBin(WhichBin));
+    }
+
     Type GetBinContent(const unsigned* WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         return GetBinContent(GetTotBin(WhichBin));

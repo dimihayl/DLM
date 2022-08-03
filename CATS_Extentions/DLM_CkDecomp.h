@@ -19,6 +19,7 @@ public:
     //void AddFeeddown(const unsigned& WhichCk, const double& fraction, DLM_CkDecomp* child,
     //                 TH2F* hResidualMatrix, const bool& InvertedAxis=false);
     //void AddImpurity(const unsigned& WhichCk, const double& fraction, DLM_CkDecomp* child);
+    //!! reevaluates the LambdaMain !!
     void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child=NULL,
                          const DLM_Histo<float>* hResidualMatrix=NULL, const bool& InvertedAxis=false);
     void AddPhaseSpace(const unsigned& WhichCk, const DLM_Histo<float>* hPhaseSpace);
@@ -50,6 +51,14 @@ public:
     double EvalSignalSmearedMain(const double& Momentum);
     double EvalSignalChild(const unsigned& WhichChild,const double& Momentum);
     double EvalSignalSmearedChild(const unsigned& WhichChild,const double& Momentum);
+
+    //!! only has an effect of set AFTER the AddContribution
+    void SetLambdaMain(const double& lambda_par);
+    void SetLambdaChild(const unsigned& WhichChild, const double& lambda_par);
+
+    //if yes, we check if the lambda pars sum up to 1
+    //if no, the QA is skipped
+    void QA_LambdaPar(const bool& yesno);
 
     double GetLambdaMain();
     double GetLambdaChild(const unsigned& WhichChild);
@@ -99,6 +108,7 @@ protected:
     //LambdaMain + fraction of feed-down
     double MuPar;
     double* LambdaPar;
+    bool qa_lam;
     int* Type;
     //the main C(k)
     DLM_Ck* CkMain;

@@ -3396,13 +3396,10 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         //numerical solution, no computation result for zero potential
         if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW])){
-        //if(false){
-//if(OnlyNumPw[usCh])printf("HELLO!\n");
             Result = EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             //Check this!!! Should it be squared?
             //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
             TotalResult += double(2*usPW+1)*pow(abs(Result),2);
-//if(OnlyNumPw[usCh])printf("TotalResult=%f\n",TotalResult);
         }
         else if(!OnlyNumPw[usCh]){
             Result = ReferencePartialWave(Radius, Momentum, usPW, Q1Q2)/(Radius+1e-64);
@@ -3414,11 +3411,7 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
             if(usPW>=NumPW[usCh] && abs(OldResult)<1e-7 && abs(Result)<1e-8) break;
             OldResult = Result;
         }
-//else{
-//printf("usCh=%u; usPW=%u(%u); SRP=%p; EWF=%p\n",usCh,usPW,NumPW[usCh],ShortRangePotential[usCh][usPW],ExternalWF[uMomBin][usCh][usPW]);
-//}
     }
-
     return TotalResult*(1+IdenticalParticles);
 }
 

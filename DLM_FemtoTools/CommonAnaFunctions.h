@@ -32,6 +32,9 @@ const double MassOmega = 1672.45;
 const double Mass_d = 1875.613;
 const double Mass_Dch = 1869.62;
 const double Mass_D0 = 1864.84;
+const double Mass_Dch_star = 2010;
+const double Mass_D0_star = 2007;
+
 
 class DLM_CommonAnaFunctions{
 
@@ -150,6 +153,7 @@ void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, C
 double Get_reff(TH1F* hsource, const float lambda=1, const float CEI=0.9);
 double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda=1, const float CEI=0.9);
 double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff);
+double GetReff(DLM_CleverMcLevyResoTM& MagicSource, const double& rcore);
 
 //quick way to set up the pp or pL source with default settings (default meaning RUN2 paper)
 //flag X0 is the RSM with the correct sign, flag X1 is the RSM with wrong sign (original)

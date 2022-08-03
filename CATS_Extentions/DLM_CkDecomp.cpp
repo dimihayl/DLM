@@ -45,6 +45,7 @@ void DLM_CkDecomp::StandardSetup(const char* name){
     PS_Main = NULL;
     PS_Child = NULL;
     SignalsUpdated = false;
+    qa_lam = true;
 
     if(ERROR_STATE){
         printf("\033[1;31mERROR:\033[0m The DLM_CkDecomp got some rubbish input, the object will be broken!\n");
@@ -339,6 +340,33 @@ double DLM_CkDecomp::EvalSignalSmearedChild(const unsigned& WhichChild,const dou
 	return 0;
 }
 
+void DLM_CkDecomp::SetLambdaMain(const double& lambda_par){
+  if(lambda_par<0 || lambda_par>1){
+      printf("\033[1;33mWARNING:\033[0m Trying the set a contribution with a lambda_par<0 || lambda_par>1.\n");
+      return;
+  }
+  if(LambdaMain==lambda_par){
+      return;
+  }
+  LambdaMain = lambda_par;
+  DecompositionStatus = false;
+}
+void DLM_CkDecomp::SetLambdaChild(const unsigned& WhichChild, const double& lambda_par){
+  if(lambda_par<0 || lambda_par>1){
+      printf("\033[1;33mWARNING:\033[0m Trying the set a contribution with a lambda_par<0 || lambda_par>1.\n");
+      return;
+  }
+  if(LambdaPar[WhichChild]==lambda_par){
+      return;
+  }
+  LambdaPar[WhichChild] = lambda_par;
+  DecompositionStatus = false;
+}
+
+void DLM_CkDecomp::QA_LambdaPar(const bool& yesno){
+  qa_lam = yesno;
+}
+
 double DLM_CkDecomp::GetLambdaMain(){
 	return LambdaMain;
 }
@@ -416,6 +444,19 @@ bool SHOWSTUFF=false;
 //3) smear all correlations that needed an update
 void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecomp){
     double Momentum;
+    //check the lambda pars
+    if(!DecompositionStatus && qa_lam){
+      double TotLambda = LambdaMain;
+      for(unsigned uChild=0; uChild<NumChildren; uChild++){
+        TotLambda += LambdaPar[uChild];
+      }
+      if(fabs(TotLambda-1.)>1e-6){
+        printf("\033[1;33mWARNING:\033[0m The lambda parameters sum to %f. Rescaling them such as to add to unity!\n",TotLambda);
+        LambdaMain /= TotLambda;
+        for(unsigned uChild=0; uChild<NumChildren; uChild++) LambdaPar[uChild] /= TotLambda;
+      }
+    }
+
     CurrentStatus = CkMain->Status();
     for(unsigned uChild=0; uChild<NumChildren; uChild++){
         if(Child[uChild]){

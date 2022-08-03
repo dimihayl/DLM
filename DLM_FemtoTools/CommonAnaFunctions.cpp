@@ -4210,7 +4210,28 @@ double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff){
   delete h_rstar;
   return rcore;
 }
+double GetReff(DLM_CleverMcLevyResoTM& MagicSource, const double& rcore){
+  const unsigned NumRadBins = 256;
+  const double rMin = 0;
+  const double rMax = 32;
+  double  reff;
+  TH1F* h_rstar = new TH1F("fgsgsdfg","fgsgsdfg",NumRadBins,rMin,rMax);
 
+  for(unsigned uBin=0; uBin<NumRadBins; uBin++){
+    double rstar = h_rstar->GetBinCenter(uBin+1);
+    double parameters[2];
+    parameters[0] = rcore;
+    parameters[1] = 2.0;
+    double val;
+    val = MagicSource.RootEval(&rstar,parameters);
+    h_rstar->SetBinContent(uBin+1,val);
+    h_rstar->SetBinError(uBin+1,1e-3);
+  }
+  reff = Get_reff(h_rstar);
+
+  delete h_rstar;
+  return reff;
+}
 
 
 
@@ -4655,6 +4676,7 @@ void SetUp_RSM_pOmega(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFo
   delete F_EposDisto_pReso_Omega;
 
 }
+
 
 
 

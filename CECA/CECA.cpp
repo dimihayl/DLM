@@ -160,6 +160,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Old_P1P2 = NULL;
   Ghetto_kstar = NULL;
   Ghetto_kstar_rstar = NULL;
+  Ghetto_kstar_rstar_mT = NULL;
   Ghetto_mT_rstar = NULL;
   GhettoFemto_rstar = NULL;
   GhettoFemto_rcore = NULL;
@@ -167,6 +168,11 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   GhettoSP_pT_th = NULL;
   GhettoSP_pT_1 = NULL;
   GhettoSP_pT_2 = NULL;
+  GhettoSPr_X = NULL;
+  GhettoSPr_Y = NULL;
+  GhettoSPr_Z = NULL;
+  GhettoSPr_Rho = NULL;
+  GhettoSPr_R = NULL;
   Ghetto_RP_AngleRcP1 = NULL;
   Ghetto_PR_AngleRcP2 = NULL;
   Ghetto_RR_AngleRcP1 = NULL;
@@ -228,6 +234,7 @@ CECA::~CECA(){
   if(Old_source){delete Old_source; Old_source=NULL;}
   if(Ghetto_kstar){delete Ghetto_kstar; Ghetto_kstar=NULL;}
   if(Ghetto_kstar_rstar){delete Ghetto_kstar_rstar; Ghetto_kstar_rstar=NULL;}
+  if(Ghetto_kstar_rstar_mT){delete Ghetto_kstar_rstar_mT; Ghetto_kstar_rstar_mT=NULL;}
   if(Ghetto_mT_rstar){delete Ghetto_mT_rstar; Ghetto_mT_rstar=NULL;}
   if(GhettoFemto_rstar){delete GhettoFemto_rstar; GhettoFemto_rstar=NULL;}
   if(GhettoFemto_rcore){delete GhettoFemto_rcore; GhettoFemto_rcore=NULL;}
@@ -235,6 +242,11 @@ CECA::~CECA(){
   if(GhettoSP_pT_th){delete GhettoSP_pT_th; GhettoSP_pT_th=NULL;}
   if(GhettoSP_pT_1){delete GhettoSP_pT_1; GhettoSP_pT_1=NULL;}
   if(GhettoSP_pT_2){delete GhettoSP_pT_2; GhettoSP_pT_2=NULL;}
+  if(GhettoSPr_X){delete GhettoSPr_X; GhettoSPr_X=NULL;}
+  if(GhettoSPr_Y){delete GhettoSPr_Y; GhettoSPr_Y=NULL;}
+  if(GhettoSPr_Z){delete GhettoSPr_Z; GhettoSPr_Z=NULL;}
+  if(GhettoSPr_Rho){delete GhettoSPr_Rho; GhettoSPr_Rho=NULL;}
+  if(GhettoSPr_R){delete GhettoSPr_R; GhettoSPr_R=NULL;}
   if(Ghetto_RP_AngleRcP1){delete Ghetto_RP_AngleRcP1; Ghetto_RP_AngleRcP1=NULL;}
   if(Ghetto_PR_AngleRcP2){delete Ghetto_PR_AngleRcP2; Ghetto_PR_AngleRcP2=NULL;}
   if(Ghetto_RR_AngleRcP1){delete Ghetto_RR_AngleRcP1; Ghetto_RR_AngleRcP1=NULL;}
@@ -735,6 +747,15 @@ unsigned CECA::GenerateEvent(){
         }
         //this comes from the definition of an ellipsoid
         rh_len = sqrt(pow(rh[0]*sin_th*cos_phi,2.)+pow(rh[1]*sin_th*sin_phi,2.)+pow(rh[2]*cos_th,2.));
+//printf("rh_len = %.2f\n",rh_len);
+//printf("   rh0 = %.2f\n",rh[0]);
+//printf("   rh1 = %.2f\n",rh[1]);
+//printf("   rh2 = %.2f\n",rh[2]);
+//printf(" sin_th= %.2f\n",sin_th);
+//printf(" cos_th= %.2f\n",cos_th);
+//printf(" sin_phi=%.2f\n",sin_phi);
+//printf(" cos_phi=%.2f\n",cos_phi);
+//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         tau += RanGen[ThId]->Gauss(0,TauFluctuation);
 
         if(ProperTau) tau *= primordial->Cats()->Gamma();
@@ -755,14 +776,14 @@ unsigned CECA::GenerateEvent(){
           mom_tot += mom[xyz]*mom[xyz];
         }
         mom_tot = sqrt(mom_tot);
-
+//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //we need to add the hadronization part separately, as we demand it to have
         //the same direction as the velocity, i.e. we need beta first
         double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
         for(int xyz=0; xyz<3; xyz++){
           if(beta_tot) rtot[xyz]+=beta[xyz]/beta_tot*rh_len;
         }
-
+//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //in the last step, particles with delayed time of formation are set to be produced with
         //a time offset. This offset is concidered to be given as proper time, and the particle
         //is simply propagated in a straight line
@@ -781,6 +802,9 @@ unsigned CECA::GenerateEvent(){
         //in the laboratory
         primordial->Cats()->SetTXYZ(tau,rtot[0],rtot[1],rtot[2]);
         primordial->Cats()->SetMomXYZ(mom[0],mom[1],mom[2]);
+
+//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
+//usleep(100e3);
 
         double p_tot,p_x,p_y,p_z;
         double dr_tot,dr_x,dr_y,dr_z;
@@ -812,22 +836,26 @@ unsigned CECA::GenerateEvent(){
             double ls2 = LorentzSize[ip]*LorentzSize[ip];
             double sz2 = Size[ip]*Size[ip];
 
-            p_tot = prim[ip]->Cats()->GetP();
-            p_x = prim[ip]->Cats()->GetPx();
-            p_y = prim[ip]->Cats()->GetPy();
-            p_z = prim[ip]->Cats()->GetPz();
+            if(ls2&&sz2){
+              p_tot = prim[ip]->Cats()->GetP();
+              p_x = prim[ip]->Cats()->GetPx();
+              p_y = prim[ip]->Cats()->GetPy();
+              p_z = prim[ip]->Cats()->GetPz();
 
-            dr_x = prim[ip]->Cats()->GetX()-prim[!ip]->Cats()->GetX();
-            dr_y = prim[ip]->Cats()->GetY()-prim[!ip]->Cats()->GetY();
-            dr_z = prim[ip]->Cats()->GetZ()-prim[!ip]->Cats()->GetZ();
-            dr_tot = sqrt(dr_x*dr_x+dr_y*dr_y+dr_z*dr_z);
+              dr_x = prim[ip]->Cats()->GetX()-prim[!ip]->Cats()->GetX();
+              dr_y = prim[ip]->Cats()->GetY()-prim[!ip]->Cats()->GetY();
+              dr_z = prim[ip]->Cats()->GetZ()-prim[!ip]->Cats()->GetZ();
+              dr_tot = sqrt(dr_x*dr_x+dr_y*dr_y+dr_z*dr_z);
 
-            //this the projection of the unity vector. The denum. takes care of this unity.
-            LorentzWeight[ip] = fabs(p_x*dr_x+p_y*dr_y+p_z*dr_z)/(p_tot*dr_tot);
-            double lw2 = LorentzWeight[ip]*LorentzWeight[ip];
-            double EffectiveSize = sqrt(lw2*ls2+(1.-lw2)*sz2);
-            double FD = exp((dr_tot-EffectiveSize)/(EffectiveSize*Slope[ip]))+1.;
-            RejectProb /= FD?FD:1;
+              //this the projection of the unity vector. The denum. takes care of this unity.
+              LorentzWeight[ip] = fabs(p_x*dr_x+p_y*dr_y+p_z*dr_z)/(p_tot*dr_tot);
+              double lw2 = LorentzWeight[ip]*LorentzWeight[ip];
+              double EffectiveSize = sqrt(lw2*ls2+(1.-lw2)*sz2);
+              double FD = exp((dr_tot-EffectiveSize)/(EffectiveSize*Slope[ip]))+1.;
+              RejectProb /= FD?FD:1;
+            }
+            else RejectProb=0;
+
           }//ip
         }//iter over primoridal2
 
@@ -837,6 +865,7 @@ unsigned CECA::GenerateEvent(){
 
         if(ResampleCount<0){
           printf("\033[1;33mWARNING:\033[0m CECA::GenerateEvent says that it cannot separate the particles at the set requirement.\n");
+          printf("   RejectProb = %e\n",RejectProb);
           printf("   To solve the issue, verify there is enought displacement and the particle radius is not too large.\n");
           break;
         }
@@ -847,6 +876,8 @@ unsigned CECA::GenerateEvent(){
       //if the width is zero, the Decay function returns the daughters
       bool IsResonance = true;
       IsResonance = !ParticleInList(primordial->Trepni());
+
+      bool PrimoridalUsed = false;
 
       if(IsResonance){
         CatsParticle* daughters =
@@ -868,6 +899,7 @@ unsigned CECA::GenerateEvent(){
               Primary.pop_back();
             }
             else{
+              PrimoridalUsed = true;
               GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
               if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(0)){
                 GhettoSP_pT_1->Fill(Primary.back()->Cats()->GetPt());
@@ -888,6 +920,7 @@ unsigned CECA::GenerateEvent(){
           Primary.pop_back();
         }
         else{
+          PrimoridalUsed = true;
           GhettoSP_pT_th->Fill(Primary.back()->Cats()->GetPt(),Primary.back()->Cats()->GetTheta());
           if(Primary.back()->Trepni()->GetName()==ListOfParticles.at(0)){
             GhettoSP_pT_1->Fill(Primary.back()->Cats()->GetPt());
@@ -896,6 +929,18 @@ unsigned CECA::GenerateEvent(){
             GhettoSP_pT_2->Fill(Primary.back()->Cats()->GetPt());
           }
         }
+      }
+
+      if(PrimoridalUsed){
+        double crd_x,crd_y,crd_z;
+        crd_x = primordial->Cats()->GetX();
+        crd_y = primordial->Cats()->GetY();
+        crd_z = primordial->Cats()->GetZ();
+        GhettoSPr_X->Fill(crd_x);
+        GhettoSPr_Y->Fill(crd_y);
+        GhettoSPr_Z->Fill(crd_z);
+        GhettoSPr_Rho->Fill(sqrt(crd_x*crd_x+crd_y*crd_y));
+        GhettoSPr_R->Fill(sqrt(crd_x*crd_x+crd_y*crd_y+crd_z*crd_z));
       }
 
     }//iteration over all primordials
@@ -1254,15 +1299,32 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
+  Ghetto_kstar_rstar_mT->Fill(kstar,rstar,mT);
   Ghetto_mT_rstar->Fill(mT,rstar);
   for(float ct : cos_th){
     Ghetto_mT_costh->Fill(mT,ct);
   }
   GhettoFemto_mT_kstar->Fill(mT,kstar);
+  //GhettoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
+  //GhettoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
+  //GhettoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
+  //GhettoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
   GhettoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
-  GhettoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
-  GhettoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
   GhettoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
+  if(prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial()){
+         if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0))GhettoPrimReso[1]++;
+    else if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1))GhettoPrimReso[2]++;
+    else printf("BAD BAD BAD 1\n");
+  }
+  if(prt_cm[1].IsUsefulPrimordial() && !prt_cm[0].IsUsefulPrimordial()){
+         if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1))GhettoPrimReso[2]++;
+    else if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0))GhettoPrimReso[1]++;
+    else printf("BAD BAD BAD 2\n");
+  }
+  //if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)&&prt_cm[0].Trepni()->GetName()!=ListOfParticles.at(1)){
+  //  GhettoPrimReso[1]
+  //}
+
   if(kstar<FemtoLimit){
     GhettoFemto_rstar->Fill(rstar);
     GhettoFemto_mT_rstar->Fill(mT,rstar);
@@ -1272,10 +1334,22 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
       GhettoFemto_rcore->Fill(rcore);
       GhettoFemto_mT_rcore->Fill(mT,rcore);
     }
+    //GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
+    //GhettoFemtoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
+    //GhettoFemtoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
+    //GhettoFemtoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
-    GhettoFemtoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
-    GhettoFemtoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
+    if(prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial()){
+           if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0))GhettoFemtoPrimReso[1]++;
+      else if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1))GhettoFemtoPrimReso[2]++;
+      else printf("BAD BAD BAD 1\n");
+    }
+    if(prt_cm[1].IsUsefulPrimordial() && !prt_cm[0].IsUsefulPrimordial()){
+           if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1))GhettoFemtoPrimReso[2]++;
+      else if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0))GhettoFemtoPrimReso[1]++;
+      else printf("BAD BAD BAD 2\n");
+    }
   }
 //}
 }
@@ -1760,11 +1834,11 @@ void CECA::GhettoInit(){
   const double MomMin = 0;
   const double MomMax = 4096;
 
-  const double NumRadBins = 256*8;
+  const double NumRadBins = 256*4;
   const double RadMin = 0;
-  const double RadMax = 32*8;
+  const double RadMax = 32*4;
 
-  const double NumMtBins = 32;
+  const double NumMtBins = 24;
   const double MtMin = 0;
   const double MtMax = 4096;
 
@@ -1839,14 +1913,44 @@ void CECA::GhettoInit(){
   if(GhettoSP_pT_1) delete GhettoSP_pT_1;
   GhettoSP_pT_1 = new DLM_Histo<float>();
   GhettoSP_pT_1->SetUp(1);
-  GhettoSP_pT_1->SetUp(0,64,0,4096);
+  GhettoSP_pT_1->SetUp(0,512,0,16384);
   GhettoSP_pT_1->Initialize();
 
   if(GhettoSP_pT_2) delete GhettoSP_pT_2;
   GhettoSP_pT_2 = new DLM_Histo<float>();
   GhettoSP_pT_2->SetUp(1);
-  GhettoSP_pT_2->SetUp(0,64,0,4096);
+  GhettoSP_pT_2->SetUp(0,512,0,16384);
   GhettoSP_pT_2->Initialize();
+
+  if(GhettoSPr_X) delete GhettoSPr_X;
+  GhettoSPr_X = new DLM_Histo<float>();
+  GhettoSPr_X->SetUp(1);
+  GhettoSPr_X->SetUp(0,256,-24,24);
+  GhettoSPr_X->Initialize();
+
+  if(GhettoSPr_Y) delete GhettoSPr_Y;
+  GhettoSPr_Y = new DLM_Histo<float>();
+  GhettoSPr_Y->SetUp(1);
+  GhettoSPr_Y->SetUp(0,256,-24,24);
+  GhettoSPr_Y->Initialize();
+
+  if(GhettoSPr_Z) delete GhettoSPr_Z;
+  GhettoSPr_Z = new DLM_Histo<float>();
+  GhettoSPr_Z->SetUp(1);
+  GhettoSPr_Z->SetUp(0,256,-24,24);
+  GhettoSPr_Z->Initialize();
+
+  if(GhettoSPr_Rho) delete GhettoSPr_Rho;
+  GhettoSPr_Rho = new DLM_Histo<float>();
+  GhettoSPr_Rho->SetUp(1);
+  GhettoSPr_Rho->SetUp(0,256,0,32);
+  GhettoSPr_Rho->Initialize();
+
+  if(GhettoSPr_R) delete GhettoSPr_R;
+  GhettoSPr_R = new DLM_Histo<float>();
+  GhettoSPr_R->SetUp(1);
+  GhettoSPr_R->SetUp(0,256,0,32);
+  GhettoSPr_R->Initialize();
 
   if(Ghetto_rstar) delete Ghetto_rstar;
   Ghetto_rstar = new DLM_Histo<float>();
@@ -1867,6 +1971,13 @@ void CECA::GhettoInit(){
   Ghetto_kstar_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
   Ghetto_kstar_rstar->Initialize();
 
+  if(Ghetto_kstar_rstar_mT) delete Ghetto_kstar_rstar_mT;
+  Ghetto_kstar_rstar_mT = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_mT->SetUp(3);
+  Ghetto_kstar_rstar_mT->SetUp(0,NumMomBins,MomMin,MomMax);
+  Ghetto_kstar_rstar_mT->SetUp(1,NumRadBins,RadMin,RadMax);
+  Ghetto_kstar_rstar_mT->SetUp(2,NumMtBins,MtMin,MtMax);
+  Ghetto_kstar_rstar_mT->Initialize();
 
   if(Ghetto_mT_rstar) delete Ghetto_mT_rstar;
   Ghetto_mT_rstar = new DLM_Histo<float>();

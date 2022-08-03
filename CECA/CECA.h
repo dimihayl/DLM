@@ -36,7 +36,9 @@ public:
   void SetOrigin(const char& origin);
   void SetMother(const CatsParticle* mama);
   bool IsUseful() const;//is of the required type
+  //is primordial with the same ID as the FSI of interest
   bool IsUsefulPrimordial() const;//+primordial
+  //is a decay product with the same ID as the FSI of interest
   bool IsUsefulProduct() const;//+decay product
   bool WithinAcceptance() const;
   CecaParticle& operator=(const CecaParticle& other);
@@ -176,6 +178,7 @@ public:
 
   DLM_Histo<float>* Ghetto_kstar;
   DLM_Histo<float>* Ghetto_kstar_rstar;
+  DLM_Histo<float>* Ghetto_kstar_rstar_mT;
   DLM_Histo<float>* Ghetto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_rstar;
   DLM_Histo<float>* GhettoFemto_rcore;
@@ -183,9 +186,19 @@ public:
   DLM_Histo<float>* GhettoFemto_mT_rcore;
   DLM_Histo<float>* GhettoFemto_mT_kstar;
   DLM_Histo<float>* Ghetto_mT_costh;
+  //pT/theta of all primary particles
   DLM_Histo<float>* GhettoSP_pT_th;
+  //pT of the primaries (first type)
   DLM_Histo<float>* GhettoSP_pT_1;
+  //pT of the primaries (second type)
   DLM_Histo<float>* GhettoSP_pT_2;
+
+  //spacial coordinate, primordials
+  DLM_Histo<float>* GhettoSPr_X;
+  DLM_Histo<float>* GhettoSPr_Y;
+  DLM_Histo<float>* GhettoSPr_Z;
+  DLM_Histo<float>* GhettoSPr_Rho;
+  DLM_Histo<float>* GhettoSPr_R;
 
   DLM_Histo<float>* Ghetto_PP_AngleRcP1;
   DLM_Histo<float>* Ghetto_PP_AngleRcP2;
