@@ -81,6 +81,8 @@ public:
     double GetAngleR(const CatsLorentzVector* other) const;
     double GetAngleP(const CatsLorentzVector* other) const;
     double GetAngleRP(const CatsLorentzVector* other) const;
+    double GetPseudoRapR() const;
+    double GetRapidityR() const;
 
     double GetT() const;
     double GetX() const;

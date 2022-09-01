@@ -128,6 +128,8 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Tau = 0;
   TauFluctuation = 0;
   ProperTau = true;
+  FixedHadr = true;
+  LightFrag = true;
   EqualFsiTau = true;
   ThermalKick = 0;
   PropagateMother = false;
@@ -173,6 +175,11 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   GhettoSPr_Z = NULL;
   GhettoSPr_Rho = NULL;
   GhettoSPr_R = NULL;
+  GhettoSP_X = NULL;
+  GhettoSP_Y = NULL;
+  GhettoSP_Z = NULL;
+  GhettoSP_Rho = NULL;
+  GhettoSP_R = NULL;
   Ghetto_RP_AngleRcP1 = NULL;
   Ghetto_PR_AngleRcP2 = NULL;
   Ghetto_RR_AngleRcP1 = NULL;
@@ -247,6 +254,11 @@ CECA::~CECA(){
   if(GhettoSPr_Z){delete GhettoSPr_Z; GhettoSPr_Z=NULL;}
   if(GhettoSPr_Rho){delete GhettoSPr_Rho; GhettoSPr_Rho=NULL;}
   if(GhettoSPr_R){delete GhettoSPr_R; GhettoSPr_R=NULL;}
+  if(GhettoSP_X){delete GhettoSP_X; GhettoSP_X=NULL;}
+  if(GhettoSP_Y){delete GhettoSP_Y; GhettoSP_Y=NULL;}
+  if(GhettoSP_Z){delete GhettoSP_Z; GhettoSP_Z=NULL;}
+  if(GhettoSP_Rho){delete GhettoSP_Rho; GhettoSP_Rho=NULL;}
+  if(GhettoSP_R){delete GhettoSP_R; GhettoSP_R=NULL;}
   if(Ghetto_RP_AngleRcP1){delete Ghetto_RP_AngleRcP1; Ghetto_RP_AngleRcP1=NULL;}
   if(Ghetto_PR_AngleRcP2){delete Ghetto_PR_AngleRcP2; Ghetto_PR_AngleRcP2=NULL;}
   if(Ghetto_RR_AngleRcP1){delete Ghetto_RR_AngleRcP1; Ghetto_RR_AngleRcP1=NULL;}
@@ -279,6 +291,14 @@ void CECA::SetDisplacementX(const float& width, const float& levy){
 float CECA::GetDisplacementX() const{
   return Displacement[0];
 }
+
+void CECA::SetFixedHadr(const bool& yesno){
+  FixedHadr = yesno;
+}
+void CECA::SetLightFragments(const bool& yesno){
+  LightFrag = yesno;
+}
+
 
 void CECA::SetDisplacementY(const float& width, const float& levy){
   if(levy<1||levy>2){
@@ -732,58 +752,73 @@ unsigned CECA::GenerateEvent(){
 
       //--- EMISSION ---//
       //--- PROPAGATE BASED ON THE PROPERTIES OF THE CORE SOURCE ---//
-      double rd[3],beta[3],rtot[3],rh[3],mom[3];
+      double rd[3],beta[3],rtot[3],rh[3],mom[3],mom0[3];
       double energy;
       double tau = Tau;
       //the model where we assume the source is an ellipsoid around the displacement point,
       //and that direction of velocity is what determines the "crossing point" of the particle with the emission source
       double rh_len=-1;
-      int ResampleCount = 1000;
+      int ResampleCount = 0;
+      const int ResampleLimit = 1000;
+
+      double RejectProb = 0;
+      double dr_tot;
+      //save the original momentum (used when resampling)
+      for(int xyz=0; xyz<3; xyz++) mom0[xyz] = primordial->Cats()->GetP(xyz);
 
       while(true){
-        for(int xyz=0; xyz<3; xyz++){
-          rd[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]);
-          rh[xyz] = RanGen[ThId]->Gauss(Hadronization[xyz],Hadronization[xyz]*HadrFluct);
+        tau = Tau;
+        for(int xyz=0; xyz<3; xyz++) primordial->Cats()->SetMomXYZ(mom0[0],mom0[1],mom0[2]);
+        if(ResampleCount==0){
+          for(int xyz=0; xyz<3; xyz++){
+            rd[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]);
+            //rh is the extension of the ellipsoid in each direction
+            rh[xyz] = RanGen[ThId]->Gauss(Hadronization[xyz],Hadronization[xyz]*HadrFluct);
+          }
+          //this comes from the definition of an ellipsoid, where each term inside is x,y,z coordinate evaluated
+          //from the angles and spacial extension of the ellipsoid
+          rh_len = sqrt(pow(rh[0]*sin_th*cos_phi,2.)+pow(rh[1]*sin_th*sin_phi,2.)+pow(rh[2]*cos_th,2.));
+          tau += RanGen[ThId]->Gauss(0,TauFluctuation);
+          if(ProperTau) tau *= primordial->Cats()->Gamma();
         }
-        //this comes from the definition of an ellipsoid
-        rh_len = sqrt(pow(rh[0]*sin_th*cos_phi,2.)+pow(rh[1]*sin_th*sin_phi,2.)+pow(rh[2]*cos_th,2.));
-//printf("rh_len = %.2f\n",rh_len);
-//printf("   rh0 = %.2f\n",rh[0]);
-//printf("   rh1 = %.2f\n",rh[1]);
-//printf("   rh2 = %.2f\n",rh[2]);
-//printf(" sin_th= %.2f\n",sin_th);
-//printf(" cos_th= %.2f\n",cos_th);
-//printf(" sin_phi=%.2f\n",sin_phi);
-//printf(" cos_phi=%.2f\n",cos_phi);
-//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
-        tau += RanGen[ThId]->Gauss(0,TauFluctuation);
+        //at resampling, we do not change momentum or hadronization, or time component, we just shift a little bit
+        //the spacial vector, so that we have a higher chance not to be on top of another particle.
+        //the resampling is a fluctuation around the original values, scaled by the size of the hadron and
+        //the probability with which it has been rejected (i.e. resampling is largest for particles that really are on top of one another)
+        else{
+          for(int xyz=0; xyz<3; xyz++){
+            rd[xyz] += RanGen[ThId]->Gauss(0,RejectProb*primordial->Trepni()->GetRadius());
+          }
+        }
 
-        if(ProperTau) tau *= primordial->Cats()->Gamma();
         //add the displacement and the beta*tau components
         energy=primordial->Cats()->Mag2();
         for(int xyz=0; xyz<3; xyz++){
           //thermal kick
           //N.B. because of it, we need to reevaluate beta mom etc of the particle and
           //we cannot use the primordial->Cats() !!!
-          mom[xyz] = RanGen[ThId]->Gauss(primordial->Cats()->GetP(xyz),ThermalKick);
+          mom[xyz] = RanGen[ThId]->Gauss(mom0[xyz],ThermalKick);
           energy += mom[xyz]*mom[xyz];
         }
         energy = sqrt(energy);
         double mom_tot=0;
+
+        for(int xyz=0; xyz<3; xyz++) beta[xyz] = mom[xyz]/energy;
+        double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
         for(int xyz=0; xyz<3; xyz++){
-          beta[xyz] = mom[xyz]/energy;
-          rtot[xyz] = rd[xyz]+beta[xyz]*tau;
+          rtot[xyz] = rd[xyz];
+          if(LightFrag){
+            if(beta_tot) rtot[xyz] += beta[xyz]*tau/beta_tot;
+          }
+          else rtot[xyz] += beta[xyz]*tau;
           mom_tot += mom[xyz]*mom[xyz];
         }
         mom_tot = sqrt(mom_tot);
-//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //we need to add the hadronization part separately, as we demand it to have
         //the same direction as the velocity, i.e. we need beta first
-        double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
         for(int xyz=0; xyz<3; xyz++){
           if(beta_tot) rtot[xyz]+=beta[xyz]/beta_tot*rh_len;
         }
-//printf(" R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //in the last step, particles with delayed time of formation are set to be produced with
         //a time offset. This offset is concidered to be given as proper time, and the particle
         //is simply propagated in a straight line
@@ -798,6 +833,13 @@ unsigned CECA::GenerateEvent(){
           }
         }
 
+        //we update tau based on the time it took the partile to travel rh_len
+        if(!FixedHadr){
+          if(LightFrag) tau += rh_len/beta_tot;
+          else tau += rh_len;
+        }
+
+
         //the final position is saved. The time corresponds to the time elapsed
         //in the laboratory
         primordial->Cats()->SetTXYZ(tau,rtot[0],rtot[1],rtot[2]);
@@ -807,7 +849,7 @@ unsigned CECA::GenerateEvent(){
 //usleep(100e3);
 
         double p_tot,p_x,p_y,p_z;
-        double dr_tot,dr_x,dr_y,dr_z;
+        double dr_x,dr_y,dr_z;
         double LorentzWeight[2];
         double LorentzSize[2];
         double Size[2];
@@ -815,7 +857,7 @@ unsigned CECA::GenerateEvent(){
         CecaParticle* prim[2];
         prim[0] = primordial;
         //the probability to accept this position sampling
-        double RejectProb = 0;
+        RejectProb = 0;
         //iterate over all particles, to see if they overalap. If need, resample
         for(CecaParticle* primordial2 : Primordial){
           prim[1] = primordial2;
@@ -863,13 +905,13 @@ unsigned CECA::GenerateEvent(){
           break;
         }
 
-        if(ResampleCount<0){
+        if(ResampleCount>=ResampleLimit){
           printf("\033[1;33mWARNING:\033[0m CECA::GenerateEvent says that it cannot separate the particles at the set requirement.\n");
           printf("   RejectProb = %e\n",RejectProb);
           printf("   To solve the issue, verify there is enought displacement and the particle radius is not too large.\n");
           break;
         }
-        ResampleCount--;
+        ResampleCount++;
       }//while(rh_len<0)
 
       //--- DECAY OF RESONANCES + PROPAGATION OF THE MOTHERS ---/
@@ -1005,6 +1047,19 @@ unsigned CECA::GenerateEvent(){
         cm_sumQA = cm_sumQA+*prt_cm[ud].Cats();
       }
 
+
+      for(CecaParticle* primary : Primary){
+        double crd_x,crd_y,crd_z;
+        crd_x = primary->Cats()->GetX();
+        crd_y = primary->Cats()->GetY();
+        crd_z = primary->Cats()->GetZ();
+        GhettoSP_X->Fill(crd_x);
+        GhettoSP_Y->Fill(crd_y);
+        GhettoSP_Z->Fill(crd_z);
+        GhettoSP_Rho->Fill(sqrt(crd_x*crd_x+crd_y*crd_y));
+        GhettoSP_R->Fill(sqrt(crd_x*crd_x+crd_y*crd_y+crd_z*crd_z));
+
+      }
 //NEXT_STEPS
 //the tau correction, based on largest tau, and than build up R and Q, plot R for Q<FemtoLimit.
 //test for two particles first!!!
@@ -1046,20 +1101,15 @@ double AngleP1P2=0;
 double AngleRcP1=0;
 double AngleRcP2=0;
 double BGT,BGT1,BGT2;
-
 if(kstar<FemtoLimit){
-
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
     double cosine = cm_core.GetCosAngleRP(prt_cm[0].Cats());
     AngleRcP1 = acos(cosine);
-
     cosine = cm_core.GetCosAngleRP(prt_cm[1].Cats());
     AngleRcP2 = acos(cosine);
-
     cosine = prt_cm[0].Cats()->GetCosAngleP(prt_cm[1].Cats());
     if(cosine>1 || cosine<-1) cosine = round(cosine);
     AngleP1P2 = acos(cosine);
-
     if( prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)&&
         prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
           Ghetto_PP_AngleRcP1->Fill(AngleRcP1);
@@ -1292,7 +1342,6 @@ if(kstar<FemtoLimit){
           }
     }
   }
-
 Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
 
 }//femto particles
@@ -1356,7 +1405,6 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
 //printf("OUT OF THE GHETTO\n");
 ///////////////////////////
 }
-
       delete [] prt_cm;
     }//permutations over possible multiplets
 
@@ -1952,11 +2000,47 @@ void CECA::GhettoInit(){
   GhettoSPr_R->SetUp(0,256,0,32);
   GhettoSPr_R->Initialize();
 
+  if(GhettoSP_X) delete GhettoSP_X;
+  GhettoSP_X = new DLM_Histo<float>();
+  GhettoSP_X->SetUp(1);
+  GhettoSP_X->SetUp(0,256,-24,24);
+  GhettoSP_X->Initialize();
+
+  if(GhettoSP_Y) delete GhettoSP_Y;
+  GhettoSP_Y = new DLM_Histo<float>();
+  GhettoSP_Y->SetUp(1);
+  GhettoSP_Y->SetUp(0,256,-24,24);
+  GhettoSP_Y->Initialize();
+
+  if(GhettoSP_Z) delete GhettoSP_Z;
+  GhettoSP_Z = new DLM_Histo<float>();
+  GhettoSP_Z->SetUp(1);
+  GhettoSP_Z->SetUp(0,256,-24,24);
+  GhettoSP_Z->Initialize();
+
+  if(GhettoSP_Rho) delete GhettoSP_Rho;
+  GhettoSP_Rho = new DLM_Histo<float>();
+  GhettoSP_Rho->SetUp(1);
+  GhettoSP_Rho->SetUp(0,256,0,32);
+  GhettoSP_Rho->Initialize();
+
+  if(GhettoSP_R) delete GhettoSP_R;
+  GhettoSP_R = new DLM_Histo<float>();
+  GhettoSP_R->SetUp(1);
+  GhettoSP_R->SetUp(0,256,0,32);
+  GhettoSP_R->Initialize();
+
   if(Ghetto_rstar) delete Ghetto_rstar;
   Ghetto_rstar = new DLM_Histo<float>();
   Ghetto_rstar->SetUp(1);
   Ghetto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
   Ghetto_rstar->Initialize();
+
+  if(Ghetto_rcore) delete Ghetto_rcore;
+  Ghetto_rcore = new DLM_Histo<float>();
+  Ghetto_rcore->SetUp(1);
+  Ghetto_rcore->SetUp(0,NumRadBins,RadMin,RadMax);
+  Ghetto_rcore->Initialize();
 
   if(Ghetto_kstar) delete Ghetto_kstar;
   Ghetto_kstar = new DLM_Histo<float>();

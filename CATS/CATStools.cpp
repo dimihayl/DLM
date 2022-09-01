@@ -460,19 +460,37 @@ double CatsLorentzVector::GetScatAngle() const{
 }
 double CatsLorentzVector::GetCosScatAngle() const{
     if(!(GetR()*GetP())) return 0;
-    return (FourSpace[1]*FourMomentum[1]+FourSpace[2]*FourMomentum[2]+FourSpace[3]*FourMomentum[3])/(GetR()*GetP());
+    double COS = (FourSpace[1]*FourMomentum[1]+FourSpace[2]*FourMomentum[2]+FourSpace[3]*FourMomentum[3])/(GetR()*GetP());
+    if(COS<-1) COS=-1;
+    if(COS>1) COS=1;
+    return COS;
 }
 double CatsLorentzVector::GetCosAngleR(const CatsLorentzVector& other) const{
   if(!(GetR()*other.GetR())) return 0;
-  return (FourSpace[1]*other.FourSpace[1]+FourSpace[2]*other.FourSpace[2]+FourSpace[3]*other.FourSpace[3])/(GetR()*other.GetR());
+  double COS = (FourSpace[1]*other.FourSpace[1]+FourSpace[2]*other.FourSpace[2]+FourSpace[3]*other.FourSpace[3])/(GetR()*other.GetR());
+  if(COS<-1) COS=-1;
+  if(COS>1) COS=1;
+  return COS;
+}
+double CatsLorentzVector::GetPseudoRapR() const{
+    return 0.5*log((Length+FourSpace[3])/(Length-FourSpace[3]));
+}
+double CatsLorentzVector::GetRapidityR() const{
+    return 0.5*log((FourSpace[0]+FourSpace[3])/(FourSpace[0]-FourSpace[3]));
 }
 double CatsLorentzVector::GetCosAngleP(const CatsLorentzVector& other) const{
   if(!(GetP()*other.GetP())) return 0;
-  return (FourMomentum[1]*other.FourMomentum[1]+FourMomentum[2]*other.FourMomentum[2]+FourMomentum[3]*other.FourMomentum[3])/(GetP()*other.GetP());
+  double COS = (FourMomentum[1]*other.FourMomentum[1]+FourMomentum[2]*other.FourMomentum[2]+FourMomentum[3]*other.FourMomentum[3])/(GetP()*other.GetP());
+  if(COS<-1) COS=-1;
+  if(COS>1) COS=1;
+  return COS;
 }
 double CatsLorentzVector::GetCosAngleRP(const CatsLorentzVector& other) const{
   if(!(GetR()*other.GetP())) return 0;
-  return (FourSpace[1]*other.FourMomentum[1]+FourSpace[2]*other.FourMomentum[2]+FourSpace[3]*other.FourMomentum[3])/(GetR()*other.GetP());
+  double COS = (FourSpace[1]*other.FourMomentum[1]+FourSpace[2]*other.FourMomentum[2]+FourSpace[3]*other.FourMomentum[3])/(GetR()*other.GetP());
+  if(COS<-1) COS=-1;
+  if(COS>1) COS=1;
+  return COS;
 }
 double CatsLorentzVector::GetAngleR(const CatsLorentzVector& other) const{
   double CosAngle = GetCosAngleR(other);

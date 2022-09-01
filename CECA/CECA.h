@@ -78,6 +78,13 @@ public:
   void SetDisplacement(const float& width, const float& levy=2);//done
   float GetDisplacement() const;//done
 
+  //if true (default), we consider that the Hadronization implies to happen at a fixed time
+  //if false, the time component is updated based on the distance traveled (hadr component), given the particle momentum,
+  void SetFixedHadr(const bool& yesno);
+  //if true (default), it implies that the fragments of the particles (before hadronization) are light and thus travel and beta = 1, independent of the final momentum
+  //if false, they travel at the speed of the final particle
+  //This affects both the Tau parameter, as well as Hadronization
+  void SetLightFragments(const bool& yesno);
   void SetHadronizationX(const float& width, const float& levy=2);//done
   float GetHadronizationX() const;//done
   void SetHadronizationY(const float& width, const float& levy=2);//done
@@ -200,6 +207,13 @@ public:
   DLM_Histo<float>* GhettoSPr_Rho;
   DLM_Histo<float>* GhettoSPr_R;
 
+  //final particles
+  DLM_Histo<float>* GhettoSP_X;
+  DLM_Histo<float>* GhettoSP_Y;
+  DLM_Histo<float>* GhettoSP_Z;
+  DLM_Histo<float>* GhettoSP_Rho;
+  DLM_Histo<float>* GhettoSP_R;
+
   DLM_Histo<float>* Ghetto_PP_AngleRcP1;
   DLM_Histo<float>* Ghetto_PP_AngleRcP2;
   DLM_Histo<float>* Ghetto_PP_AngleP1P2;
@@ -245,6 +259,8 @@ private:
   float Tau;
   float TauFluctuation;
   bool ProperTau;
+  bool FixedHadr;
+  bool LightFrag;
   bool EqualFsiTau;
   float ThermalKick;
   bool PropagateMother;
