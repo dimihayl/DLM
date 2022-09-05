@@ -110,6 +110,8 @@ public:
   //if false, the time is let to run in the LAB, i.e. we treat this parameter
   //as a property of the system itself
   void SetTau(const float& tau, const float& fluct=0, const bool& proper=true);//done
+  //refers to the fluct
+  void SetTauMode(const int& taumode);
   float GetTau() const;
   void SetThermalKick(const float& kick);//done w/o qa
 

@@ -38,6 +38,20 @@ def yes():
             print(' yes/no (y/n) answers only: ', end = '')
 
 
+def input_number_range(min: int,max: int):
+    while True:
+        answer = input()
+        if answer=='abort':
+            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+            return min-1
+        elif not answer.isnumeric():
+            print(bcolors.WARNING+' The input needs to be numeric, try again: '+bcolors.ENDC, end = '')
+        else:
+            if int(answer)<min or int(answer)>max:
+                print(bcolors.WARNING+' Unlisted version, try again: '+bcolors.ENDC, end = '')
+            else:
+                return int(answer)
+
 def is_gsl_include_okay(PATH_GSL_INC):
     gsl_dawson=False
     gsl_coulomb=False
@@ -191,38 +205,50 @@ def quick_install(type):
                 return
             print(bcolors.OKGREEN+'CATS was successfully removed!'+bcolors.ENDC)
             return
-    #root installation
-    root_loaded = True;
+    #root installation (true, if loaded automatically)
+    root_loaded = False;
     PATH_ROOT = "root:"
+    PATH_ROOT_LIST = []
     if install_lvl>=1:
         OS_OUT = os.popen('whereis root')
         OS_READ = OS_OUT.read()
         OS_SPLIT = OS_READ.split(" ")
-        PATH_ROOT = OS_SPLIT[-1]
-        #if "root:" in PATH_ROOT:
-            #print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
-            #print(' Please "source" the "thisroot.sh" of your ROOT installation before proceeding!')
-        while "root:" in PATH_ROOT:
-            #print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
-            OS_OUT = os.popen('whereis root')
-            OS_READ = OS_OUT.read()
-            OS_SPLIT = OS_READ.split(": ")
-            PATH_ROOT = OS_SPLIT[-1]
-            if "root:" in PATH_ROOT:
-                root_loaded = False
-                print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
-                print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
-                print(' PATH_ROOT = ', end = '')
-                PATH_ROOT = input()
-                if PATH_ROOT=='abort':
-                    print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-                    return
-                #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
-                #print(OS_CMD)
-                #os.system(OS_CMD)
-                if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
-                    PATH_ROOT = "root:"
-
+        for string in OS_SPLIT:
+            string = string.rstrip('\n')
+            if string.endswith('root')==True:
+                PATH_ROOT_LIST.append(string)
+        if len(PATH_ROOT_LIST)==0:
+            root_loaded = False
+            print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
+            print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
+            print(' PATH_ROOT = ', end = '')
+            PATH_ROOT = input()
+            if PATH_ROOT=='abort':
+                print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+                return
+            #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
+            #print(OS_CMD)
+            #os.system(OS_CMD)
+            if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
+                PATH_ROOT = "root:"
+            else:
+                root_loaded = True
+        elif len(PATH_ROOT_LIST)==1:
+            root_loaded = True
+            PATH_ROOT = PATH_ROOT_LIST[0]
+        else:
+            print(bcolors.OKCYAN+' Multiple ROOT installations found! '+bcolors.ENDC+PATH_ROOT)
+            print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
+            for id in range(len(PATH_ROOT_LIST)):
+                print('  ({:d}): '.format(id)+PATH_ROOT_LIST[id])
+            print(' Desired version: ', end = '')
+            WhichVersion = input_number_range(0,len(PATH_ROOT_LIST)-1)
+            if WhichVersion<0:
+                return
+            PATH_ROOT = PATH_ROOT_LIST[WhichVersion]
+            root_loaded = True
+        #print('FINAL VERSION: '+PATH_ROOT)
+        #return
         #remove the name of the executable from the path
         if root_loaded:
             PATH_ROOT = PATH_ROOT[0:-5]
@@ -309,7 +335,15 @@ def quick_install(type):
 
     omp_okay = True
     if install_lvl>=2:
-        omp_okay = (subprocess.check_call("apt show libomp-dev", shell=True, stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT))==0
+        omp_error, omp_result = subprocess.getstatusoutput("aptt show libomp-dev")
+        if omp_error:
+            print(bcolors.WARNING+'WARNING: Failed to confirm if the REQUIRED "OpenMP" package is installed.'+bcolors.ENDC)
+            print(' Proceed anyway (y/n) ', end = '')
+            if not yes():
+                return
+            omp_okay = True
+        else:
+            omp_okay = (subprocess.check_call("apt show libomp-dev", shell=True, stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT))==0
         #>/dev/null 2>/dev/null
 
     if not omp_okay:
@@ -486,6 +520,7 @@ def quick_install(type):
 
     #os.system('cd install/CMake/')
     os.chdir('./install/CMake/')
+    print(str(multiprocessing.cpu_count()))
     if os.system('cmake .'):
         print(bcolors.FAIL+'"cmake" failed'+bcolors.ENDC)
         return
