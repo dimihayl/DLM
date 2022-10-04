@@ -1448,6 +1448,29 @@ double UsmaniFit(double* Pars){
     return v;
 }
 
+
+//pars[2] (0) is the spin
+//pars[3,4,5] (1,2,3) are the values related to the repulsive core
+//pars[6,7] (4,5) are related to the rest of the potential (V4)
+//pars[8,9] (6,7) related to the pion exchange part
+double UsmaniFitAll(double* Pars){
+    double& r = Pars[0];
+    double& Spin = Pars[2];
+    //Values for the potential
+    const double vbar = Pars[6];//6.2
+    const double vsigma = Pars[7];//0.25
+    const double wc = Pars[3];
+    double x=r*Pars[8];//0.7
+    double vc = wc/(1+exp((r-Pars[4])/Pars[5]));
+    double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-Pars[9]*r*r),2.);//pars7 = 2.0
+    double v = 0.;
+    if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
+    else if (Spin == 1)  v = vc - (vbar - 0.25*vsigma)*tpi*tpi;//Usmani triplet
+    else printf ("wrong polarization\n");
+    return v;
+}
+
+
 ////////////////////////////////////////////
 
 //[2] is the amplitude

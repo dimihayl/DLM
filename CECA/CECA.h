@@ -81,10 +81,10 @@ public:
   //if true (default), we consider that the Hadronization implies to happen at a fixed time
   //if false, the time component is updated based on the distance traveled (hadr component), given the particle momentum,
   void SetFixedHadr(const bool& yesno);
-  //if true (default), it implies that the fragments of the particles (before hadronization) are light and thus travel and beta = 1, independent of the final momentum
-  //if false, they travel at the speed of the final particle
+  //if 0 (default), the fragments from which the particles are formed travel with the same velocity as the particles themselves
+  //if the value is between 0 and 1, it corresponds to the beta of the fragments (constant)
   //This affects both the Tau parameter, as well as Hadronization
-  void SetLightFragments(const bool& yesno);
+  void SetFragmentBeta(const float& fragbeta);
   void SetHadronizationX(const float& width, const float& levy=2);//done
   float GetHadronizationX() const;//done
   void SetHadronizationY(const float& width, const float& levy=2);//done
@@ -109,9 +109,12 @@ public:
   //of the particle (i.e. property of the particle)
   //if false, the time is let to run in the LAB, i.e. we treat this parameter
   //as a property of the system itself
-  void SetTau(const float& tau, const float& fluct=0, const bool& proper=true);//done
+  void SetTau(const float& tau, const bool& proper=true);//done
   //refers to the fluct
-  void SetTauMode(const int& taumode);
+  //if non-zero it makes a Gaussian fluct (taufluct in fraction, e.g. 0.1 would be 10%)
+  //if zero, tau is fixed (default)
+  //if negative it simply sample from an exponential with a mean Tau
+  void SetTauFluct(const float& taufluct);
   float GetTau() const;
   void SetThermalKick(const float& kick);//done w/o qa
 
@@ -262,7 +265,7 @@ private:
   float TauFluctuation;
   bool ProperTau;
   bool FixedHadr;
-  bool LightFrag;
+  float FragmentBeta;
   bool EqualFsiTau;
   float ThermalKick;
   bool PropagateMother;

@@ -60,7 +60,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
 
     Kitty.SetThetaDependentSource(false);
 
-    if(SOURCE=="Gauss"){
+    if(SOURCE=="NULL"||SOURCE==""){
+
+    }
+    else if(SOURCE=="Gauss"){
         cPars = new CATSparameters(CATSparameters::tSource,1,true);
         cPars->SetParameter(0,1.2);
         Kitty.SetAnaSource(GaussSource, *cPars);
@@ -1599,6 +1602,13 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS& Kitty, const TString& POT, const
         cPotPars3S1 = new CATSparameters(CATSparameters::tPotential,4,true); cPotPars3S1->SetParameters(PotPars3S1);
         NumChannels=2;
     }
+    else if(POT=="UsmaniFitAll"){
+        double PotPars1S0[8]={0,2137,0.5,0.2,6.2,0.25,0.7,2.0};
+        double PotPars3S1[8]={1,2137,0.5,0.2,6.2,0.25,0.7,2.0};
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential,8,true); cPotPars1S0->SetParameters(PotPars1S0);
+        cPotPars3S1 = new CATSparameters(CATSparameters::tPotential,8,true); cPotPars3S1->SetParameters(PotPars3S1);
+        NumChannels=2;
+    }
     else{
         printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pL;
@@ -1624,6 +1634,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS& Kitty, const TString& POT, const
 
         if(POT=="UsmaniFit"&&cPotPars1S0&&uCh==0)Kitty.SetShortRangePotential(uCh,0,UsmaniFit,*cPotPars1S0);
         else if(POT=="UsmaniFit"&&cPotPars3S1&&uCh==1)Kitty.SetShortRangePotential(uCh,0,UsmaniFit,*cPotPars3S1);
+        else if(POT=="UsmaniFitAll"&&cPotPars1S0&&uCh==0)Kitty.SetShortRangePotential(uCh,0,UsmaniFitAll,*cPotPars1S0);
+        else if(POT=="UsmaniFitAll"&&cPotPars3S1&&uCh==1)Kitty.SetShortRangePotential(uCh,0,UsmaniFitAll,*cPotPars3S1);
         else if(cPotPars1S0&&uCh==0)Kitty.SetShortRangePotential(uCh,0,fDlmPot,*cPotPars1S0);
         else if(cPotPars3S1&&uCh==1) Kitty.SetShortRangePotential(uCh,0,fDlmPot,*cPotPars3S1);
         else if(ExternalWF){

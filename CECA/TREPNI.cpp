@@ -276,12 +276,18 @@ void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const boo
     double& py = axisValues[1];
     double& pz = axisValues[2];
 
-    double cos_th = RanGen->Uniform(Acceptance_CosTh[0],Acceptance_CosTh[1]);
-    double sin_th = sqrt(1.-cos_th*cos_th)+1e-128;
-    double tan_th = sin_th/cos_th;
-    double phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
+    double cos_th;
+    double sin_th;
+    double tan_th;
+    double phi;
     double ptot,pt;
+    cos_th = RanGen->Uniform(Acceptance_CosTh[0],Acceptance_CosTh[1]);
     do{
+      sin_th = sqrt(1.-cos_th*cos_th)+1e-128;
+      tan_th = sin_th/cos_th;
+      phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
+      ptot,pt;
+
       ptot = sqrt(pow(RanGen->Gauss(0,Px_Width),2.)+pow(RanGen->Gauss(0,Py_Width),2.)+pow(RanGen->Gauss(0,Pz_Width),2.));
       pt = ptot*sin_th;
     }

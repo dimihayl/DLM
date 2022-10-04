@@ -237,7 +237,7 @@ def quick_install(type):
             root_loaded = True
             PATH_ROOT = PATH_ROOT_LIST[0]
         else:
-            print(bcolors.OKCYAN+' Multiple ROOT installations found! '+bcolors.ENDC+PATH_ROOT)
+            print(bcolors.OKCYAN+' Multiple ROOT installations found! '+bcolors.ENDC)
             print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
             for id in range(len(PATH_ROOT_LIST)):
                 print('  ({:d}): '.format(id)+PATH_ROOT_LIST[id])
@@ -335,7 +335,7 @@ def quick_install(type):
 
     omp_okay = True
     if install_lvl>=2:
-        omp_error, omp_result = subprocess.getstatusoutput("aptt show libomp-dev")
+        omp_error, omp_result = subprocess.getstatusoutput("apt show libomp-dev")
         if omp_error:
             print(bcolors.WARNING+'WARNING: Failed to confirm if the REQUIRED "OpenMP" package is installed.'+bcolors.ENDC)
             print(' Proceed anyway (y/n) ', end = '')

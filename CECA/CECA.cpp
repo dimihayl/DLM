@@ -129,7 +129,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   TauFluctuation = 0;
   ProperTau = true;
   FixedHadr = true;
-  LightFrag = true;
+  FragmentBeta = 0;
   EqualFsiTau = true;
   ThermalKick = 0;
   PropagateMother = false;
@@ -295,8 +295,12 @@ float CECA::GetDisplacementX() const{
 void CECA::SetFixedHadr(const bool& yesno){
   FixedHadr = yesno;
 }
-void CECA::SetLightFragments(const bool& yesno){
-  LightFrag = yesno;
+void CECA::SetFragmentBeta(const float& fragbeta){
+  if(fragbeta<0||fragbeta>1){
+    printf("ERROR SetFragmentBeta\n");
+    return;
+  }
+  FragmentBeta = fragbeta;
 }
 
 
@@ -414,14 +418,20 @@ void CECA::SetPropagateMother(const bool& yesno){
   PropagateMother = yesno;
 }
 
-void CECA::SetTau(const float& tau, const float& fluct, const bool& proper){
-  if(tau<0||fluct<0){
+void CECA::SetTau(const float& tau, const bool& proper){
+  if(tau<0){
     printf("ERROR tau\n");
     return;
   }
   Tau = tau;
-  TauFluctuation = fluct;
   ProperTau = proper;
+}
+void CECA::SetTauFluct(const float& taufluct){
+  if(taufluct>1){
+    printf("ERROR taufluct\n");
+    return;
+  }
+  TauFluctuation = taufluct;
 }
 float CECA::GetTau() const{
   return Tau;
@@ -753,6 +763,7 @@ unsigned CECA::GenerateEvent(){
       //--- EMISSION ---//
       //--- PROPAGATE BASED ON THE PROPERTIES OF THE CORE SOURCE ---//
       double rd[3],beta[3],rtot[3],rh[3],mom[3],mom0[3];
+//printf("0R = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
       double energy;
       double tau = Tau;
       //the model where we assume the source is an ellipsoid around the displacement point,
@@ -767,7 +778,6 @@ unsigned CECA::GenerateEvent(){
       for(int xyz=0; xyz<3; xyz++) mom0[xyz] = primordial->Cats()->GetP(xyz);
 
       while(true){
-        tau = Tau;
         for(int xyz=0; xyz<3; xyz++) primordial->Cats()->SetMomXYZ(mom0[0],mom0[1],mom0[2]);
         if(ResampleCount==0){
           for(int xyz=0; xyz<3; xyz++){
@@ -778,7 +788,8 @@ unsigned CECA::GenerateEvent(){
           //this comes from the definition of an ellipsoid, where each term inside is x,y,z coordinate evaluated
           //from the angles and spacial extension of the ellipsoid
           rh_len = sqrt(pow(rh[0]*sin_th*cos_phi,2.)+pow(rh[1]*sin_th*sin_phi,2.)+pow(rh[2]*cos_th,2.));
-          tau += RanGen[ThId]->Gauss(0,TauFluctuation);
+          if(TauFluctuation<0) tau = RanGen[ThId]->Exp(fabs(Tau));
+          else tau = Tau+RanGen[ThId]->Gauss(0,Tau*TauFluctuation);
           if(ProperTau) tau *= primordial->Cats()->Gamma();
         }
         //at resampling, we do not change momentum or hadronization, or time component, we just shift a little bit
@@ -790,7 +801,15 @@ unsigned CECA::GenerateEvent(){
             rd[xyz] += RanGen[ThId]->Gauss(0,RejectProb*primordial->Trepni()->GetRadius());
           }
         }
-
+/*
+double MASS = primordial->Cats()->Mag();
+double FragCorr;
+if(MASS<400) FragCorr = 1;
+else if(MASS<800) FragCorr = 0.8;
+else if(MASS<1600) FragCorr = 0.6;
+else FragCorr = 0.4;
+FragCorr = 1;
+*/
         //add the displacement and the beta*tau components
         energy=primordial->Cats()->Mag2();
         for(int xyz=0; xyz<3; xyz++){
@@ -807,18 +826,21 @@ unsigned CECA::GenerateEvent(){
         double beta_tot = sqrt(beta[0]*beta[0]+beta[1]*beta[1]+beta[2]*beta[2]);
         for(int xyz=0; xyz<3; xyz++){
           rtot[xyz] = rd[xyz];
-          if(LightFrag){
-            if(beta_tot) rtot[xyz] += beta[xyz]*tau/beta_tot;
+          if(FragmentBeta){
+            if(beta_tot) rtot[xyz] += beta[xyz]*tau*(FragmentBeta/beta_tot);
           }
           else rtot[xyz] += beta[xyz]*tau;
           mom_tot += mom[xyz]*mom[xyz];
         }
+//printf("gR = %.2f\n",sqrt(rd[0]*rd[0]+rd[1]*rd[1]+rd[2]*rd[2]));
+//printf("tR = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         mom_tot = sqrt(mom_tot);
         //we need to add the hadronization part separately, as we demand it to have
         //the same direction as the velocity, i.e. we need beta first
         for(int xyz=0; xyz<3; xyz++){
-          if(beta_tot) rtot[xyz]+=beta[xyz]/beta_tot*rh_len;
+          if(beta_tot) rtot[xyz]+=beta[xyz]*(FragmentBeta/beta_tot)*rh_len;
         }
+//printf("hR = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //in the last step, particles with delayed time of formation are set to be produced with
         //a time offset. This offset is concidered to be given as proper time, and the particle
         //is simply propagated in a straight line
@@ -832,10 +854,10 @@ unsigned CECA::GenerateEvent(){
             rtot[xyz] += beta[xyz]*dtau;
           }
         }
-
+//printf("dR = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //we update tau based on the time it took the partile to travel rh_len
         if(!FixedHadr){
-          if(LightFrag) tau += rh_len/beta_tot;
+          if(FragmentBeta) tau += rh_len*(FragmentBeta/beta_tot);
           else tau += rh_len;
         }
 
