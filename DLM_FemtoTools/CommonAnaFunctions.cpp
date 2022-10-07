@@ -452,7 +452,6 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS& Kitty, const TString& POT, const
         cPotPars3P2->SetParameter(2,312);
         cPotPars1D2->SetParameter(2,122);
     }
-
     else{
         printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pp;
@@ -687,7 +686,7 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS& Kitty, const TString& POT, con
       cPotPars->SetParameter(3,9.697892e-02);
     }
     else{
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing ppi potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_ppic;
     }
     Kitty.SetMomentumDependentSource(false);
@@ -1610,7 +1609,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS& Kitty, const TString& POT, const
         NumChannels=2;
     }
     else{
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing pL potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pL;
     }
 //printf("NumChannels=%u\n",NumChannels);
@@ -1713,7 +1712,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pS0(CATS& Kitty, const TString& POT, cons
         NumChannels=Kitty.GetNumChannels();
     }
     else{
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing pS0 potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pS0;
     }
 
@@ -2004,7 +2003,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pXim(CATS& Kitty, const TString& POT, con
 
     }
     else{
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing pXi potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pXim;
     }
     Kitty.SetMomentumDependentSource(false);
@@ -2114,7 +2113,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pXi0(CATS& Kitty, const TString& POT, con
         cPotParsI1S1 = new CATSparameters(CATSparameters::tPotential,9,true); cPotParsI1S1->SetParameters(PotParsI1S1);
     }
     else{
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing pXi potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pXi0;
     }
     Kitty.SetMomentumDependentSource(false);
@@ -2368,7 +2367,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pOmegam(CATS& Kitty, const TString& POT, 
         cPotPars5S2 = new CATSparameters(CATSparameters::tPotential,9,true); cPotPars5S2->SetParameters(PotPars5S2);
     }
     else{
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n",POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing pOmega potential '%s'\n",POT.Data());
         goto CLEAN_SetUpCats_pOmegam;
     }
     Kitty.SetMomentumDependentSource(false);
@@ -4172,7 +4171,7 @@ double Get_reff(TH1F* hsource, const float lambda, const float CEI){
   delete fit_temp;
   return result;
 }
-double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda, const float CEI){
+double Get_reff_TF1(TH1F* hsource, TF1*& fsource, const float lambda, const float CEI){
   TH1F* hfit4325 = (TH1F*)hsource->Clone("hfit4325");
   hfit4325->Scale(1./hfit4325->Integral(),"width");
 
@@ -4180,17 +4179,17 @@ double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda, const float
   double upperlimit;
   GetCentralInterval(*hfit4325, CEI, lowerlimit, upperlimit, true);
 
-  TF1* fit4325 = new TF1("fit4325","[0]*4.*TMath::Pi()*x*x*pow(4.*TMath::Pi()*[1]*[1],-1.5)*exp(-(x*x)/(4.*[1]*[1]))+1.-[0]",lowerlimit,upperlimit);
-  fit4325->FixParameter(0,lambda);
-  fit4325->SetParameter(1,hfit4325->GetMean()/2.3);
-  fit4325->SetParLimits(1,hfit4325->GetMean()/10.,hfit4325->GetMean()*2.);
+  fsource = new TF1("fit4325","[0]*4.*TMath::Pi()*x*x*pow(4.*TMath::Pi()*[1]*[1],-1.5)*exp(-(x*x)/(4.*[1]*[1]))+1.-[0]",lowerlimit,upperlimit);
+  fsource->FixParameter(0,lambda);
+  fsource->SetParameter(1,hfit4325->GetMean()/2.3);
+  fsource->SetParLimits(1,hfit4325->GetMean()/10.,hfit4325->GetMean()*2.);
 
-  hfit4325->Fit(fit4325,"Q, S, N, R, M");
+  hfit4325->Fit(fsource,"Q, S, N, R, M");
 
-  fsource = fit4325;
+  //fsource = fit4325;
   delete hfit4325;
 
-  return fit4325->GetParameter(1);
+  return fsource->GetParameter(1);
 }
 
 double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff){
@@ -4690,6 +4689,34 @@ void SetUp_RSM_pOmega(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFo
 }
 
 
+bool NormalizeSource_rk(DLM_Histo<float>* dlmSource){
+  if(dlmSource==NULL) return false;
+  if(dlmSource->GetDim()!=2) return false;
+
+  for(unsigned uKstar=0; uKstar<dlmSource->GetNbins(0); uKstar++){
+    double TotInt=0;
+    double BinVal,BinErr;
+    double BinWidth;
+    for(unsigned uRstar=0; uRstar<dlmSource->GetNbins(1); uRstar++){
+      //scale to the bin width
+      BinWidth = dlmSource->GetBinSize(1,uRstar);
+      dlmSource->SetBinContent(uKstar,uRstar,dlmSource->GetBinContent(uKstar,uRstar)/BinWidth);
+      dlmSource->SetBinError(uKstar,uRstar,dlmSource->GetBinError(uKstar,uRstar)/BinWidth);
+
+      //add to the integral
+      BinVal = dlmSource->GetBinContent(uKstar,uRstar);
+      TotInt += BinVal;
+    }
+    for(unsigned uRstar=0; uRstar<dlmSource->GetNbins(1); uRstar++){
+      BinVal = dlmSource->GetBinContent(uKstar,uRstar);
+      BinErr = dlmSource->GetBinError(uKstar,uRstar);
+      dlmSource->SetBinContent(uKstar,uRstar,dlmSource->GetBinContent(uKstar,uRstar)/TotInt);
+      dlmSource->SetBinError(uKstar,uRstar,dlmSource->GetBinError(uKstar,uRstar)/TotInt);
+    }
+  }
+
+  return true;
+}
 
 
 

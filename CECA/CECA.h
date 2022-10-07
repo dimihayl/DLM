@@ -176,6 +176,19 @@ public:
 
   void GhettoTest1(const unsigned NumPairs, const float r_SP, const float p_SP);
   //CatsParticle* GhettoDecay(CatsParticle& particle, const float mass1, const float mass2);
+
+  unsigned Ghetto_NumMtBins;
+  double Ghetto_MtMin;
+  double Ghetto_MtMax;
+
+  double Ghetto_NumMomBins;
+  double Ghetto_MomMin;
+  double Ghetto_MomMax;
+
+  double Ghetto_NumRadBins;
+  double Ghetto_RadMin;
+  double Ghetto_RadMax;
+
   DLM_Histo<float>* Ghetto_rstar;
   DLM_Histo<float>* Ghetto_rcore;
   DLM_Histo<float>* GhettOld_rstar;

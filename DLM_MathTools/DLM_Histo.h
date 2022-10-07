@@ -772,6 +772,18 @@ public:
       Sample(&result,UnderOverFlow);
       return result;
     }
+    //the total integral
+    Type Integral(const bool& OverUnderFlow=true){
+      Type RESULT = 0;
+      INT_ERROR = 0;
+      if(!Initialized) {InitWarning(); return RESULT;}
+      for(unsigned uBin=0; uBin<TotNumBins+2*OverUnderFlow; uBin++){
+        RESULT += BinValue[uBin];
+        INT_ERROR += BinError[uBin]*BinError[uBin];
+      }
+      INT_ERROR = sqrt(INT_ERROR);
+      return RESULT;
+    }
     //xMin and xMax have size Dim, and each entry represents the min/max value to which the
     //corresponding dimension should be considered
     Type Integral(const double* xMin, const double* xMax, const bool& Normalized=false){
@@ -872,6 +884,7 @@ public:
       delete [] BinId;
       return true;
     }
+
     //in each dim
     //not really tested
     void Rebin(const unsigned* RebFactor){
@@ -935,6 +948,16 @@ public:
         if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins) return;
         BinError[WhichTotBin]=fabs(Val);
+    }
+    void SetBinError(const unsigned& WhichX, const unsigned& WhichY, const Type& Val){
+        if(!Initialized) {InitWarning(); return;}
+        if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo SetBinError function failed, this set up works only for Dim=2!\n"); return;}
+        if(WhichX>=NumBins[0]) return;
+        if(WhichY>=NumBins[1]) return;
+        unsigned WhichBin[2];
+        WhichBin[0]=WhichX;
+        WhichBin[1]=WhichY;
+        SetBinError(GetTotBin(WhichBin),Val);
     }
     void SetBinContentAll(const Type& Val){
         if(!Initialized) {InitWarning(); return;}
@@ -1068,6 +1091,23 @@ public:
     }
     Type GetBinError(const unsigned* WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
+        return GetBinError(GetTotBin(WhichBin));
+    }
+    Type GetBinError(const unsigned& WhichX, const unsigned& WhichY) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        if(Dim!=2)return 0;
+        unsigned WhichBin[2];
+        WhichBin[0] = WhichX;
+        WhichBin[1] = WhichY;
+        return GetBinError(GetTotBin(WhichBin));
+    }
+    Type GetBinError(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        if(Dim!=3)return 0;
+        unsigned WhichBin[3];
+        WhichBin[0] = WhichX;
+        WhichBin[1] = WhichY;
+        WhichBin[2] = WhichZ;
         return GetBinError(GetTotBin(WhichBin));
     }
     //Type GetBinError(const unsigned short& sDim, const unsigned& WhichBin) const{

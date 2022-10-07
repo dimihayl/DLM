@@ -144,6 +144,18 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   //CLV.clear();
 
   ///////////////////////////////////////////////
+  Ghetto_NumMtBins = 24;
+  Ghetto_MtMin = 0;
+  Ghetto_MtMax = 4096;
+
+  Ghetto_NumMomBins = 256;
+  Ghetto_MomMin = 0;
+  Ghetto_MomMax = 4096;
+
+  Ghetto_NumRadBins = 1024;
+  Ghetto_RadMin = 0;
+  Ghetto_RadMax = 128;
+
   Ghetto_rstar = NULL;
   Ghetto_rcore = NULL;
   GhettOld_rstar = NULL;
@@ -838,7 +850,14 @@ FragCorr = 1;
         //we need to add the hadronization part separately, as we demand it to have
         //the same direction as the velocity, i.e. we need beta first
         for(int xyz=0; xyz<3; xyz++){
-          if(beta_tot) rtot[xyz]+=beta[xyz]*(FragmentBeta/beta_tot)*rh_len;
+          if(FragmentBeta){
+            if(beta_tot){
+              rtot[xyz]+=beta[xyz]*(FragmentBeta/beta_tot)*rh_len;
+            }
+          }
+          else{
+            rtot[xyz]+=beta[xyz]/beta_tot*rh_len;
+          }
         }
 //printf("hR = %.2f\n",sqrt(rtot[0]*rtot[0]+rtot[1]*rtot[1]+rtot[2]*rtot[2]));
         //in the last step, particles with delayed time of formation are set to be produced with
@@ -1900,18 +1919,6 @@ if(!prim1&&false){
 
 void CECA::GhettoInit(){
 
-  const double NumMomBins = 256;
-  const double MomMin = 0;
-  const double MomMax = 4096;
-
-  const double NumRadBins = 256*4;
-  const double RadMin = 0;
-  const double RadMax = 32*4;
-
-  const double NumMtBins = 24;
-  const double MtMin = 0;
-  const double MtMax = 4096;
-
   if(Ghetto_RP_AngleRcP1) delete Ghetto_RP_AngleRcP1;
   Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();
   Ghetto_RP_AngleRcP1->SetUp(1);
@@ -2055,60 +2062,60 @@ void CECA::GhettoInit(){
   if(Ghetto_rstar) delete Ghetto_rstar;
   Ghetto_rstar = new DLM_Histo<float>();
   Ghetto_rstar->SetUp(1);
-  Ghetto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
+  Ghetto_rstar->SetUp(0,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_rstar->Initialize();
 
   if(Ghetto_rcore) delete Ghetto_rcore;
   Ghetto_rcore = new DLM_Histo<float>();
   Ghetto_rcore->SetUp(1);
-  Ghetto_rcore->SetUp(0,NumRadBins,RadMin,RadMax);
+  Ghetto_rcore->SetUp(0,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_rcore->Initialize();
 
   if(Ghetto_kstar) delete Ghetto_kstar;
   Ghetto_kstar = new DLM_Histo<float>();
   Ghetto_kstar->SetUp(1);
-  Ghetto_kstar->SetUp(0,NumMomBins,MomMin,MomMax);
+  Ghetto_kstar->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
   Ghetto_kstar->Initialize();
 
   if(Ghetto_kstar_rstar) delete Ghetto_kstar_rstar;
   Ghetto_kstar_rstar = new DLM_Histo<float>();
   Ghetto_kstar_rstar->SetUp(2);
-  Ghetto_kstar_rstar->SetUp(0,NumMomBins,MomMin,MomMax);
-  Ghetto_kstar_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+  Ghetto_kstar_rstar->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_kstar_rstar->Initialize();
 
   if(Ghetto_kstar_rstar_mT) delete Ghetto_kstar_rstar_mT;
   Ghetto_kstar_rstar_mT = new DLM_Histo<float>();
   Ghetto_kstar_rstar_mT->SetUp(3);
-  Ghetto_kstar_rstar_mT->SetUp(0,NumMomBins,MomMin,MomMax);
-  Ghetto_kstar_rstar_mT->SetUp(1,NumRadBins,RadMin,RadMax);
-  Ghetto_kstar_rstar_mT->SetUp(2,NumMtBins,MtMin,MtMax);
+  Ghetto_kstar_rstar_mT->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_mT->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
   Ghetto_kstar_rstar_mT->Initialize();
 
   if(Ghetto_mT_rstar) delete Ghetto_mT_rstar;
   Ghetto_mT_rstar = new DLM_Histo<float>();
   Ghetto_mT_rstar->SetUp(2);
-  Ghetto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
-  Ghetto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+  Ghetto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  Ghetto_mT_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_mT_rstar->Initialize();
 
 
   if(GhettoFemto_rstar) delete GhettoFemto_rstar;
   GhettoFemto_rstar = new DLM_Histo<float>();
   GhettoFemto_rstar->SetUp(1);
-  GhettoFemto_rstar->SetUp(0,NumRadBins,RadMin,RadMax);
+  GhettoFemto_rstar->SetUp(0,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   GhettoFemto_rstar->Initialize();
 
   if(GhettoFemto_rcore) delete GhettoFemto_rcore;
   GhettoFemto_rcore = new DLM_Histo<float>();
   GhettoFemto_rcore->SetUp(1);
-  GhettoFemto_rcore->SetUp(0,NumRadBins,RadMin,RadMax);
+  GhettoFemto_rcore->SetUp(0,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   GhettoFemto_rcore->Initialize();
 
   if(Ghetto_mT_costh) delete Ghetto_mT_costh;
   Ghetto_mT_costh = new DLM_Histo<float>();
   Ghetto_mT_costh->SetUp(2);
-  Ghetto_mT_costh->SetUp(0,NumMtBins,MtMin,MtMax);
+  Ghetto_mT_costh->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
   Ghetto_mT_costh->SetUp(1,128,-1,1);
   Ghetto_mT_costh->Initialize();
 
@@ -2116,22 +2123,22 @@ void CECA::GhettoInit(){
   if(GhettoFemto_mT_rstar) delete GhettoFemto_mT_rstar;
   GhettoFemto_mT_rstar = new DLM_Histo<float>();
   GhettoFemto_mT_rstar->SetUp(2);
-  GhettoFemto_mT_rstar->SetUp(0,NumMtBins,MtMin,MtMax);
-  GhettoFemto_mT_rstar->SetUp(1,NumRadBins,RadMin,RadMax);
+  GhettoFemto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  GhettoFemto_mT_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   GhettoFemto_mT_rstar->Initialize();
 
   if(GhettoFemto_mT_rcore) delete GhettoFemto_mT_rcore;
   GhettoFemto_mT_rcore = new DLM_Histo<float>();
   GhettoFemto_mT_rcore->SetUp(2);
-  GhettoFemto_mT_rcore->SetUp(0,NumMtBins,MtMin,MtMax);
-  GhettoFemto_mT_rcore->SetUp(1,NumRadBins,RadMin,RadMax);
+  GhettoFemto_mT_rcore->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  GhettoFemto_mT_rcore->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   GhettoFemto_mT_rcore->Initialize();
 
   if(GhettoFemto_mT_kstar) delete GhettoFemto_mT_kstar;
   GhettoFemto_mT_kstar = new DLM_Histo<float>();
   GhettoFemto_mT_kstar->SetUp(2);
-  GhettoFemto_mT_kstar->SetUp(0,NumMtBins,MtMin,MtMax);
-  GhettoFemto_mT_kstar->SetUp(1,NumMomBins,MomMin,MomMax);
+  GhettoFemto_mT_kstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  GhettoFemto_mT_kstar->SetUp(1,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
   GhettoFemto_mT_kstar->Initialize();
 
 }

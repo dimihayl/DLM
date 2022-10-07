@@ -151,7 +151,7 @@ void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, DLM_C
 void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, CATS* Kitty);
 void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, CATS* Kitty, const unsigned& NumBins, const double& rMin, const double& rMax, const double& lambda=1, const bool& FourPi=true);
 double Get_reff(TH1F* hsource, const float lambda=1, const float CEI=0.9);
-double Get_reff_TF1(TH1F* hsource, TF1* fsource, const float lambda=1, const float CEI=0.9);
+double Get_reff_TF1(TH1F* hsource, TF1*& fsource, const float lambda=1, const float CEI=0.9);
 double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff);
 double GetReff(DLM_CleverMcLevyResoTM& MagicSource, const double& rcore);
 
@@ -167,6 +167,20 @@ void SetUp_RSMflat_pXi(DLM_CleverMcLevyResoTM& MagicSource);
 void SetUp_RSM_pXi(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFolder, const int flag=0);
 void SetUp_RSMflat_pOmega(DLM_CleverMcLevyResoTM& MagicSource);
 void SetUp_RSM_pOmega(DLM_CleverMcLevyResoTM& MagicSource, const TString InputFolder, const int flag=0);
+
+//normalize the source, assuming both an rstar and kstar dep.
+//N.B. due to the issues with under/overflow bins in DLM_Histo, we do NOT consider them here
+//i.e. make sure the histogram is wide enough to account for all entries!
+bool NormalizeSource_rk(DLM_Histo<float>* dlmSource);
+//return a normalized source, assuming both an rstar and kstar dep.
+//DLM_Histo<float>* GetNormalizedSource_rk(TH2F* hSource);
+
+
+
+
+
+
+
 /*
 class DLM_Analyzer{
 
