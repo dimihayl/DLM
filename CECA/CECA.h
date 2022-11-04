@@ -181,11 +181,11 @@ public:
   double Ghetto_MtMin;
   double Ghetto_MtMax;
 
-  double Ghetto_NumMomBins;
+  unsigned Ghetto_NumMomBins;
   double Ghetto_MomMin;
   double Ghetto_MomMax;
 
-  double Ghetto_NumRadBins;
+  unsigned Ghetto_NumRadBins;
   double Ghetto_RadMin;
   double Ghetto_RadMax;
 

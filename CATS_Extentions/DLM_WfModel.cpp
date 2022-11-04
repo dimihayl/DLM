@@ -468,6 +468,21 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS*
 
 
 
+
+
+//if the CutOff is 601, than we switch to FineTuneMode (for CutOff 600), where TYPE is 4 digits, ABCD, where:
+//  AB is a variation of the 1S0. So far we have:
+//    00 default (f_s = 2.91 fm)
+//    01 default+CSB
+//    02 f_s = 2.2 fm
+//  CD is a variation of the 3S1. So far we have:
+//    00 default (f_t = 1.41 fm)
+//    01 default+CSB
+//    02 f_t = 1.3 fm
+//    03 f_t = 1.25 fm
+//    04 f_t = 1.2 fm
+//    (10,11,12): reseved potentiall for 1.45, 1.50, 1.55
+//    13 f_t = 1.6 fm
 //TYPE==0 is NLO13, TYPE==1 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19
 //if TYPE is two digti: XY, X is the setting for 1S0, Y for 3S1,
 //where both can be {1,2,3} = {ORIGINAL, CSB, FineTune}
@@ -494,8 +509,9 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     bool FileAvailable[NumFiles];
     bool InludePwaves=true;
     for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
-    //we have the p-waves only for NLO at a cutoff of 600
-    if(CUTOFF!=600||TYPE!=1){
+    //we have the p-waves only for NLO at a cutoff of 600 (and 601)
+    //if( (CUTOFF/10!=60||TYPE%10!=1) && CUTOFF!=601 ){
+    if( CUTOFF/10!=60||TYPE%10!=1 ){
         FileAvailable[fP1] = false;
         FileAvailable[f3P0] = false;
         FileAvailable[f3P2] = false;
@@ -666,6 +682,75 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         strcat(InputFileName[f3P2], "NLO3P2.data");
         strcat(InputFileName[f3D1], "NLO3d1.data");
     }
+    //the special case for fine tunes of the 600 cutoff (for NLO19)
+    else if(CUTOFF==601){
+      //  AB is a variation of the 1S0. So far we have:
+      //    00 default (f_s = 2.91 fm)
+      //    01 default+CSB
+      //    02 f_s = 2.2 fm
+      //  CD is a variation of the 1S0. So far we have:
+      //    00 default (f_t = 1.41 fm)
+      //    01 default+CSB
+      //    02 f_t = 1.3 fm
+      //    03 f_t = 1.25 fm
+      //    04 f_t = 1.2 fm
+      //    (10,11,12): reseved potentiall for 1.45, 1.50, 1.55
+      //    13 f_t = 1.6 fm
+      //printf("TYPE = %i\n",TYPE);
+      if(TYPE%10!=1){
+        printf("Possible BUG in Init_pL_Haidenbauer2019, or a wrong set up of the pL potential\n");
+        printf("The CutOff 601 is only allowed to be used with the NLO19 potential\n");
+      }
+      int ABCD = TYPE/10;
+      for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        //1S0 ---------------------------------------------------------
+        if(uFile==f1S0&&ABCD/100==1){//this is set differently in this case
+          strcat(InputFileName[uFile], "19_CSB/");
+          strcat(InputFileName[uFile], "csbN191s0.600");
+        }
+        else if(uFile==f1S0&&ABCD/100==2){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_1s0_2p20.600");
+        }
+        // ------------------------------------------------------------
+        //3S1 ---------------------------------------------------------
+        else if(uFile==f3S1&&ABCD%100==1){
+          strcat(InputFileName[uFile], "19_CSB/");
+          strcat(InputFileName[uFile], "csbN193s1.600");
+        }
+        else if(uFile==f3S1&&ABCD%100==2){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p30.600");
+        }
+        else if(uFile==f3S1&&ABCD%100==3){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p25.600");
+        }
+        else if(uFile==f3S1&&ABCD%100==4){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p20.600");
+        }
+        else if(uFile==f3S1&&ABCD%100==13){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p60.600");
+        }
+        // ------------------------------------------------------------
+        else{
+          char strCutOff[16];
+          sprintf(strCutOff,"19_%i/",600);
+          strcat(InputFileName[uFile], strCutOff);
+          switch (uFile) {
+            case f1S0: strcat(InputFileName[uFile], "NLO1s0.data"); break;
+            case f3S1: strcat(InputFileName[uFile], "NLO3s1.data"); break;
+            case fP1: strcat(InputFileName[uFile], "NLOPU.data"); break;
+            case f3P0: strcat(InputFileName[uFile], "NLO3P0.data"); break;
+            case f3P2: strcat(InputFileName[uFile], "NLO3P2.data"); break;
+            case f3D1: strcat(InputFileName[uFile], "NLO3d1.data"); break;
+            default: printf("Something bad has happend in Init_pL_Haidenbauer2019\n"); break;
+          }
+        }
+      }
+    }//CUTOFF 601
     //the 1S0 for the fine tune is not changed
     else if(TYPE==1||TYPE==11||TYPE==31){
         char strCutOff[16];
@@ -815,7 +900,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
 //printf("4\n");
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         if(!FileAvailable[uFile]) continue;
-//printf("uf=%u\n",uFile);
+//printf("uf=%u --> %s\n",uFile,InputFileName[uFile]);
         InFile = fopen(InputFileName[uFile], "r");
         if(!InFile){
             printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);

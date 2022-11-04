@@ -39,6 +39,9 @@ double YukawaGaussCore(double* Pars);
 double YukawaDimiCore(double* Pars);
 double YukawaDimiSmooth(double* Pars);
 
+double Hulthen(double* Pars);
+double HulthenSmooth(double* Pars);
+
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);
 

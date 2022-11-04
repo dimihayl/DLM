@@ -151,7 +151,25 @@ double YukawaDimiSmooth(double* Pars) {
   return Yuk+RC;
 }
 
+//-V0*exp(-mu*r)/(1.-exp(-mu*r)),
+//where V0 is in MeV and mu is in MeV as well
+double Hulthen(double* Pars) {
+  double r = fabs(Pars[0]);
+  double& V0 = Pars[2];
+  double& mu = Pars[3];
+  return -V0*exp(-mu*r*FmToNu)/(1.-exp(-mu*r*FmToNu));
+}
 
+//-V0*exp(-mu*r)/(1.-exp(-mu*r)),
+//where V0 is in MeV and mu is in MeV as well
+//there is now 3rd parameter, which is by how much, in fraction, we should modify the
+//value of the potental to avoid an infinity at zero
+double HulthenSmooth(double* Pars) {
+  double r = fabs(Pars[0]);
+  double& V0 = Pars[2];
+  double& mu = Pars[3];
+  return -V0*exp(-mu*r*FmToNu)/(1.+Pars[4]*exp(-Pars[4]*mu*r*FmToNu)-exp(-mu*r*FmToNu));
+}
 
 //i(x) = −exp(−x−0)/(x+g(x))+20h(x)
 /*
