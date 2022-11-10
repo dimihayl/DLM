@@ -217,7 +217,7 @@ def quick_install(type):
             string = string.rstrip('\n')
             if string.endswith('root')==True:
                 PATH_ROOT_LIST.append(string)
-        if len(PATH_ROOT_LIST)==0:
+        if len(PATH_ROOT_LIST)==0 or True:
             root_loaded = False
             print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
             print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
@@ -233,25 +233,43 @@ def quick_install(type):
                 PATH_ROOT = "root:"
             else:
                 root_loaded = True
-        elif len(PATH_ROOT_LIST)==1:
-            root_loaded = True
-            PATH_ROOT = PATH_ROOT_LIST[0]
+                #PATH_ROOT = PATH_ROOT+'/root'
+        #elif len(PATH_ROOT_LIST)==1:
+        #    root_loaded = True
+        #    PATH_ROOT = PATH_ROOT_LIST[0]
         else:
-            print(bcolors.OKCYAN+' Multiple ROOT installations found! '+bcolors.ENDC)
+            print(bcolors.OKCYAN+' ROOT installations found! '+bcolors.ENDC)
             print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
             for id in range(len(PATH_ROOT_LIST)):
                 print('  ({:d}): '.format(id)+PATH_ROOT_LIST[id])
+            print('  ({:d}): '.format(len(PATH_ROOT_LIST))+'Manual input')
             print(' Desired version: ', end = '')
-            WhichVersion = input_number_range(0,len(PATH_ROOT_LIST)-1)
+            WhichVersion = input_number_range(0,len(PATH_ROOT_LIST))
             if WhichVersion<0:
                 return
-            PATH_ROOT = PATH_ROOT_LIST[WhichVersion]
+            if WhichVersion==len(PATH_ROOT_LIST):
+                print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
+                print(' PATH_ROOT = ', end = '')
+                PATH_ROOT = input()
+                if PATH_ROOT=='abort':
+                    print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+                    return
+                #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
+                #print(OS_CMD)
+                #os.system(OS_CMD)
+                if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
+                    PATH_ROOT = "root:"
+                else:
+                    root_loaded = True
+            else:
+                PATH_ROOT = PATH_ROOT_LIST[WhichVersion]
+                #remove the name of the executable from the path
+                PATH_ROOT = PATH_ROOT[0:-4]
+
             root_loaded = True
         #print('FINAL VERSION: '+PATH_ROOT)
         #return
-        #remove the name of the executable from the path
         if root_loaded:
-            PATH_ROOT = PATH_ROOT[0:-5]
             if PATH_ROOT[-1]=="/":
                 PATH_ROOT = PATH_ROOT[0:-1]
             print(bcolors.OKGREEN+' ROOT location found: '+bcolors.ENDC+PATH_ROOT)
