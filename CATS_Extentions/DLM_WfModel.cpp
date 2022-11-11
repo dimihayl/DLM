@@ -688,12 +688,15 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
       //    00 default (f_s = 2.91 fm)
       //    01 default+CSB
       //    02 f_s = 2.2 fm
+      //    03 f_s = 2.55 fm
       //  CD is a variation of the 1S0. So far we have:
       //    00 default (f_t = 1.41 fm)
       //    01 default+CSB
       //    02 f_t = 1.3 fm
       //    03 f_t = 1.25 fm
       //    04 f_t = 1.2 fm
+      //    05 f_t = 1.15 fm
+      //    06 f_t = 1.10 fm
       //    (10,11,12): reseved potentiall for 1.45, 1.50, 1.55
       //    13 f_t = 1.6 fm
       //printf("TYPE = %i\n",TYPE);
@@ -712,6 +715,10 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
           strcat(InputFileName[uFile], "19_FineTunes/");
           strcat(InputFileName[uFile], "NLO19_1s0_2p20.600");
         }
+        else if(uFile==f1S0&&ABCD/100==3){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_1s0_2p55.600");
+        }
         // ------------------------------------------------------------
         //3S1 ---------------------------------------------------------
         else if(uFile==f3S1&&ABCD%100==1){
@@ -729,6 +736,14 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         else if(uFile==f3S1&&ABCD%100==4){
           strcat(InputFileName[uFile], "19_FineTunes/");
           strcat(InputFileName[uFile], "NLO19_3s1_1p20.600");
+        }
+        else if(uFile==f3S1&&ABCD%100==5){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p15.600");
+        }
+        else if(uFile==f3S1&&ABCD%100==6){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p10.600");
         }
         else if(uFile==f3S1&&ABCD%100==13){
           strcat(InputFileName[uFile], "19_FineTunes/");
