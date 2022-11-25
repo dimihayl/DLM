@@ -540,7 +540,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
     //we have the p-waves only for NLO at a cutoff of 600 (and 601,602)
     //if( (CUTOFF/10!=60||TYPE%10!=1) && CUTOFF!=601 ){
-    if( CUTOFF/10!=60||TYPE%10!=1||TYPE%10!=2){
+    if( CUTOFF/10!=60||TYPE%10!=1){
         FileAvailable[fP1] = false;
         FileAvailable[f3P0] = false;
         FileAvailable[f3P2] = false;
@@ -798,9 +798,11 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
 
     //the special case for fine tunes of the 600 cutoff (for NLO19)
     else if(CUTOFF==602){
-      if(TYPE%10!=2){
+      //this is correct, TYPE 1 is 1160*
+      if(TYPE%10!=1){
         printf("Possible BUG in Init_pL_Haidenbauer2019, or a wrong set up of the pL potential\n");
-        printf("The CutOff 601 is only allowed to be used with the NLO19 potential\n");
+        printf("The CutOff 602 is only allowed to be used with the NLO19 potential\n");
+        //printf("TYPE = %i\n",TYPE);
       }
       int ABCD = TYPE/10;
       for(unsigned uFile=0; uFile<NumFiles; uFile++){
