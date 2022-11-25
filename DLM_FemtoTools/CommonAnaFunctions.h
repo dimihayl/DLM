@@ -25,6 +25,7 @@ const double Mass_phi = 1019.461;
 const double Mass_p = 938.272;
 const double Mass_n = 939.565;
 const double Mass_L = 1115.683;
+const double Mass_S0 = 1192.642;
 const double Mass_Xim = 1321.7;
 const double Mass_Xi0 = 1314.86;
 const double Mass_Xim1530 = 1535;

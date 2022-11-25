@@ -6,7 +6,7 @@
 
 class DLM_Random{
 public:
-    DLM_Random(const unsigned& seed);
+    DLM_Random(const unsigned& seed=0);
     ~DLM_Random();
     void SetSeed(const unsigned& seed);
     double Uniform(const double& from=0, const double& to=1);
