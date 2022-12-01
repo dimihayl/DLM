@@ -7,7 +7,7 @@
 #include "TPad.h"
 
 enum DLM_PadPos { kPadLeft, kPadTop, kPadRight, kPadBottom };
-enum DLM_TextPos { kTextLeft, kTextBottom, kTextRight, kTextTop };
+// enum DLM_TextPos { kTextLeft, kTextBottom, kTextRight, kTextTop };
 enum DLM_MarPos { kMarLeft, kMarRight, kMarBottom, kMarTop };
 
 enum DLM_WH { kWidth, kHeight };
