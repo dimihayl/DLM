@@ -85,11 +85,13 @@ public:
     void SetUpCats_pXim(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_pXi0(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_pOmegam(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
+    void SetUpCats_XiKCoulomb(CATS &Kitty, const TString &POT, const TString &SOURCE, const TString &DataSample);
 
     DLM_Ck* SetUpLednicky_pL(const unsigned& NumMomBins, const double* MomBins,  const TString& POT);
 
     void SetUpBinning_pp(const TString& DataSample, unsigned& NumMomBins, double*& MomBins, double*& FitRegion, const int& MomBinVar=0, const int& FitRegVar=0);
     void SetUpBinning_pL(const TString& DataSample, unsigned& NumMomBins, double*& MomBins, double*& FitRegion, const int& MomBinVar, const int& FitRegVar);
+    void SetUpBinning_LKmin(const TString &DataSample, unsigned &NumMomBins, double *&MomBins, double *&FitRegion, const int &MomBinVar = 0, const int &FitRegVar = 0);
 
     //DataSamples: SystemEnergy_Trigger_Version
     //the version is there to mark the different versions based on our own analysis, it can be some short description
@@ -103,15 +105,20 @@ public:
     //The Variation flag is there for the systematics, refer to the functions themselves for more information
     void GetPurities_p(const TString& DataSample, const int& Variation, double* Purities);
     void GetPurities_L(const TString& DataSample, const int& Variation, double* Purities);
+    void GetPurities_L_Vale(const TString &DataSample, const int &Variation, double *Purities, int SamplePurity);
     void GetPurities_Xim(const TString& DataSample, const int& Variation, double* Purities);
+    void GetPurities_K(const TString &DataSample, const int &Variation, double *Purities, int SamplePurity);
     void GetFractions_p(const TString& DataSample, const int& Variation, double* Fractions);
     void GetFractions_L(const TString& DataSample, const int& Variation, double* Fractions);
-    void GetFractions_Xim(const TString& DataSample, const int& Variation, double* Fractions);
+    void GetFractions_L_Vale(const TString &DataSample, const int &Variation, double *Fractions);
+    void GetFractions_Xim(const TString &DataSample, const int &Variation, double *Fractions);
+    void GetFractions_K(const TString &DataSample, const int &Variation, double *Fractions);
     //primary, pL->pp, XX->pp, pp fake
     void SetUpLambdaPars_pp(const TString& DataSample, const int& Variation_p, double* lambda_pars);
     //primary, pS0->pL, pXim->pL, XX->pL, pp fake
     void SetUpLambdaPars_pL(const TString& DataSample, const int& Variation_p, const int& Variation_L, double* lambda_pars);
     void SetUpLambdaPars_pXim(const TString& DataSample, const int& Variation_p, const int& Variation_Xim, double* lambda_pars);
+    void SetUpLambdaPars_LKmin(const TString &DataSample, const int &Variation_L, const int &Variation_K, double *lambda_pars, int SamplePurity);
 
     void SetCatsFilesFolder(const TString& folder);
 

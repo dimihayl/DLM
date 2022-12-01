@@ -2399,6 +2399,66 @@ void DLM_CommonAnaFunctions::SetUpCats_pOmegam(CATS& Kitty, const TString& POT, 
     if(cPotPars5S2){delete cPotPars5S2; cPotPars5S2=NULL;}
 }
 
+// Xi - Kaon ONLY COULOMB
+void DLM_CommonAnaFunctions::SetUpCats_XiKCoulomb(CATS &Kitty, const TString &POT, const TString &SOURCE,
+                                                  const TString &DataSample)
+{
+
+    CATSparameters *cPars = NULL;
+    double radius;
+    if (DataSample == "pp13TeV_MB_BBar")
+        radius = 1.188;
+    if (DataSample == "pp13TeV_HM_BBar")
+        radius = 1.28;
+
+    if (SOURCE == "Gauss")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, radius);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "McGauss_Reso")
+    {
+        CleverMcLevyReso[1].InitStability(1, 2 - 1e-6, 2 + 1e-6);
+        CleverMcLevyReso[1].InitScale(35, 0.25, 2.0);
+        CleverMcLevyReso[1].InitRad(256, 0, 64);
+        CleverMcLevyReso[1].InitType(2);
+        CleverMcLevyReso[1].InitReso(0, 1);
+        CleverMcLevyReso[1].InitReso(1, 1);
+        CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic);
+        CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic);
+        CleverMcLevyReso[1].InitNumMcIter(1000000);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverMcLevyReso[1], 2);
+        Kitty.SetAnaSource(0, 0.87);
+        Kitty.SetAnaSource(1, 2.0);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pApCoulomb;
+    }
+
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(-1);
+    Kitty.SetPdgId(2212, -2212);
+    Kitty.SetRedMass((Mass_p * Mass_p) / (Mass_p + Mass_p));
+
+    Kitty.SetNumChannels(2);
+    Kitty.SetNumPW(0, 1);
+    Kitty.SetNumPW(1, 1);
+    Kitty.SetSpin(0, 0);
+    Kitty.SetSpin(1, 1);
+    Kitty.SetChannelWeight(0, 1. / 4.);
+    Kitty.SetChannelWeight(1, 3. / 4.);
+
+CLEAN_SetUpCats_pApCoulomb:;
+}
+
 DLM_Ck* DLM_CommonAnaFunctions::SetUpLednicky_pL(const unsigned& NumMomBins, const double* MomBins,  const TString& POT){
     double p0,p1,p2,p3;
     if(POT=="Lednicky_ND"){
@@ -2891,6 +2951,88 @@ void DLM_CommonAnaFunctions::SetUpBinning_pL(const TString& DataSample, unsigned
 
 }
 
+void DLM_CommonAnaFunctions::SetUpBinning_LKmin(const TString &DataSample, unsigned &NumMomBins, double *&MomBins, double *&FitRegion, const int &MomBinVar, const int &FitRegVar)
+{
+    double kMin;
+    double kMax;
+    double kStep;
+    if (DataSample == "pp13TeV_HM_LK")
+    {
+        if (MomBinVar == 0)
+        {
+            kMin = 0;
+            kStep = 4;
+            kMax = 362; //(i.e. max=376 MeV)
+        }
+        else if (MomBinVar == 1)
+        {
+            kMin = 0;
+            kStep = 4;
+            kMax = 602;
+        }
+        else
+        {
+            printf("\033[1;31mERROR:\033[0m The MomBinVar '%i' does not exist\n", MomBinVar);
+            return;
+        }
+    }
+    else
+    {
+        printf("\033[1;31mERROR (SetUpBinning_pp):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
+        NumMomBins = 0;
+        return;
+    }
+    NumMomBins = floor((kMax - kMin) / (kStep));
+
+    if (MomBins)
+        delete[] MomBins;
+    MomBins = new double[NumMomBins + 1];
+    MomBins[0] = kMin;
+    for (unsigned uBin = 1; uBin <= NumMomBins; uBin++)
+    {
+        MomBins[uBin] = MomBins[uBin - 1] + kStep;
+    }
+    if (FitRegion)
+        delete[] FitRegion;
+    FitRegion = new double[4];
+    FitRegion[0] = MomBins[0];
+    FitRegion[1] = MomBins[NumMomBins];
+    FitRegion[2] = MomBins[NumMomBins] + kStep;
+    FitRegion[3] = MomBins[NumMomBins] + kStep * 31.; // till 500
+
+    // if(FitRegVar==0){
+    //     FitRegion[0] = MomBins[0];
+    //     FitRegion[1] = MomBins[NumMomBins];
+    //     FitRegion[2] = MomBins[NumMomBins];
+    //     FitRegion[3] = MomBins[NumMomBins];
+    // }
+    if (FitRegVar == 0)
+    {
+        FitRegion[0] = MomBins[0];
+        FitRegion[1] = MomBins[NumMomBins];
+        FitRegion[2] = MomBins[NumMomBins];
+        FitRegion[3] = 576;
+    }
+    else if (FitRegVar == 1)
+    {
+        FitRegion[0] = MomBins[0];
+        FitRegion[1] = MomBins[NumMomBins];
+        FitRegion[2] = MomBins[NumMomBins];
+        FitRegion[3] = 552;
+    }
+    else if (FitRegVar == 2)
+    {
+        FitRegion[0] = MomBins[0];
+        FitRegion[1] = MomBins[NumMomBins];
+        FitRegion[2] = MomBins[NumMomBins];
+        FitRegion[3] = 600;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m The FitRegVar '%i' does not exist\n", FitRegVar);
+        return;
+    }
+}
 
 void DLM_CommonAnaFunctions::GetPurities_p(const TString& DataSample, const int& Variation, double* Purities){
     double PurityProton;
@@ -2973,6 +3115,43 @@ void DLM_CommonAnaFunctions::GetPurities_L(const TString& DataSample, const int&
     Purities[4] = 1.-PurityLambda;
 }
 
+void DLM_CommonAnaFunctions::GetPurities_L_Vale(const TString &DataSample, const int &Variation, double *Purities, int SamplePurity)
+{
+    double PurityLambdaVars[45] = {0.9465, 0.965985, 0.955872, 0.966306, 0.956546,
+                                   0.965578, 0.965118, 0.967649, 0.951028, 0.958578, 0.958875, 0.958578, 0.956233,
+
+                                   0.958878, 0.953028, 0.969392, 0.956932, 0.96478, 0.954015, 0.967371, 0.953029,
+                                   0.954015, 0.965445, 0.959869, 0.965097, 0.958929, 0.952171, 0.960708, 0.96445,
+                                   0.956484, 0.969944, 0.965535, 0.965945, 0.964151, 0.953982, 0.96738, 0.961568,
+                                   0.965563, 0.964181, 0.962324, 0.960303, 0.966329, 0.970294, 0.951154, 0.968579};
+    double PurityLambda;
+    if (DataSample == "pp13TeV_MB_Run2paper")
+    {
+        PurityLambda = 0.96768;
+    }
+    else if (DataSample == "pp13TeV_HM_LK")
+    {
+        PurityLambda = PurityLambdaVars[SamplePurity];
+    }
+    else
+    {
+        printf("\033[1;31mERROR (GetPurities_L):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
+        PurityLambda = 1.0;
+    }
+
+    // for the Lambda:
+    // 0 = primary
+    // 1 = from Sigma0
+    // 2 = from Xim
+    // 3 = from Xi0
+    // 4 = missidentified
+    Purities[0] = PurityLambda;
+    Purities[1] = PurityLambda;
+    Purities[2] = PurityLambda;
+    Purities[3] = PurityLambda;
+    Purities[4] = 1. - PurityLambda;
+}
+
 void DLM_CommonAnaFunctions::GetPurities_Xim(const TString& DataSample, const int& Variation, double* Purities){
     double PurityXim;
     if(DataSample=="pp13TeV_MB_Run2paper"){
@@ -3003,6 +3182,42 @@ void DLM_CommonAnaFunctions::GetPurities_Xim(const TString& DataSample, const in
     Purities[2] = PurityXim;
     Purities[3] = PurityXim;
     Purities[4] = 1.-PurityXim;
+}
+
+/// PurityKaon[0] os the default pT averaged
+void DLM_CommonAnaFunctions::GetPurities_K(const TString &DataSample, const int &Variation, double *Purities, int SamplePurity)
+{
+    double PurityKaonVars[45] = {0.997177, 0.997259, 0.997129, 0.997177, 0.997093, 0.994909,
+                                 0.99508, 0.994934, 0.997216, 0.997183, 0.997093, 0.994909,
+                                 0.995998, 0.996075, 0.996066, 0.996075, 0.994954, 0.994928, 0.996075,
+                                 0.996031, 0.997259, 0.994892, 0.997093, 0.994903, 0.994985, 0.997158,
+                                 0.996066, 0.996079, 0.997259, 0.996009, 0.997098, 0.996042, 0.994996,
+                                 0.997139, 0.997104, 0.994965, 0.997062, 0.996085, 0.997221, 0.99616,
+                                 0.997152, 0.994909, 0.994997, 0.994934, 0.994934};
+    double PurityKaon;
+
+    if (DataSample == "pp13TeV_HM_LK")
+    {
+        PurityKaon = PurityKaonVars[SamplePurity];
+    }
+    else
+    {
+        printf("\033[1;31mERROR (GetPurities_K):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
+        PurityKaon = 1.0;
+    }
+
+    // following my lambda pars with the 3 possible modifications
+    // for the kaon:
+    // 0 = primary
+    // 1 = from Phi
+    // 2 = other feeddown (flat)
+    // 3 = missidentified
+    // const unsigned NumChannels_p = 4;
+    // if(Purities){delete [] Purities; Purities = new double [NumChannels_p];}
+    Purities[0] = PurityKaon;
+    Purities[1] = PurityKaon;
+    Purities[2] = PurityKaon;
+    Purities[3] = 1. - PurityKaon;
 }
 
 //the last digit of Variation is generic.
@@ -3163,6 +3378,94 @@ void DLM_CommonAnaFunctions::GetFractions_L(const TString& DataSample, const int
     Fractions[3] = 1.-Fractions[0]-Fractions[1]-Fractions[2];
     Fractions[4] = 1.;
 }
+
+void DLM_CommonAnaFunctions::GetFractions_L_Vale(const TString &DataSample, const int &Variation, double *Fractions)
+{
+    double Modify_SigL = 1;
+    double Modify_XiL = 1;
+    // the amount of prim lambdas depends on pT, at low pT (and k*)
+    // the fraction could be lower. You can modify it here. This is by how much the PrimLambda fractional yield is reduced,
+    // compared to the value at the average pT
+    double Modify_PrimFrac = 1;
+    switch (Variation % 10)
+    {
+    case 0:
+        Modify_SigL = 1.;
+        break;
+    case 1:
+        Modify_SigL = 0.9;
+        break;
+    case 2:
+        Modify_SigL = 1.1;
+        break;
+    default:
+        Modify_SigL = 1;
+        break;
+    }
+    switch (Variation / 10)
+    {
+    case 0:
+        Modify_XiL = 1.;
+        break;
+    case 1:
+        Modify_XiL = 0.9;
+        break;
+    case 2:
+        Modify_XiL = 1.1;
+        break;
+    default:
+        Modify_XiL = 1;
+        break;
+    }
+
+    double pL_f0; // fraction of primary Lambdas
+    double pL_f1; // fraction of Sigma0
+    double pL_f2; // fractions of Xi0/m (each)
+    double pL_fm; // fraction of material
+
+    if (DataSample == "pp13TeV_MB_Run2paper")
+    {
+        pL_f0 = 0.601008;
+        pL_f1 = 0.200336;
+        pL_f2 = 0.099328;
+        pL_fm = 0;
+    }
+    else if (DataSample == "pp13TeV_HM_LK")
+    {
+        pL_f1 = 0.192;
+        pL_f2 = 0.232 / 2.;
+        pL_f0 = 1. - pL_f1 - pL_f2 * 2;
+        pL_fm = 0.0;
+    }
+    else
+    {
+        printf("\033[1;31mERROR (GetFractions_L):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
+        pL_f0 = 1.0;
+        pL_f1 = 0.0;
+        pL_f2 = 0.0;
+        pL_fm = 0.0;
+    }
+
+    double SigLambdaPrimDir = pL_f0 + pL_f1;
+    // ratio between sigma0 feed down and primary lambdas. By default this should be 1:3
+    double arrayPercSigLambda = pL_f1 / pL_f0 * Modify_SigL;
+    // ration between xim feed down to the flat (xi0) feed. By default we assume it is 0.5
+    double arrayPercXiLambda = pL_f2 / (1. - pL_f0 - pL_f1) * Modify_XiL;
+    double FracOfLambda = 1. / (1. + arrayPercSigLambda);
+    // 0 is primary
+    // 1 is from Sigma0
+    // 2 is is from Xim
+    // 3 is is the flat feeddown (it should be just xi0, i.e. == xim)
+    //   remark: up to Aug 2020, the material contribution, c.a. 1% was distributed amount ALL other
+    //   entries, primary, feed etc. Actually it would make most sence to put it as an additional flat contribution!
+    // 4 is for the missid
+    Fractions[0] = SigLambdaPrimDir * FracOfLambda;
+    Fractions[1] = SigLambdaPrimDir * (1. - FracOfLambda);
+    Fractions[2] = (1. - SigLambdaPrimDir) * (arrayPercXiLambda);
+    Fractions[3] = 1. - Fractions[0] - Fractions[1] - Fractions[2];
+    Fractions[4] = 1.;
+}
+
 void DLM_CommonAnaFunctions::GetFractions_Xim(const TString& DataSample, const int& Variation, double* Fractions){
     //0 = primary
     //1 = from Xi-(1530)
@@ -3184,6 +3487,49 @@ void DLM_CommonAnaFunctions::GetFractions_Xim(const TString& DataSample, const i
     Fractions[3] = 1.-Fractions[2]-Fractions[1]-Fractions[0];
     Fractions[4] = 1.;
 }
+
+void DLM_CommonAnaFunctions::GetFractions_K(const TString &DataSample, const int &Variation, double *Fractions)
+{
+    // following my lambda pars with the 3 possible modifications
+    // for the kaon:
+    // 0 = primary
+    // 1 = from Phi
+    // 2 = other feeddown (flat)
+    // 3 = missidentified
+    double Modify_pp = 1;
+    switch (Variation % 10)
+    {
+    case 1:
+        Modify_pp = 0.9;
+        break;
+    case 2:
+        Modify_pp = 1.1;
+        break;
+    default:
+        Modify_pp = 1;
+        break;
+    }
+    double pp_f0; // primary Kaons
+    double pp_f1; // fraction from Phi
+    if (DataSample == "pp13TeV_HM_LK")
+    {
+        pp_f0 = 0.94;
+        pp_f1 = 0.06;
+    }
+    else
+    {
+        printf("\033[1;31mERROR (GetFractions_p):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
+        pp_f0 = 1.0;
+        pp_f1 = 0.0;
+    }
+    // ratio between feed-down Phi and all feed downs, it is by default 0.06, i.e. 6% of the feed-down into Kaons is from Phi
+    double arrayPercLamProton = pp_f1 / (1. - pp_f0) * Modify_pp;
+    Fractions[0] = pp_f0;
+    Fractions[1] = (1. - pp_f0) * (arrayPercLamProton);
+    Fractions[2] = (1. - pp_f0) * (1. - arrayPercLamProton);
+    Fractions[3] = 1.;
+}
+
 //0 is primary
 //1 is pL->pp
 //2 is flat feed
@@ -3269,6 +3615,36 @@ void DLM_CommonAnaFunctions::SetUpLambdaPars_pXim(const TString& DataSample, con
 //        DataPeriod=="pp13TeV"?  :
 //                                ;
 
+// 0 is primary
+// 1 is XimKmin->LKim
+// 2 is from phi
+// 3 is the flat feeddown (includes Sigma0KMin->LKmin Xi0Kmin->LKmin + missid)
+// Variation_L 4 digits
+// the last two digits are passed to the variations of the fraction (last digit is for Lambda, the second to last for Xi)
+// the first two digits are passed to the purities.
+void DLM_CommonAnaFunctions::SetUpLambdaPars_LKmin(const TString &DataSample, const int &Variation_L, const int &Variation_K, double *lambda_pars, int SamplePurity)
+{
+    double Purities_K[4]; // Primary, from phi, from Secondaries, mis-id
+    double Fraction_K[4]; // Primary, from phi, from Secondaries, mis-id
+    double Purities_L[5]; //
+    double Fraction_L[5]; // primary, from Sigma0, from Xim, flat, mis-id
+    GetPurities_K(DataSample, Variation_K, Purities_K, SamplePurity);
+    GetFractions_K(DataSample, Variation_K, Fraction_K);
+    GetPurities_L_Vale(DataSample, Variation_L, Purities_L, SamplePurity);
+    GetFractions_L_Vale(DataSample, Variation_L, Fraction_L);
+    lambda_pars[0] = Purities_K[0] * Fraction_K[0] * Purities_L[0] * Fraction_L[0]; // Primary
+    lambda_pars[1] = Purities_K[0] * Fraction_K[0] * Purities_L[2] * Fraction_L[2]; // ΞK
+    lambda_pars[2] = Purities_K[1] * Fraction_K[1] * Purities_L[0] * Fraction_L[0]; // ΛΦ
+    lambda_pars[3] = 1. - lambda_pars[0] - lambda_pars[1] - lambda_pars[2];         // flat
+
+    // double SUM=0;
+    // for(unsigned uLam=0; uLam<5; uLam++){
+    //     printf("λ(pΛ)_%u = %.1f\n",uLam,lambda_pars[uLam]*100.);
+    //     SUM+=lambda_pars[uLam]*100.;
+    // }
+    // printf("SUM: %.1f\n------------\n",SUM);
+}
+
 TH2F* DLM_CommonAnaFunctions::GetResolutionMatrix(const TString& DataSample,const TString&& System){
     TString FileName;
     TString HistoName;
@@ -3288,6 +3664,10 @@ TH2F* DLM_CommonAnaFunctions::GetResolutionMatrix(const TString& DataSample,cons
     else if(DataSample=="pPb5TeV_CPR_Mar19"){
         FileName = "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/CorrelationFiles_2018/ALICE_pPb_5TeV/ResolutionMatrices/Sample3_MeV_compact.root";
     }
+    else if (DataSample == "pp13TeV_HM_LK")
+    {
+        FileName = "/Users/sartozza/cernbox/CATSFiles/SystematicsAndCalib/MomentumSmear/ALICE_pp_13TeVHM_MELKmin.root";
+    }
     else{
         printf("\033[1;31mERROR (GetResolutionMatrix):\033[0m The data sample '%s' does not exist\n",DataSample.Data());
         FileName = "";
@@ -3305,6 +3685,10 @@ TH2F* DLM_CommonAnaFunctions::GetResolutionMatrix(const TString& DataSample,cons
     }
     else if(System=="pXim"){
         HistoName = "hSigmaMeV_Proton_Xim";
+    }
+    else if (System == "LKmin")
+    {
+        HistoName = "MomentumResolutionME_Particle1_Particle2";
     }
     else{
         printf("\033[1;31mERROR:\033[0m The system '%s' does not exist\n",System.Data());
@@ -3369,6 +3753,11 @@ TH2F* DLM_CommonAnaFunctions::GetResidualMatrix(const TString&& FinalSystem, con
     }
     else if(FinalSystem=="pXim"&&InitialSystem=="pXim1530"){
         HistoName = "hRes_pXim_pXim1530";
+    }
+    else if (FinalSystem == "LKmin" && InitialSystem == "XiminKmin")
+    {
+        FileName = "/Users/sartozza/cernbox/CATSFiles/DecaySmear/histDecayKinematics_LK_pp13HM.root";
+        HistoName = "KXi_KLambda";
     }
     else{
         printf("\033[1;31mERROR:\033[0m The decay '%s->%s' does not exist\n",InitialSystem.Data(),FinalSystem.Data());
