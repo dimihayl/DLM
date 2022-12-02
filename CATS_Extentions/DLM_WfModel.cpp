@@ -909,15 +909,15 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         //3S1 ---------------------------------------------------------
         //these are 11603, 111603, 211603
         if(uFile==f3S1&&ABCD%100==0){
-          strcat(InputFileName[uFile], "19_CSB/");
+          strcat(InputFileName[uFile], "19_FineTunes/");
           strcat(InputFileName[uFile], "NLO19_3s1_1p10.600");
         }
         else if(uFile==f3S1&&ABCD%100==1){
-          strcat(InputFileName[uFile], "19_CSB/");
+          strcat(InputFileName[uFile], "19_FineTunes/");
           strcat(InputFileName[uFile], "NLO19_3s1_1p10_A.600");
         }
         else if(uFile==f3S1&&ABCD%100==2){
-          strcat(InputFileName[uFile], "19_CSB/");
+          strcat(InputFileName[uFile], "19_FineTunes/");
           strcat(InputFileName[uFile], "NLO19_3s1_1p10_B.600");
         }
         // ------------------------------------------------------------
