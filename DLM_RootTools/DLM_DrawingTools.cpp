@@ -1,26 +1,65 @@
 #include "DLM_DrawingTools.h"
 #include "TColor.h"
+#include "TArrayI.h"
+#include "TMath.h"
+#include "TStyle.h"
 
 DLM_DtColor::DLM_DtColor():NumColors(18),PresetForCatsPaper(true){
   MyColors=NULL;
+  RainbowArray=NULL;
+  //ColT=NULL;
+  //ColR=NULL;
+  //ColG=NULL;
+  //ColB=NULL;
 }
 DLM_DtColor::DLM_DtColor(const unsigned& NumCol):NumColors(NumCol),PresetForCatsPaper(false){
   MyColors=NULL;
+  RainbowArray=NULL;
+  //ColT=NULL;
+  //ColR=NULL;
+  //ColG=NULL;
+  //ColB=NULL;
   if(NumColors<=1) return;
   MyColors = new TColor* [NumColors];
+  RainbowArray = new TArrayI();
+  //auto OldPal = gStyle->GetPalette();
+  gStyle->SetPalette(kRainBow);
+  *RainbowArray = TColor::GetPalette();
+  //gStyle->SetPalette(OldPal);
+  //ColT = new Color_t [NumColors];
+  //ColR=new float[NumColors];
+  //ColG=new float[NumColors];
+  //ColB=new float[NumColors];
   float RgbRed;
   float RgbGreen;
   float RgbBlue;
   float Progress;
+  const float Frac = 1./4.5;
   for(unsigned uCol=0; uCol<NumCol; uCol++){
     Progress = float(uCol)/float(NumColors-1);
-    if(Progress<0.222){RgbRed=1; RgbGreen=Progress*4.5; RgbBlue=0;}
-    else if(Progress<0.444){RgbRed=1-(Progress-0.222)*4.5; RgbGreen=1; RgbBlue=0;}
-    else if(Progress<0.667){RgbRed=0; RgbGreen=1; RgbBlue=(Progress-0.444)*4.5;}
-    else if(Progress<0.889) {RgbRed=0; RgbGreen=1-(Progress-0.667)*4.5; RgbBlue=1;}
+    if(Progress<Frac){RgbRed=1; RgbGreen=Progress*4.5; RgbBlue=0;}
+    else if(Progress<2.*Frac){RgbRed=1-(Progress-Frac)*4.5; RgbGreen=1; RgbBlue=0;}
+    else if(Progress<3.*Frac){RgbRed=0; RgbGreen=1; RgbBlue=(Progress-2.*Frac)*4.5;}
+    else if(Progress<4.*Frac) {RgbRed=0; RgbGreen=1-(Progress-3.*Frac)*4.5; RgbBlue=1;}
     else {RgbRed=(Progress-0.889)*4.5; RgbGreen=0; RgbBlue=1;}
+
+    if(RgbRed<=0) RgbRed=0;
+    if(RgbRed>=1) RgbRed=1;
+    if(RgbGreen<=0) RgbGreen=0;
+    if(RgbGreen>=1) RgbGreen=1;
+    if(RgbBlue<=0) RgbBlue=0;
+    if(RgbBlue>=1) RgbBlue=1;
+
+    //RgbRed = 0.99;
+    //RgbBlue = 0.01;
+    //RgbGreen = 0.01;
+
     //Printf("uCol = %i: RgbRed=%f, RgbGreen=%f, RgbBlue=%f", uCol, RgbRed, RgbGreen, RgbBlue);
-    MyColors[uCol] = new TColor(float(5000+uCol), RgbRed, RgbGreen, RgbBlue);
+
+    MyColors[uCol] = new TColor(RgbRed, RgbGreen, RgbBlue);
+    //ColT[uCol].red = 1;
+    //ColT[uCol].green = 1;
+    //ColT[uCol].blue = 1;
   }
 }
 
@@ -32,6 +71,10 @@ DLM_DtColor::~DLM_DtColor(){
     }
     delete [] MyColors;
     MyColors = NULL;
+  }
+  if(RainbowArray){
+    delete RainbowArray;
+    RainbowArray = NULL;
   }
 }
 
@@ -67,4 +110,11 @@ int DLM_DtColor::GetColor(const int& WhichColor){
       return MyColors[WhichColor]->GetNumber();
     }
   }
+}
+
+int DLM_DtColor::GetRainbow(const int& WhichColor){
+  if(WhichColor>255) return 0;
+
+  int RBA = TMath::Nint(float(WhichColor)/float(NumColors)*256.);
+  return RainbowArray->At(RBA);
 }

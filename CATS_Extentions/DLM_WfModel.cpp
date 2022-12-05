@@ -920,6 +920,10 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
           strcat(InputFileName[uFile], "19_FineTunes/");
           strcat(InputFileName[uFile], "NLO19_3s1_1p10_B.600");
         }
+        else if(uFile==f3S1&&ABCD%100==3){
+          strcat(InputFileName[uFile], "19_FineTunes/");
+          strcat(InputFileName[uFile], "NLO19_3s1_1p10_C.600");
+        }
         // ------------------------------------------------------------
         else{
           char strCutOff[16];
