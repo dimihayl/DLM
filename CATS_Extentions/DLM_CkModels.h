@@ -30,6 +30,10 @@ double GeneralCoulombLednicky(const double &Momentum, const double &GaussR,
                               const bool &QS, const double &RedMass, const double &Q1Q2);
 double GeneralLednickySill_twochannels(const double &Momentum, const double &GaussR, const double &MassR, const double &Gamma1, const double &Gamma2, const double &m11, const double &m12, const double &m21, const double &m22);
 
+double GeneralLednickySillERE_twochannels(const double &Momentum, const double &GaussR, const std::complex<double> &ScattLenSin,
+                                          const double &EffRangeSin, const bool &InverseScatLen,
+                                          const double &MassR, const double &Gamma1, const double &Gamma2, const double &m11, const double &m12, const double &m21, const double &m22, const double &weight);
+
 // Lednicky + Coulomb for complex scattering length and effective Range
 
 double GeneralCoulombLednickyAvg(const double &Momentum, const double &GaussR,
@@ -56,6 +60,7 @@ double ComplexLednicky_Identical_Triplet(const double &Momentum, const double *S
 double ComplexLednicky_Triplet(const double &Momentum, const double *SourcePar, const double *PotPar);
 double ComplexLednicky_Singlet_doublegaussian_lambda(const double &Momentum, const double *SourcePar, const double *PotPar);
 double LednickySilltwochannels_doublegaussian_lambda(const double &Momentum, const double *SourcePar, const double *PotPar);
+double LednickySilltwochannelsERE_doublegaussian_lambda(const double &Momentum, const double *SourcePar, const double *PotPar);
 
 double Lednicky_2channel(const double &Momentum, const double *SourcePar, const double *PotPar);
 

@@ -1225,3 +1225,71 @@ double LednickySilltwochannels_doublegaussian_lambda(const double &Momentum, con
     double m22 = PotPar[6];
     return (SourcePar[3] * (SourcePar[2] * GeneralLednickySill_twochannels(Momentum, SourcePar[0], MassR, Gamma1, Gamma2, m11, m12, m21, m22) + (1 - SourcePar[2]) * GeneralLednickySill_twochannels(Momentum, SourcePar[0], MassR, Gamma1, Gamma2, m11, m12, m21, m22)) + 1. - SourcePar[3]);
 }
+
+/// @brief  Lednicky-Lyuboshits formula with Flatte-like scattering amplitude +ERE for the decay into the pair we are measuring (assumed channel 2) based on the Sill distribution (F. Giacosa, Eur. Phys. J. A (2021) 57:336)
+/// @param Momentum: momentum of the pair you are measuring
+/// @param GaussR: radius of the source
+/// @param MassR: mass of the resonance (provide in MeV)
+/// @param Gamma1: width of the decay channel 1, lowest thresholds (e.g. πΞ for Ξ(1620))
+/// @param Gamma2: width of the decay channel 2, highes thresholds (e.g. ΛK- for Ξ(1620)), typically the pair you are measuring
+/// @param En1: energy threshold channel 1, sum of masses of pair 1 (e.g. mπ+mΞ)
+/// @param En2: energy threshold channel 2, sum of masses of pair 2 (e.g. mΛ+mK)
+
+double GeneralLednickySillERE_twochannels(const double &Momentum, const double &GaussR, const std::complex<double> &ScattLenSin,
+                                          const double &EffRangeSin, const bool &InverseScatLen,
+                                          const double &MassR, const double &Gamma1, const double &Gamma2, const double &m11, const double &m12, const double &m21, const double &m22, const double &weight)
+{
+
+    if (GaussR != GaussR)
+    {
+        printf("\033[1;33mWARNING:\033[0m GeneralLednickySill got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
+
+    const double Radius = GaussR * FmToNu;
+
+    double F1 = gsl_sf_dawson(2. * Momentum * Radius) / (2. * Momentum * Radius);
+    double F2 = (1. - exp(-4. * Momentum * Momentum * Radius * Radius)) / (2. * Momentum * Radius);
+
+    const complex<double> IsLen1 = InverseScatLen ? ScattLenSin / FmToNu : 1. / (ScattLenSin * FmToNu + 1e-64);
+    const double eRan1 = EffRangeSin * FmToNu;
+
+    complex<double> ScattAmplNonRes = pow(IsLen1 + 0.5 * eRan1 * Momentum * Momentum - i * Momentum, -1.);
+
+    double En1 = m11 + m12;
+    double En2 = m21 + m22;
+    double RedMass = (m12 * m22) / (m12 + m22);
+    /// You are computing the scatt. amplitude for the decay channel = pair you are measuring
+    /// the coupling/Gamma above should be always channel 2, the one with the highest threshold
+    double En = (Momentum * Momentum) / (2. * RedMass) + En2;
+
+    complex<double> ScattAmplRes = (-2 * Gamma2) * (pow(En * En - MassR * MassR + i * Gamma1 * sqrt(En * En - En1 * En1) + i * Gamma2 * sqrt(En * En - En2 * En2), -1.));
+
+    complex<double> ScattAmpl = weight * ScattAmplNonRes + (1 - weight) * ScattAmplRes;
+
+    /// correction for small sources, involving
+    double DeltaC = pow(abs(ScattAmpl), 2) * (2. + m22 / m12 + m12 / m22) / (2. * sqrt(Pi) * Radius * Radius * Radius * 2 * Gamma2);
+
+    double CkValue = 0.;
+    CkValue += 0.5 * pow(abs(ScattAmpl) / Radius, 2) +
+               2 * real(ScattAmpl) * F1 / (sqrt(Pi) * Radius) - imag(ScattAmpl) * F2 / Radius + DeltaC;
+
+    CkValue += 1;
+
+    return CkValue;
+}
+
+double LednickySilltwochannelsERE_doublegaussian_lambda(const double &Momentum, const double *SourcePar, const double *PotPar)
+{
+    complex<double> ScatLen(PotPar[0], PotPar[1]);
+    double MassR = PotPar[3];
+    double Gamma1 = PotPar[4];
+    double Gamma2 = PotPar[5];
+    double m11 = PotPar[6];
+    double m12 = PotPar[7];
+    double m21 = PotPar[8];
+    double m22 = PotPar[9];
+    double weight = PotPar[10];
+
+    return (SourcePar[3] * (SourcePar[2] * GeneralLednickySillERE_twochannels(Momentum, SourcePar[0], ScatLen, PotPar[2], false, MassR, Gamma1, Gamma2, m11, m12, m21, m22, weight) + (1 - SourcePar[2]) * GeneralLednickySillERE_twochannels(Momentum, SourcePar[0], ScatLen, PotPar[2], false, MassR, Gamma1, Gamma2, m11, m12, m21, m22, weight)) + 1. - SourcePar[3]);
+}
