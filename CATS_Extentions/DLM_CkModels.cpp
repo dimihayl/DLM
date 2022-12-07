@@ -1226,6 +1226,59 @@ double LednickySilltwochannels_doublegaussian_lambda(const double &Momentum, con
     return (SourcePar[3] * (SourcePar[2] * GeneralLednickySill_twochannels(Momentum, SourcePar[0], MassR, Gamma1, Gamma2, m11, m12, m21, m22) + (1 - SourcePar[2]) * GeneralLednickySill_twochannels(Momentum, SourcePar[0], MassR, Gamma1, Gamma2, m11, m12, m21, m22)) + 1. - SourcePar[3]);
 }
 
+//###########################################################################################################################
+double GeneralLednickySillConstraints_twochannels(const double &Momentum, const double &GaussR, const double &MassR, const double &GammaTilde1, const double &GammaTot, const double &m11, const double &m12, const double &m21, const double &m22)
+{
+
+    if (GaussR != GaussR)
+    {
+        printf("\033[1;33mWARNING:\033[0m GeneralLednickySill got a bad value for the Radius (nan). Returning default value of 1.\n");
+        return 1;
+    }
+
+    const double Radius = GaussR * FmToNu;
+
+    double F1 = gsl_sf_dawson(2. * Momentum * Radius) / (2. * Momentum * Radius);
+    double F2 = (1. - exp(-4. * Momentum * Momentum * Radius * Radius)) / (2. * Momentum * Radius);
+
+    double En1 = m11 + m12;
+    double En2 = m21 + m22;
+    double RedMass = (m12 * m22) / (m12 + m22);
+    double alpha1 = En1 / MassR;
+    double alpha2 = En2 / MassR;
+
+    /// You are computing the scatt. amplitude for the decay channel = pair you are measuring
+    /// the coupling/Gamma above should be always channel 2, the one with the highest threshold
+    double En = (Momentum * Momentum) / (2. * RedMass) + En2;
+
+    double GammaTilde2 = GammaTot / (sqrt(1. - alpha2 * alpha2)) - GammaTilde1 * sqrt(1. - alpha1 * alpha1) / (sqrt(1. - alpha2 * alpha2));
+
+    complex<double> ScattAmpl = (-2 * GammaTilde2) * (pow(En * En - MassR * MassR + i * GammaTilde1 * sqrt(En * En - En1 * En1) + i * GammaTilde2 * sqrt(En * En - En2 * En2), -1.));
+
+    /// correction for small sources, involving
+    double DeltaC = pow(abs(ScattAmpl), 2) * (2. + m22 / m12 + m12 / m22) / (2. * sqrt(Pi) * Radius * Radius * Radius * 2 * GammaTilde2);
+
+    double CkValue = 0.;
+    CkValue += 0.5 * pow(abs(ScattAmpl) / Radius, 2) +
+               2 * real(ScattAmpl) * F1 / (sqrt(Pi) * Radius) - imag(ScattAmpl) * F2 / Radius + DeltaC;
+
+    CkValue += 1;
+
+    return CkValue;
+}
+
+double LednickySilltwochannelsConstraints_doublegaussian_lambda(const double &Momentum, const double *SourcePar, const double *PotPar)
+{
+    double MassR = PotPar[0];
+    double GammaTilde1 = PotPar[1];
+    double GammaTot = PotPar[2];
+    double m11 = PotPar[3];
+    double m12 = PotPar[4];
+    double m21 = PotPar[5];
+    double m22 = PotPar[6];
+    return (SourcePar[3] * (SourcePar[2] * GeneralLednickySill_twochannels(Momentum, SourcePar[0], MassR, GammaTilde1, GammaTot, m11, m12, m21, m22) + (1 - SourcePar[2]) * GeneralLednickySill_twochannels(Momentum, SourcePar[0], MassR, GammaTilde1, GammaTot, m11, m12, m21, m22)) + 1. - SourcePar[3]);
+}
+
 /// @brief  Lednicky-Lyuboshits formula with Flatte-like scattering amplitude +ERE for the decay into the pair we are measuring (assumed channel 2) based on the Sill distribution (F. Giacosa, Eur. Phys. J. A (2021) 57:336)
 /// @param Momentum: momentum of the pair you are measuring
 /// @param GaussR: radius of the source
