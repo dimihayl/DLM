@@ -32,10 +32,6 @@ double GeneralLednickySill_twochannels(const double &Momentum, const double &Gau
 
 double GeneralLednickySillConstraints_twochannels(const double &Momentum, const double &GaussR, const double &MassR, const double &GammaTilde1, const double &GammaTot, const double &m11, const double &m12, const double &m21, const double &m22);
 
-double GeneralLednickySillERE_twochannels(const double &Momentum, const double &GaussR, const std::complex<double> &ScattLenSin,
-                                          const double &EffRangeSin, const bool &InverseScatLen,
-                                          const double &MassR, const double &Gamma1, const double &Gamma2, const double &m11, const double &m12, const double &m21, const double &m22, const double &weight);
-
 // Lednicky + Coulomb for complex scattering length and effective Range
 
 double GeneralCoulombLednickyAvg(const double &Momentum, const double &GaussR,
