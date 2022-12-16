@@ -189,6 +189,11 @@ public:
   double Ghetto_RadMin;
   double Ghetto_RadMax;
 
+  //values applied to cut the distributions of:
+  //GhettoFemto_rstar, GhettoFemto_rcore
+  double Ghetto_MinMt = 0;
+  double Ghetto_MaxMt = 1e16;
+
   DLM_Histo<float>* Ghetto_rstar;
   DLM_Histo<float>* Ghetto_rcore;
   DLM_Histo<float>* GhettOld_rstar;
@@ -210,6 +215,7 @@ public:
   DLM_Histo<float>* GhettoFemto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_mT_rcore;
   DLM_Histo<float>* GhettoFemto_mT_kstar;
+  DLM_Histo<float>* Ghetto_kstar_rcore_mT;
   DLM_Histo<float>* Ghetto_mT_costh;
   //pT/theta of all primary particles
   DLM_Histo<float>* GhettoSP_pT_th;

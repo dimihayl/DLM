@@ -175,6 +175,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_kstar = NULL;
   Ghetto_kstar_rstar = NULL;
   Ghetto_kstar_rstar_mT = NULL;
+  Ghetto_kstar_rcore_mT = NULL;
   Ghetto_mT_rstar = NULL;
   GhettoFemto_rstar = NULL;
   GhettoFemto_rcore = NULL;
@@ -254,6 +255,7 @@ CECA::~CECA(){
   if(Ghetto_kstar){delete Ghetto_kstar; Ghetto_kstar=NULL;}
   if(Ghetto_kstar_rstar){delete Ghetto_kstar_rstar; Ghetto_kstar_rstar=NULL;}
   if(Ghetto_kstar_rstar_mT){delete Ghetto_kstar_rstar_mT; Ghetto_kstar_rstar_mT=NULL;}
+  if(Ghetto_kstar_rcore_mT){delete Ghetto_kstar_rcore_mT; Ghetto_kstar_rcore_mT=NULL;}
   if(Ghetto_mT_rstar){delete Ghetto_mT_rstar; Ghetto_mT_rstar=NULL;}
   if(GhettoFemto_rstar){delete GhettoFemto_rstar; GhettoFemto_rstar=NULL;}
   if(GhettoFemto_rcore){delete GhettoFemto_rcore; GhettoFemto_rcore=NULL;}
@@ -1390,6 +1392,8 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
   Ghetto_kstar_rstar_mT->Fill(kstar,rstar,mT);
+  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial())
+    Ghetto_kstar_rcore_mT->Fill(kstar,rcore,mT);
   Ghetto_mT_rstar->Fill(mT,rstar);
   for(float ct : cos_th){
     Ghetto_mT_costh->Fill(mT,ct);
@@ -1416,12 +1420,16 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
   //}
 
   if(kstar<FemtoLimit){
-    GhettoFemto_rstar->Fill(rstar);
+    if(mT>=Ghetto_MinMt && mT<=Ghetto_MaxMt){
+      GhettoFemto_rstar->Fill(rstar);
+    }
     GhettoFemto_mT_rstar->Fill(mT,rstar);
     //N.B. without this if statement, we get a different rcore, as it depends on the mass of the particles
     //i.e. the core is not the same for all species, even if the single particle emission IS the same
     if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
-      GhettoFemto_rcore->Fill(rcore);
+      if(mT>=Ghetto_MinMt && mT<=Ghetto_MaxMt){
+        GhettoFemto_rcore->Fill(rcore);
+      }
       GhettoFemto_mT_rcore->Fill(mT,rcore);
     }
     //GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -2091,6 +2099,14 @@ void CECA::GhettoInit(){
   Ghetto_kstar_rstar_mT->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_kstar_rstar_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
   Ghetto_kstar_rstar_mT->Initialize();
+
+  if(Ghetto_kstar_rcore_mT) delete Ghetto_kstar_rcore_mT;
+  Ghetto_kstar_rcore_mT = new DLM_Histo<float>();
+  Ghetto_kstar_rcore_mT->SetUp(3);
+  Ghetto_kstar_rcore_mT->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rcore_mT->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rcore_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  Ghetto_kstar_rcore_mT->Initialize();
 
   if(Ghetto_mT_rstar) delete Ghetto_mT_rstar;
   Ghetto_mT_rstar = new DLM_Histo<float>();
