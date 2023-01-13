@@ -1,9 +1,0 @@
------- CATS ------
- *EXAMPLE MACRO 1*
--------------------
-This is an example macro using CATS, including a compilation script that works under linux (bash).
-To compile this macro please set all required paths in "CompileCATS.sh" and make it executable. 
-Finally run "source CompileCATS.sh" and the executable will be created in ./bin/
-
-The main.cpp has some basic examples with comments, which illustrate how CATS can be used 
-to compute the correlation function. The main function to focus on is "void Example1()".
