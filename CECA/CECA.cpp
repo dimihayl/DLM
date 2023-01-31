@@ -174,6 +174,10 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Old_P1P2 = NULL;
   Ghetto_kstar = NULL;
   Ghetto_kstar_rstar = NULL;
+  Ghetto_kstar_rstar_PP = NULL;
+  Ghetto_kstar_rstar_PR = NULL;
+  Ghetto_kstar_rstar_RP = NULL;
+  Ghetto_kstar_rstar_RR = NULL;
   Ghetto_kstar_rstar_mT = NULL;
   Ghetto_kstar_rcore_mT = NULL;
   Ghetto_mT_rstar = NULL;
@@ -254,6 +258,10 @@ CECA::~CECA(){
   if(Old_source){delete Old_source; Old_source=NULL;}
   if(Ghetto_kstar){delete Ghetto_kstar; Ghetto_kstar=NULL;}
   if(Ghetto_kstar_rstar){delete Ghetto_kstar_rstar; Ghetto_kstar_rstar=NULL;}
+  if(Ghetto_kstar_rstar_PP){delete Ghetto_kstar_rstar_PP; Ghetto_kstar_rstar_PP=NULL;}
+  if(Ghetto_kstar_rstar_PR){delete Ghetto_kstar_rstar_PR; Ghetto_kstar_rstar_PR=NULL;}
+  if(Ghetto_kstar_rstar_RP){delete Ghetto_kstar_rstar_RP; Ghetto_kstar_rstar_RP=NULL;}
+  if(Ghetto_kstar_rstar_RR){delete Ghetto_kstar_rstar_RR; Ghetto_kstar_rstar_RR=NULL;}
   if(Ghetto_kstar_rstar_mT){delete Ghetto_kstar_rstar_mT; Ghetto_kstar_rstar_mT=NULL;}
   if(Ghetto_kstar_rcore_mT){delete Ghetto_kstar_rcore_mT; Ghetto_kstar_rcore_mT=NULL;}
   if(Ghetto_mT_rstar){delete Ghetto_mT_rstar; Ghetto_mT_rstar=NULL;}
@@ -1391,6 +1399,42 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
+  //printf("===============\n");
+  //printf("IsPrim: %i %i\n",prt_cm[0].IsUsefulPrimordial(),prt_cm[1].IsUsefulPrimordial());
+  //printf("Particles (list): %s %s\n",ListOfParticles.at(0).c_str(),ListOfParticles.at(1).c_str());
+  //printf("Particles (slct): %s %s\n",prt_cm[0].Trepni()->GetName().c_str(),prt_cm[1].Trepni()->GetName().c_str());
+  //printf("Categorized as ");
+  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+    Ghetto_kstar_rstar_PP->Fill(kstar,rstar);
+    //printf("PP\n");
+  }
+  else if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
+    if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)){
+      Ghetto_kstar_rstar_RP->Fill(kstar,rstar);//Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
+      //printf("RP\n");
+    }
+    else if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)){
+      Ghetto_kstar_rstar_PR->Fill(kstar,rstar);
+      //printf("PR\n");
+    }
+  }
+  else if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
+    if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
+      Ghetto_kstar_rstar_PR->Fill(kstar,rstar);//Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
+      //printf("PR\n");
+    }
+    else if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
+      Ghetto_kstar_rstar_RP->Fill(kstar,rstar);
+      //printf("RP\n");
+    }
+  }
+  else{
+    Ghetto_kstar_rstar_RR->Fill(kstar,rstar);
+    //printf("RR\n");
+  }
+//usleep(200e3);
+
+
   Ghetto_kstar_rstar_mT->Fill(kstar,rstar,mT);
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial())
     Ghetto_kstar_rcore_mT->Fill(kstar,rcore,mT);
@@ -2091,6 +2135,34 @@ void CECA::GhettoInit(){
   Ghetto_kstar_rstar->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
   Ghetto_kstar_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_kstar_rstar->Initialize();
+
+  if(Ghetto_kstar_rstar_PP) delete Ghetto_kstar_rstar_PP;
+  Ghetto_kstar_rstar_PP = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_PP->SetUp(2);
+  Ghetto_kstar_rstar_PP->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_PP->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_PP->Initialize();
+
+  if(Ghetto_kstar_rstar_PR) delete Ghetto_kstar_rstar_PR;
+  Ghetto_kstar_rstar_PR = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_PR->SetUp(2);
+  Ghetto_kstar_rstar_PR->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_PR->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_PR->Initialize();
+
+  if(Ghetto_kstar_rstar_RP) delete Ghetto_kstar_rstar_RP;
+  Ghetto_kstar_rstar_RP = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_RP->SetUp(2);
+  Ghetto_kstar_rstar_RP->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_RP->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_RP->Initialize();
+
+  if(Ghetto_kstar_rstar_RR) delete Ghetto_kstar_rstar_RR;
+  Ghetto_kstar_rstar_RR = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_RR->SetUp(2);
+  Ghetto_kstar_rstar_RR->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_RR->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_RR->Initialize();
 
   if(Ghetto_kstar_rstar_mT) delete Ghetto_kstar_rstar_mT;
   Ghetto_kstar_rstar_mT = new DLM_Histo<float>();

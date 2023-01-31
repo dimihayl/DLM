@@ -208,6 +208,10 @@ public:
 
   DLM_Histo<float>* Ghetto_kstar;
   DLM_Histo<float>* Ghetto_kstar_rstar;
+  DLM_Histo<float>* Ghetto_kstar_rstar_PP;
+  DLM_Histo<float>* Ghetto_kstar_rstar_RR;
+  DLM_Histo<float>* Ghetto_kstar_rstar_PR;
+  DLM_Histo<float>* Ghetto_kstar_rstar_RP;
   DLM_Histo<float>* Ghetto_kstar_rstar_mT;
   DLM_Histo<float>* Ghetto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_rstar;
