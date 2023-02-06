@@ -50,6 +50,24 @@ public:
 };
 */
 
+
+//a structure to keep the parameters of a two-levy source
+struct DoubleLevy { // This structure is named "myDataType"
+  float alpha1;
+  float alpha2;
+  float sigma1;
+  float sigma2;
+  float wght1;
+  void Print(){
+    printf(" w1 = %.3f\n",wght1);
+    printf("  s1 = %.3f\n",sigma1);
+    printf("   a1 = %.3f\n",alpha1);
+    printf("  s2 = %.3f\n",sigma2);
+    printf("   a2 = %.3f\n",alpha2);
+  }
+};
+
+
 //A source taking into account resonances and mT scaling. The Simple part is that resonances are back to back
 //and in case of two resonances, the t*p/m are just added up. Also we use the approximate relation for small t*p/m
 class MS_GaussExp_mT_Simple:public CatsSource{

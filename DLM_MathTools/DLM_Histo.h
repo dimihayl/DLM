@@ -1386,7 +1386,7 @@ public:
         }
         Type Result=0;
         unsigned* BinArray = new unsigned [Dim];
-        Type Weight=1;
+        double Weight=1;
         Type Norm=0;
         for(unsigned uPer=0; uPer<NumPermutations; uPer++){
             Weight=1;
