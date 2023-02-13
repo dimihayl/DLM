@@ -22,6 +22,20 @@ double ExponentialSource(double* Pars);
 double DoubleGaussSource(double* Pars);
 double NormDoubleGaussSource(double* Pars);
 double NormDoubleGaussSourceTF1(double* x, double* Pars);
+
+//Normalization * (sim 3 Gaussians), where the first Gaissian is normal,
+//the second two can be shifted
+//as parameters we have: Norm, Sigma1, Weight2, Sigma2, Shift2, Weight3, Sigma3, Shift3
+double NormTripleShiftedGauss(double* Pars);
+double NormTripleShiftedGaussTF1(double* x, double* Pars);
+
+double StupidShiftedGaussSum(double* Pars);
+double StupidShiftedGaussSumTF1(double* x, double* Pars);
+
+//some of whatever number of 1D gaussians I want
+double StupidGaussSum(double* Pars);
+double StupidGaussSumTF1(double* x, double* Pars);
+
 double GaussCauchySource(double* Pars);
 //double LevyIntegral1D(double* Pars);
 double LevySource3D_2particle(double* Pars);
@@ -53,6 +67,21 @@ public:
 
 //a structure to keep the parameters of a two-levy source
 struct DoubleLevy { // This structure is named "myDataType"
+  DoubleLevy(){
+    alpha1 = 0;
+    alpha2 = 0;
+    sigma1 = 0;
+    sigma2 = 0;
+    wght1 = 0;
+  }
+  DoubleLevy(double x){
+    alpha1 = x;
+    alpha2 = x;
+    sigma1 = x;
+    sigma2 = x;
+    wght1 = x;
+  }
+
   float alpha1;
   float alpha2;
   float sigma1;
@@ -64,6 +93,162 @@ struct DoubleLevy { // This structure is named "myDataType"
     printf("   a1 = %.3f\n",alpha1);
     printf("  s2 = %.3f\n",sigma2);
     printf("   a2 = %.3f\n",alpha2);
+  }
+  bool operator+=(const DoubleLevy& other){
+    alpha1 += other.alpha1;
+    alpha2 += other.alpha2;
+    sigma1 += other.sigma1;
+    sigma2 += other.sigma2;
+    wght1 += other.wght1;
+    return true;
+  }
+  bool operator/=(const double& value){
+    alpha1 /= value;
+    alpha2 /= value;
+    sigma1 /= value;
+    sigma2 /= value;
+    wght1 /= value;
+    return true;
+  }
+  DoubleLevy operator*(const double& value){
+      DoubleLevy Result;
+      Result.alpha1 = alpha1*value;
+      Result.alpha2 = alpha2*value;
+      Result.sigma1 = sigma1*value;
+      Result.sigma2 = sigma2*value;
+      Result.wght1 = wght1*value;
+      return Result;
+  }
+  bool operator=(const double& value){
+      DoubleLevy Result;
+      alpha1 = value;
+      alpha2 = value;
+      sigma1 = value;
+      sigma2 = value;
+      wght1 = value;
+      return true;
+  }
+  bool operator=(const DoubleLevy& other){
+    alpha1 = other.alpha1;
+    alpha2 = other.alpha2;
+    sigma1 = other.sigma1;
+    sigma2 = other.sigma2;
+    wght1 = other.wght1;
+    return true;
+  }
+
+};
+
+
+//a structure to keep the parameters of a 3-Gauss (shifted) source
+//we have normalization, sigma1, shift1, weight2, sigma2, shift2, weight3, sigma3, shift3
+struct TriGauss { // This structure is named "myDataType"
+  TriGauss(){
+    norm = 0;
+    sigma1 = 0;
+    sigma2 = 0;
+    sigma3 = 0;
+    shift1 = 0;
+    shift2 = 0;
+    shift3 = 0;
+    wght1 = 0;
+    wght2 = 0;
+  }
+  TriGauss(double x){
+    norm = x;
+    sigma1 = x;
+    sigma2 = x;
+    sigma3 = x;
+    shift1 = x;
+    shift2 = x;
+    shift3 = x;
+    wght1 = x;
+    wght2 = x;
+  }
+
+  float norm;
+  float sigma1;
+  float sigma2;
+  float sigma3;
+  float shift1;
+  float shift2;
+  float shift3;
+  float wght1;//absolute value
+  float wght2;//fraction of 1-weight1
+  //weight3 is 1-weight1-(1-weight1)*weight2
+
+  void Print(){
+    printf(" norm = %.3f\n",norm);
+    printf("  sigma1 = %.3f\n",sigma1);
+    printf("   shift1 = %.3f\n",shift1);
+    printf("     wght1 = %.3f\n",wght1);
+    printf("  sigma2 = %.3f\n",sigma2);
+    printf("   shift2 = %.3f\n",shift2);
+    printf("     wght2 = %.3f\n",wght2);
+    printf("  sigma3 = %.3f\n",sigma3);
+    printf("   shift3 = %.3f\n",shift3);
+  }
+  bool operator+=(const TriGauss& other){
+    norm += other.norm;
+    sigma1 += other.sigma1;
+    sigma2 += other.sigma2;
+    sigma3 += other.sigma3;
+    shift1 += other.shift1;
+    shift2 += other.shift2;
+    shift3 += other.shift3;
+    wght1 += other.wght1;
+    wght2 += other.wght2;
+    return true;
+  }
+  bool operator/=(const double& value){
+    norm /= value;
+    sigma1 /= value;
+    sigma2 /= value;
+    sigma3 /= value;
+    shift1 /= value;
+    shift2 /= value;
+    shift3 /= value;
+    wght1 /= value;
+    wght2 /= value;
+    return true;
+  }
+  TriGauss operator*(const double& value){
+      TriGauss Result;
+      Result.norm = norm*value;
+      Result.sigma1 = sigma1*value;
+      Result.sigma2 = sigma2*value;
+      Result.sigma3 = sigma3*value;
+      Result.shift1 = shift1*value;
+      Result.shift2 = shift2*value;
+      Result.shift3 = shift3*value;
+      Result.wght1 = wght1*value;
+      Result.wght2 = wght2*value;
+      return Result;
+  }
+  bool operator=(const double& value){
+      TriGauss Result;
+      norm = value;
+      sigma1 = value;
+      sigma2 = value;
+      sigma3 = value;
+      shift1 = value;
+      shift2 = value;
+      shift3 = value;
+      wght1 = value;
+      wght2 = value;
+      return true;
+  }
+  bool operator=(const TriGauss& other){
+    norm = other.norm;
+    sigma1 = other.sigma1;
+    sigma2 = other.sigma2;
+    sigma3 = other.sigma3;
+    shift1 = other.shift1;
+    shift2 = other.shift2;
+    shift3 = other.shift3;
+    wght1 = other.wght1;
+    wght2 = other.wght2;
+    return true;
   }
 };
 

@@ -12,6 +12,7 @@
 //!TEST
 //#include <fstream>
 //#include <stdio.h>
+//#include <unistd.h>
 
 double GaussSourceTF1(double* x, double* Pars){
     double& Radius = *x;
@@ -118,6 +119,169 @@ double NormDoubleGaussSourceTF1(double* x, double* Pars){
     PARS[3+i] = Pars[i];
   return NormDoubleGaussSource(PARS);
 }
+
+//Shifted Gaussian will be G(x-S,...), where S is the shift on x axis
+//if x<S, the function is zero !!!
+//here we have a scaled sum of 3 such Gaussians
+//[0]_3: overall normalization
+//[1]_4: sigma1
+//[2]_5: shift1
+//[3]_6: weight1
+//[4]_7: sigma2
+//[5]_8: shift2
+//[6]_9: weight2
+//[7]_10: sigma3
+//[8]_11: shift3
+//weight3 = 1.-weight1-(1-weight1) * weight2 (i.e. limits between 0-1 and weighted such that it cannot go beyond allowed vals)
+double NormTripleShiftedGauss(double* Pars){
+  static double Pars1[4];
+  static double Pars2[4];
+  static double Pars3[4];
+
+  Pars1[1] = Pars[1]-Pars[5];;//rad
+  Pars1[3] = Pars[4];//size
+
+  Pars2[1] = Pars[1]-Pars[8];//rad
+  Pars2[3] = Pars[7];//size
+
+  Pars3[1] = Pars[1]-Pars[11];//rad
+  Pars3[3] = Pars[10];//size
+
+  double G1 = Pars1[1]>0?GaussSource(Pars1):0;
+  double G2 = Pars2[1]>0?GaussSource(Pars2):0;
+  double G3 = Pars3[1]>0?GaussSource(Pars3):0;
+  double& W1 = Pars[6];
+  double W2 = (1.-W1)*Pars[9];
+  double W3 = 1.-W1-W2;
+  //double SW = 1;
+  if(W1<0 || W1>1 || W2<0 || W2>1 || W3<0 || W3>1){
+    static bool ErrorShown = false;
+    if(!ErrorShown){
+      printf("\033[1;31mERROR:\033[0m (NormTripleShiftedGauss) The weights have unphysical values, possible ERROR in the fit!!!\n");
+      ErrorShown = true;
+    }
+  }
+
+  return Pars[3]*(W1*G1+W2*G2+W3*G3);
+}
+double NormTripleShiftedGaussTF1(double* x, double* Pars){
+  double PARS[12];
+  PARS[0] = 0;
+  PARS[1] = *x;
+  PARS[2] = 0;
+  for(int i=0; i<9; i++)
+    PARS[3+i] = Pars[i];
+  return NormTripleShiftedGauss(PARS);
+}
+
+//[3]_{0} : Number of Gaussians (HAS TO BE FIXED!!!)
+//[4]_{1+i*3} : Weight of i-th Gaussian with respect the sum of the weights of all previous ones
+//[5]_{2+i*3} : Mean of the i-th Gaussian
+//[6]_{3+i*3} : Stdv of the i-th Gaussian
+//Table for #Gaussians vs Number of pars:
+//            1             4
+//            2             7
+//            3             10
+//etc.
+double StupidGaussSum(double* Pars){
+  //double& Mom = Pars[0];
+  double& Rad = Pars[1];
+  if(Rad<0) return 0;
+  //double& CosTh = Pars[2];
+  unsigned NG = round(Pars[3]);
+  double Result=0;
+  double WeightSum=0;
+  double Weight;
+  for(unsigned uG=0; uG<NG; uG++){
+    Weight = (1.-WeightSum)*Pars[4+uG*3];
+    static bool ErrorShown = false;
+    if(!ErrorShown && (Weight<0 || Weight>1)){
+      printf("\033[1;31mERROR:\033[0m (StupidGaussSum) The weights have unphysical values, possible ERROR in the fit!!!\n");
+      ErrorShown = true;
+    }
+    WeightSum += Weight;
+    double NormDist = pow(2.*Pi,-0.5)/Pars[6+uG*3]*exp(-0.5*pow((Rad-Pars[5+uG*3])/Pars[6+uG*3],2.));
+    Result += Weight*NormDist;
+    //static int counter=0;
+    //if(counter<4 && Rad>1.){
+    //  printf("N%u NormDist = %f\n",NG,NormDist);
+    //  printf(" W=%f (%f)\n",Weight,Pars[4+uG*3]);
+    //  printf(" M=%f\n",Pars[5+uG*3]);
+    //  printf(" S=%f\n",Pars[6+uG*3]);
+    //  counter++;
+    //}
+  }
+  return Result;
+}
+double StupidGaussSumTF1(double* x, double* Pars){
+  unsigned NG = round(Pars[0]);
+  double PARS[NG*3+3+1];
+  PARS[0] = 0;
+  PARS[1] = *x;
+  PARS[2] = 0;
+  //printf("N%u StupidGaussSumTF1\n",NG);
+  for(unsigned u=0; u<NG*3+1; u++){
+    PARS[3+u] = Pars[u];
+    //printf("%u %f\n",u,Pars[u]);
+    //usleep(1e6);
+  }
+
+  return StupidGaussSum(PARS);
+}
+
+/*
+//These are femto Gaussinas (3D)
+//[3]_{0} : Number of Gaussians (HAS TO BE FIXED!!!)
+//[4]_{1+i*3} : Weight of i-th Gaussian with respect the sum of the weights of all previous ones
+//[5]_{2+i*3} : Mean of the i-th Gaussian
+//[6]_{3+i*3} : Stdv of the i-th Gaussian
+//Table for #Gaussians vs Number of pars:
+//            1             4
+//            2             7
+//            3             10
+//etc.
+double StupidShiftedGaussSum(double* Pars){
+  //double& Mom = Pars[0];
+  double& Rad = Pars[1];
+  if(Rad<0) return 0;
+  //double& CosTh = Pars[2];
+  unsigned NG = round(Pars[3]);
+  double Result=0;
+  double WeightSum=0;
+  double Weight;
+  double PAR[4];
+  for(unsigned uG=0; uG<NG; uG++){
+    Weight = (1.-WeightSum)*Pars[4+uG*3];
+    static bool ErrorShown = false;
+    if(!ErrorShown && (Weight<0 || Weight>1)){
+      printf("\033[1;31mERROR:\033[0m (StupidGaussSum) The weights have unphysical values, possible ERROR in the fit!!!\n");
+      ErrorShown = true;
+    }
+    WeightSum += Weight;
+    PAR[0]=Pars[0];
+    PAR[1]=Pars[1]-Pars[5];
+    PAR[2]=Pars[2];
+    PAR[3]=Pars[6];
+    Result += Weight*GaussSource(Pars);
+  }
+  return Result;
+}
+double StupidShiftedGaussSumTF1(double* x, double* Pars){
+  unsigned NG = round(Pars[0]);
+  double PARS[NG*2+3+1];
+  PARS[0] = 0;
+  PARS[1] = *x;
+  PARS[2] = 0;
+  //printf("N%u StupidGaussSumTF1\n",NG);
+  for(unsigned u=0; u<NG*2+1; u++){
+    PARS[3+u] = Pars[u];
+  }
+
+  return StupidShiftedGaussSum(PARS);
+}
+
+*/
+
 
 double GaussCauchySource(double* Pars){
     //double& Momentum = Pars[0];

@@ -164,6 +164,8 @@ public:
   //Unless there is a very good reason, do not change the default value!
   //The time is given in seconds (integer!)
   void SetThreadTimeout(const unsigned& seconds);//done
+  //The time after which the task will terminate ragardless of achieved yield
+  void SetGlobalTimeout(const unsigned& seconds);//done
   void SetSeed(const unsigned& thread, const unsigned& seed);//done
   //void SetThreadTimeout(const unsigned& seconds);
   //true by default. Within a multiplet it propagates the particles until
@@ -180,6 +182,7 @@ public:
   unsigned Ghetto_NumMtBins;
   double Ghetto_MtMin;
   double Ghetto_MtMax;
+  double* Ghetto_MtBins;
 
   unsigned Ghetto_NumMomBins;
   double Ghetto_MomMin;
@@ -296,6 +299,7 @@ private:
   unsigned char SDIM;
 //bug prone: if this is smaller then SDIM, we are up for trouble!
   unsigned short EMULT;
+  //this referes for femto pairs only
   unsigned TargetYield;
   unsigned AchievedYield;
   char SrcCnv;
@@ -343,6 +347,8 @@ unsigned GenerateEventTEMP();
   DLM_Timer* ThreadClock;
   //in seconds
   unsigned Timeout;
+  //if zero, NO timeout
+  unsigned GlobalTimeout;
   //
 
   void GhettoInit();
