@@ -537,7 +537,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
 
 
   do{
-    NumMultiplets += GenerateEvent();
+    NumMultiplets += GenerateEvent(ThId);
     ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
     //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
@@ -669,8 +669,8 @@ unsigned CECA::GenerateEventTEMP(){
 
 //generates all particles, propagates and decays into the particles of interest
 //and lastly builds up the
-unsigned CECA::GenerateEvent(){
-    unsigned ThId = omp_get_thread_num();
+unsigned CECA::GenerateEvent(const unsigned& ThId){
+    //unsigned ThId = omp_get_thread_num();
 
     //there was some issue using the objects
     //a silly workaround: I will only keep track of pointers,
@@ -1469,8 +1469,11 @@ FemtoPermutations++;
 
 
   Ghetto_kstar_rstar_mT->Fill(kstar,rstar,mT);
-  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial())
+  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
     Ghetto_kstar_rcore_mT->Fill(kstar,rcore,mT);
+    //printf("%.0f %.2f %.0f\n",kstar,rcore,mT);
+  }
+
   Ghetto_mT_rstar->Fill(mT,rstar);
   for(float ct : cos_th){
     Ghetto_mT_costh->Fill(mT,ct);

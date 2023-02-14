@@ -324,7 +324,7 @@ private:
 
   bool ParticleInList(const std::string& name) const;
   bool ParticleInList(const TreParticle* prt) const;
-  unsigned GenerateEvent();
+  unsigned GenerateEvent(const unsigned& ThId);
 unsigned GenerateEventTEMP();
   //returns the number of generated multiplets
   unsigned GoSingleCore(const unsigned& ThId);

@@ -1629,7 +1629,7 @@ public:
       unsigned short dim;
       myFileIN.read((char *) &dim, sizeof(unsigned short));
       SetUp(dim);
-
+      
       unsigned numbins;
       double* binrange = NULL;
       double* bincenter = NULL;
