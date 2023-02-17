@@ -474,8 +474,12 @@ void CECA::SetSourceDim(const unsigned char& sdim){
   SDIM = sdim;
 }
 
-void CECA::SetTargetStatistics(const unsigned& yield){
+void CECA::SetTargetStatistics(const unsigned long long& yield){
   TargetYield = yield;
+}
+
+unsigned long long CECA::GetStatistics(){
+  return AchievedYield;
 }
 
 void CECA::SetFemtoRegion(const float& femto, const float& info){
@@ -617,9 +621,9 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     if(DebugMode){
       char* strtime = new char [128];
       ShowTime((long long)(ExeTime),strtime,2,true,5);
-      if(TargetYield<10*1000) printf(" Achieved/Target Yield = %u / %u @ %s\n",AchievedYield,TargetYield,strtime);
-      else if(TargetYield<10*1000*1000) printf(" Achieved/Target Yield = %u / %u k @ %s\n",AchievedYield/1000,TargetYield/1000,strtime);
-      else printf(" Achieved/Target Yield = %u / %u M @ %s\n",AchievedYield/1000000,TargetYield/1000000,strtime);
+      if(TargetYield<10*1000) printf(" Achieved/Target Yield = %llu / %llu @ %s\n",AchievedYield,TargetYield,strtime);
+      else if(TargetYield<10*1000*1000) printf(" Achieved/Target Yield = %llu / %llu k @ %s\n",AchievedYield/1000,TargetYield/1000,strtime);
+      else printf(" Achieved/Target Yield = %llu / %llu M @ %s\n",AchievedYield/1000000,TargetYield/1000000,strtime);
 
       delete [] strtime;
     }

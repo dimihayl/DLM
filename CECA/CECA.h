@@ -124,7 +124,8 @@ public:
   //the yield of multipletes in the highest dimension
   //e.g. if DIM is set to 3, this will be the target for 3-body yield
   //the target is evaluated for the femto region
-  void SetTargetStatistics(const unsigned& yield);//done
+  void SetTargetStatistics(const unsigned long long& yield);//done
+  unsigned long long GetStatistics();
   //femto is the k* for the target statistics.
   //info the upper limit until which information is still saved
   //N.B. the corresponding Q3 etc is automatically evaluated, here its only k*!
@@ -300,8 +301,8 @@ private:
 //bug prone: if this is smaller then SDIM, we are up for trouble!
   unsigned short EMULT;
   //this referes for femto pairs only
-  unsigned TargetYield;
-  unsigned AchievedYield;
+  unsigned long long TargetYield;
+  unsigned long long AchievedYield;
   char SrcCnv;
   bool DebugMode;
   DLM_Random** RanGen;
