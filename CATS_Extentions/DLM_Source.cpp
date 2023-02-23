@@ -158,6 +158,7 @@ double NormTripleShiftedGauss(double* Pars){
     static bool ErrorShown = false;
     if(!ErrorShown){
       printf("\033[1;31mERROR:\033[0m (NormTripleShiftedGauss) The weights have unphysical values, possible ERROR in the fit!!!\n");
+      printf(" W1, W2, W3 = %.3e %.3e %.3e\n",W1,W2,W3);
       ErrorShown = true;
     }
   }
