@@ -14,6 +14,7 @@
 #include "CECA.h"
 #include "TREPNI.h"
 #include "DLM_RootWrapper.h"
+#include "DLM_RootFit.h"
 
 #include "TString.h"
 #include "TH2F.h"
@@ -6026,6 +6027,270 @@ bool NormalizeSource_rk(DLM_Histo<float> *dlmSource)
     }
 
     return true;
+}
+
+
+void SetUpSplPars(TF1*& fitfun){
+  fitfun = new TF1("fitfun",DlmTSplineFitPositive,0,8,3+2*10);
+  fitfun->FixParameter(0,10);
+  fitfun->FixParameter(1,0);
+  fitfun->FixParameter(2,0);
+  fitfun->FixParameter(3,0.0);
+  fitfun->FixParameter(4,0.4);
+  fitfun->FixParameter(5,0.8);
+  fitfun->FixParameter(6,1.2);
+  fitfun->FixParameter(7,1.8);
+  fitfun->FixParameter(8,2.4);
+  fitfun->FixParameter(9,3.2);
+  fitfun->FixParameter(10,4.5);
+  fitfun->FixParameter(11,6.0);
+  fitfun->FixParameter(12,8.0);
+}
+
+//sum of many possions, all weighted such that the total weight is still 1
+//this is achieved by using the weight parameters as the reletive weight with respect the
+//"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
+double DecaPoisson(double* xVal, double* Pars){
+  double Rslt=0;
+  double Pssn;
+  double Norm;
+  double Std2;
+  double Mean;
+  double RemainingNorm = 1;
+  double& x = xVal[0];
+  for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
+    Mean = Pars[0+uP*3];
+    Std2 = Pars[1+uP*3]*Pars[1+uP*3];
+    if(uP!=KdpPars::NumDistos-1) Norm = RemainingNorm*Pars[2+uP*3];
+    else Norm = RemainingNorm;
+    if(Norm<0){
+      printf("\033[1;33mWARNING!\033[0m DecaPoisson a negative (%.3e) norm!\n",Norm);
+    }
+    //Pssn = TMath::Poisson(x*Std2/Mean,Std2)*Std2/Mean;
+    //Pssn = TMath::Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
+  //  Pssn = TMath::Poisson(x*Std2*Mean,Std2*Mean*Mean)*Std2*Mean;
+    if(Std2) Pssn = TMath::Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
+    else Pssn = 0;
+    Rslt += Norm*Pssn;
+    RemainingNorm -= Norm;
+  }
+  return Rslt;
+  //return TMath::Poisson(x*5./1.,5)*5./1.;
+}
+
+//Mode = 0: default
+//Mode = 1: reduced: we use only 8 of the Disots, making bigger distance and no allowing sharp peaks (small stdv)
+//Mode = 2: reduced+: only 6 Distos
+void SetUpKdpPars(TF1*& fitfun, int Mode){
+
+  fitfun = new TF1("fKdpPars",DecaPoisson,0,64,29);
+
+  if(Mode==1){
+    //P0
+    fitfun->SetParameter(0,0.4);//mean
+    fitfun->SetParLimits(0,0.2,0.6);
+    fitfun->SetParameter(1,0.2);//stdv
+    fitfun->SetParLimits(1,0.1,0.4);
+    fitfun->SetParameter(2,1./10.);//wght
+    fitfun->SetParLimits(2,0.0,1.0);
+
+    //P1
+    fitfun->SetParameter(3,0.8);//mean
+    fitfun->SetParLimits(3,0.6,1.0);
+    fitfun->SetParameter(4,0.4);//stdv
+    fitfun->SetParLimits(4,0.2,0.8);
+    fitfun->SetParameter(5,1./9.);//wght
+    fitfun->SetParLimits(5,0.0,1.0);
+
+    //P2
+    fitfun->SetParameter(6,1.2);//mean
+    fitfun->SetParLimits(6,0.6,1.5);
+    fitfun->SetParameter(7,0.6);//stdv
+    fitfun->SetParLimits(7,0.3,1.2);
+    fitfun->SetParameter(8,1./8.);//wght
+    fitfun->SetParLimits(8,0.0,1.0);
+
+    //P3
+    fitfun->SetParameter(9,1.8);//mean
+    fitfun->SetParLimits(9,1.5,2.1);
+    fitfun->SetParameter(10,0.9);//stdv
+    fitfun->SetParLimits(10,0.45,1.8);
+    fitfun->SetParameter(11,1./7.);//wght
+    fitfun->SetParLimits(11,0.0,1.0);
+
+    //P4
+    fitfun->SetParameter(12,2.4);//mean
+    fitfun->SetParLimits(12,2.1,3.0);
+    fitfun->SetParameter(13,1.2);//stdv
+    fitfun->SetParLimits(13,0.6,2.4);
+    fitfun->SetParameter(14,1./6.);//wght
+    fitfun->SetParLimits(14,0.0,1.0);
+
+    //P5
+    fitfun->SetParameter(15,3.6);//mean
+    fitfun->SetParLimits(15,3.0,4.5);
+    fitfun->SetParameter(16,1.8);//stdv
+    fitfun->SetParLimits(16,0.9,3.6);
+    fitfun->SetParameter(17,1./5.);//wght
+    fitfun->SetParLimits(17,0.0,1.0);
+
+    //P6
+    fitfun->SetParameter(18,5.4);//mean
+    fitfun->SetParLimits(18,4.5,6.2);
+    fitfun->SetParameter(19,2.7);//stdv
+    fitfun->SetParLimits(19,1.35,5.4);
+    fitfun->SetParameter(20,1./4.);//wght
+    fitfun->SetParLimits(20,0.0,1.0);
+
+    //P7
+    fitfun->SetParameter(21,7.0);//mean
+    fitfun->SetParLimits(21,6.2,8.0);
+    fitfun->SetParameter(22,3.5);//stdv
+    fitfun->SetParLimits(22,1.75,7.0);
+    fitfun->SetParameter(23,1./3.);//wght
+    fitfun->SetParLimits(23,0.0,1.0);
+
+    //P8
+    fitfun->FixParameter(24,0);//mean
+    fitfun->FixParameter(25,0);//stdv
+    fitfun->FixParameter(26,0);//wght
+
+    //P9
+    fitfun->FixParameter(27,0);//mean
+    fitfun->FixParameter(28,0);//stdv
+  }
+  else if(Mode==2){
+    //P0
+    fitfun->SetParameter(0,0.45);//mean
+    fitfun->SetParameter(3,0.9);//mean
+    fitfun->SetParameter(6,1.4);//mean
+    fitfun->SetParameter(9,2.0);//mean
+    fitfun->SetParameter(12,3.2);//mean
+    fitfun->SetParameter(15,5.4);//mean
+
+    fitfun->SetParLimits(0,0.225,0.9);
+    for(unsigned uP=1; uP<5; uP++){
+      double low_lim = 0.55*(fitfun->GetParameter(-3+uP*3)+fitfun->GetParameter(0+uP*3));
+      double up_lim = 0.45*(fitfun->GetParameter(3+uP*3)+fitfun->GetParameter(0+uP*3));
+      fitfun->SetParLimits(0+uP*3,low_lim,up_lim);
+    }
+    fitfun->SetParLimits(15,4.3,6.5);
+
+    for(unsigned uP=0; uP<6; uP++){
+      double mu = fitfun->GetParameter(0+uP*3);
+      fitfun->SetParameter(1+uP*3,mu*0.4);
+      fitfun->SetParLimits(1+uP*3,mu*0.3,mu*0.45);
+      //fitfun->FixParameter(1+uP*3,mu*0.4);
+    }
+
+    for(unsigned uP=0; uP<5; uP++){
+      fitfun->SetParameter(2+uP*3,1./(6.-double(uP)));
+      fitfun->SetParLimits(2+uP*3,0,1.0);
+    }
+    fitfun->FixParameter(17,1);
+
+    //P6
+    fitfun->FixParameter(18,0);//mean
+    fitfun->FixParameter(19,0);//stdv
+    fitfun->FixParameter(20,0);//wght
+
+    //P7
+    fitfun->FixParameter(21,0);//mean
+    fitfun->FixParameter(22,0);//stdv
+    fitfun->FixParameter(23,0);//wght
+
+    //P8
+    fitfun->FixParameter(24,0);//mean
+    fitfun->FixParameter(25,0);//stdv
+    fitfun->FixParameter(26,0);//wght
+
+    //P9
+    fitfun->FixParameter(27,0);//mean
+    fitfun->FixParameter(28,0);//stdv
+  }
+  else{
+    //P0
+    fitfun->SetParameter(0,0.3);//mean
+    fitfun->SetParLimits(0,0.15,0.45);
+    fitfun->SetParameter(1,0.15);//stdv
+    fitfun->SetParLimits(1,0.0,0.3);
+    fitfun->SetParameter(2,1./10.);//wght
+    fitfun->SetParLimits(2,0.0,1.0);
+
+    //P1
+    fitfun->SetParameter(3,0.6);//mean
+    fitfun->SetParLimits(3,0.45,0.75);
+    fitfun->SetParameter(4,0.15);//stdv
+    fitfun->SetParLimits(4,0.0,0.3);
+    fitfun->SetParameter(5,1./9.);//wght
+    fitfun->SetParLimits(5,0.0,1.0);
+
+    //P2
+    fitfun->SetParameter(6,0.9);//mean
+    fitfun->SetParLimits(6,0.75,1.05);
+    fitfun->SetParameter(7,0.15);//stdv
+    fitfun->SetParLimits(7,0.0,0.3);
+    fitfun->SetParameter(8,1./8.);//wght
+    fitfun->SetParLimits(8,0.0,1.0);
+
+    //P3
+    fitfun->SetParameter(9,1.2);//mean
+    fitfun->SetParLimits(9,1.05,1.5);
+    fitfun->SetParameter(10,0.3);//stdv
+    fitfun->SetParLimits(10,0.0,0.6);
+    fitfun->SetParameter(11,1./7.);//wght
+    fitfun->SetParLimits(11,0.0,1.0);
+
+    //P4
+    fitfun->SetParameter(12,1.8);//mean
+    fitfun->SetParLimits(12,1.5,2.1);
+    fitfun->SetParameter(13,0.3);//stdv
+    fitfun->SetParLimits(13,0.0,0.6);
+    fitfun->SetParameter(14,1./6.);//wght
+    fitfun->SetParLimits(14,0.0,1.0);
+
+    //P5
+    fitfun->SetParameter(15,2.4);//mean
+    fitfun->SetParLimits(15,2.1,2.8);
+    fitfun->SetParameter(16,0.4);//stdv
+    fitfun->SetParLimits(16,0.0,0.8);
+    fitfun->SetParameter(17,1./5.);//wght
+    fitfun->SetParLimits(17,0.0,1.0);
+
+    //P6
+    fitfun->SetParameter(18,3.2);//mean
+    fitfun->SetParLimits(18,2.8,3.6);
+    fitfun->SetParameter(19,0.4);//stdv
+    fitfun->SetParLimits(19,0.0,0.8);
+    fitfun->SetParameter(20,1./4.);//wght
+    fitfun->SetParLimits(20,0.0,1.0);
+
+    //P7
+    fitfun->SetParameter(21,4.0);//mean
+    fitfun->SetParLimits(21,3.6,4.6);
+    fitfun->SetParameter(22,0.6);//stdv
+    fitfun->SetParLimits(22,0.0,1.2);
+    fitfun->SetParameter(23,1./3.);//wght
+    fitfun->SetParLimits(23,0.0,1.0);
+
+    //P8
+    fitfun->SetParameter(24,5.2);//mean
+    fitfun->SetParLimits(24,4.6,6.1);
+    fitfun->SetParameter(25,0.9);//stdv
+    fitfun->SetParLimits(25,0.0,1.8);
+    fitfun->SetParameter(26,1./2.);//wght
+    fitfun->SetParLimits(26,0.0,1.0);
+
+    //P9
+    fitfun->SetParameter(27,7.0);//mean
+    fitfun->SetParLimits(27,6.1,8.5);
+    fitfun->SetParameter(28,1.5);//stdv
+    fitfun->SetParLimits(28,0.0,3.0);
+
+  }
+
+  fitfun->SetNpx(4096);
+
 }
 
 /*

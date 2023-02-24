@@ -253,6 +253,7 @@ struct TriGauss { // This structure is named "myDataType"
 };
 
 
+
 //A source taking into account resonances and mT scaling. The Simple part is that resonances are back to back
 //and in case of two resonances, the t*p/m are just added up. Also we use the approximate relation for small t*p/m
 class MS_GaussExp_mT_Simple:public CatsSource{

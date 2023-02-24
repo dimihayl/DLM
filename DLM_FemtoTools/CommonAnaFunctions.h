@@ -153,6 +153,134 @@ private:
     TString* CatsFilesFolder;
 };
 
+
+
+
+//the parametes I used for the CECA source spline parameterization
+//we have a fixed number of nodes (8) and FIXED x-values of the nodes
+//this all saves memory.
+//we also assume that the first and last node have zero der
+//so we only really fit those 10 parameters
+//the x values are:
+struct SplPars { // This structure is named "myDataType"
+  SplPars(){
+
+  }
+  float KnotY[10];
+
+  void Print(){
+    for(short sn=0; sn<10; sn++){
+      printf("ny_%i = %.3e\n",sn,KnotY[sn]);
+    }
+  }
+  bool operator+=(const SplPars& other){
+    for(short sn=0; sn<10; sn++){
+      KnotY[sn] += other.KnotY[sn];
+    }
+    return true;
+  }
+  bool operator/=(const double& value){
+    for(short sn=0; sn<10; sn++){
+      KnotY[sn] /= value;
+    }
+    return true;
+  }
+  SplPars operator*(const double& value){
+      SplPars Result;
+      for(short sn=0; sn<10; sn++){
+        Result.KnotY[sn] = KnotY[sn]*value;
+      }
+      return Result;
+  }
+  bool operator=(const double& value){
+      for(short sn=0; sn<10; sn++){
+        KnotY[sn] = value;
+      }
+      return true;
+  }
+  bool operator=(const SplPars& other){
+    for(short sn=0; sn<10; sn++){
+      KnotY[sn] = other.KnotY[sn];
+    }
+    return true;
+  }
+};
+void SetUpSplPars(TF1*& fitfun);
+
+
+
+//the parametes I used for the CECA source poisson parameterization
+//something similar to KDE, but with several P distos
+struct KdpPars { // This structure is named "myDataType"
+  KdpPars(){
+
+  }
+
+  static const unsigned NumDistos = 10;
+  float mean[NumDistos];
+  float stdv[NumDistos];
+  float wght[NumDistos];
+
+
+  void Print(){
+    for(short sn=0; sn<10; sn++){
+      printf("mean_%i   = %.3e\n",sn,mean[sn]);
+      printf(" stdv_%i  = %.3e\n",sn,stdv[sn]);
+      printf("  wght_%i = %.3e\n",sn,wght[sn]);
+    }
+  }
+  bool operator+=(const KdpPars& other){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] += other.mean[sn];
+      stdv[sn] += other.stdv[sn];
+      wght[sn] += other.wght[sn];
+    }
+    return true;
+  }
+  bool operator/=(const double& value){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] /= value;
+      stdv[sn] /= value;
+      wght[sn] /= value;
+    }
+    return true;
+  }
+  KdpPars operator*(const double& value){
+      KdpPars Result;
+      for(short sn=0; sn<NumDistos; sn++){
+        Result.mean[sn] = mean[sn]*value;
+        Result.stdv[sn] = stdv[sn]*value;
+        Result.wght[sn] = wght[sn]*value;
+      }
+      return Result;
+  }
+  bool operator=(const double& value){
+      for(short sn=0; sn<NumDistos; sn++){
+        mean[sn] = value;
+        stdv[sn] = value;
+        wght[sn] = value;
+      }
+      return true;
+  }
+  bool operator=(const KdpPars& other){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] = other.mean[sn];
+      stdv[sn] = other.stdv[sn];
+      wght[sn] = other.wght[sn];
+    }
+    return true;
+  }
+};
+double DecaPoisson(double* xVal, double* Pars);
+void SetUpKdpPars(TF1*& fitfun);
+void SetUpKdpPars(TF1*& fitfun, int Mode=0);
+
+
+
+
+
+
+
 DLM_Histo<double>* ConvertThetaAngleHisto(const TString& FileName, const TString& HistoName, const double kMin, const double kMax);
 
 void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, DLM_Ck* CkToPlot);
