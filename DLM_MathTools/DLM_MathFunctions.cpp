@@ -46,6 +46,24 @@ double factrl(const unsigned n) {
 	return factrl_array[WhichThread][n];
 }
 
+//copy-pasted from ROOT
+double DLM_Poisson(double x, double par){
+
+  // compute the Poisson distribution function for (x,par)
+  // The Poisson PDF is implemented by means of Euler's Gamma-function
+  // (for the factorial), so for all integer arguments it is correct.
+  // BUT for non-integer values it IS NOT equal to the Poisson distribution.
+   if (x<0)
+      return 0;
+   else if (x == 0.0)
+      return 1./exp(par);
+   else {
+      double lnpoisson = x*log(par)-par-gammln(x+1.);
+      return exp(lnpoisson);
+   }
+}
+
+
 double atanPhi(const double& y, const double& x){
 	if(x==0){
 		if(y>0) return HalfPi;

@@ -8,11 +8,14 @@
 #include "CATSconstants.h"
 
 #include "math.h"
+#include <sstream>
+#include <iostream>
+#include <vector>
 
 //!TEST
 //#include <fstream>
 //#include <stdio.h>
-//#include <unistd.h>
+#include <unistd.h>
 
 double GaussSourceTF1(double* x, double* Pars){
     double& Radius = *x;
@@ -228,6 +231,73 @@ double StupidGaussSumTF1(double* x, double* Pars){
   }
 
   return StupidGaussSum(PARS);
+}
+
+//sum of many possions, all weighted such that the total weight is still 1
+//this is achieved by using the weight parameters as the reletive weight with respect the
+//"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
+double PoissonSum(double* xVal, double* Pars){
+  double Rslt=0;
+  double Pssn;
+  double Norm;
+  double Std2;
+  double Mean;
+  double RemainingNorm = 1;
+  double& x = xVal[0];
+  for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
+    Mean = Pars[0+uP*3];
+    Std2 = Pars[1+uP*3]*Pars[1+uP*3];
+    if(uP!=KdpPars::NumDistos-1){
+      Norm = RemainingNorm*Pars[2+uP*3];
+      if(Norm>RemainingNorm && Pars[2+uP*3]){
+        Norm = RemainingNorm;
+      }
+    }
+    else Norm = RemainingNorm;
+    if(Norm<0){
+      printf("\033[1;33mWARNING!\033[0m PoissonSum a negative (%.3e) norm! Pars[2+uP*3]=%.3e\n",Norm,Pars[2+uP*3]);
+    }
+    //if(Std2) Pssn = TMath::Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
+    if(Std2) Pssn = DLM_Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
+    else Pssn = 0;
+    Rslt += Norm*Pssn;
+    if(RemainingNorm==Norm) RemainingNorm=0;
+    else RemainingNorm -= Norm;
+  }
+  return Rslt;
+}
+
+double PoissonSum(const double& xVal, const KdpPars& kdppars){
+  double Rslt=0;
+  double Pssn;
+  double Norm;
+  double Std2;
+  double Mean;
+  double RemainingNorm = 1;
+  for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
+    Mean = kdppars.mean[uP];
+    Std2 = kdppars.stdv[uP]*kdppars.stdv[uP];
+    if(uP!=KdpPars::NumDistos-1){
+      Norm = RemainingNorm*kdppars.wght[uP];
+      if(Norm>RemainingNorm && kdppars.wght[uP]<=1){
+        //printf("Potential issue %.3e %.3e %.3e\n",Norm,RemainingNorm,kdppars.wght[uP]);
+        Norm = RemainingNorm;
+      }
+    }
+    else Norm = RemainingNorm;
+    if(Norm<0){
+      printf("\033[1;33mWARNING!\033[0m PoissonSum a negative (%.3e) norm! kdppars.wght[uP]=%.3e\n",Norm,kdppars.wght[uP]);
+    }
+    if(Std2) Pssn = DLM_Poisson(xVal*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
+    else Pssn = 0;
+    Rslt += Norm*Pssn;
+    if(RemainingNorm==Norm) RemainingNorm=0;
+    else RemainingNorm -= Norm;
+    if(RemainingNorm<0 && RemainingNorm>-1e-6){
+      RemainingNorm = 0;
+    }
+  }
+  return Rslt;
 }
 
 /*
@@ -2226,4 +2296,393 @@ double DLM_HistoSource::RootEval(double* x, double* kstar){
   kxc[0] = *kstar;
   kxc[1] = *x;
   return Eval(kxc);
+}
+
+
+
+
+DLM_CecaSource_v0::DLM_CecaSource_v0(const std::string systype, const std::string anaver, const std::string infolder):
+                            SystemType(systype),AnaVersion(anaver),InputFolder(infolder){
+  ErrorState = false;
+  dlmSource = NULL;
+  AnaVersionBase = "";
+  ErrorState = !InitHisto();
+  //printf("%i\n", ErrorState);
+  ErrorState = !LoadSource();
+  //printf("%i\n", ErrorState);
+}
+
+DLM_CecaSource_v0::~DLM_CecaSource_v0(){
+  if(dlmSource){delete dlmSource; dlmSource=NULL;}
+}
+
+bool DLM_CecaSource_v0::LoadSource(){
+  if(ErrorState) return false;
+  if(!dlmSource) return false;
+  FILE *InFile;
+  int NumPar=0;
+  char* cline = new char [512];
+  char* cdscr = new char [128];
+  char* cval = new char [128];
+
+  const unsigned NumMtBins = dlmSource?dlmSource->GetNbins(0):0;
+  KdpPars* SrcPar = new KdpPars [NumMtBins];
+  float* MtBinCenter = new float [NumMtBins];
+  float* Chi2Ndf = new float [NumMtBins];
+
+  double read_value;
+  do{
+    std::string InFileName = InputFolder+AnaVersionBase+"."+std::to_string(NumPar)+".ceca.source";
+    InFile = fopen(InFileName.c_str(), "r");
+    //printf("InFileName = %s\n",InFileName.c_str());
+    //0 = the settings
+    //1 = kdp
+    int ReadMode = 0;
+    if(InFile){
+      int FitMode;
+
+      float d_x = 0;
+      float d_y = 0;
+      float d_z = 0;
+      float h_x = 0;
+      float h_y = 0;
+      float h_z = 0;
+      for(unsigned uMt=0; uMt<NumMtBins; uMt++){
+        MtBinCenter[uMt] = 0;
+        Chi2Ndf[uMt] = 0;
+        //d_x[uMt] = 0;
+        //d_y[uMt] = 0;
+        //d_z[uMt] = 0;
+        //h_x[uMt] = 0;
+        //h_y[uMt] = 0;
+        //h_z[uMt] = 0;
+      }
+
+      std::string type="";
+      std::string AnaVersion="";
+      unsigned ControlMt = 0;
+      while(!feof(InFile)){
+        if(!fgets(cline, 511, InFile)){
+          //printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be properly read (%s)!\n", InputFileName.Data(),cline);
+        }
+        if(strncmp(cline,"SOURCE:",7)==0){
+          ReadMode=1;
+          continue;
+        }
+
+        if(ReadMode==0){
+          sscanf(cline, "%s %s",cdscr,cval);
+          if(strcmp(cdscr,"type")==0){
+            type = std::string(cval);
+          }
+          else if(strcmp(cdscr,"AnaVersion")==0){
+            AnaVersion = std::string(cval);
+          }
+          else{
+            read_value = stod(cval);
+            //      if(strcmp(cdscr,"GLOB_TIMEOUT")==0) {GLOB_TIMEOUT = read_value;}
+            //else if(strcmp(cdscr,"multiplicity")==0) {multiplicity = unsigned(read_value);}
+            //else if(strcmp(cdscr,"target_yield")==0) {target_yield = unsigned(read_value);}
+            //else if(strcmp(cdscr,"femto_region")==0) {femto_region = read_value;}
+            if(strcmp(cdscr,"d_x")==0) {d_x = read_value;}
+            if(strcmp(cdscr,"d_y")==0) {d_y = read_value;}
+            if(strcmp(cdscr,"d_z")==0) {d_z = read_value;}
+            if(strcmp(cdscr,"h_x")==0) {h_x = read_value;}
+            if(strcmp(cdscr,"h_y")==0) {h_y = read_value;}
+            if(strcmp(cdscr,"h_z")==0) {h_z = read_value;}
+            //else if(strcmp(cdscr,"h_fct")==0) {h_fct = read_value;}
+            //else if(strcmp(cdscr,"tau")==0) {tau = read_value;}
+            //else if(strcmp(cdscr,"tau_fct")==0) {tau_fct = read_value;}
+            //else if(strcmp(cdscr,"tau_prp")==0) {tau_prp = bool(read_value);}
+            //else if(strcmp(cdscr,"hdr_size")==0) {hdr_size = read_value;}
+            //else if(strcmp(cdscr,"hdr_slope")==0) {hdr_slope = read_value;}
+            //else if(strcmp(cdscr,"th_kick")==0) {th_kick = read_value;}
+            //else if(strcmp(cdscr,"frag_beta")==0) {frag_beta = read_value;}
+            //else if(strcmp(cdscr,"fixed_hdr")==0) {fixed_hdr = read_value;}
+            //else if(strcmp(cdscr,"momdst_flag")==0) {momdst_flag = int(read_value);}
+            //else if(strcmp(cdscr,"reso_flag")==0) {reso_flag = int(read_value);}
+            //else if(strcmp(cdscr,"wildcard_flag")==0) {wildcard_flag = int(read_value);}
+            //else if(strcmp(cdscr,"m_proton_reso")==0) {m_proton_reso = read_value;}
+            //else if(strcmp(cdscr,"tau_proton_reso")==0) {tau_proton_reso = read_value;}
+            //else if(strcmp(cdscr,"frac_proton_reso")==0) {frac_proton_reso = read_value;}
+            //else if(strcmp(cdscr,"m_lambda_reso")==0) {m_lambda_reso = read_value;}
+            //else if(strcmp(cdscr,"tau_lambda_reso")==0) {tau_lambda_reso = read_value;}
+            //else if(strcmp(cdscr,"frac_lambda_reso")==0) {frac_lambda_reso = read_value;}
+          }//strcmp(cdscr,"type")
+        }//ReadMode==1
+        else{
+          if(ControlMt==NumMtBins){
+            //printf("\033[1;33mWARNING!\033[0m Possible bad input, as the num of Mt bins does not check out (max = %u)\n",NumMtBins);
+            continue;
+          }
+          else{
+            sscanf(cline, "%i %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f",
+            &FitMode,&MtBinCenter[ControlMt],
+            &SrcPar[ControlMt].mean[0],&SrcPar[ControlMt].stdv[0],&SrcPar[ControlMt].wght[0],
+            &SrcPar[ControlMt].mean[1],&SrcPar[ControlMt].stdv[1],&SrcPar[ControlMt].wght[1],
+            &SrcPar[ControlMt].mean[2],&SrcPar[ControlMt].stdv[2],&SrcPar[ControlMt].wght[2],
+            &SrcPar[ControlMt].mean[3],&SrcPar[ControlMt].stdv[3],&SrcPar[ControlMt].wght[3],
+            &SrcPar[ControlMt].mean[4],&SrcPar[ControlMt].stdv[4],&SrcPar[ControlMt].wght[4],
+            &SrcPar[ControlMt].mean[5],&SrcPar[ControlMt].stdv[5],&SrcPar[ControlMt].wght[5],
+            &SrcPar[ControlMt].mean[6],&SrcPar[ControlMt].stdv[6],&SrcPar[ControlMt].wght[6],
+            &SrcPar[ControlMt].mean[7],&SrcPar[ControlMt].stdv[7],&SrcPar[ControlMt].wght[7],
+            &SrcPar[ControlMt].mean[8],&SrcPar[ControlMt].stdv[8],&SrcPar[ControlMt].wght[8],
+            &SrcPar[ControlMt].mean[9],&SrcPar[ControlMt].stdv[9],
+            &Chi2Ndf[ControlMt]);
+            ControlMt++;
+          }
+        }//ReadMode
+      }//while InFile
+
+      if(type!=SystemType){
+        if(InFile) fclose(InFile);
+        NumPar++;
+        continue;
+      }
+      if(d_x!=d_y || d_y!=d_z){
+        ErrorState = true;
+        printf("\033[1;31mERROR:\033[0m d_x!=d_y || d_y!=d_z\n");
+        break;
+      }
+      if(h_x!=h_y){
+        ErrorState = true;
+        printf("\033[1;31mERROR:\033[0m h_x!=h_y\n");
+        break;
+      }
+
+      for(unsigned uMt=0; uMt<NumMtBins; uMt++){
+        unsigned WhichBin[4];
+        WhichBin[0] = dlmSource->GetBin(0,MtBinCenter[uMt]);//mT
+        WhichBin[1] = dlmSource->GetBin(1,d_x);//d
+        WhichBin[2] = dlmSource->GetBin(2,h_x);//ht
+        WhichBin[3] = dlmSource->GetBin(3,h_z);//hz
+
+  //if(fabs(MtBinCenter[uMt]-1110)<1 && fabs(d_x-0.1867)<0.001 && fabs(h_x-4.067)<0.01 && fabs(h_z-10.167)<0.01 ){
+  //  printf("file = %s\n",InFileName.c_str());
+  //  printf("[%u][%u][%u][%u]:\n",WhichBin[0],WhichBin[1],WhichBin[2],WhichBin[3]);
+  //  printf(" {%.2f}{%.2f}{%.2f}{%.2f}\n",MtBinCenter[uMt],d_x,h_x,h_z);
+  //  for(unsigned uP=0; uP<10; uP++){
+  //    printf("  P%u --> %.3f %.3f %.3f\n",uP,SrcPar[uMt].mean[uP],SrcPar[uMt].stdv[uP],SrcPar[uMt].wght[uP]);
+  //  }
+  //  usleep(1000e3);
+  //}
+
+
+        if(MtBinCenter[uMt]<dlmSource->GetLowEdge(0) || MtBinCenter[uMt]>dlmSource->GetUpEdge(0)){
+          printf("\033[1;33mWARNING:\033[0m MtBinCenter outside range\n");
+          //if(InFile) fclose(InFile);
+          //NumPar++;
+          continue;
+        }
+        if(d_x<dlmSource->GetLowEdge(1) || d_x>dlmSource->GetUpEdge(1)){
+          printf("\033[1;33mWARNING:\033[0m d_x outside range\n");
+          //if(InFile) fclose(InFile);
+          //NumPar++;
+          continue;
+        }
+        if(h_x<dlmSource->GetLowEdge(2) || h_x>dlmSource->GetUpEdge(2)){
+          printf("\033[1;33mWARNING:\033[0m h_x outside range\n");
+          //if(InFile) fclose(InFile);
+          //NumPar++;
+          continue;
+        }
+        if(h_z<dlmSource->GetLowEdge(3) || h_z>dlmSource->GetUpEdge(3)){
+          printf("\033[1;33mWARNING:\033[0m h_z outside range\n");
+          //if(InFile) fclose(InFile);
+          //NumPar++;
+          continue;
+        }
+
+        KdpPars BinCont = dlmSource->GetBinContent(WhichBin);
+        if(BinCont!=0){
+          printf("\033[1;33mWARNING:\033[0m Attemp to refill a filled bin. This should not happen!\n");
+          //if(InFile) fclose(InFile);
+          //NumPar++;
+          continue;
+        }
+        dlmSource->SetBinContent(WhichBin,SrcPar[uMt]);
+      }//uMt
+
+      NumPar++;
+    }//if InFile
+    //else{
+      //printf("Issue with %s\n",InFileName.c_str());
+    //}
+    if(InFile) fclose(InFile);
+  }
+  while(InFile);
+  if(InFile) fclose(InFile);
+
+  delete [] cline;
+  delete [] cdscr;
+  delete [] cval;
+
+  delete [] SrcPar;
+  delete [] MtBinCenter;
+  delete [] Chi2Ndf;
+
+  return true;
+}
+
+bool DLM_CecaSource_v0::InitHisto(){
+  if(dlmSource){
+    printf("\033[1;31mERROR:\033[0m dlmSource exists when it should not!\n");
+    return false;
+  }
+  //if it starts with that
+  if(AnaVersion.rfind("Cigar2_ds",0)==0) { // pos=0 limits the search to the prefix
+    AnaVersionBase = "Cigar2";
+    vector<string> str_pars;
+    std::string str_tmp;
+    unsigned NumDist = 0;
+    unsigned NumHt = 0;
+    unsigned NumHz = 0;
+    if(SystemType!="pp" && SystemType!="pL"){
+      printf("\033[1;31mERROR:\033[0m Unknown SystemType = %s!\n",SystemType.c_str());
+      return false;
+    }
+    //std::string delim = "_";
+    std::stringstream ssAnaVersion(AnaVersion);
+    while(getline(ssAnaVersion,str_tmp,'_')){
+      //printf("str_tmp = %s\n",str_tmp.c_str());
+      if(str_tmp.rfind("ds",0)==0){
+        //deletes the first two chars
+        str_tmp.erase(0,2);
+        NumDist = stoi(str_tmp);
+      }
+      else if(str_tmp.rfind("hts",0)==0){
+        str_tmp.erase(0,3);
+        NumHt = stoi(str_tmp);
+      }
+      else if(str_tmp.rfind("hzs",0)==0){
+        str_tmp.erase(0,3);
+        NumHz = stoi(str_tmp);
+      }
+      else if(str_tmp.rfind("Cigar2",0)==0){
+        //do nothing
+      }
+      else{
+        printf("\033[1;31mERROR:\033[0m DLM_CecaSource_v0::InitHisto something wrong with the pars of AnaVersion = %s!\n",AnaVersion.c_str());
+        return false;
+      }
+    }//while
+
+    //printf("NumDist = %u\n",NumDist);
+    //printf("NumHt = %u\n",NumHt);
+    //printf("NumHz = %u\n",NumHz);
+
+    dlmSource = new DLM_Histo<KdpPars>();
+    //the 3 pars + mT = 4 dims
+    dlmSource->SetUp(4);
+    unsigned NumMtBins;
+    //all these values are hard coded and currently fixed
+    //from the Jaime parameters
+    double* BinRange = NULL;
+    double* BinCenter = NULL;
+    if(SystemType=="pp"){
+      NumMtBins = 10;
+
+      BinRange = new double [NumMtBins+1];
+      BinRange[0] = 930; //avg  983 ( 985)
+      BinRange[1] = 1020;//avg 1054 (1055)
+      BinRange[2] = 1080;//avg 1110 (1110)
+      BinRange[3] = 1140;//avg 1168 (1170)
+      BinRange[4] = 1200;//avg 1228 (1230)
+      BinRange[5] = 1260;//avg 1315 (1315)
+      BinRange[6] = 1380;//avg 1463 (1460)
+      BinRange[7] = 1570;//avg 1681 (1680)
+      BinRange[8] = 1840;//avg 1923 (1920)
+      BinRange[9] = 2030;//avg 2303 (2300)
+      BinRange[10] = 4500;
+
+      BinCenter = new double [NumMtBins];
+      BinCenter[0] = 983;
+      BinCenter[1] = 1054;
+      BinCenter[2] = 1110;
+      BinCenter[3] = 1168;
+      BinCenter[4] = 1228;
+      BinCenter[5] = 1315;
+      BinCenter[6] = 1463;
+      BinCenter[7] = 1681;
+      BinCenter[8] = 1923;
+      BinCenter[9] = 2303;
+
+      dlmSource->SetUp(0,NumMtBins,BinRange);
+      //
+    }
+    else if(SystemType=="pL"){
+      NumMtBins = 8;
+
+      BinRange = new double [NumMtBins+1];
+      BinRange[0] = 1000;//avg 1121 (1120)
+      BinRange[1] = 1170;//avg 1210 (1210)
+      BinRange[2] = 1250;//avg 1288 (1290)
+      BinRange[3] = 1330;//avg 1377 (1380)
+      BinRange[4] = 1430;//avg 1536 (1540)
+      BinRange[5] = 1680;//avg 1753 (1750)
+      BinRange[6] = 1840;//avg 1935 (1935)
+      BinRange[7] = 2060;//avg 2334 (2330)
+      BinRange[8] = 4800;
+
+      BinCenter = new double [NumMtBins];
+      BinCenter[0] = 1121;
+      BinCenter[1] = 1210;
+      BinCenter[2] = 1288;
+      BinCenter[3] = 1377;
+      BinCenter[4] = 1536;
+      BinCenter[5] = 1753;
+      BinCenter[6] = 1935;
+      BinCenter[7] = 2334;
+
+      dlmSource->SetUp(0,NumMtBins,BinRange);
+    }
+    if(!BinRange || !BinCenter){
+      printf("\033[1;31mERROR:\033[0m DLM_CecaSource_v0::InitHisto has an impossible bug!\n");
+      return false;
+    }
+    //ranges are fixed for the Cigar2 case
+    dlmSource->SetUp(1,NumDist,0,1.28);
+    dlmSource->SetUp(2,NumHt,0,4.8);
+    dlmSource->SetUp(3,NumHz,0,12.0);
+    dlmSource->Initialize();
+
+    dlmSource->SetBinCenter(0,BinCenter);
+
+    delete [] BinRange;
+    delete [] BinCenter;
+  }//Cigar2
+  else{
+    printf("\033[1;31mERROR:\033[0m DLM_CecaSource_v0::InitHisto has an unknown AnaVersion = %s!\n",AnaVersion.c_str());
+    return false;
+  }
+  return true;
+}
+
+double DLM_CecaSource_v0::Eval(double* kxc){
+  return RootEval(&kxc[1],&kxc[3]);
+}
+//the parameters are: mT, 3 source pars of your choice
+//for the Cigar2 these are d,ht,hz (in that order)
+//mT == -1 => Gauss
+double DLM_CecaSource_v0::RootEval(double* x, double* pars){
+  //Gaussian source
+  if(pars[0]==-1){
+    return GaussSourceTF1(x,&pars[1]);
+  }
+
+  if(!dlmSource) {
+    printf("\033[1;33mWARNING:\033[0m !dlmSource\n");
+    return 0;
+  }
+
+  for(unsigned uPar=0; uPar<4; uPar++){
+    if( pars[uPar]<dlmSource->GetLowEdge(uPar) || pars[uPar]>dlmSource->GetUpEdge(uPar) ){
+      printf("\033[1;33mWARNING:\033[0m DLM_CecaSource_v0::RootEval pars[%u] = %.3e is outside the allowed range [%.3e, %.3e]!\n",
+      uPar,pars[uPar],dlmSource->GetLowEdge(uPar),dlmSource->GetUpEdge(uPar));
+      return 0;
+    }
+  }
+  KdpPars SrcPars = dlmSource->Eval(pars);
+
+  return PoissonSum(*x,SrcPars);
 }

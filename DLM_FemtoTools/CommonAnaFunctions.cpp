@@ -1484,7 +1484,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
 
     Kitty.SetThetaDependentSource(false);
 
-    if (SOURCE == "Gauss")
+    if(SOURCE == "NULL" || SOURCE == ""){
+
+    }
+    else if (SOURCE == "Gauss")
     {
         cPars = new CATSparameters(CATSparameters::tSource, 1, true);
         cPars->SetParameter(0, 1.2);
@@ -6047,43 +6050,14 @@ void SetUpSplPars(TF1*& fitfun){
   fitfun->FixParameter(12,8.0);
 }
 
-//sum of many possions, all weighted such that the total weight is still 1
-//this is achieved by using the weight parameters as the reletive weight with respect the
-//"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
-double DecaPoisson(double* xVal, double* Pars){
-  double Rslt=0;
-  double Pssn;
-  double Norm;
-  double Std2;
-  double Mean;
-  double RemainingNorm = 1;
-  double& x = xVal[0];
-  for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
-    Mean = Pars[0+uP*3];
-    Std2 = Pars[1+uP*3]*Pars[1+uP*3];
-    if(uP!=KdpPars::NumDistos-1) Norm = RemainingNorm*Pars[2+uP*3];
-    else Norm = RemainingNorm;
-    if(Norm<0){
-      printf("\033[1;33mWARNING!\033[0m DecaPoisson a negative (%.3e) norm!\n",Norm);
-    }
-    //Pssn = TMath::Poisson(x*Std2/Mean,Std2)*Std2/Mean;
-    //Pssn = TMath::Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
-  //  Pssn = TMath::Poisson(x*Std2*Mean,Std2*Mean*Mean)*Std2*Mean;
-    if(Std2) Pssn = TMath::Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
-    else Pssn = 0;
-    Rslt += Norm*Pssn;
-    RemainingNorm -= Norm;
-  }
-  return Rslt;
-  //return TMath::Poisson(x*5./1.,5)*5./1.;
-}
+
 
 //Mode = 0: default
 //Mode = 1: reduced: we use only 8 of the Disots, making bigger distance and no allowing sharp peaks (small stdv)
 //Mode = 2: reduced+: only 6 Distos
 void SetUpKdpPars(TF1*& fitfun, int Mode){
 
-  fitfun = new TF1("fKdpPars",DecaPoisson,0,64,29);
+  fitfun = new TF1("fKdpPars",PoissonSum,0,64,29);
 
   if(Mode==1){
     //P0

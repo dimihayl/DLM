@@ -1052,6 +1052,15 @@ public:
         if(!BinCenter[sDim])return;
         BinCenter[sDim][WhichBin] = Val;
     }
+    void SetBinCenter(const unsigned short& sDim, const double* bincenter){
+        if(!Initialized) {InitWarning(); return;}
+        if(sDim>=Dim)return;
+        if(!BinCenter)return;
+        if(!BinCenter[sDim])return;
+        for(unsigned uBin=0; uBin<NumBins[sDim]; uBin++){
+          BinCenter[sDim][uBin] = bincenter[uBin];
+        }
+    }
 
     double GetBinCenter(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
@@ -1629,7 +1638,7 @@ public:
       unsigned short dim;
       myFileIN.read((char *) &dim, sizeof(unsigned short));
       SetUp(dim);
-      
+
       unsigned numbins;
       double* binrange = NULL;
       double* bincenter = NULL;

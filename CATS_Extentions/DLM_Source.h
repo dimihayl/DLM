@@ -7,6 +7,7 @@ template <class Type> class DLM_Histo1D;
 #include "CATStools.h"
 
 class DLM_Random;
+class KdpPars;
 
 double GaussSource(double* Pars);
 double GaussSourceCutOff(double* Pars);
@@ -35,6 +36,12 @@ double StupidShiftedGaussSumTF1(double* x, double* Pars);
 //some of whatever number of 1D gaussians I want
 double StupidGaussSum(double* Pars);
 double StupidGaussSumTF1(double* x, double* Pars);
+
+//sum of many possions, all weighted such that the total weight is still 1
+//this is achieved by using the weight parameters as the reletive weight with respect the
+//"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
+double PoissonSum(double* xVal, double* Pars);
+double PoissonSum(const double& xVal, const KdpPars& kdppars);
 
 double GaussCauchySource(double* Pars);
 //double LevyIntegral1D(double* Pars);
@@ -491,6 +498,86 @@ private:
     void Init();
 };
 
+
+
+//the parametes I used for the CECA source poisson parameterization
+//something similar to KDE, but with several P distos
+struct KdpPars { // This structure is named "myDataType"
+  KdpPars(){
+
+  }
+  KdpPars(double zero){
+    operator=(zero);
+  }
+
+  static const unsigned NumDistos = 10;
+  float mean[NumDistos];
+  float stdv[NumDistos];
+  float wght[NumDistos];
+
+
+  void Print(){
+    for(short sn=0; sn<10; sn++){
+      printf("mean_%i   = %.3e\n",sn,mean[sn]);
+      printf(" stdv_%i  = %.3e\n",sn,stdv[sn]);
+      printf("  wght_%i = %.3e\n",sn,wght[sn]);
+    }
+  }
+  bool operator+=(const KdpPars& other){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] += other.mean[sn];
+      stdv[sn] += other.stdv[sn];
+      wght[sn] += other.wght[sn];
+    }
+    return true;
+  }
+  bool operator/=(const double& value){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] /= value;
+      stdv[sn] /= value;
+      wght[sn] /= value;
+    }
+    return true;
+  }
+  KdpPars operator*(const double& value){
+      KdpPars Result;
+      for(short sn=0; sn<NumDistos; sn++){
+        Result.mean[sn] = mean[sn]*value;
+        Result.stdv[sn] = stdv[sn]*value;
+        Result.wght[sn] = wght[sn]*value;
+      }
+      return Result;
+  }
+  bool operator=(const double& value){
+      for(short sn=0; sn<NumDistos; sn++){
+        mean[sn] = value;
+        stdv[sn] = value;
+        wght[sn] = value;
+      }
+      return true;
+  }
+  bool operator=(const KdpPars& other){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] = other.mean[sn];
+      stdv[sn] = other.stdv[sn];
+      wght[sn] = other.wght[sn];
+    }
+    return true;
+  }
+  bool operator==(const double& value) const{
+    for(short sn=0; sn<NumDistos; sn++){
+      if(mean[sn]!=value) return false;
+      if(stdv[sn]!=value) return false;
+      if(wght[sn]!=value) return false;
+    }
+    return true;
+  }
+  bool operator!=(const double& value) const{
+    return !(operator==(value));
+  }
+};
+
+
 //if the histo is 2D -> we evaluate k and r
 //if it is 1D -> we evaluate only r
 class DLM_HistoSource:public CatsSource{
@@ -505,6 +592,31 @@ public:
 private:
     const bool MyOwnHisto;
     DLM_Histo<float>* Histo;
+};
+
+
+//N.B. if we give a negative mT (-1), we return a Gaussian source of size (d)
+class DLM_CecaSource_v0:public CatsSource{
+public:
+    DLM_CecaSource_v0(const std::string systype, const std::string anaver, const std::string infolder);
+    ~DLM_CecaSource_v0();
+    double Eval(double* kxc);
+    double RootEval(double* x, double* pars);
+    bool InErrorState(){return ErrorState;}
+private:
+  //Cigar or Pancake, i.e. d,ht,hz or d,ht,tau
+  const std::string AnaVersion;
+  std::string AnaVersionBase;
+  //pp or pL
+  const std::string SystemType;
+  //where the .ceca.source files are located
+  const std::string InputFolder;
+
+  DLM_Histo<KdpPars>* dlmSource;
+
+  bool InitHisto();
+  bool LoadSource();
+  bool ErrorState;
 };
 
 

@@ -209,68 +209,6 @@ void SetUpSplPars(TF1*& fitfun);
 
 
 
-//the parametes I used for the CECA source poisson parameterization
-//something similar to KDE, but with several P distos
-struct KdpPars { // This structure is named "myDataType"
-  KdpPars(){
-
-  }
-
-  static const unsigned NumDistos = 10;
-  float mean[NumDistos];
-  float stdv[NumDistos];
-  float wght[NumDistos];
-
-
-  void Print(){
-    for(short sn=0; sn<10; sn++){
-      printf("mean_%i   = %.3e\n",sn,mean[sn]);
-      printf(" stdv_%i  = %.3e\n",sn,stdv[sn]);
-      printf("  wght_%i = %.3e\n",sn,wght[sn]);
-    }
-  }
-  bool operator+=(const KdpPars& other){
-    for(short sn=0; sn<NumDistos; sn++){
-      mean[sn] += other.mean[sn];
-      stdv[sn] += other.stdv[sn];
-      wght[sn] += other.wght[sn];
-    }
-    return true;
-  }
-  bool operator/=(const double& value){
-    for(short sn=0; sn<NumDistos; sn++){
-      mean[sn] /= value;
-      stdv[sn] /= value;
-      wght[sn] /= value;
-    }
-    return true;
-  }
-  KdpPars operator*(const double& value){
-      KdpPars Result;
-      for(short sn=0; sn<NumDistos; sn++){
-        Result.mean[sn] = mean[sn]*value;
-        Result.stdv[sn] = stdv[sn]*value;
-        Result.wght[sn] = wght[sn]*value;
-      }
-      return Result;
-  }
-  bool operator=(const double& value){
-      for(short sn=0; sn<NumDistos; sn++){
-        mean[sn] = value;
-        stdv[sn] = value;
-        wght[sn] = value;
-      }
-      return true;
-  }
-  bool operator=(const KdpPars& other){
-    for(short sn=0; sn<NumDistos; sn++){
-      mean[sn] = other.mean[sn];
-      stdv[sn] = other.stdv[sn];
-      wght[sn] = other.wght[sn];
-    }
-    return true;
-  }
-};
 double DecaPoisson(double* xVal, double* Pars);
 void SetUpKdpPars(TF1*& fitfun);
 void SetUpKdpPars(TF1*& fitfun, int Mode=0);

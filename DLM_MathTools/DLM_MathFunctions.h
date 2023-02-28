@@ -6,6 +6,7 @@
 //This function calculates the natural log of the gamma function for xx > 0
 double gammln(const double xx);
 double factrl(const unsigned n);
+double DLM_Poisson(double x, double par);
 
 
 //computes the value of phi, given the convention that it is in 0 to 2pi
