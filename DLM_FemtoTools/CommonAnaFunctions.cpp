@@ -2413,7 +2413,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pXim(CATS &Kitty, const TString &POT, con
     Kitty.SetPdgId(2212, 3312);
     if (POT == "pXim1530")
     {
-        Kitty.SetRedMass((Mass_p * Mass_Xim) / (Mass_p + Mass_Xim));
+        Kitty.SetRedMass((Mass_p * Mass_Xim1530) / (Mass_p + Mass_Xim1530));
 
         Kitty.SetNumChannels(1);
         Kitty.SetNumPW(0, 0);
@@ -2422,7 +2422,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pXim(CATS &Kitty, const TString &POT, con
     }
     else
     {
-        Kitty.SetRedMass((Mass_p * Mass_Xim1530) / (Mass_p + Mass_Xim1530));
+        Kitty.SetRedMass((Mass_p * Mass_Xim) / (Mass_p + Mass_Xim));
 
         Kitty.SetNumChannels(4);
         Kitty.SetNumPW(0, 1);
