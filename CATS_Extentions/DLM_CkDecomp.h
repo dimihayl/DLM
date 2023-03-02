@@ -20,7 +20,7 @@ public:
     //                 TH2F* hResidualMatrix, const bool& InvertedAxis=false);
     //void AddImpurity(const unsigned& WhichCk, const double& fraction, DLM_CkDecomp* child);
     //!! reevaluates the LambdaMain !!
-    void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child=NULL,
+    void AddContribution(unsigned WhichCk, double fraction, int type, DLM_CkDecomp* child=NULL,
                          const DLM_Histo<float>* hResidualMatrix=NULL, const bool& InvertedAxis=false);
     void AddPhaseSpace(const unsigned& WhichCk, const DLM_Histo<float>* hPhaseSpace);
     //this is for the momentum smearing

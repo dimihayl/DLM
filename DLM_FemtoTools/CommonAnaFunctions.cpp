@@ -2021,7 +2021,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pS0(CATS &Kitty, const TString &POT, cons
 
     Kitty.SetThetaDependentSource(false);
 
-    if (SOURCE == "Gauss")
+    if(SOURCE == "NULL" || SOURCE == ""){
+
+    }
+    else if (SOURCE == "Gauss")
     {
         cPars = new CATSparameters(CATSparameters::tSource, 1, true);
         cPars->SetParameter(0, 1.2);
@@ -2120,7 +2123,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pXim(CATS &Kitty, const TString &POT, con
     CATSparameters *cPotParsI1S0 = NULL;
     CATSparameters *cPotParsI1S1 = NULL;
 
-    if (SOURCE == "Gauss")
+    if(SOURCE == "NULL" || SOURCE == ""){
+
+    }
+    else if (SOURCE == "Gauss")
     {
         cPars = new CATSparameters(CATSparameters::tSource, 1, true);
         cPars->SetParameter(0, 1.2);
@@ -2517,7 +2523,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pXi0(CATS &Kitty, const TString &POT, con
     CATSparameters *cPotParsI1S0 = NULL;
     CATSparameters *cPotParsI1S1 = NULL;
 
-    if (SOURCE == "Gauss")
+    if(SOURCE == "NULL" || SOURCE == ""){
+
+    }
+    else if (SOURCE == "Gauss")
     {
         cPars = new CATSparameters(CATSparameters::tSource, 1, true);
         cPars->SetParameter(0, 1.2);

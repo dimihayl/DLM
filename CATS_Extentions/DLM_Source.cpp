@@ -2664,6 +2664,7 @@ double DLM_CecaSource_v0::Eval(double* kxc){
 //the parameters are: mT, 3 source pars of your choice
 //for the Cigar2 these are d,ht,hz (in that order)
 //mT == -1 => Gauss
+//[4] is the scale factor
 double DLM_CecaSource_v0::RootEval(double* x, double* pars){
   //Gaussian source
   if(pars[0]==-1){
@@ -2682,7 +2683,8 @@ double DLM_CecaSource_v0::RootEval(double* x, double* pars){
       return 0;
     }
   }
-  KdpPars SrcPars = dlmSource->Eval(pars);
 
-  return PoissonSum(*x,SrcPars);
+  double xval = (*x)*pars[4];
+  KdpPars SrcPars = dlmSource->Eval(pars);
+  return PoissonSum(xval,SrcPars);
 }

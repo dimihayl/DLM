@@ -153,7 +153,7 @@ void DLM_CkDecomp::AddPhaseSpace(const DLM_Histo<float>* hPhaseSpace){
   PS_Main->ScaleToBinSize();
 }
 
-void DLM_CkDecomp::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomp* child,
+void DLM_CkDecomp::AddContribution(unsigned WhichCk, double fraction, int type, DLM_CkDecomp* child,
                                           const DLM_Histo<float>* hResidualMatrix, const bool& InvertedAxis){
 
     if(ERROR_STATE) return;

@@ -49,7 +49,7 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
     if(dlmPhaseSpaceMain){delete dlmPhaseSpaceMain; dlmPhaseSpaceMain=NULL;}
 }
 
-void DLM_CkDecomposition::AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child,
+void DLM_CkDecomposition::AddContribution(unsigned WhichCk, double fraction, int type, DLM_CkDecomposition* child,
                          const TH2F* hResidualMatrix, const bool& InvertedAxis){
     if(WhichCk>=NumChildren){
         return;

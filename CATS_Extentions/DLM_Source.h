@@ -596,6 +596,14 @@ private:
 
 
 //N.B. if we give a negative mT (-1), we return a Gaussian source of size (d)
+//the parameters are:
+//[0] = mT
+//[1] = d
+//[2] = ht
+//[3] = hz or tau (depends on version)
+//[4] = scaling factor
+//The latter is used if we want to effectively shrink/expand the x-axis,
+//e.g. when evaluating pS0 or pXi source. This would mean we will return S([4]*r)
 class DLM_CecaSource_v0:public CatsSource{
 public:
     DLM_CecaSource_v0(const std::string systype, const std::string anaver, const std::string infolder);
