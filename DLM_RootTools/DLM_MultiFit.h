@@ -26,8 +26,8 @@ class TF1;
 
 class DLM_MultiFit{
 
-//protected:
-public:
+protected:
+//public:
     //!NUMBERING OF THE PARAMETERS!
     //there are several numbering system, and it is important to know when which is used:
     //!Spectrum numbering system (SNS):

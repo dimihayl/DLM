@@ -5544,6 +5544,63 @@ double GetReff(DLM_CleverMcLevyResoTM &MagicSource, const double &rcore)
     return reff;
 }
 
+
+double ConvertMeanGauss(double mean){
+  TF1* fGauss = new TF1("fGauss",GaussSourceTF1,0,64,1);
+
+  unsigned Trials = 1000000;
+  double Expected = mean/2.3;
+  double MinR = Expected/3;
+  double MaxR = Expected*3;
+  double Step = (MaxR-MinR)/double(Trials);
+  double test_val;
+
+  double best_result = 0;
+  double best_nsig = 1e6;
+  double current_result;
+  double current_nsig;
+
+  bool GettingWorse_up = false;
+  bool GettingWorse_low = false;
+
+  for(unsigned uT=0; uT<Trials/2; uT++){
+    test_val = Expected - 0.5*Step - double(uT)*Step;
+    fGauss->SetParameter(0,test_val);
+    current_result = fGauss->Mean(0,64);
+    current_nsig = fabs(current_result-mean);
+    if(current_nsig<best_nsig){
+      best_nsig = current_nsig;
+      best_result = current_result;
+      GettingWorse_low = false;
+    }
+    else GettingWorse_low = true;
+
+
+    test_val = Expected + 0.5*Step + double(uT)*Step;
+    fGauss->SetParameter(0,test_val);
+    current_result = fGauss->Mean(0,64);
+    current_nsig = fabs(current_result-mean);
+    if(current_nsig<best_nsig){
+      best_nsig = current_nsig;
+      best_result = current_result;
+      GettingWorse_up = false;
+    }
+    else GettingWorse_up = true;
+
+    if(GettingWorse_up && GettingWorse_low) break;
+  }
+
+  delete fGauss;
+  return best_result;
+}
+double ConvertGaussMean(double reff){
+  TF1* fGauss = new TF1("fGauss",GaussSourceTF1,0,reff*10,1);
+  fGauss->SetParameter(0,reff);
+  double mean = fGauss->Mean(0,reff*10);
+  delete fGauss;
+  return mean;
+}
+
 void SetUp_RSM_Flat(DLM_CleverMcLevyResoTM &MagicSource, const double frac1, const double frac2, const double MassP1, const double MassP2,
                     const double MassR1, const double MassR2, const double TauR1, const double TauR2,
                     const double TIMEOUT, const int flag)

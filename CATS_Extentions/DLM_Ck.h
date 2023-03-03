@@ -9,6 +9,9 @@ class CATS;
 class DLM_Ck : public DLM_Histo<double>{
 
 public:
+    //this thing creates a copy of 'other' in terms of bins and settings,
+    //however if FULL==false the new DLM_Ck will be SIMPLE HISTO, with no attatchment to cats or functions objects!!!
+    DLM_Ck(const DLM_Ck& other, bool FULL);
     DLM_Ck(const unsigned numbins,const double& kmin, const double& kmax);
     DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat);
     DLM_Ck(const unsigned& nSourcePar, const unsigned& nPotPar, CATS& cat, const unsigned& numbin, const double* bins);

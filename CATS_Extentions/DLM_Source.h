@@ -611,6 +611,18 @@ public:
     double Eval(double* kxc);
     double RootEval(double* x, double* pars);
     bool InErrorState(){return ErrorState;}
+
+    unsigned FindMtBin(double Mt);
+    double FindMt(unsigned uMt);
+
+    double Low_par(unsigned uP, bool bincenter);
+    double Up_par(unsigned uP, bool bincenter);
+
+    unsigned GetNbins(unsigned WhichPar);
+    double* GetBinRange(unsigned WhichPar);
+    double* GetBinCenters(unsigned WhichPar);
+
+
 private:
   //Cigar or Pancake, i.e. d,ht,hz or d,ht,tau
   const std::string AnaVersion;

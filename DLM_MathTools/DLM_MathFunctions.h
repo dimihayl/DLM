@@ -30,6 +30,8 @@ double GetNsigma(const double& chi2, const double& ndf);
 double GetDeltaChi2(const double& nsigma, const unsigned& nfreepars);
 double GetPvalFromNsig(const double& nsigma);
 
+double DLM_Baseline(double* xval, double* par);
+
 std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const unsigned& k);
 
 #endif

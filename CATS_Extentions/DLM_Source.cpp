@@ -237,34 +237,14 @@ double StupidGaussSumTF1(double* x, double* Pars){
 //this is achieved by using the weight parameters as the reletive weight with respect the
 //"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
 double PoissonSum(double* xVal, double* Pars){
-  double Rslt=0;
-  double Pssn;
-  double Norm;
-  double Std2;
-  double Mean;
-  double RemainingNorm = 1;
-  double& x = xVal[0];
+  static KdpPars kdppars;
   for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
-    Mean = Pars[0+uP*3];
-    Std2 = Pars[1+uP*3]*Pars[1+uP*3];
-    if(uP!=KdpPars::NumDistos-1){
-      Norm = RemainingNorm*Pars[2+uP*3];
-      if(Norm>RemainingNorm && Pars[2+uP*3]){
-        Norm = RemainingNorm;
-      }
-    }
-    else Norm = RemainingNorm;
-    if(Norm<0){
-      printf("\033[1;33mWARNING!\033[0m PoissonSum a negative (%.3e) norm! Pars[2+uP*3]=%.3e\n",Norm,Pars[2+uP*3]);
-    }
-    //if(Std2) Pssn = TMath::Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
-    if(Std2) Pssn = DLM_Poisson(x*Mean/Std2,Mean*Mean/Std2)*Mean/Std2;
-    else Pssn = 0;
-    Rslt += Norm*Pssn;
-    if(RemainingNorm==Norm) RemainingNorm=0;
-    else RemainingNorm -= Norm;
+    kdppars.mean[uP] = Pars[0+uP*3];
+    kdppars.stdv[uP] = Pars[1+uP*3];
+    if(uP!=KdpPars::NumDistos-1)
+      kdppars.wght[uP] = Pars[2+uP*3];
   }
-  return Rslt;
+  return PoissonSum(*xVal,kdppars);
 }
 
 double PoissonSum(const double& xVal, const KdpPars& kdppars){
@@ -279,8 +259,7 @@ double PoissonSum(const double& xVal, const KdpPars& kdppars){
     Std2 = kdppars.stdv[uP]*kdppars.stdv[uP];
     if(uP!=KdpPars::NumDistos-1){
       Norm = RemainingNorm*kdppars.wght[uP];
-      if(Norm>RemainingNorm && kdppars.wght[uP]<=1){
-        //printf("Potential issue %.3e %.3e %.3e\n",Norm,RemainingNorm,kdppars.wght[uP]);
+      if(Norm>=RemainingNorm && kdppars.wght[uP]<=1){
         Norm = RemainingNorm;
       }
     }
@@ -295,6 +274,14 @@ double PoissonSum(const double& xVal, const KdpPars& kdppars){
     else RemainingNorm -= Norm;
     if(RemainingNorm<0 && RemainingNorm>-1e-6){
       RemainingNorm = 0;
+    }
+    else if(RemainingNorm<0){
+      if(kdppars.wght[uP]>=0 && kdppars.wght[uP]<=1){
+        RemainingNorm = 0;
+      }
+      else{
+        printf("\033[1;33mWARNING!\033[0m Could not properly correct the Norm! Check the weights!!! RemainingNorm=%.3e\n",RemainingNorm);
+      }
     }
   }
   return Rslt;
@@ -2658,6 +2645,16 @@ bool DLM_CecaSource_v0::InitHisto(){
   return true;
 }
 
+unsigned DLM_CecaSource_v0::FindMtBin(double Mt){
+  if(!dlmSource) return 0;
+  if(Mt<0) return 0;
+  return dlmSource->GetBin(0,Mt);
+}
+double DLM_CecaSource_v0::FindMt(unsigned uMt){
+  if(!dlmSource) return 0;
+  return dlmSource->GetBinCenter(0,uMt);
+}
+
 double DLM_CecaSource_v0::Eval(double* kxc){
   return RootEval(&kxc[1],&kxc[3]);
 }
@@ -2686,5 +2683,34 @@ double DLM_CecaSource_v0::RootEval(double* x, double* pars){
 
   double xval = (*x)*pars[4];
   KdpPars SrcPars = dlmSource->Eval(pars);
+  for(unsigned uP=0; uP<KdpPars::NumDistos-1; uP++){
+    if(SrcPars.wght[uP]<0) SrcPars.wght[uP]=0;
+    if(SrcPars.wght[uP]>1) SrcPars.wght[uP]=1;
+  }
   return PoissonSum(xval,SrcPars);
+}
+
+double DLM_CecaSource_v0::Low_par(unsigned uP, bool bincenter){
+  if(!dlmSource || uP>=dlmSource->GetDim()) return 0;
+  if(bincenter) return dlmSource->GetBinCenter(uP,0);
+  else return dlmSource->GetLowEdge(uP);
+}
+double DLM_CecaSource_v0::Up_par(unsigned uP, bool bincenter){
+  if(!dlmSource || uP>=dlmSource->GetDim()) return 0;
+  if(bincenter) return dlmSource->GetBinCenter(uP,dlmSource->GetNbins(uP)-1);
+  else return dlmSource->GetUpEdge(uP);
+}
+
+unsigned DLM_CecaSource_v0::GetNbins(unsigned WhichPar){
+  return dlmSource->GetNbins(WhichPar);
+}
+double* DLM_CecaSource_v0::GetBinRange(unsigned WhichPar){
+  double* BinRange;
+  BinRange = dlmSource->GetBinRange(WhichPar);
+  return BinRange;
+}
+double* DLM_CecaSource_v0::GetBinCenters(unsigned WhichPar){
+  double* BinCtr;
+  BinCtr = dlmSource->GetBinCenters(WhichPar);
+  return BinCtr;
 }

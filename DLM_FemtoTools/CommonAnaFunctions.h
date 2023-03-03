@@ -228,6 +228,12 @@ double Get_reff(TH1F* hsource, const float lambda=1, const float CEI=0.9);
 double Get_reff_TF1(TH1F* hsource, TF1*& fsource, const float lambda=1, const float CEI=0.9);
 double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff);
 double GetReff(DLM_CleverMcLevyResoTM& MagicSource, const double& rcore);
+//take a value for the mean source and convert it into the r_eff value
+////NOT TESTED
+double ConvertMeanGauss(double mean);
+//the other way around
+double ConvertGaussMean(double reff);
+
 
 //quick way to set up the pp or pL source with default settings (default meaning RUN2 paper)
 //flag X0 is the RSM with the correct sign, flag X1 is the RSM with wrong sign (original)
