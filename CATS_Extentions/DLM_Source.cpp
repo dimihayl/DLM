@@ -2334,6 +2334,7 @@ bool DLM_CecaSource_v0::LoadSource(){
       float h_x = 0;
       float h_y = 0;
       float h_z = 0;
+      float tau = 0;
       for(unsigned uMt=0; uMt<NumMtBins; uMt++){
         MtBinCenter[uMt] = 0;
         Chi2Ndf[uMt] = 0;
@@ -2378,7 +2379,7 @@ bool DLM_CecaSource_v0::LoadSource(){
             if(strcmp(cdscr,"h_y")==0) {h_y = read_value;}
             if(strcmp(cdscr,"h_z")==0) {h_z = read_value;}
             //else if(strcmp(cdscr,"h_fct")==0) {h_fct = read_value;}
-            //else if(strcmp(cdscr,"tau")==0) {tau = read_value;}
+            if(strcmp(cdscr,"tau")==0) {tau = read_value;}
             //else if(strcmp(cdscr,"tau_fct")==0) {tau_fct = read_value;}
             //else if(strcmp(cdscr,"tau_prp")==0) {tau_prp = bool(read_value);}
             //else if(strcmp(cdscr,"hdr_size")==0) {hdr_size = read_value;}
@@ -2442,8 +2443,10 @@ bool DLM_CecaSource_v0::LoadSource(){
         WhichBin[0] = dlmSource->GetBin(0,MtBinCenter[uMt]);//mT
         WhichBin[1] = dlmSource->GetBin(1,d_x);//d
         WhichBin[2] = dlmSource->GetBin(2,h_x);//ht
-        WhichBin[3] = dlmSource->GetBin(3,h_z);//hz
-
+        if(AnaVersionBase=="Cigar2")
+          WhichBin[3] = dlmSource->GetBin(3,h_z);//hz
+        else if(AnaVersionBase=="Jaime1")
+          WhichBin[3] = dlmSource->GetBin(3,tau);
   //if(fabs(MtBinCenter[uMt]-1110)<1 && fabs(d_x-0.1867)<0.001 && fabs(h_x-4.067)<0.01 && fabs(h_z-10.167)<0.01 ){
   //  printf("file = %s\n",InFileName.c_str());
   //  printf("[%u][%u][%u][%u]:\n",WhichBin[0],WhichBin[1],WhichBin[2],WhichBin[3]);
@@ -2473,12 +2476,23 @@ bool DLM_CecaSource_v0::LoadSource(){
           //NumPar++;
           continue;
         }
-        if(h_z<dlmSource->GetLowEdge(3) || h_z>dlmSource->GetUpEdge(3)){
-          printf("\033[1;33mWARNING:\033[0m h_z outside range\n");
-          //if(InFile) fclose(InFile);
-          //NumPar++;
-          continue;
+        if(AnaVersionBase=="Cigar2"){
+          if(h_z<dlmSource->GetLowEdge(3) || h_z>dlmSource->GetUpEdge(3)){
+            printf("\033[1;33mWARNING:\033[0m h_z outside range\n");
+            //if(InFile) fclose(InFile);
+            //NumPar++;
+            continue;
+          }
         }
+        else if(AnaVersionBase=="Jaime1"){
+          if(tau<dlmSource->GetLowEdge(3) || tau>dlmSource->GetUpEdge(3)){
+            printf("\033[1;33mWARNING:\033[0m h_z outside range\n");
+            //if(InFile) fclose(InFile);
+            //NumPar++;
+            continue;
+          }
+        }
+
 
         KdpPars BinCont = dlmSource->GetBinContent(WhichBin);
         if(BinCont!=0){
@@ -2488,6 +2502,19 @@ bool DLM_CecaSource_v0::LoadSource(){
           continue;
         }
         dlmSource->SetBinContent(WhichBin,SrcPar[uMt]);
+        //printf("mT = %f\n",MtBinCenter[uMt]);
+        //printf("d_x = %f\n",d_x);
+        //printf("h_x = %f\n",h_x);
+        //printf("tau = %f\n",tau);
+        //printf("[%u][%u][%u][%u]\n",WhichBin[0],WhichBin[1],WhichBin[2],WhichBin[3]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[0],SrcPar[uMt].stdv[0],SrcPar[uMt].wght[0]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[1],SrcPar[uMt].stdv[1],SrcPar[uMt].wght[1]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[2],SrcPar[uMt].stdv[2],SrcPar[uMt].wght[2]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[3],SrcPar[uMt].stdv[3],SrcPar[uMt].wght[3]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[4],SrcPar[uMt].stdv[4],SrcPar[uMt].wght[4]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[5],SrcPar[uMt].stdv[5],SrcPar[uMt].wght[5]);
+        //printf("%f %f %f\n",SrcPar[uMt].mean[6],SrcPar[uMt].stdv[6],SrcPar[uMt].wght[6]);
+        //usleep(100e3);
       }//uMt
 
       NumPar++;
@@ -2517,8 +2544,9 @@ bool DLM_CecaSource_v0::InitHisto(){
     return false;
   }
   //if it starts with that
-  if(AnaVersion.rfind("Cigar2_ds",0)==0) { // pos=0 limits the search to the prefix
-    AnaVersionBase = "Cigar2";
+  if(AnaVersion.rfind("Cigar2_ds",0)==0||AnaVersion.rfind("Jaime1_ds",0)==0) { // pos=0 limits the search to the prefix
+    if(AnaVersion.rfind("Cigar2_ds",0)==0) AnaVersionBase = "Cigar2";
+    else if(AnaVersion.rfind("Jaime1_ds",0)==0) AnaVersionBase = "Jaime1";
     vector<string> str_pars;
     std::string str_tmp;
     unsigned NumDist = 0;
@@ -2541,11 +2569,11 @@ bool DLM_CecaSource_v0::InitHisto(){
         str_tmp.erase(0,3);
         NumHt = stoi(str_tmp);
       }
-      else if(str_tmp.rfind("hzs",0)==0){
+      else if(str_tmp.rfind("hzs",0)==0 || str_tmp.rfind("taus",0)==0){
         str_tmp.erase(0,3);
         NumHz = stoi(str_tmp);
       }
-      else if(str_tmp.rfind("Cigar2",0)==0){
+      else if(str_tmp.rfind("Cigar2",0)==0||str_tmp.rfind("Jaime1",0)==0){
         //do nothing
       }
       else{
@@ -2554,9 +2582,11 @@ bool DLM_CecaSource_v0::InitHisto(){
       }
     }//while
 
+    //printf("AnaVersionBase = %s\n",AnaVersionBase.c_str());
     //printf("NumDist = %u\n",NumDist);
     //printf("NumHt = %u\n",NumHt);
     //printf("NumHz = %u\n",NumHz);
+    //usleep(1000e3);
 
     dlmSource = new DLM_Histo<KdpPars>();
     //the 3 pars + mT = 4 dims
@@ -2630,7 +2660,8 @@ bool DLM_CecaSource_v0::InitHisto(){
     //ranges are fixed for the Cigar2 case
     dlmSource->SetUp(1,NumDist,0,1.28);
     dlmSource->SetUp(2,NumHt,0,4.8);
-    dlmSource->SetUp(3,NumHz,0,12.0);
+         if(AnaVersionBase=="Cigar2") dlmSource->SetUp(3,NumHz,0,12.0);
+    else if(AnaVersionBase=="Jaime1") dlmSource->SetUp(3,NumHz,0,6.0);
     dlmSource->Initialize();
 
     dlmSource->SetBinCenter(0,BinCenter);
@@ -2687,6 +2718,11 @@ double DLM_CecaSource_v0::RootEval(double* x, double* pars){
     if(SrcPars.wght[uP]<0) SrcPars.wght[uP]=0;
     if(SrcPars.wght[uP]>1) SrcPars.wght[uP]=1;
   }
+//printf("XXX\n");
+//SrcPars.Print();
+//printf(" --- (%f) %f\n",xval,PoissonSum(xval,SrcPars));
+//usleep(250e3);
+
   return PoissonSum(xval,SrcPars);
 }
 

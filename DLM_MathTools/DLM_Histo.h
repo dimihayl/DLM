@@ -1315,8 +1315,15 @@ public:
         //Type TotalNorm=0;
 
         for(unsigned short sDim=0; sDim<Dim; sDim++){
-          if(xVal[sDim]>GetUpEdge(sDim)) return Type(0);
-          if(xVal[sDim]<GetLowEdge(sDim)) return Type(0);
+          if(xVal[sDim]>GetUpEdge(sDim) || xVal[sDim]<GetLowEdge(sDim)){
+            delete [] xValue1;
+            delete [] xValue2;
+            delete [] xBin1;
+            delete [] xBin2;
+            delete [] DeltaX1;
+            delete [] DeltaX2;
+            return Type(0);
+          }
         }
 
         for(unsigned short sDim=0; sDim<Dim; sDim++){
