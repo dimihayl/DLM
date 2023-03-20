@@ -4798,6 +4798,10 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
             {
                 FileName = TString::Format(CatsFilesFolder[0] + "/ExpData/Bernie_Source/ppData/mTBin_%i/CFOutput_mT_ppVar%s_HM_%i.root", mTbin + 1, CutVar.Data(), mTbin);
                 HistoName = TString::Format("hCk_RebinnedppVar%sMeV_0", CutVar.Data());
+                if(AddSyst){
+                  SystFileName = (CatsFilesFolder[0] + "/ExpData/Bernie_Source/ppData/DimiSystematics_pp.root");
+                  SystHistName = TString::Format("hSyst_mT%i", mTbin + 1);
+                }
             }
             else
             {
@@ -4810,6 +4814,10 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
             {
                 FileName = TString::Format(CatsFilesFolder[0] + "/ExpData/Bernie_Source/pLData/mTBin_%i/CFOutput_mT_pLVar%s_HM_%i.root", mTbin + 1, CutVar.Data(), mTbin);
                 HistoName = TString::Format("hCk_RebinnedpLVar%sMeV_0", CutVar.Data());
+                if(AddSyst){
+                  SystFileName = (CatsFilesFolder[0] + "/ExpData/Bernie_Source/pLData/DimiSystematics_pL.root");
+                  SystHistName = TString::Format("hSyst_mT%i", mTbin + 1);
+                }
             }
             else
             {
@@ -4965,6 +4973,19 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
             if (!hRelSyst)
             {
                 printf("\033[1;31mERROR:\033[0m The hRelSyst '%s' does not exist\n", SystHistName.Data());
+            }
+            //in this case the systematics are absolute!!!
+            else if(SystFileName.Contains("DimiSystematics_")){
+              double MaxMom = hRelSyst->GetXaxis()->GetBinUpEdge(hRelSyst->GetNbinsX());
+              for (int iBin = 1; iBin <= histoCopy->GetNbinsX(); iBin++){
+                if (histoCopy->GetBinCenter(iBin) > MaxMom)
+                    break;
+                double StatErr = histoCopy->GetBinError(iBin);
+                double SystErr = hRelSyst->GetBinError(hRelSyst->FindBin(histoCopy->GetBinCenter(iBin)));
+                double TotErr = sqrt(StatErr * StatErr + SystErr * SystErr);
+                histoCopy->SetBinError(iBin, TotErr);
+//printf("System=%s; iBin=%i; Ck=%.4f; stat=%.4f; syst=%.4f; tot=%.4f\n",System.Data(),iBin,histoCopy->GetBinContent(iBin),StatErr,SystErr,TotErr);
+              }
             }
             else
             {
@@ -6332,6 +6353,71 @@ void SetUpKdpPars(TF1*& fitfun, int Mode){
   fitfun->SetNpx(4096);
 
 }
+
+bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFit, TF1*& fitSP,
+  const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh){
+  Kitty.KillTheCat();
+  double* MomBins = Kitty.CopyMomBin();
+  hFit = new TH1F("hFit52351","hFit52351",Kitty.GetNumMomBins(),MomBins);
+  double LAST_POINT;
+  double CURRENT_POINT;
+  for(unsigned uMom=0; uMom<Kitty.GetNumMomBins(); uMom++){
+    CURRENT_POINT = Kitty.GetMomentum(uMom)/tan(Kitty.GetPhaseShift(uMom,usCh,0));
+    if(uMom){
+      if(CURRENT_POINT*LAST_POINT<0&&fabs(CURRENT_POINT-LAST_POINT)>1000&&Kitty.GetMomentum(uMom)<120)
+      {fitSP=NULL;delete[]MomBins;return false;}
+    }
+    hFit->SetBinContent(uMom+1,CURRENT_POINT);
+    hFit->SetBinError(uMom+1,1.);
+    LAST_POINT = CURRENT_POINT;
+  }
+  TF1* fitSP2 = new TF1("fitSP2","0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
+  TF1* fitSP4 = new TF1("fitSP4","[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
+  TF1* fitSP6 = new TF1("fitSP6","[3]*pow(x,6.)+[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
+  double inv_f0 = ScatLen==0?0:1./ScatLen;
+  if(Fixf0) {fitSP2->FixParameter(0,inv_f0);fitSP4->FixParameter(0,inv_f0);fitSP6->FixParameter(0,inv_f0);}
+  else {fitSP2->SetParameter(0,inv_f0);fitSP2->SetParLimits(0,-100,100);
+        fitSP4->SetParameter(0,inv_f0);fitSP4->SetParLimits(0,-100,100);
+        fitSP6->SetParameter(0,inv_f0);fitSP6->SetParLimits(0,-100,100);}
+  if(Fixd0) { fitSP2->FixParameter(1,EffRan);
+              fitSP4->FixParameter(1,EffRan);
+              fitSP6->FixParameter(1,EffRan);}
+  else {fitSP2->SetParameter(1,EffRan);fitSP2->SetParLimits(1,-50,50);
+        fitSP4->SetParameter(1,EffRan);fitSP4->SetParLimits(1,-50,50);
+        fitSP6->SetParameter(1,EffRan);fitSP6->SetParLimits(1,-50,50);}
+  fitSP4->SetParameter(2,0);fitSP6->SetParameter(2,0);
+  fitSP6->SetParameter(3,0);
+
+
+  double Chi2_Old = 1e64;
+
+  //hFit->Fit(fitSP2, "Q, S, N, R, M");
+  ROOT::Math::MinimizerOptions MinOpt;
+  MinOpt.SetMinimizerType("Minuit2");
+  MinOpt.SetPrintLevel(0);
+  DLM_FitHisto(hFit, fitSP2, "Q, S, N, R, M", "", &MinOpt);
+  //printf("f0 %f\n", 1./fitSP2->GetParameter(0));
+  ScatLen = 1./fitSP2->GetParameter(0);
+  EffRan = fitSP2->GetParameter(1);
+  if(Nterms<=2){delete fitSP4; delete fitSP6; fitSP=fitSP2; delete[]MomBins; return true;}
+
+  //hFit->Fit(fitSP4, "Q, S, N, R, M");
+  DLM_FitHisto(hFit, fitSP4, "Q, S, N, R, M", "", &MinOpt);
+  if(fitSP4->GetChisquare()/fitSP2->GetChisquare()>0.8)
+  {delete fitSP4; delete fitSP6; fitSP=fitSP2; delete[]MomBins; return true;}
+  ScatLen = 1./fitSP4->GetParameter(0);
+  EffRan = fitSP4->GetParameter(1);
+  if(Nterms<=3){delete fitSP2; delete fitSP6; fitSP=fitSP4; delete[]MomBins; return true;}
+
+  //hFit->Fit(fitSP6, "Q, S, N, R, M");
+  DLM_FitHisto(hFit, fitSP6, "Q, S, N, R, M", "", &MinOpt);
+  if(fitSP6->GetChisquare()/fitSP4->GetChisquare()>0.8)
+  {delete fitSP2; delete fitSP6; fitSP=fitSP4; delete[]MomBins; return true;}
+  ScatLen = 1./fitSP6->GetParameter(0);
+  EffRan = fitSP6->GetParameter(1);
+  delete fitSP2; delete fitSP4; fitSP=fitSP6; delete[]MomBins; return true;
+}
+
 
 /*
 void DLM_CommonAnaFunctions::Clean_CommonAnaFunctions(){
