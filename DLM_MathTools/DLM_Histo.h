@@ -709,74 +709,21 @@ public:
       if(rangen) delete rangen;
       rangen = new DLM_Random(seed);
     }
-    void Sample(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
-      if(!RanGen) RanGen = rangen;
-      if(!RanGen) RanGen = new DLM_Random(0);
-      unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
-      if(!CumulativeValue) UpdateCum();
-      double rannum = RanGen->Uniform(0,double(CumulativeValue[TopBin]));
-      //printf("rn %f cvtp %f\n",rannum,CumulativeValue[TopBin]);
-      double value_down;
-      double value_up;
-      unsigned Fraction = 2;
-      unsigned Step = TopBin/Fraction;
-      unsigned BinCandidate = Step;
-      while(true){
-        //printf("BinCandidate = %u\n",BinCandidate);
-        if(BinCandidate==0) value_down = double(CumulativeValue[BinCandidate]);
-        else value_down = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate-1])*0.5;
-        if(BinCandidate==TopBin) value_up = double(CumulativeValue[BinCandidate]);
-        else value_up = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate+1])*0.5;
-        //printf(" value_down = %f\n",value_down);
-        //printf(" value_up = %f\n",value_up);
-        //printf(" rannum = %f\n",rannum);
-        if(value_up>=rannum && value_down<=rannum){
-          unsigned* BinId = new unsigned [Dim];
-          GetBinCoordinates(BinCandidate,BinId);
-          for(unsigned short sDim=0; sDim<Dim; sDim++){
-            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
-            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
-          }
-          delete [] BinId;
-          return;
-        }
-        else{
-          Fraction*=2;
-          Step=TopBin/Fraction;
-          if(Step==0)Step=1;
-        }
-
-        if(value_up<rannum) BinCandidate+=Step;
-        else BinCandidate-=Step;
-
-        if(BinCandidate==TopBin+1){
-          unsigned* BinId = new unsigned [Dim];
-          GetBinCoordinates(TopBin,BinId);
-          for(unsigned short sDim=0; sDim<Dim; sDim++){
-            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
-            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
-          }
-          delete [] BinId;
-          return;
-        }
-        if(BinCandidate==-1){
-          unsigned* BinId = new unsigned [Dim];
-          GetBinCoordinates(0,BinId);
-          for(unsigned short sDim=0; sDim<Dim; sDim++){
-            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
-            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
-          }
-          delete [] BinId;
-          return;
-        }
-      }
+    //samples randomly assuming that the histogram contains yield (non-normalized to bin width)
+    void SampleYield(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
+      return Sample(axisValues,UnderOverFlow,true,RanGen);
     }
-    double Sample(const bool& UnderOverFlow=false) const{
-      if(Dim!=1) return 0;
-      double result;
-      Sample(&result,UnderOverFlow);
-      return result;
+    double SampleYield(const bool& UnderOverFlow=false) const{
+      return Sample(UnderOverFlow,true);
     }
+    //samples randomly assuming that the histogram is a pdf, i.e. normalized to the bin width
+    void SamplePdf(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
+      return Sample(axisValues,UnderOverFlow,false,RanGen);
+    }
+    double SamplePdf(const bool& UnderOverFlow=false) const{
+      return Sample(UnderOverFlow,false);
+    }
+
     //the total integral
     Type Integral(const bool& OverUnderFlow=true){
       Type RESULT = 0;
@@ -1759,12 +1706,17 @@ protected:
     }
 
     //updates a single cumulative bin, assuming that WhichTotBin-1 is updated, as well as BinValue[WhichTotBin]
-    void UpdateCum(){
+    void UpdateCum(const bool& yield){
       if(!Initialized) {InitWarning(); return;}
       if(!CumulativeValue) CumulativeValue = new Type[TotNumBins+2];
       for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
-        if(uBin==0) CumulativeValue[uBin]=BinValue[uBin];
-        else CumulativeValue[uBin]=CumulativeValue[uBin-1]+BinValue[uBin];
+        double Renorm = 1;
+        //if this histo is a pdf, we need to multiply by the bin width in order to sample properly
+        if(uBin<TotNumBins && yield==false){
+          Renorm = GetBinSize(uBin);//this is the bin size (N-dim volume, width for 1D)
+        }
+        if(uBin==0) CumulativeValue[uBin]=BinValue[uBin]*Renorm;
+        else CumulativeValue[uBin]=CumulativeValue[uBin-1]+BinValue[uBin]*Renorm;
         //printf("b%u %e %e\n",uBin,CumulativeValue[uBin],BinValue[uBin]);
         if(BinValue[uBin]<0){
           printf("\033[1;33mWARNING:\033[0m DLM_Histo cannot be used for sampling, due to negative entries!\n");
@@ -1774,6 +1726,78 @@ protected:
       }
       CumUpdated = true;
     }
+
+    //this is done based on the absolute value of the bin, NOT normalized to bin width
+    void Sample(double* axisValues, const bool& UnderOverFlow, const bool& yield, DLM_Random* RanGen){
+      if(!RanGen) RanGen = rangen;
+      if(!RanGen) RanGen = new DLM_Random(0);
+      unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
+      if(!CumulativeValue) UpdateCum(yield);
+      double rannum = RanGen->Uniform(0,double(CumulativeValue[TopBin]));
+      //printf("rn %f cvtp %f\n",rannum,CumulativeValue[TopBin]);
+      double value_down;
+      double value_up;
+      unsigned Fraction = 2;
+      unsigned Step = TopBin/Fraction;
+      unsigned BinCandidate = Step;
+      while(true){
+        //printf("BinCandidate = %u\n",BinCandidate);
+        if(BinCandidate==0) value_down = double(CumulativeValue[BinCandidate]);
+        else value_down = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate-1])*0.5;
+        if(BinCandidate==TopBin) value_up = double(CumulativeValue[BinCandidate]);
+        else value_up = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate+1])*0.5;
+        //printf(" value_down = %f\n",value_down);
+        //printf(" value_up = %f\n",value_up);
+        //printf(" rannum = %f\n",rannum);
+        if(value_up>=rannum && value_down<=rannum){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(BinCandidate,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
+          }
+          delete [] BinId;
+          return;
+        }
+        else{
+          Fraction*=2;
+          Step=TopBin/Fraction;
+          if(Step==0)Step=1;
+        }
+
+        if(value_up<rannum) BinCandidate+=Step;
+        else BinCandidate-=Step;
+
+        if(BinCandidate==TopBin+1){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(TopBin,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
+          }
+          delete [] BinId;
+          return;
+        }
+        if(BinCandidate==-1){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(0,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
+          }
+          delete [] BinId;
+          return;
+        }
+      }
+    }
+    double Sample(const bool& UnderOverFlow, const bool& yield) const{
+      if(Dim!=1) return 0;
+      double result;
+      Sample(&result,UnderOverFlow,yield,NULL);
+      return result;
+    }
+
+
 
     void InitPER(){
         NumPermutations = 1;
