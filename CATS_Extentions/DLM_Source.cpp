@@ -2400,10 +2400,10 @@ bool DLM_CecaSource_v0::LoadSource(){
             //else if(strcmp(cdscr,"m_lambda_reso")==0) {m_lambda_reso = read_value;}
             //else if(strcmp(cdscr,"tau_lambda_reso")==0) {tau_lambda_reso = read_value;}
             //else if(strcmp(cdscr,"frac_lambda_reso")==0) {frac_lambda_reso = read_value;}
-            else if(strcmp(cdscr,"del_proton")==0) {del_proton = read_value;}
-            else if(strcmp(cdscr,"del_proton_reso")==0) {del_proton_reso = read_value;}
-            else if(strcmp(cdscr,"del_lambda")==0) {del_lambda = read_value;}
-            else if(strcmp(cdscr,"del_lambda_reso")==0) {del_lambda_reso = read_value;}
+            if(strcmp(cdscr,"del_proton")==0) {del_proton = read_value;}
+            if(strcmp(cdscr,"del_proton_reso")==0) {del_proton_reso = read_value;}
+            if(strcmp(cdscr,"del_lambda")==0) {del_lambda = read_value;}
+            if(strcmp(cdscr,"del_lambda_reso")==0) {del_lambda_reso = read_value;}
           }//strcmp(cdscr,"type")
         }//ReadMode==1
         else{
@@ -2589,7 +2589,7 @@ bool DLM_CecaSource_v0::InitHisto(){
     //std::string delim = "_";
     std::stringstream ssAnaVersion(AnaVersion);
     while(getline(ssAnaVersion,str_tmp,'_')){
-      printf("str_tmp = %s\n",str_tmp.c_str());
+      //printf("str_tmp = %s\n",str_tmp.c_str());
       if(str_tmp.rfind("ds",0)==0){
         //deletes the first two chars
         str_tmp.erase(0,2);
