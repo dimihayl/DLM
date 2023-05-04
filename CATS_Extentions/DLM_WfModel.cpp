@@ -570,6 +570,10 @@ DLM_Histo<complex<double>> ***Init_pL_Haidenbauer(const char *InputFolder, CATS 
 //     96 2.45
 //     95 2.30
 //     94 2.20
+//     10 3.00 NEW
+//     11 3.10 NEW
+//     12 3.20 NEW
+//     13 3.30 NEW
 //   S=1 (same logic as above)
 //     00 default (1.41)
 //     01 CSB
@@ -581,6 +585,8 @@ DLM_Histo<complex<double>> ***Init_pL_Haidenbauer(const char *InputFolder, CATS 
 //     94 1.10
 //     93 1.05
 //     92 1.00
+//     91 0.95 NEW
+//     90 0.90 NEW
 // and now comes the 603, will is just a junkyard for testing:
 //     S=1
 //     00-04: all 1.1 fm, only that different LEPs inside chEFT were changed
@@ -939,6 +945,26 @@ DLM_Histo<complex<double>> ***Init_pL_Haidenbauer2019(const char *InputFolder, C
                 strcat(InputFileName[uFile], "19_CSB/");
                 strcat(InputFileName[uFile], "csbN191s0.600");
             }
+            else if (uFile == f1S0 && ABCD / 100 == 10)
+            {
+                strcat(InputFileName[uFile], "19_FineTunes/");
+                strcat(InputFileName[uFile], "NLO19_1s0_3p00.600");
+            }
+            else if (uFile == f1S0 && ABCD / 100 == 11)
+            {
+                strcat(InputFileName[uFile], "19_FineTunes/");
+                strcat(InputFileName[uFile], "NLO19_1s0_3p10.600");
+            }
+            else if (uFile == f1S0 && ABCD / 100 == 12)
+            {
+                strcat(InputFileName[uFile], "19_FineTunes/");
+                strcat(InputFileName[uFile], "NLO19_1s0_3p20.600");
+            }
+            else if (uFile == f1S0 && ABCD / 100 == 13)
+            {
+                strcat(InputFileName[uFile], "19_FineTunes/");
+                strcat(InputFileName[uFile], "NLO19_1s0_3p30.600");
+            }
             else if (uFile == f1S0 && ABCD / 100 == 99)
             {
                 strcat(InputFileName[uFile], "19_FineTunes/");
@@ -1015,6 +1041,16 @@ DLM_Histo<complex<double>> ***Init_pL_Haidenbauer2019(const char *InputFolder, C
             {
                 strcat(InputFileName[uFile], "19_FineTunes/");
                 strcat(InputFileName[uFile], "NLO19_3s1_1p00.600");
+            }
+            else if (uFile == f3S1 && ABCD % 100 == 91)
+            {
+                strcat(InputFileName[uFile], "19_FineTunes/");
+                strcat(InputFileName[uFile], "NLO19_3s1_0p95.600");
+            }
+            else if (uFile == f3S1 && ABCD % 100 == 90)
+            {
+                strcat(InputFileName[uFile], "19_FineTunes/");
+                strcat(InputFileName[uFile], "NLO19_3s1_0p90.600");
             }
             // ------------------------------------------------------------
             else

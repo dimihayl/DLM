@@ -2,6 +2,7 @@
 #ifndef DLM_HISTO_H
 #define DLM_HISTO_H
 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -10,6 +11,10 @@
 //#include <stdint.h>
 //#include <complex>
 //#include <unistd.h>
+#include<fstream>
+#include<iostream>
+
+using namespace std;
 
 template <class Type> class DLM_Histo1D{
 public:
@@ -704,74 +709,21 @@ public:
       if(rangen) delete rangen;
       rangen = new DLM_Random(seed);
     }
-    void Sample(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
-      if(!RanGen) RanGen = rangen;
-      if(!RanGen) RanGen = new DLM_Random(0);
-      unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
-      if(!CumulativeValue) UpdateCum();
-      double rannum = RanGen->Uniform(0,double(CumulativeValue[TopBin]));
-      //printf("rn %f cvtp %f\n",rannum,CumulativeValue[TopBin]);
-      double value_down;
-      double value_up;
-      unsigned Fraction = 2;
-      unsigned Step = TopBin/Fraction;
-      unsigned BinCandidate = Step;
-      while(true){
-        //printf("BinCandidate = %u\n",BinCandidate);
-        if(BinCandidate==0) value_down = double(CumulativeValue[BinCandidate]);
-        else value_down = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate-1])*0.5;
-        if(BinCandidate==TopBin) value_up = double(CumulativeValue[BinCandidate]);
-        else value_up = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate+1])*0.5;
-        //printf(" value_down = %f\n",value_down);
-        //printf(" value_up = %f\n",value_up);
-        //printf(" rannum = %f\n",rannum);
-        if(value_up>=rannum && value_down<=rannum){
-          unsigned* BinId = new unsigned [Dim];
-          GetBinCoordinates(BinCandidate,BinId);
-          for(unsigned short sDim=0; sDim<Dim; sDim++){
-            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
-            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
-          }
-          delete [] BinId;
-          return;
-        }
-        else{
-          Fraction*=2;
-          Step=TopBin/Fraction;
-          if(Step==0)Step=1;
-        }
-
-        if(value_up<rannum) BinCandidate+=Step;
-        else BinCandidate-=Step;
-
-        if(BinCandidate==TopBin+1){
-          unsigned* BinId = new unsigned [Dim];
-          GetBinCoordinates(TopBin,BinId);
-          for(unsigned short sDim=0; sDim<Dim; sDim++){
-            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
-            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
-          }
-          delete [] BinId;
-          return;
-        }
-        if(BinCandidate==-1){
-          unsigned* BinId = new unsigned [Dim];
-          GetBinCoordinates(0,BinId);
-          for(unsigned short sDim=0; sDim<Dim; sDim++){
-            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
-            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
-          }
-          delete [] BinId;
-          return;
-        }
-      }
+    //samples randomly assuming that the histogram contains yield (non-normalized to bin width)
+    void SampleYield(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
+      return Sample(axisValues,UnderOverFlow,true,RanGen);
     }
-    double Sample(const bool& UnderOverFlow=false) const{
-      if(Dim!=1) return 0;
-      double result;
-      Sample(&result,UnderOverFlow);
-      return result;
+    double SampleYield(const bool& UnderOverFlow=false) const{
+      return Sample(UnderOverFlow,true);
     }
+    //samples randomly assuming that the histogram is a pdf, i.e. normalized to the bin width
+    void SamplePdf(double* axisValues, const bool& UnderOverFlow=false, DLM_Random* RanGen=NULL){
+      return Sample(axisValues,UnderOverFlow,false,RanGen);
+    }
+    double SamplePdf(const bool& UnderOverFlow=false) const{
+      return Sample(UnderOverFlow,false);
+    }
+
     //the total integral
     Type Integral(const bool& OverUnderFlow=true){
       Type RESULT = 0;
@@ -918,6 +870,7 @@ public:
       Rebin(reb_fact);
       delete [] reb_fact;
     }
+
     unsigned GetNbins() const{
         if(!Initialized) {InitWarning(); return 0;}
         return TotNumBins;
@@ -1046,6 +999,15 @@ public:
         if(!BinCenter[sDim])return;
         BinCenter[sDim][WhichBin] = Val;
     }
+    void SetBinCenter(const unsigned short& sDim, const double* bincenter){
+        if(!Initialized) {InitWarning(); return;}
+        if(sDim>=Dim)return;
+        if(!BinCenter)return;
+        if(!BinCenter[sDim])return;
+        for(unsigned uBin=0; uBin<NumBins[sDim]; uBin++){
+          BinCenter[sDim][uBin] = bincenter[uBin];
+        }
+    }
 
     double GetBinCenter(const unsigned short& sDim, const unsigned& WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
@@ -1057,21 +1019,21 @@ public:
     }
 
     Type GetBinContent(const unsigned& WhichTotBin) const{
-        if(!Initialized) {InitWarning(); return 0;}
-        if(WhichTotBin>=TotNumBins+2) return 0;
+        if(!Initialized) {InitWarning(); return Type(0);}
+        if(WhichTotBin>=TotNumBins+2) return Type(0);
         return BinValue[WhichTotBin];
     }
     Type GetBinContent(const unsigned& WhichX, const unsigned& WhichY) const{
-        if(!Initialized) {InitWarning(); return 0;}
-        if(Dim!=2)return 0;
+        if(!Initialized) {InitWarning(); return Type(0);}
+        if(Dim!=2)return Type(0);
         unsigned WhichBin[2];
         WhichBin[0] = WhichX;
         WhichBin[1] = WhichY;
         return GetBinContent(GetTotBin(WhichBin));
     }
     Type GetBinContent(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ) const{
-        if(!Initialized) {InitWarning(); return 0;}
-        if(Dim!=3)return 0;
+        if(!Initialized) {InitWarning(); return Type(0);}
+        if(Dim!=3)return Type(0);
         unsigned WhichBin[3];
         WhichBin[0] = WhichX;
         WhichBin[1] = WhichY;
@@ -1080,30 +1042,30 @@ public:
     }
 
     Type GetBinContent(const unsigned* WhichBin) const{
-        if(!Initialized) {InitWarning(); return 0;}
+        if(!Initialized) {InitWarning(); return Type(0);}
         return GetBinContent(GetTotBin(WhichBin));
     }
 
     Type GetBinError(const unsigned& WhichTotBin) const{
-        if(!Initialized) {InitWarning(); return 0;}
-        if(WhichTotBin>=TotNumBins) return 0;
+        if(!Initialized) {InitWarning(); return Type(0);}
+        if(WhichTotBin>=TotNumBins) return Type(0);
         return BinError[WhichTotBin];
     }
     Type GetBinError(const unsigned* WhichBin) const{
-        if(!Initialized) {InitWarning(); return 0;}
+        if(!Initialized) {InitWarning(); return Type(0);}
         return GetBinError(GetTotBin(WhichBin));
     }
     Type GetBinError(const unsigned& WhichX, const unsigned& WhichY) const{
-        if(!Initialized) {InitWarning(); return 0;}
-        if(Dim!=2)return 0;
+        if(!Initialized) {InitWarning(); return Type(0);}
+        if(Dim!=2)return Type(0);
         unsigned WhichBin[2];
         WhichBin[0] = WhichX;
         WhichBin[1] = WhichY;
         return GetBinError(GetTotBin(WhichBin));
     }
     Type GetBinError(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ) const{
-        if(!Initialized) {InitWarning(); return 0;}
-        if(Dim!=3)return 0;
+        if(!Initialized) {InitWarning(); return Type(0);}
+        if(Dim!=3)return Type(0);
         unsigned WhichBin[3];
         WhichBin[0] = WhichX;
         WhichBin[1] = WhichY;
@@ -1286,7 +1248,7 @@ public:
     }
 
     Type Eval(const double* xVal, const bool& EvalTheError=false) const{
-        if(!Initialized) {InitWarning(); return 0;}
+        if(!Initialized) {InitWarning(); return Type(0);}
         //this is here to make it thread-safe, but maybe hinders performance???
         double* xValue1 = new double [Dim];
         double* xValue2 = new double [Dim];
@@ -1300,8 +1262,15 @@ public:
         //Type TotalNorm=0;
 
         for(unsigned short sDim=0; sDim<Dim; sDim++){
-          if(xVal[sDim]>GetUpEdge(sDim)) return 0;
-          if(xVal[sDim]<GetLowEdge(sDim)) return 0;
+          if(xVal[sDim]>GetUpEdge(sDim) || xVal[sDim]<GetLowEdge(sDim)){
+            delete [] xValue1;
+            delete [] xValue2;
+            delete [] xBin1;
+            delete [] xBin2;
+            delete [] DeltaX1;
+            delete [] DeltaX2;
+            return Type(0);
+          }
         }
 
         for(unsigned short sDim=0; sDim<Dim; sDim++){
@@ -1386,8 +1355,8 @@ public:
         }
         Type Result=0;
         unsigned* BinArray = new unsigned [Dim];
-        Type Weight=1;
-        Type Norm=0;
+        double Weight=1;
+        double Norm=0;
         for(unsigned uPer=0; uPer<NumPermutations; uPer++){
             Weight=1;
             for(unsigned short sDim=0; sDim<Dim; sDim++){
@@ -1400,8 +1369,8 @@ public:
                     Weight*=DeltaX1[sDim];
                 }
             }
-            if(EvalTheError){Result += GetBinError(BinArray)*Weight;}
-            else{Result += GetBinContent(BinArray)*Weight;}
+            if(EvalTheError){Result += (GetBinError(BinArray)*Weight);}
+            else{Result += (GetBinContent(BinArray)*Weight);}
             Norm += Weight;
         }
         Result /= Norm;
@@ -1424,6 +1393,15 @@ public:
 
     Type EvalError(const double* xVal) const{
         return Eval(xVal,true);
+    }
+
+    Type Eval(const double xVal, const bool& EvalTheError=false) const{
+      if(Dim!=1) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Eval(xVal) function failed, this set up works only for Dim=1!\n"); return Type(0);}
+      return Eval(&xVal,EvalTheError);
+    }
+    Type EvalError(const double xVal) const{
+      if(Dim!=1) {printf("\033[1;33mWARNING:\033[0m DLM_Histo EvalError(xVal) function failed, this set up works only for Dim=1!\n"); return Type(0);}
+      return EvalError(&xVal);
     }
 
     bool operator=(const DLM_Histo& other){
@@ -1531,6 +1509,121 @@ public:
         return Result;
     }
 
+    //write to a binary file of format
+    bool QuickWrite(const char* FileName, bool Overwrite=false){
+      if(!Initialized){
+        printf("\033[1;31mERROR:\033[0m The histogram must be initialized before writing it to a file.\n");
+        return false;
+      }
+      ifstream myFileIN(FileName);
+      if(myFileIN.fail()==false && Overwrite==false){
+        printf("\033[1;31mERROR:\033[0m The file %s exists. Change name or use QuickWrite(FileName, true) to overwrite.\n",FileName);
+        return false;
+      }
+      myFileIN.close();
+
+      ofstream myFileOUT(FileName, ios::out | ios::binary);
+      if(!myFileOUT) {
+         printf("\033[1;31mERROR:\033[0m Cannot open file %s.\n",FileName);
+         return false;
+      }
+
+      //a silly check to make sure we have the correct file fromat
+      short Watermark = 1331;
+      myFileOUT.write((char *) &Watermark, sizeof(short));
+
+      //WriteVersion:
+      // -1 : Dim, TotNumBins, NumBins, BinRange, BinValue, BinError, BinCenter
+      //      no overflow bins yet
+      WriteVersion = -1;
+      myFileOUT.write((char *) &WriteVersion, sizeof(int));
+
+      myFileOUT.write((char *) &Dim, sizeof(unsigned short));
+      //myFileOUT.write((char *) &TotNumBins, sizeof(unsigned));//we dont need it, as we can compute it
+      for(unsigned short sDim=0; sDim<Dim; sDim++){
+        myFileOUT.write((char *) &NumBins[sDim], sizeof(unsigned));
+        for(unsigned uBin=0; uBin<NumBins[sDim]+1; uBin++){
+          myFileOUT.write((char *) &BinRange[sDim][uBin], sizeof(double));
+          if(uBin!=NumBins[sDim])
+            myFileOUT.write((char *) &BinCenter[sDim][uBin], sizeof(double));
+        }
+      }
+
+      for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+        myFileOUT.write((char *) &BinValue[uBin], sizeof(Type));
+      }
+      for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+        myFileOUT.write((char *) &BinError[uBin], sizeof(Type));
+      }
+
+
+
+      myFileOUT.close();
+
+      return true;
+    }
+    bool QuickLoad(const char* FileName, const int Version = -1){
+      if(Initialized){
+        printf("\033[1;31mERROR:\033[0m Cannot load from file, the target object is already initialized (it should be blank).\n");
+        return false;
+      }
+      if(Version!=-1){
+        printf("\033[1;31mERROR:\033[0m Unknown file version (%i).\n",Version);
+        return false;
+      }
+
+      ifstream myFileIN(FileName);
+      if(myFileIN.fail()){
+        printf("\033[1;31mERROR:\033[0m The file %s cannot be opened.\n",FileName);
+        return false;
+      }
+
+      short Watermark;
+      myFileIN.read ((char*) &Watermark,sizeof(short));
+      if(Watermark!=1331){
+        printf("\033[1;31mERROR:\033[0m Issue with the file format of %s\n",FileName);
+        myFileIN.close();
+        return false;
+      }
+
+      int WriteVersion;
+      myFileIN.read((char *) &WriteVersion, sizeof(int));
+
+      unsigned short dim;
+      myFileIN.read((char *) &dim, sizeof(unsigned short));
+      SetUp(dim);
+
+      unsigned numbins;
+      double* binrange = NULL;
+      double* bincenter = NULL;
+      for(unsigned short sDim=0; sDim<Dim; sDim++){
+        myFileIN.read((char *) &numbins, sizeof(unsigned));
+        binrange = new double [numbins+1];
+        bincenter = new double [numbins];
+        for(unsigned uBin=0; uBin<numbins+1; uBin++){
+          myFileIN.read((char *) &binrange[uBin], sizeof(double));
+          if(uBin!=numbins){
+            myFileIN.read((char *) &bincenter[uBin], sizeof(double));
+          }
+        }
+        SetUp(sDim,numbins,binrange,bincenter);
+        delete [] binrange; binrange = NULL;
+        delete [] bincenter; bincenter = NULL;
+      }
+      Initialize();
+
+      for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+        myFileIN.read((char *) &BinValue[uBin], sizeof(Type));
+      }
+      for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+        myFileIN.read((char *) &BinError[uBin], sizeof(Type));
+      }
+
+      myFileIN.close();
+      return true;
+    }
+
+
 protected:
     void ConstructorState(){
 //printf("ConstructorState\n");
@@ -1613,12 +1706,17 @@ protected:
     }
 
     //updates a single cumulative bin, assuming that WhichTotBin-1 is updated, as well as BinValue[WhichTotBin]
-    void UpdateCum(){
+    void UpdateCum(const bool& yield){
       if(!Initialized) {InitWarning(); return;}
       if(!CumulativeValue) CumulativeValue = new Type[TotNumBins+2];
       for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
-        if(uBin==0) CumulativeValue[uBin]=BinValue[uBin];
-        else CumulativeValue[uBin]=CumulativeValue[uBin-1]+BinValue[uBin];
+        double Renorm = 1;
+        //if this histo is a pdf, we need to multiply by the bin width in order to sample properly
+        if(uBin<TotNumBins && yield==false){
+          Renorm = GetBinSize(uBin);//this is the bin size (N-dim volume, width for 1D)
+        }
+        if(uBin==0) CumulativeValue[uBin]=BinValue[uBin]*Renorm;
+        else CumulativeValue[uBin]=CumulativeValue[uBin-1]+BinValue[uBin]*Renorm;
         //printf("b%u %e %e\n",uBin,CumulativeValue[uBin],BinValue[uBin]);
         if(BinValue[uBin]<0){
           printf("\033[1;33mWARNING:\033[0m DLM_Histo cannot be used for sampling, due to negative entries!\n");
@@ -1628,6 +1726,78 @@ protected:
       }
       CumUpdated = true;
     }
+
+    //this is done based on the absolute value of the bin, NOT normalized to bin width
+    void Sample(double* axisValues, const bool& UnderOverFlow, const bool& yield, DLM_Random* RanGen){
+      if(!RanGen) RanGen = rangen;
+      if(!RanGen) RanGen = new DLM_Random(0);
+      unsigned TopBin = UnderOverFlow?TotNumBins+1:TotNumBins-1;
+      if(!CumulativeValue) UpdateCum(yield);
+      double rannum = RanGen->Uniform(0,double(CumulativeValue[TopBin]));
+      //printf("rn %f cvtp %f\n",rannum,CumulativeValue[TopBin]);
+      double value_down;
+      double value_up;
+      unsigned Fraction = 2;
+      unsigned Step = TopBin/Fraction;
+      unsigned BinCandidate = Step;
+      while(true){
+        //printf("BinCandidate = %u\n",BinCandidate);
+        if(BinCandidate==0) value_down = double(CumulativeValue[BinCandidate]);
+        else value_down = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate-1])*0.5;
+        if(BinCandidate==TopBin) value_up = double(CumulativeValue[BinCandidate]);
+        else value_up = double(CumulativeValue[BinCandidate]+CumulativeValue[BinCandidate+1])*0.5;
+        //printf(" value_down = %f\n",value_down);
+        //printf(" value_up = %f\n",value_up);
+        //printf(" rannum = %f\n",rannum);
+        if(value_up>=rannum && value_down<=rannum){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(BinCandidate,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
+          }
+          delete [] BinId;
+          return;
+        }
+        else{
+          Fraction*=2;
+          Step=TopBin/Fraction;
+          if(Step==0)Step=1;
+        }
+
+        if(value_up<rannum) BinCandidate+=Step;
+        else BinCandidate-=Step;
+
+        if(BinCandidate==TopBin+1){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(TopBin,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
+          }
+          delete [] BinId;
+          return;
+        }
+        if(BinCandidate==-1){
+          unsigned* BinId = new unsigned [Dim];
+          GetBinCoordinates(0,BinId);
+          for(unsigned short sDim=0; sDim<Dim; sDim++){
+            //axisValues[sDim] = BinCenter[sDim][BinId[sDim]];
+            axisValues[sDim] = RanGen->Uniform(BinRange[sDim][BinId[sDim]],BinRange[sDim][BinId[sDim]+1]);
+          }
+          delete [] BinId;
+          return;
+        }
+      }
+    }
+    double Sample(const bool& UnderOverFlow, const bool& yield) const{
+      if(Dim!=1) return 0;
+      double result;
+      Sample(&result,UnderOverFlow,yield,NULL);
+      return result;
+    }
+
+
 
     void InitPER(){
         NumPermutations = 1;
@@ -1657,19 +1827,40 @@ protected:
         }
     }
 
+
     void InitWarning() const{
         printf("\033[1;33mWARNING:\033[0m DLM_Histo cannot be used until fully SetUp and Initialized!\n");
     }
 
+//BELOW IS THE WHOLE DATA OF THE HISTO!!
+//if we read/write to files, we have two options:
+//  1) QuickRead/Write: assumes that Type contains only basic data types,
+//      that are NOT dynamically initialized or so. I.e. we can just use
+//      sizeof(Type) and cast it to get the full info of this object
+//  2) NOT IMPLEMENTED YET
+//     Use a read/write funciton within the object to make more complex initializations
+
+//those are always there when the histo is initialized. To be saved in the file
+//The QuickWrite ONLY saves these values, nothing related to integraion etc (below)
+    //this is info about the file format.
+    //current values:
+    // 0 : error
+    // Negative: QuickWrite, Positive : FullWrite
+    // more info in the functions
+    int WriteVersion=0;
     unsigned short Dim;
-    unsigned TotNumBins;
     unsigned* NumBins;
     double** BinRange;
     //the last two bins are under/overflow
     Type* BinValue;
     Type* BinError;
     double** BinCenter;
+////////////////////////////////////////////////////
+    unsigned TotNumBins;
 
+    //used for the extrapolation algorithm.
+    //this is all fixed based on the dimensions of the histo
+    //NO NEED TO BE SAVED IN THE OUTPUT FILE, but needs to be reinited when reading
     unsigned NumPermutations;
     char** PER;
 
@@ -1679,5 +1870,6 @@ protected:
     bool Initialized;
     bool CumUpdated;
     Type INT_ERROR;
+
 };
 #endif

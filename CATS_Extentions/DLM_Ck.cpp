@@ -6,6 +6,33 @@
 #include "DLM_CkModels.h"
 #include "CATS.h"
 
+DLM_Ck::DLM_Ck(const DLM_Ck& other, bool FULL):DLM_Histo(other),NumSourcePar(other.NumSourcePar),NumPotPar(other.NumPotPar){
+    if(FULL){
+      Kitty = other.Kitty;
+      CkFunction = other.CkFunction;
+    }
+    else{
+      Kitty = NULL;
+      CkFunction = NULL;
+    }
+    DefaultConstructor();
+    if(other.SourcePar){
+      for(unsigned uSP=0; uSP<NumSourcePar; uSP++){
+        SourcePar[uSP] = other.SourcePar[uSP];
+      }
+    }
+    if(other.PotPar){
+      for(unsigned uPP=0; uPP<NumPotPar; uPP++){
+        PotPar[uPP] = other.PotPar[uPP];
+      }
+    }
+
+    SourceUpToDate = other.SourceUpToDate;
+    PotUpToDate = other.PotUpToDate;
+    CutOff = other.CutOff;
+    CutOff_kc = other.CutOff_kc;
+}
+
 DLM_Ck::DLM_Ck(const unsigned numbins,const double& kmin, const double& kmax):DLM_Histo(),NumSourcePar(0),NumPotPar(0){
     Kitty = NULL;
     CkFunction = NULL;

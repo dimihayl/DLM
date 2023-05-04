@@ -147,6 +147,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_NumMtBins = 24;
   Ghetto_MtMin = 0;
   Ghetto_MtMax = 4096;
+  Ghetto_MtBins = NULL;
 
   Ghetto_NumMomBins = 256;
   Ghetto_MomMin = 0;
@@ -174,7 +175,12 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Old_P1P2 = NULL;
   Ghetto_kstar = NULL;
   Ghetto_kstar_rstar = NULL;
+  Ghetto_kstar_rstar_PP = NULL;
+  Ghetto_kstar_rstar_PR = NULL;
+  Ghetto_kstar_rstar_RP = NULL;
+  Ghetto_kstar_rstar_RR = NULL;
   Ghetto_kstar_rstar_mT = NULL;
+  Ghetto_kstar_rcore_mT = NULL;
   Ghetto_mT_rstar = NULL;
   GhettoFemto_rstar = NULL;
   GhettoFemto_rcore = NULL;
@@ -216,6 +222,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   ThreadClock = new DLM_Timer [MaxThreads];
   //30 seconds as a default timeout
   Timeout = 30*10000000;
+  GlobalTimeout = -1;
   RanGen = new DLM_Random* [MaxThreads];
   for(unsigned uTh=0; uTh<MaxThreads; uTh++){
     RanGen[uTh] = new DLM_Random(uTh+1);
@@ -253,7 +260,12 @@ CECA::~CECA(){
   if(Old_source){delete Old_source; Old_source=NULL;}
   if(Ghetto_kstar){delete Ghetto_kstar; Ghetto_kstar=NULL;}
   if(Ghetto_kstar_rstar){delete Ghetto_kstar_rstar; Ghetto_kstar_rstar=NULL;}
+  if(Ghetto_kstar_rstar_PP){delete Ghetto_kstar_rstar_PP; Ghetto_kstar_rstar_PP=NULL;}
+  if(Ghetto_kstar_rstar_PR){delete Ghetto_kstar_rstar_PR; Ghetto_kstar_rstar_PR=NULL;}
+  if(Ghetto_kstar_rstar_RP){delete Ghetto_kstar_rstar_RP; Ghetto_kstar_rstar_RP=NULL;}
+  if(Ghetto_kstar_rstar_RR){delete Ghetto_kstar_rstar_RR; Ghetto_kstar_rstar_RR=NULL;}
   if(Ghetto_kstar_rstar_mT){delete Ghetto_kstar_rstar_mT; Ghetto_kstar_rstar_mT=NULL;}
+  if(Ghetto_kstar_rcore_mT){delete Ghetto_kstar_rcore_mT; Ghetto_kstar_rcore_mT=NULL;}
   if(Ghetto_mT_rstar){delete Ghetto_mT_rstar; Ghetto_mT_rstar=NULL;}
   if(GhettoFemto_rstar){delete GhettoFemto_rstar; GhettoFemto_rstar=NULL;}
   if(GhettoFemto_rcore){delete GhettoFemto_rcore; GhettoFemto_rcore=NULL;}
@@ -283,6 +295,7 @@ CECA::~CECA(){
   if(GhettoFemto_mT_rstar){delete GhettoFemto_mT_rstar; GhettoFemto_mT_rstar=NULL;}
   if(GhettoFemto_mT_rcore){delete GhettoFemto_mT_rcore; GhettoFemto_mT_rcore=NULL;}
   if(GhettoFemto_mT_kstar){delete GhettoFemto_mT_kstar; GhettoFemto_mT_kstar=NULL;}
+  if(Ghetto_MtBins){delete [] Ghetto_MtBins; Ghetto_MtBins=NULL;}
   if(ThreadClock){delete [] ThreadClock; ThreadClock=NULL;}
   if(RanGen){
     for(unsigned uTh=0; uTh<MaxThreads; uTh++){
@@ -461,8 +474,12 @@ void CECA::SetSourceDim(const unsigned char& sdim){
   SDIM = sdim;
 }
 
-void CECA::SetTargetStatistics(const unsigned& yield){
+void CECA::SetTargetStatistics(const unsigned long long& yield){
   TargetYield = yield;
+}
+
+unsigned long long CECA::GetStatistics(){
+  return AchievedYield;
 }
 
 void CECA::SetFemtoRegion(const float& femto, const float& info){
@@ -496,6 +513,9 @@ void CECA::SetDebugMode(const bool& debugmode){
 void CECA::SetThreadTimeout(const unsigned& seconds){
   Timeout = seconds?seconds:1;//a minimum of 1 second
 }
+void CECA::SetGlobalTimeout(const unsigned& seconds){
+  GlobalTimeout = seconds?seconds:-1;
+}
 void CECA::SetSeed(const unsigned& thread, const unsigned& seed){
   if(thread>=MaxThreads) return;
   RanGen[thread]->SetSeed(seed);
@@ -521,7 +541,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
 
 
   do{
-    NumMultiplets += GenerateEvent();
+    NumMultiplets += GenerateEvent(ThId);
     ExeTime = unsigned(ThreadClock[ThId].Stop()/(long long)(1000000));
     //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
@@ -577,6 +597,9 @@ void CECA::GoBabyGo(const unsigned& num_threads){
   }
 
   unsigned* BufferYield = new unsigned [NumThreads];
+  unsigned ExeTime=0;
+  DLM_Timer GlobalClock;
+  GlobalClock.Start();
   AchievedYield = 0;
   //const unsigned TargetPerSyst = TargetYield / NumSystVars;
   //unsigned AchievedSystYield = 0;
@@ -584,7 +607,7 @@ void CECA::GoBabyGo(const unsigned& num_threads){
   //this refers to the global yield, but also the minimum yiled per systematics
   //the latter is done to minimize the bias within the yield of each syst. variation
   //while(AchievedYield<TargetYield || AchievedSystYield<TargetPerSyst){
-  while(AchievedYield<TargetYield){
+  while(AchievedYield<TargetYield && ExeTime<GlobalTimeout){
     //we run each thread for a maximum of some preset amount of time
     #pragma omp parallel for
     for(unsigned uThread=0; uThread<NumThreads; uThread++){
@@ -594,8 +617,15 @@ void CECA::GoBabyGo(const unsigned& num_threads){
       AchievedYield += BufferYield[uThread];
       //AchievedSystYield += BufferYield[uThread];
     }
+    ExeTime = unsigned(GlobalClock.Stop()/(long long)(1000000));
     if(DebugMode){
-      printf(" Achieved/Target Yield = %u / %u\n",AchievedYield,TargetYield);
+      char* strtime = new char [128];
+      ShowTime((long long)(ExeTime),strtime,2,true,5);
+      if(TargetYield<10*1000) printf(" Achieved/Target Yield = %llu / %llu @ %s\n",AchievedYield,TargetYield,strtime);
+      else if(TargetYield<10*1000*1000) printf(" Achieved/Target Yield = %llu / %llu k @ %s\n",AchievedYield/1000,TargetYield/1000,strtime);
+      else printf(" Achieved/Target Yield = %llu / %llu M @ %s\n",AchievedYield/1000000,TargetYield/1000000,strtime);
+
+      delete [] strtime;
     }
     //if(AchievedSystYield>=TargetPerSyst){
     //  //Database.Randomize();
@@ -643,8 +673,8 @@ unsigned CECA::GenerateEventTEMP(){
 
 //generates all particles, propagates and decays into the particles of interest
 //and lastly builds up the
-unsigned CECA::GenerateEvent(){
-    unsigned ThId = omp_get_thread_num();
+unsigned CECA::GenerateEvent(const unsigned& ThId){
+    //unsigned ThId = omp_get_thread_num();
 
     //there was some issue using the objects
     //a silly workaround: I will only keep track of pointers,
@@ -1035,8 +1065,24 @@ FragCorr = 1;
     //e.g. 5 particles, SDIM=3 has to build all permutations: 012,013,014,023,024,034,123,124,134,234
     std::vector<std::vector<unsigned>> Permutations = BinomialPermutations(Primary.size(),SDIM);
     //the pid is a single permutation, e.g. {0,1,2}
-
+    unsigned FemtoPermutations = 0;
     for(std::vector<unsigned> pid : Permutations){
+
+/////////////////////////// TESTO TO INCREASE STAT, MAYBE WRONG!!!
+      /*
+      CecaParticle* prt_tmp = new CecaParticle[SDIM];
+      unsigned char ud=0;
+      for(unsigned ID : pid){
+          prt_tmp[ud] = *Primary.at(ID);
+          ud++;
+      }
+      CatsLorentzVector cm_rel_tmp = *prt_tmp[1].Cats()-*prt_tmp[0].Cats();
+      delete [] prt_tmp;
+      if(cm_rel_tmp.GetP()>FemtoLimit*4) continue;
+      */
+/////////////////////////////
+
+
 //GHETTO: make multiplets and simply drop the output for the source as a function of rstar, no kstar, no shit
 //this so that you can show something next FemTUM
       //these are all particles we need to include in a multiplet
@@ -1385,11 +1431,53 @@ if(kstar<FemtoLimit){
   }
 Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
 
+FemtoPermutations++;
 }//femto particles
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
+  //printf("===============\n");
+  //printf("IsPrim: %i %i\n",prt_cm[0].IsUsefulPrimordial(),prt_cm[1].IsUsefulPrimordial());
+  //printf("Particles (list): %s %s\n",ListOfParticles.at(0).c_str(),ListOfParticles.at(1).c_str());
+  //printf("Particles (slct): %s %s\n",prt_cm[0].Trepni()->GetName().c_str(),prt_cm[1].Trepni()->GetName().c_str());
+  //printf("Categorized as ");
+  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+    Ghetto_kstar_rstar_PP->Fill(kstar,rstar);
+    //printf("PP\n");
+  }
+  else if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulPrimordial()){
+    if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)){
+      Ghetto_kstar_rstar_RP->Fill(kstar,rstar);//Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
+      //printf("RP\n");
+    }
+    else if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)){
+      Ghetto_kstar_rstar_PR->Fill(kstar,rstar);
+      //printf("PR\n");
+    }
+  }
+  else if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulProduct()){
+    if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
+      Ghetto_kstar_rstar_PR->Fill(kstar,rstar);//Ghetto_RP_AngleRcP1->Fill(AngleRcP1);
+      //printf("PR\n");
+    }
+    else if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
+      Ghetto_kstar_rstar_RP->Fill(kstar,rstar);
+      //printf("RP\n");
+    }
+  }
+  else{
+    Ghetto_kstar_rstar_RR->Fill(kstar,rstar);
+    //printf("RR\n");
+  }
+//usleep(200e3);
+
+
   Ghetto_kstar_rstar_mT->Fill(kstar,rstar,mT);
+  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+    Ghetto_kstar_rcore_mT->Fill(kstar,rcore,mT);
+    //printf("%.0f %.2f %.0f\n",kstar,rcore,mT);
+  }
+
   Ghetto_mT_rstar->Fill(mT,rstar);
   for(float ct : cos_th){
     Ghetto_mT_costh->Fill(mT,ct);
@@ -1416,12 +1504,16 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
   //}
 
   if(kstar<FemtoLimit){
-    GhettoFemto_rstar->Fill(rstar);
+    if(mT>=Ghetto_MinMt && mT<=Ghetto_MaxMt){
+      GhettoFemto_rstar->Fill(rstar);
+    }
     GhettoFemto_mT_rstar->Fill(mT,rstar);
     //N.B. without this if statement, we get a different rcore, as it depends on the mass of the particles
     //i.e. the core is not the same for all species, even if the single particle emission IS the same
     if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
-      GhettoFemto_rcore->Fill(rcore);
+      if(mT>=Ghetto_MinMt && mT<=Ghetto_MaxMt){
+        GhettoFemto_rcore->Fill(rcore);
+      }
       GhettoFemto_mT_rcore->Fill(mT,rcore);
     }
     //GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -1457,7 +1549,8 @@ Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
   for(CecaParticle* particle : Primary){
     delete particle;
   }
-  return Permutations.size();
+  //return Permutations.size();
+  return FemtoPermutations;
 }
 
 
@@ -2084,18 +2177,69 @@ void CECA::GhettoInit(){
   Ghetto_kstar_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_kstar_rstar->Initialize();
 
+  if(Ghetto_kstar_rstar_PP) delete Ghetto_kstar_rstar_PP;
+  Ghetto_kstar_rstar_PP = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_PP->SetUp(2);
+  Ghetto_kstar_rstar_PP->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_PP->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_PP->Initialize();
+
+  if(Ghetto_kstar_rstar_PR) delete Ghetto_kstar_rstar_PR;
+  Ghetto_kstar_rstar_PR = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_PR->SetUp(2);
+  Ghetto_kstar_rstar_PR->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_PR->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_PR->Initialize();
+
+  if(Ghetto_kstar_rstar_RP) delete Ghetto_kstar_rstar_RP;
+  Ghetto_kstar_rstar_RP = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_RP->SetUp(2);
+  Ghetto_kstar_rstar_RP->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_RP->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_RP->Initialize();
+
+  if(Ghetto_kstar_rstar_RR) delete Ghetto_kstar_rstar_RR;
+  Ghetto_kstar_rstar_RR = new DLM_Histo<float>();
+  Ghetto_kstar_rstar_RR->SetUp(2);
+  Ghetto_kstar_rstar_RR->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rstar_RR->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  Ghetto_kstar_rstar_RR->Initialize();
+
   if(Ghetto_kstar_rstar_mT) delete Ghetto_kstar_rstar_mT;
   Ghetto_kstar_rstar_mT = new DLM_Histo<float>();
   Ghetto_kstar_rstar_mT->SetUp(3);
   Ghetto_kstar_rstar_mT->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
   Ghetto_kstar_rstar_mT->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
-  Ghetto_kstar_rstar_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  if(Ghetto_MtBins){
+    Ghetto_kstar_rstar_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    Ghetto_kstar_rstar_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
   Ghetto_kstar_rstar_mT->Initialize();
+
+  if(Ghetto_kstar_rcore_mT) delete Ghetto_kstar_rcore_mT;
+  Ghetto_kstar_rcore_mT = new DLM_Histo<float>();
+  Ghetto_kstar_rcore_mT->SetUp(3);
+  Ghetto_kstar_rcore_mT->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_rcore_mT->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  if(Ghetto_MtBins){
+    Ghetto_kstar_rcore_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    Ghetto_kstar_rcore_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+  Ghetto_kstar_rcore_mT->Initialize();
 
   if(Ghetto_mT_rstar) delete Ghetto_mT_rstar;
   Ghetto_mT_rstar = new DLM_Histo<float>();
   Ghetto_mT_rstar->SetUp(2);
-  Ghetto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  if(Ghetto_MtBins){
+    Ghetto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    Ghetto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
   Ghetto_mT_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   Ghetto_mT_rstar->Initialize();
 
@@ -2115,7 +2259,12 @@ void CECA::GhettoInit(){
   if(Ghetto_mT_costh) delete Ghetto_mT_costh;
   Ghetto_mT_costh = new DLM_Histo<float>();
   Ghetto_mT_costh->SetUp(2);
-  Ghetto_mT_costh->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  if(Ghetto_MtBins){
+    Ghetto_mT_costh->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    Ghetto_mT_costh->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
   Ghetto_mT_costh->SetUp(1,128,-1,1);
   Ghetto_mT_costh->Initialize();
 
@@ -2123,21 +2272,37 @@ void CECA::GhettoInit(){
   if(GhettoFemto_mT_rstar) delete GhettoFemto_mT_rstar;
   GhettoFemto_mT_rstar = new DLM_Histo<float>();
   GhettoFemto_mT_rstar->SetUp(2);
-  GhettoFemto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  if(Ghetto_MtBins){
+    GhettoFemto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    GhettoFemto_mT_rstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
   GhettoFemto_mT_rstar->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   GhettoFemto_mT_rstar->Initialize();
 
   if(GhettoFemto_mT_rcore) delete GhettoFemto_mT_rcore;
   GhettoFemto_mT_rcore = new DLM_Histo<float>();
   GhettoFemto_mT_rcore->SetUp(2);
-  GhettoFemto_mT_rcore->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  if(Ghetto_MtBins){
+    GhettoFemto_mT_rcore->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    GhettoFemto_mT_rcore->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
   GhettoFemto_mT_rcore->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
   GhettoFemto_mT_rcore->Initialize();
 
   if(GhettoFemto_mT_kstar) delete GhettoFemto_mT_kstar;
   GhettoFemto_mT_kstar = new DLM_Histo<float>();
   GhettoFemto_mT_kstar->SetUp(2);
-  GhettoFemto_mT_kstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  if(Ghetto_MtBins){
+    GhettoFemto_mT_kstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    GhettoFemto_mT_kstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+
   GhettoFemto_mT_kstar->SetUp(1,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
   GhettoFemto_mT_kstar->Initialize();
 

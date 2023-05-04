@@ -195,6 +195,14 @@ public:
     Num* GetKey(){
         return Key;
     }
+    //copies the key
+    void SetKey(Num* InputKey){
+      if(Key){delete [] Key;}
+      Key = new Num [NumOfEl];
+      for(Num i=0; i<NumOfEl; i++){
+          Key[i] = InputKey[i];
+      }
+    }
     void GetSortedData(Element* input, Element* output){
         if(!Key) return;
         if(!output) return;
@@ -390,6 +398,3 @@ public:
 };
 
 #endif
-
-
-

@@ -217,7 +217,7 @@ def quick_install(type):
             string = string.rstrip('\n')
             if string.endswith('root')==True:
                 PATH_ROOT_LIST.append(string)
-        if len(PATH_ROOT_LIST)==0 or True:
+        if len(PATH_ROOT_LIST)==0:
             root_loaded = False
             print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
             print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')

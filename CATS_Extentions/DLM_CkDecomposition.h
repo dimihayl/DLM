@@ -17,7 +17,7 @@ public:
     DLM_CkDecomposition(const char* name, const unsigned& numchildren, DLM_Ck& ckfunction, const TH2F* hSigmaMatrix, const bool& InvertAxis=false);
     ~DLM_CkDecomposition();
 
-    void AddContribution(const unsigned& WhichCk, const double& fraction, const int& type, DLM_CkDecomposition* child=NULL,
+    void AddContribution(unsigned WhichCk, double fraction, int type, DLM_CkDecomposition* child=NULL,
                          const TH2F* hResidualMatrix=NULL, const bool& InvertedAxis=false);
     void AddPhaseSpace(const unsigned& WhichCk, const TH1F* hPhaseSpace);
     void AddPhaseSpace(const TH1F* hPhaseSpace);

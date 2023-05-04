@@ -7,6 +7,7 @@ template <class Type> class DLM_Histo1D;
 #include "CATStools.h"
 
 class DLM_Random;
+class KdpPars;
 
 double GaussSource(double* Pars);
 double GaussSourceCutOff(double* Pars);
@@ -22,6 +23,26 @@ double ExponentialSource(double* Pars);
 double DoubleGaussSource(double* Pars);
 double NormDoubleGaussSource(double* Pars);
 double NormDoubleGaussSourceTF1(double* x, double* Pars);
+
+//Normalization * (sim 3 Gaussians), where the first Gaissian is normal,
+//the second two can be shifted
+//as parameters we have: Norm, Sigma1, Weight2, Sigma2, Shift2, Weight3, Sigma3, Shift3
+double NormTripleShiftedGauss(double* Pars);
+double NormTripleShiftedGaussTF1(double* x, double* Pars);
+
+double StupidShiftedGaussSum(double* Pars);
+double StupidShiftedGaussSumTF1(double* x, double* Pars);
+
+//some of whatever number of 1D gaussians I want
+double StupidGaussSum(double* Pars);
+double StupidGaussSumTF1(double* x, double* Pars);
+
+//sum of many possions, all weighted such that the total weight is still 1
+//this is achieved by using the weight parameters as the reletive weight with respect the
+//"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
+double PoissonSum(double* xVal, double* Pars);
+double PoissonSum(const double& xVal, const KdpPars& kdppars);
+
 double GaussCauchySource(double* Pars);
 //double LevyIntegral1D(double* Pars);
 double LevySource3D_2particle(double* Pars);
@@ -49,6 +70,196 @@ public:
     double Eval(double* Pars);
 };
 */
+
+
+//a structure to keep the parameters of a two-levy source
+struct DoubleLevy { // This structure is named "myDataType"
+  DoubleLevy(){
+    alpha1 = 0;
+    alpha2 = 0;
+    sigma1 = 0;
+    sigma2 = 0;
+    wght1 = 0;
+  }
+  DoubleLevy(double x){
+    alpha1 = x;
+    alpha2 = x;
+    sigma1 = x;
+    sigma2 = x;
+    wght1 = x;
+  }
+
+  float alpha1;
+  float alpha2;
+  float sigma1;
+  float sigma2;
+  float wght1;
+  void Print(){
+    printf(" w1 = %.3f\n",wght1);
+    printf("  s1 = %.3f\n",sigma1);
+    printf("   a1 = %.3f\n",alpha1);
+    printf("  s2 = %.3f\n",sigma2);
+    printf("   a2 = %.3f\n",alpha2);
+  }
+  bool operator+=(const DoubleLevy& other){
+    alpha1 += other.alpha1;
+    alpha2 += other.alpha2;
+    sigma1 += other.sigma1;
+    sigma2 += other.sigma2;
+    wght1 += other.wght1;
+    return true;
+  }
+  bool operator/=(const double& value){
+    alpha1 /= value;
+    alpha2 /= value;
+    sigma1 /= value;
+    sigma2 /= value;
+    wght1 /= value;
+    return true;
+  }
+  DoubleLevy operator*(const double& value){
+      DoubleLevy Result;
+      Result.alpha1 = alpha1*value;
+      Result.alpha2 = alpha2*value;
+      Result.sigma1 = sigma1*value;
+      Result.sigma2 = sigma2*value;
+      Result.wght1 = wght1*value;
+      return Result;
+  }
+  bool operator=(const double& value){
+      DoubleLevy Result;
+      alpha1 = value;
+      alpha2 = value;
+      sigma1 = value;
+      sigma2 = value;
+      wght1 = value;
+      return true;
+  }
+  bool operator=(const DoubleLevy& other){
+    alpha1 = other.alpha1;
+    alpha2 = other.alpha2;
+    sigma1 = other.sigma1;
+    sigma2 = other.sigma2;
+    wght1 = other.wght1;
+    return true;
+  }
+
+};
+
+
+//a structure to keep the parameters of a 3-Gauss (shifted) source
+//we have normalization, sigma1, shift1, weight2, sigma2, shift2, weight3, sigma3, shift3
+struct TriGauss { // This structure is named "myDataType"
+  TriGauss(){
+    norm = 0;
+    sigma1 = 0;
+    sigma2 = 0;
+    sigma3 = 0;
+    shift1 = 0;
+    shift2 = 0;
+    shift3 = 0;
+    wght1 = 0;
+    wght2 = 0;
+  }
+  TriGauss(double x){
+    norm = x;
+    sigma1 = x;
+    sigma2 = x;
+    sigma3 = x;
+    shift1 = x;
+    shift2 = x;
+    shift3 = x;
+    wght1 = x;
+    wght2 = x;
+  }
+
+  float norm;
+  float sigma1;
+  float sigma2;
+  float sigma3;
+  float shift1;
+  float shift2;
+  float shift3;
+  float wght1;//absolute value
+  float wght2;//fraction of 1-weight1
+  //weight3 is 1-weight1-(1-weight1)*weight2
+
+  void Print(){
+    printf(" norm = %.3f\n",norm);
+    printf("  sigma1 = %.3f\n",sigma1);
+    printf("   shift1 = %.3f\n",shift1);
+    printf("     wght1 = %.3f\n",wght1);
+    printf("  sigma2 = %.3f\n",sigma2);
+    printf("   shift2 = %.3f\n",shift2);
+    printf("     wght2 = %.3f\n",wght2);
+    printf("  sigma3 = %.3f\n",sigma3);
+    printf("   shift3 = %.3f\n",shift3);
+  }
+  bool operator+=(const TriGauss& other){
+    norm += other.norm;
+    sigma1 += other.sigma1;
+    sigma2 += other.sigma2;
+    sigma3 += other.sigma3;
+    shift1 += other.shift1;
+    shift2 += other.shift2;
+    shift3 += other.shift3;
+    wght1 += other.wght1;
+    wght2 += other.wght2;
+    return true;
+  }
+  bool operator/=(const double& value){
+    norm /= value;
+    sigma1 /= value;
+    sigma2 /= value;
+    sigma3 /= value;
+    shift1 /= value;
+    shift2 /= value;
+    shift3 /= value;
+    wght1 /= value;
+    wght2 /= value;
+    return true;
+  }
+  TriGauss operator*(const double& value){
+      TriGauss Result;
+      Result.norm = norm*value;
+      Result.sigma1 = sigma1*value;
+      Result.sigma2 = sigma2*value;
+      Result.sigma3 = sigma3*value;
+      Result.shift1 = shift1*value;
+      Result.shift2 = shift2*value;
+      Result.shift3 = shift3*value;
+      Result.wght1 = wght1*value;
+      Result.wght2 = wght2*value;
+      return Result;
+  }
+  bool operator=(const double& value){
+      TriGauss Result;
+      norm = value;
+      sigma1 = value;
+      sigma2 = value;
+      sigma3 = value;
+      shift1 = value;
+      shift2 = value;
+      shift3 = value;
+      wght1 = value;
+      wght2 = value;
+      return true;
+  }
+  bool operator=(const TriGauss& other){
+    norm = other.norm;
+    sigma1 = other.sigma1;
+    sigma2 = other.sigma2;
+    sigma3 = other.sigma3;
+    shift1 = other.shift1;
+    shift2 = other.shift2;
+    shift3 = other.shift3;
+    wght1 = other.wght1;
+    wght2 = other.wght2;
+    return true;
+  }
+};
+
+
 
 //A source taking into account resonances and mT scaling. The Simple part is that resonances are back to back
 //and in case of two resonances, the t*p/m are just added up. Also we use the approximate relation for small t*p/m
@@ -287,6 +498,86 @@ private:
     void Init();
 };
 
+
+
+//the parametes I used for the CECA source poisson parameterization
+//something similar to KDE, but with several P distos
+struct KdpPars { // This structure is named "myDataType"
+  KdpPars(){
+
+  }
+  KdpPars(double zero){
+    operator=(zero);
+  }
+
+  static const unsigned NumDistos = 10;
+  float mean[NumDistos];
+  float stdv[NumDistos];
+  float wght[NumDistos];
+
+
+  void Print(){
+    for(short sn=0; sn<10; sn++){
+      printf("mean_%i   = %.3e\n",sn,mean[sn]);
+      printf(" stdv_%i  = %.3e\n",sn,stdv[sn]);
+      printf("  wght_%i = %.3e\n",sn,wght[sn]);
+    }
+  }
+  bool operator+=(const KdpPars& other){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] += other.mean[sn];
+      stdv[sn] += other.stdv[sn];
+      wght[sn] += other.wght[sn];
+    }
+    return true;
+  }
+  bool operator/=(const double& value){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] /= value;
+      stdv[sn] /= value;
+      wght[sn] /= value;
+    }
+    return true;
+  }
+  KdpPars operator*(const double& value){
+      KdpPars Result;
+      for(short sn=0; sn<NumDistos; sn++){
+        Result.mean[sn] = mean[sn]*value;
+        Result.stdv[sn] = stdv[sn]*value;
+        Result.wght[sn] = wght[sn]*value;
+      }
+      return Result;
+  }
+  bool operator=(const double& value){
+      for(short sn=0; sn<NumDistos; sn++){
+        mean[sn] = value;
+        stdv[sn] = value;
+        wght[sn] = value;
+      }
+      return true;
+  }
+  bool operator=(const KdpPars& other){
+    for(short sn=0; sn<NumDistos; sn++){
+      mean[sn] = other.mean[sn];
+      stdv[sn] = other.stdv[sn];
+      wght[sn] = other.wght[sn];
+    }
+    return true;
+  }
+  bool operator==(const double& value) const{
+    for(short sn=0; sn<NumDistos; sn++){
+      if(mean[sn]!=value) return false;
+      if(stdv[sn]!=value) return false;
+      if(wght[sn]!=value) return false;
+    }
+    return true;
+  }
+  bool operator!=(const double& value) const{
+    return !(operator==(value));
+  }
+};
+
+
 //if the histo is 2D -> we evaluate k and r
 //if it is 1D -> we evaluate only r
 class DLM_HistoSource:public CatsSource{
@@ -301,6 +592,51 @@ public:
 private:
     const bool MyOwnHisto;
     DLM_Histo<float>* Histo;
+};
+
+
+//N.B. if we give a negative mT (-1), we return a Gaussian source of size (d)
+//the parameters are:
+//[0] = mT
+//[1] = d
+//[2] = ht
+//[3] = hz or tau (depends on version)
+//[4] = scaling factor
+//The latter is used if we want to effectively shrink/expand the x-axis,
+//e.g. when evaluating pS0 or pXi source. This would mean we will return S([4]*r)
+class DLM_CecaSource_v0:public CatsSource{
+public:
+    DLM_CecaSource_v0(const std::string systype, const std::string anaver, const std::string infolder);
+    ~DLM_CecaSource_v0();
+    double Eval(double* kxc);
+    double RootEval(double* x, double* pars);
+    bool InErrorState(){return ErrorState;}
+
+    unsigned FindMtBin(double Mt);
+    double FindMt(unsigned uMt);
+
+    double Low_par(unsigned uP, bool bincenter);
+    double Up_par(unsigned uP, bool bincenter);
+
+    unsigned GetNbins(unsigned WhichPar);
+    double* GetBinRange(unsigned WhichPar);
+    double* GetBinCenters(unsigned WhichPar);
+
+
+private:
+  //Cigar or Pancake, i.e. d,ht,hz or d,ht,tau
+  const std::string AnaVersion;
+  std::string AnaVersionBase;
+  //pp or pL
+  const std::string SystemType;
+  //where the .ceca.source files are located
+  const std::string InputFolder;
+
+  DLM_Histo<KdpPars>* dlmSource;
+
+  bool InitHisto();
+  bool LoadSource();
+  bool ErrorState;
 };
 
 

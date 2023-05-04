@@ -124,7 +124,8 @@ public:
   //the yield of multipletes in the highest dimension
   //e.g. if DIM is set to 3, this will be the target for 3-body yield
   //the target is evaluated for the femto region
-  void SetTargetStatistics(const unsigned& yield);//done
+  void SetTargetStatistics(const unsigned long long& yield);//done
+  unsigned long long GetStatistics();
   //femto is the k* for the target statistics.
   //info the upper limit until which information is still saved
   //N.B. the corresponding Q3 etc is automatically evaluated, here its only k*!
@@ -164,6 +165,8 @@ public:
   //Unless there is a very good reason, do not change the default value!
   //The time is given in seconds (integer!)
   void SetThreadTimeout(const unsigned& seconds);//done
+  //The time after which the task will terminate ragardless of achieved yield
+  void SetGlobalTimeout(const unsigned& seconds);//done
   void SetSeed(const unsigned& thread, const unsigned& seed);//done
   //void SetThreadTimeout(const unsigned& seconds);
   //true by default. Within a multiplet it propagates the particles until
@@ -180,6 +183,7 @@ public:
   unsigned Ghetto_NumMtBins;
   double Ghetto_MtMin;
   double Ghetto_MtMax;
+  double* Ghetto_MtBins;
 
   unsigned Ghetto_NumMomBins;
   double Ghetto_MomMin;
@@ -188,6 +192,11 @@ public:
   unsigned Ghetto_NumRadBins;
   double Ghetto_RadMin;
   double Ghetto_RadMax;
+
+  //values applied to cut the distributions of:
+  //GhettoFemto_rstar, GhettoFemto_rcore
+  double Ghetto_MinMt = 0;
+  double Ghetto_MaxMt = 1e16;
 
   DLM_Histo<float>* Ghetto_rstar;
   DLM_Histo<float>* Ghetto_rcore;
@@ -203,6 +212,10 @@ public:
 
   DLM_Histo<float>* Ghetto_kstar;
   DLM_Histo<float>* Ghetto_kstar_rstar;
+  DLM_Histo<float>* Ghetto_kstar_rstar_PP;
+  DLM_Histo<float>* Ghetto_kstar_rstar_RR;
+  DLM_Histo<float>* Ghetto_kstar_rstar_PR;
+  DLM_Histo<float>* Ghetto_kstar_rstar_RP;
   DLM_Histo<float>* Ghetto_kstar_rstar_mT;
   DLM_Histo<float>* Ghetto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_rstar;
@@ -210,6 +223,7 @@ public:
   DLM_Histo<float>* GhettoFemto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_mT_rcore;
   DLM_Histo<float>* GhettoFemto_mT_kstar;
+  DLM_Histo<float>* Ghetto_kstar_rcore_mT;
   DLM_Histo<float>* Ghetto_mT_costh;
   //pT/theta of all primary particles
   DLM_Histo<float>* GhettoSP_pT_th;
@@ -286,8 +300,9 @@ private:
   unsigned char SDIM;
 //bug prone: if this is smaller then SDIM, we are up for trouble!
   unsigned short EMULT;
-  unsigned TargetYield;
-  unsigned AchievedYield;
+  //this referes for femto pairs only
+  unsigned long long TargetYield;
+  unsigned long long AchievedYield;
   char SrcCnv;
   bool DebugMode;
   DLM_Random** RanGen;
@@ -310,7 +325,7 @@ private:
 
   bool ParticleInList(const std::string& name) const;
   bool ParticleInList(const TreParticle* prt) const;
-  unsigned GenerateEvent();
+  unsigned GenerateEvent(const unsigned& ThId);
 unsigned GenerateEventTEMP();
   //returns the number of generated multiplets
   unsigned GoSingleCore(const unsigned& ThId);
@@ -333,6 +348,8 @@ unsigned GenerateEventTEMP();
   DLM_Timer* ThreadClock;
   //in seconds
   unsigned Timeout;
+  //if zero, NO timeout
+  unsigned GlobalTimeout;
   //
 
   void GhettoInit();

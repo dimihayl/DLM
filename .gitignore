@@ -1,0 +1,11 @@
+./install/*
+!./install/bin/cats-config
+!./install/bin/thiscats
+
+CATS_TUTORIAL_2019/CMake/*
+!CATS_TUTORIAL_2019/CMake/CMakeLists.txt
+!CATS_TUTORIAL_2019/CMake/COMPILE_AND_RUN.sh
+!CATS_TUTORIAL_2019/CMake/COMPILE.sh
+!CATS_TUTORIAL_2019/CMake/RUN_EXEC.sh
+CATS_TUTORIAL_2019/OutputFiles/*
+!CATS_TUTORIAL_2019/OutputFiles/.dummy

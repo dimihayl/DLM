@@ -184,6 +184,8 @@ bool NormalizeSource_rk(DLM_Histo<float> *dlmSource);
 // return a normalized source, assuming both an rstar and kstar dep.
 // DLM_Histo<float>* GetNormalizedSource_rk(TH2F* hSource);
 
+bool GetScattParameters(CATS &Kitty, double &ScatLen, double &EffRan, TH1F *&hFit, TF1 *&fitSP,
+                        const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh);
 /*
 class DLM_Analyzer{
 

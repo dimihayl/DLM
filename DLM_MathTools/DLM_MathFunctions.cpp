@@ -46,6 +46,24 @@ double factrl(const unsigned n) {
 	return factrl_array[WhichThread][n];
 }
 
+//copy-pasted from ROOT
+double DLM_Poisson(double x, double par){
+
+  // compute the Poisson distribution function for (x,par)
+  // The Poisson PDF is implemented by means of Euler's Gamma-function
+  // (for the factorial), so for all integer arguments it is correct.
+  // BUT for non-integer values it IS NOT equal to the Poisson distribution.
+   if (x<0)
+      return 0;
+   else if (x == 0.0)
+      return 1./exp(par);
+   else {
+      double lnpoisson = x*log(par)-par-gammln(x+1.);
+      return exp(lnpoisson);
+   }
+}
+
+
 double atanPhi(const double& y, const double& x){
 	if(x==0){
 		if(y>0) return HalfPi;
@@ -273,4 +291,55 @@ std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const
   BinomialPermutations(0,k,elements,permutations);
 	permutations.pop_back();
 	return permutations;
+}
+
+
+//par[0] is an overall normalization
+//than we have a pol4 = p0*(1+p1*k+p2*k^2+p3*k^3+p4*k^4), which has 3 free arguments and the following properties
+//par4!=0 (pol4 flat at 0)
+//	par1,par2 the two extrema, par3 is the p4, par4 is dummy
+//par4==0&&par3!=0 (pol3)
+//	par1,par2 the two extrema, par3 is p3
+//par4==0&&par3==0&&par2!=0 (pol2)
+//	par1 is the extrema, par2 is p2
+//par4==0&&par3==0&&par2==0&&par1!=0 (pol1)
+//	par1 is p1
+//to avoid problems with a starting parameter of zero, to switch the order of the par we use -1e6 as a value
+//a Mathematica computation of the equations is in your Femto folder
+double DLM_Baseline(double* xval, double* par){
+
+    double& k = *xval;
+    double& p0 = par[0];
+    //constrained polynomials
+
+    double p1;
+    double p2;
+    double p3;
+    double p4;
+    if(par[4]!=-1e6){
+        p4 = par[3];
+        p3 = -4./3.*(par[1]+par[2])*p4;
+        p2 = 2.*par[1]*par[2]*p4;
+        p1 = 0;
+    }
+    else if(par[3]!=-1e6){
+        p4 = 0;
+        p3 = par[3];
+        p2 = -1.5*(par[1]+par[2])*p3;
+        p1 = 3.*par[1]*par[2]*p3;
+    }
+    else if(par[2]!=-1e6){
+        p4 = 0;
+        p3 = 0;
+        p2 = par[2];
+        p1 = -2.*par[1]*p2;
+    }
+    else{
+        p4 = 0;
+        p3 = 0;
+        p2 = 0;
+        p1 = par[1];
+    }
+    return p0*(1.+p1*k+p2*pow(k,2)+p3*pow(k,3)+p4*pow(k,4));
+
 }

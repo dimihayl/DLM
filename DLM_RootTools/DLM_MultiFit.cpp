@@ -331,7 +331,7 @@ ROOT::Fit::FitResult DLM_MultiFit::PerformGlobalFit(bool printinfo){
     }
 
     fitter.Config().MinimizerOptions().SetPrintLevel(-1);
-    fitter.Config().SetMinimizer("Minuit","Migrad");
+    fitter.Config().SetMinimizer("Minuit2","Migrad");
 
     fitter.FitFCN(NumUniquePar,*this,0,DataSize,true);
 

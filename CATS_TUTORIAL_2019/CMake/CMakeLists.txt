@@ -6,16 +6,19 @@ SET(PROJECT_NAME "CMake_CATS")
 
 project(${PROJECT_NAME})
 # SET PATHS #
-SET(PROJECT_DESTINATION "/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3")#the destination of your project
+SET(PROJECT_DESTINATION "/home/dimihayl/Software/Repositories/CATS_TUTORIAL_2019")#the destination of your project
 SET(GSL_INCLUDE "/usr/include/gsl")#where are all GSL related .h files
 SET(GSL_LIB "/usr/lib")#where are the GSL .a and .so files
-SET(CATS_PATH "/home/dmihaylov/Apps/CATS")#the CATS main folder (containing cats-config)
-SET(CATS_TYPE "dev")#basic, extended or dev
+SET(CATS_PATH "/home/dimihayl/Software/Repositories/DLM/install")#the CATS main folder (containing cats-config)
+#SET(CATS_TYPE "dev")#basic, extended or dev
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_DESTINATION}/CMake/bin)
 
 add_executable(${PROJECT_NAME} ${PROJECT_DESTINATION}/main.cpp
 #ADD BELOW ANY OTHER .CPP FILES THAT YOU WOULD LIKE TO COMPILE (FULL PATH)
+${PROJECT_DESTINATION}/Basics.cpp
+${PROJECT_DESTINATION}/ExtendedCk.cpp
+${PROJECT_DESTINATION}/Worksheet.cpp
 )
 # DO NOT CHANGE THE REST #
 
@@ -28,7 +31,8 @@ execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --libs" OUTPUT_VAR
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --glibs" OUTPUT_VARIABLE GLIBS)
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --incdir" OUTPUT_VARIABLE ROOT_INCLUDE)
 execute_process(COMMAND bash -c "${CATS_PATH}/bin/cats-config --incdir" OUTPUT_VARIABLE CATS_INCLUDE)
-execute_process(COMMAND bash -c "${CATS_PATH}/bin/cats-config --libs-${CATS_TYPE}" OUTPUT_VARIABLE CATS_LIBS)
+#execute_process(COMMAND bash -c "${CATS_PATH}/bin/cats-config --libs-${CATS_TYPE}" OUTPUT_VARIABLE CATS_LIBS)
+execute_process(COMMAND bash -c "${CATS_PATH}/bin/cats-config --libs" OUTPUT_VARIABLE CATS_LIBS)
 
 string(REGEX REPLACE "\n$" "" CFLAGS "${CFLAGS}")
 string(REGEX REPLACE "\n$" "" LIBS "${LIBS}")
@@ -38,14 +42,15 @@ string(REGEX REPLACE "\n$" "" CATS_INCLUDE "${CATS_INCLUDE}")
 string(REGEX REPLACE "\n$" "" CATS_LIBS "${CATS_LIBS}")
 
 #string(APPEND CFLAGS " -O2 -std=c++11 -lgomp -pthread -fopenmp  ")
-string(APPEND CFLAGS " -O2 -std=c++11 -pthread ")
+set(CFLAGS " -O2 -std=c++11 -pthread ${CFLAGS}")
+#string(APPEND CFLAGS " -O2 -std=c++11 -pthread ")
 
-#find_package(OpenMP)
-#if (OPENMP_FOUND)
-#    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-#    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-#    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-#endif()
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS ${CFLAGS})
 
@@ -69,6 +74,5 @@ file(APPEND CMakeDLM.txt "${ROOT_PATH}\n")
 file(APPEND CMakeDLM.txt "${GSL_INCLUDE}\n")
 file(APPEND CMakeDLM.txt "${GSL_LIB}\n")
 file(APPEND CMakeDLM.txt "${CATS_PATH}\n")
-file(APPEND CMakeDLM.txt "${CATS_TYPE}\n")
+#file(APPEND CMakeDLM.txt "${CATS_TYPE}\n")
 file(APPEND CMakeDLM.txt "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}\n")
-

@@ -156,7 +156,8 @@ void TreParticle::SetPz(const float& widthZ){
 void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const bool& UnderOverFlow) const{
   if(!RanGen) RanGen = Database.RanGen;
   if(PtEtaPhi){
-    PtEtaPhi->Sample(axisValues,UnderOverFlow,RanGen);
+    //N.B. it is assumed that the provided histogram IS a PDF, and NOT integrated YIELD!!!
+    PtEtaPhi->SamplePdf(axisValues,UnderOverFlow,RanGen);
     double pt = axisValues[0];
     double eta = axisValues[1];
     double phi = axisValues[2];
@@ -200,7 +201,7 @@ void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const boo
   //theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
   }//PtEtaPhi
   else if(PtPzPhi){
-    PtPzPhi->Sample(axisValues,UnderOverFlow,RanGen);
+    PtPzPhi->SamplePdf(axisValues,UnderOverFlow,RanGen);
     double pt = axisValues[0];
     double PZ = axisValues[1];
     double phi = axisValues[2];
@@ -236,7 +237,7 @@ void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const boo
     py = ptot*sin(phi)*sin_th;
   }//PtPzPhi
   else if(PtotEtaPhi){
-    PtotEtaPhi->Sample(axisValues,UnderOverFlow,RanGen);
+    PtotEtaPhi->SamplePdf(axisValues,UnderOverFlow,RanGen);
     double ptot = axisValues[0];
     double eta = axisValues[1];
     double phi = axisValues[2];

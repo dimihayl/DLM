@@ -6,6 +6,7 @@
 //This function calculates the natural log of the gamma function for xx > 0
 double gammln(const double xx);
 double factrl(const unsigned n);
+double DLM_Poisson(double x, double par);
 
 
 //computes the value of phi, given the convention that it is in 0 to 2pi
@@ -28,6 +29,8 @@ double GetNsigma(const double& chi2, const double& ndf);
 //significance of nsigma. This is done based on the number of fit parameters.
 double GetDeltaChi2(const double& nsigma, const unsigned& nfreepars);
 double GetPvalFromNsig(const double& nsigma);
+
+double DLM_Baseline(double* xval, double* par);
 
 std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const unsigned& k);
 
