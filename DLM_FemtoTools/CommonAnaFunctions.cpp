@@ -1484,8 +1484,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
 
     Kitty.SetThetaDependentSource(false);
 
-    if(SOURCE == "NULL" || SOURCE == ""){
-
+    if (SOURCE == "NULL" || SOURCE == "")
+    {
     }
     else if (SOURCE == "Gauss")
     {
@@ -2021,8 +2021,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pS0(CATS &Kitty, const TString &POT, cons
 
     Kitty.SetThetaDependentSource(false);
 
-    if(SOURCE == "NULL" || SOURCE == ""){
-
+    if (SOURCE == "NULL" || SOURCE == "")
+    {
     }
     else if (SOURCE == "Gauss")
     {
@@ -2123,8 +2123,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pXim(CATS &Kitty, const TString &POT, con
     CATSparameters *cPotParsI1S0 = NULL;
     CATSparameters *cPotParsI1S1 = NULL;
 
-    if(SOURCE == "NULL" || SOURCE == ""){
-
+    if (SOURCE == "NULL" || SOURCE == "")
+    {
     }
     else if (SOURCE == "Gauss")
     {
@@ -2523,8 +2523,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pXi0(CATS &Kitty, const TString &POT, con
     CATSparameters *cPotParsI1S0 = NULL;
     CATSparameters *cPotParsI1S1 = NULL;
 
-    if(SOURCE == "NULL" || SOURCE == ""){
-
+    if (SOURCE == "NULL" || SOURCE == "")
+    {
     }
     else if (SOURCE == "Gauss")
     {
@@ -2996,6 +2996,485 @@ void DLM_CommonAnaFunctions::SetUpCats_XiKCoulomb(CATS &Kitty, const TString &PO
     Kitty.SetChannelWeight(1, 3. / 4.);
 
 CLEAN_SetUpCats_pApCoulomb:;
+}
+
+void DLM_CommonAnaFunctions::SetUpCats_pApHaide(CATS &Kitty, const TString &POT, const TString &SOURCE, const TString &DataSample)
+{
+    CATSparameters *cPars = NULL;
+    CATSparameters *pPars = NULL;
+
+    CATSparameters *cPotPars1S0 = NULL;
+    CATSparameters *cPotPars3S1 = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    unsigned NumChannels = 0;
+
+    double radius;
+    if (DataSample == "pp13TeV_MB_BBar")
+        radius = 1.188;
+    if (DataSample == "pp13TeV_HM_BBar")
+        radius = 1.25;
+
+    if (SOURCE == "Gauss")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, radius);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "McGauss_Reso")
+    {
+        CleverMcLevyReso[1].InitStability(1, 2 - 1e-6, 2 + 1e-6);
+        CleverMcLevyReso[1].InitScale(35, 0.25, 2.0);
+        CleverMcLevyReso[1].InitRad(256, 0, 64);
+        CleverMcLevyReso[1].InitType(2);
+        CleverMcLevyReso[1].InitReso(0, 1);
+        CleverMcLevyReso[1].InitReso(1, 1);
+        CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic);
+        CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic);
+        CleverMcLevyReso[1].InitNumMcIter(1000000);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverMcLevyReso[1], 2);
+        Kitty.SetAnaSource(0, 0.87);
+        Kitty.SetAnaSource(1, 2.0);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pApHaide;
+    }
+    // Different selections of potentials setup:
+    // HAIDE_1 -> only p-antip->p-antip (TYPE 0)
+    // HAIDE_2 -> p-antip->p-antip + n-antin->p-antip (TYPE 1)
+    // HAIDE_3 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 1S0 (TYPE 2)
+    // HAIDE_4 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 3S1 (TYPE 3)
+    // HAIDE_5 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 1S0 + 3S1 (TYPE 4)
+    // HAIDE_6 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 1S0 + 3S1 + 3P0 (TYPE 5)
+    // HAIDE_7 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 1S0 + 3S1 + 1P1 + 3P0 (TYPE 6)
+    // Update 05.10.2020, implementing real wfs of Haidenbauer
+    // HAIDE_8 -> p-antip->p-antip + n-antin->p-antip + Real 2M -> p-antip in 1S0 (TYPE 7)
+    // Update 07.10.2020 inclusion of 3P1 and 3P2 for the Migdal-Watson approximation
+    // HAIDE_9 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 1S0 + 3S1 + 3P2 + 3P0(TYPE 8)
+    // Update 19.10.2020 inclusion of ALL PWS for the Migdal-Watson approximation
+    // HAIDE_9 -> p-antip->p-antip + n-antin->p-antip + 2M -> p-antip in 1ALL PWS (TYPE 9)
+
+    if (POT == "HAIDE_1")
+    { // only ppbar->ppbar
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 0);
+        NumChannels = 4;
+    }
+    else if (POT == "HAIDE_2")
+    { // ppbar->ppbar + nnbar->ppbar
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 1);
+        NumChannels = 8;
+    }
+    else if (POT == "HAIDE_3")
+    { // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 2);
+        NumChannels = 9;
+    }
+    else if (POT == "HAIDE_4")
+    { // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 3S1
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 3);
+        NumChannels = 9;
+    }
+    else if (POT == "HAIDE_5")
+    { // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0 + 3S1
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 4);
+        NumChannels = 10;
+    }
+    else if (POT == "HAIDE_6")
+    { // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0,3S1 and 3P0
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 5);
+        NumChannels = 11;
+    }
+    else if (POT == "HAIDE_7")
+    { // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0,1P1 3S1 and 3P0
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 6);
+        NumChannels = 12;
+    }
+    else if (POT == "HAIDE_8")
+    { // ppbar->ppbar + nnbar->ppbar + 2M->ppbar in 1S0
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 7);
+        NumChannels = 9;
+    }
+    else if (POT == "HAIDE_9")
+    { // ppbar->ppbar + nnbar->ppbar + 2M->ppbar in 1S0, 3S1, 3P2, 3P0
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 8);
+        NumChannels = 12;
+    }
+    else if (POT == "HAIDE_10")
+    { // ppbar->ppbar + nnbar->ppbar + 2M->ppbar in ALL PWS
+        ExternalWF = Init_pantip_Haidenbauer("/Users/sartozza/cernbox/Analysis/BBbar/Wavefunctions/Haidenbauer/p_antip_wCoulomb/wf_18092019/", Kitty, 9);
+        NumChannels = 14;
+        // NumChannels=9;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n", POT.Data());
+        goto CLEAN_SetUpCats_pApHaide;
+    }
+
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(-1);
+    Kitty.SetPdgId(2212, -2212);
+    Kitty.SetRedMass((Mass_p * Mass_p) / (Mass_p + Mass_p));
+
+    Kitty.SetNumChannels(NumChannels);
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        if (ExternalWF)
+        {
+            // Setting the wfs for the different channels
+            if (POT == "HAIDE_1")
+            {                                                                                  // only ppbar->ppbar           ch pw               ch pw
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_2")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_3" || POT == "HAIDE_4" || POT == "HAIDE_8")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+                // "2pi" part
+                Kitty.SetExternalWaveFunction(8, 0, ExternalWF[0][8][0], ExternalWF[1][8][0]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_5")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0 + 3S1
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+                // "2pi" part in 1S0 and 3S1
+                Kitty.SetExternalWaveFunction(8, 0, ExternalWF[0][8][0], ExternalWF[1][8][0]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(9, 0, ExternalWF[0][9][0], ExternalWF[1][9][0]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_6")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0 + 3S1,3P0
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+                // "2pi" part in 1S0 and 3S1,3P0
+                Kitty.SetExternalWaveFunction(8, 0, ExternalWF[0][8][0], ExternalWF[1][8][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(9, 0, ExternalWF[0][9][0], ExternalWF[1][9][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(10, 0, ExternalWF[0][10][0], ExternalWF[1][10][0]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_7")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0,1P1 + 3S1,3P0
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+                // "2pi" part in 1S0,1P1 + 3S1,3P0
+                Kitty.SetExternalWaveFunction(8, 0, ExternalWF[0][8][0], ExternalWF[1][8][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(9, 0, ExternalWF[0][9][0], ExternalWF[1][9][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(10, 0, ExternalWF[0][10][0], ExternalWF[1][10][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(11, 0, ExternalWF[0][11][0], ExternalWF[1][11][0]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_9")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in 1S0, 3S1, 3P0, 3P2
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+                // "2pi" part in  1S0, 3S1, 3P0, 3P2
+                Kitty.SetExternalWaveFunction(8, 0, ExternalWF[0][8][0], ExternalWF[1][8][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(9, 0, ExternalWF[0][9][0], ExternalWF[1][9][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(10, 0, ExternalWF[0][10][0], ExternalWF[1][10][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(11, 0, ExternalWF[0][11][0], ExternalWF[1][11][0]); // ExternalWF_pantip[1] is phase shifts
+            }
+            else if (POT == "HAIDE_10")
+            {                                                                                  // ppbar->ppbar + nnbar->ppbar + "2pi"->ppbar in ALL PWS
+                Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(0, 1, ExternalWF[0][0][1], ExternalWF[1][0][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(1, 0, ExternalWF[0][1][0], ExternalWF[1][1][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(2, 0, ExternalWF[0][2][0], ExternalWF[1][2][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(3, 0, ExternalWF[0][3][0], ExternalWF[1][3][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]); // ExternalWF_pantip[1] is phase shifts
+
+                // nAn part
+                Kitty.SetExternalWaveFunction(4, 0, ExternalWF[0][4][0], ExternalWF[1][4][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(5, 0, ExternalWF[0][5][0], ExternalWF[1][5][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(6, 0, ExternalWF[0][6][0], ExternalWF[1][6][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]); // ExternalWF_pantip[1] is phase shifts
+
+                Kitty.SetExternalWaveFunction(7, 0, ExternalWF[0][7][0], ExternalWF[1][7][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]); // ExternalWF_pantip[1] is phase shifts
+                // "2pi" part in  1S0, 3S1, 3P0, 3P2
+                Kitty.SetExternalWaveFunction(8, 0, ExternalWF[0][8][0], ExternalWF[1][8][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(9, 0, ExternalWF[0][9][0], ExternalWF[1][9][0]);    // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(10, 0, ExternalWF[0][10][0], ExternalWF[1][10][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(11, 0, ExternalWF[0][11][0], ExternalWF[1][11][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(12, 0, ExternalWF[0][12][0], ExternalWF[1][12][0]); // ExternalWF_pantip[1] is phase shifts
+                Kitty.SetExternalWaveFunction(13, 0, ExternalWF[0][13][0], ExternalWF[1][13][0]); // ExternalWF_pantip[1] is phase shifts
+            }
+        }
+        else
+        {
+            printf("\033[1;31mERROR:\033[0m SetUpCats_pApHaide says that you should NEVER see this message! BIG BUG!\n");
+            goto CLEAN_SetUpCats_pApHaide;
+        }
+
+    } // end of for
+    // Kitty.KillTheCat();
+
+CLEAN_SetUpCats_pApHaide:;
+
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    if (pPars)
+    {
+        delete pPars;
+        pPars = NULL;
+    }
+    // if(CleverLevy){delete CleverLevy; CleverLevy=NULL;}
+    if (cPotPars1S0)
+    {
+        delete cPotPars1S0;
+        cPotPars1S0 = NULL;
+    }
+    if (cPotPars3S1)
+    {
+        delete cPotPars3S1;
+        cPotPars3S1 = NULL;
+    }
+    CleanUpWfHisto(Kitty, ExternalWF);
+}
+
+void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample)
+{
+    CATSparameters *cPars = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    unsigned NumChannels = 6;
+
+    double rad1;
+    double rad2;
+    double w_source;
+    double lam_source;
+    if (DataSample == "pp13TeV_HM_BBar")
+    {
+        rad1 = 1.202;
+        rad2 = 2.33;
+        w_source = 0.7993;
+        lam_source = 0.9806;
+    }
+
+    if (SOURCE == "Gauss")
+    {
+        cout << "Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, rad1);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "DoubleGauss")
+    {
+        cout << "Double Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 4, true);
+        cPars->SetParameter(0, rad1);
+        cPars->SetParameter(1, rad2);
+        cPars->SetParameter(2, w_source);
+        cPars->SetParameter(3, lam_source);
+        Kitty.SetUseAnalyticSource(true);
+        Kitty.SetAnaSource(NormDoubleGaussSource, *cPars);
+        Kitty.SetAutoNormSource(false);
+        Kitty.SetNormalizedSource(true);
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pApHaide;
+    }
+
+    ExternalWF = Init_LAntiK_Vidana("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
+    NumChannels = 6;
+
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(0);
+    Kitty.SetPdgId(3122, -321);
+    Kitty.SetRedMass((Mass_L * Mass_Kch) / (Mass_L + Mass_Kch));
+
+    Kitty.SetNumChannels(NumChannels);
+
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        if (ExternalWF)
+        {
+            Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+        }
+        else
+        {
+            printf("\033[1;31mERROR:\033[0m SetUpCats_LKVidana says that you should NEVER see this message! BIG BUG!\n");
+            goto CLEAN_SetUpCats_pApHaide;
+        }
+
+    } // end of for
+
+CLEAN_SetUpCats_pApHaide:;
+
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    CleanUpWfHisto(Kitty, ExternalWF);
 }
 
 DLM_Ck *DLM_CommonAnaFunctions::SetUpLednicky_pL(const unsigned &NumMomBins, const double *MomBins, const TString &POT)
@@ -4378,6 +4857,10 @@ TH2F *DLM_CommonAnaFunctions::GetResolutionMatrix(const TString &DataSample, con
     {
         FileName = "/home/valentina/thor/cernbox/CATSFiles/SystematicsAndCalib/MomentumSmear/ALICE_pp_13TeVHM_MELKmin.root";
     }
+    else if (DataSample == "pp13TeV_HM_LK_Mac")
+    {
+        FileName = "/Users/sartozza/cernbox/CATSFiles/SystematicsAndCalib/MomentumSmear/ALICE_pp_13TeVHM_MELKmin.root";
+    }
     else
     {
         printf("\033[1;31mERROR (GetResolutionMatrix):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
@@ -4798,9 +5281,10 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
             {
                 FileName = TString::Format(CatsFilesFolder[0] + "/ExpData/Bernie_Source/ppData/mTBin_%i/CFOutput_mT_ppVar%s_HM_%i.root", mTbin + 1, CutVar.Data(), mTbin);
                 HistoName = TString::Format("hCk_RebinnedppVar%sMeV_0", CutVar.Data());
-                if(AddSyst){
-                  SystFileName = (CatsFilesFolder[0] + "/ExpData/Bernie_Source/ppData/DimiSystematics_pp.root");
-                  SystHistName = TString::Format("hSyst_mT%i", mTbin + 1);
+                if (AddSyst)
+                {
+                    SystFileName = (CatsFilesFolder[0] + "/ExpData/Bernie_Source/ppData/DimiSystematics_pp.root");
+                    SystHistName = TString::Format("hSyst_mT%i", mTbin + 1);
                 }
             }
             else
@@ -4814,9 +5298,10 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
             {
                 FileName = TString::Format(CatsFilesFolder[0] + "/ExpData/Bernie_Source/pLData/mTBin_%i/CFOutput_mT_pLVar%s_HM_%i.root", mTbin + 1, CutVar.Data(), mTbin);
                 HistoName = TString::Format("hCk_RebinnedpLVar%sMeV_0", CutVar.Data());
-                if(AddSyst){
-                  SystFileName = (CatsFilesFolder[0] + "/ExpData/Bernie_Source/pLData/DimiSystematics_pL.root");
-                  SystHistName = TString::Format("hSyst_mT%i", mTbin + 1);
+                if (AddSyst)
+                {
+                    SystFileName = (CatsFilesFolder[0] + "/ExpData/Bernie_Source/pLData/DimiSystematics_pL.root");
+                    SystHistName = TString::Format("hSyst_mT%i", mTbin + 1);
                 }
             }
             else
@@ -4974,18 +5459,20 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
             {
                 printf("\033[1;31mERROR:\033[0m The hRelSyst '%s' does not exist\n", SystHistName.Data());
             }
-            //in this case the systematics are absolute!!!
-            else if(SystFileName.Contains("DimiSystematics_")){
-              double MaxMom = hRelSyst->GetXaxis()->GetBinUpEdge(hRelSyst->GetNbinsX());
-              for (int iBin = 1; iBin <= histoCopy->GetNbinsX(); iBin++){
-                if (histoCopy->GetBinCenter(iBin) > MaxMom)
-                    break;
-                double StatErr = histoCopy->GetBinError(iBin);
-                double SystErr = hRelSyst->GetBinError(hRelSyst->FindBin(histoCopy->GetBinCenter(iBin)));
-                double TotErr = sqrt(StatErr * StatErr + SystErr * SystErr);
-                histoCopy->SetBinError(iBin, TotErr);
-//printf("System=%s; iBin=%i; Ck=%.4f; stat=%.4f; syst=%.4f; tot=%.4f\n",System.Data(),iBin,histoCopy->GetBinContent(iBin),StatErr,SystErr,TotErr);
-              }
+            // in this case the systematics are absolute!!!
+            else if (SystFileName.Contains("DimiSystematics_"))
+            {
+                double MaxMom = hRelSyst->GetXaxis()->GetBinUpEdge(hRelSyst->GetNbinsX());
+                for (int iBin = 1; iBin <= histoCopy->GetNbinsX(); iBin++)
+                {
+                    if (histoCopy->GetBinCenter(iBin) > MaxMom)
+                        break;
+                    double StatErr = histoCopy->GetBinError(iBin);
+                    double SystErr = hRelSyst->GetBinError(hRelSyst->FindBin(histoCopy->GetBinCenter(iBin)));
+                    double TotErr = sqrt(StatErr * StatErr + SystErr * SystErr);
+                    histoCopy->SetBinError(iBin, TotErr);
+                    // printf("System=%s; iBin=%i; Ck=%.4f; stat=%.4f; syst=%.4f; tot=%.4f\n",System.Data(),iBin,histoCopy->GetBinContent(iBin),StatErr,SystErr,TotErr);
+                }
             }
             else
             {
@@ -5564,62 +6051,67 @@ double GetReff(DLM_CleverMcLevyResoTM &MagicSource, const double &rcore)
     delete h_rstar;
     return reff;
 }
+double ConvertMeanGauss(double mean)
+{
+    TF1 *fGauss = new TF1("fGauss", GaussSourceTF1, 0, 64, 1);
 
+    unsigned Trials = 1000000;
+    double Expected = mean / 2.3;
+    double MinR = Expected / 3;
+    double MaxR = Expected * 3;
+    double Step = (MaxR - MinR) / double(Trials);
+    double test_val;
 
-double ConvertMeanGauss(double mean){
-  TF1* fGauss = new TF1("fGauss",GaussSourceTF1,0,64,1);
+    double best_result = 0;
+    double best_nsig = 1e6;
+    double current_result;
+    double current_nsig;
 
-  unsigned Trials = 1000000;
-  double Expected = mean/2.3;
-  double MinR = Expected/3;
-  double MaxR = Expected*3;
-  double Step = (MaxR-MinR)/double(Trials);
-  double test_val;
+    bool GettingWorse_up = false;
+    bool GettingWorse_low = false;
 
-  double best_result = 0;
-  double best_nsig = 1e6;
-  double current_result;
-  double current_nsig;
+    for (unsigned uT = 0; uT < Trials / 2; uT++)
+    {
+        test_val = Expected - 0.5 * Step - double(uT) * Step;
+        fGauss->SetParameter(0, test_val);
+        current_result = fGauss->Mean(0, 64);
+        current_nsig = fabs(current_result - mean);
+        if (current_nsig < best_nsig)
+        {
+            best_nsig = current_nsig;
+            best_result = current_result;
+            GettingWorse_low = false;
+        }
+        else
+            GettingWorse_low = true;
 
-  bool GettingWorse_up = false;
-  bool GettingWorse_low = false;
+        test_val = Expected + 0.5 * Step + double(uT) * Step;
+        fGauss->SetParameter(0, test_val);
+        current_result = fGauss->Mean(0, 64);
+        current_nsig = fabs(current_result - mean);
+        if (current_nsig < best_nsig)
+        {
+            best_nsig = current_nsig;
+            best_result = current_result;
+            GettingWorse_up = false;
+        }
+        else
+            GettingWorse_up = true;
 
-  for(unsigned uT=0; uT<Trials/2; uT++){
-    test_val = Expected - 0.5*Step - double(uT)*Step;
-    fGauss->SetParameter(0,test_val);
-    current_result = fGauss->Mean(0,64);
-    current_nsig = fabs(current_result-mean);
-    if(current_nsig<best_nsig){
-      best_nsig = current_nsig;
-      best_result = current_result;
-      GettingWorse_low = false;
+        if (GettingWorse_up && GettingWorse_low)
+            break;
     }
-    else GettingWorse_low = true;
 
-
-    test_val = Expected + 0.5*Step + double(uT)*Step;
-    fGauss->SetParameter(0,test_val);
-    current_result = fGauss->Mean(0,64);
-    current_nsig = fabs(current_result-mean);
-    if(current_nsig<best_nsig){
-      best_nsig = current_nsig;
-      best_result = current_result;
-      GettingWorse_up = false;
-    }
-    else GettingWorse_up = true;
-
-    if(GettingWorse_up && GettingWorse_low) break;
-  }
-
-  delete fGauss;
-  return best_result;
+    delete fGauss;
+    return best_result;
 }
-double ConvertGaussMean(double reff){
-  TF1* fGauss = new TF1("fGauss",GaussSourceTF1,0,reff*10,1);
-  fGauss->SetParameter(0,reff);
-  double mean = fGauss->Mean(0,reff*10);
-  delete fGauss;
-  return mean;
+double ConvertGaussMean(double reff)
+{
+    TF1 *fGauss = new TF1("fGauss", GaussSourceTF1, 0, reff * 10, 1);
+    fGauss->SetParameter(0, reff);
+    double mean = fGauss->Mean(0, reff * 10);
+    delete fGauss;
+    return mean;
 }
 
 void SetUp_RSM_Flat(DLM_CleverMcLevyResoTM &MagicSource, const double frac1, const double frac2, const double MassP1, const double MassP2,
@@ -6119,305 +6611,364 @@ bool NormalizeSource_rk(DLM_Histo<float> *dlmSource)
     return true;
 }
 
-
-void SetUpSplPars(TF1*& fitfun){
-  fitfun = new TF1("fitfun",DlmTSplineFitPositive,0,8,3+2*10);
-  fitfun->FixParameter(0,10);
-  fitfun->FixParameter(1,0);
-  fitfun->FixParameter(2,0);
-  fitfun->FixParameter(3,0.0);
-  fitfun->FixParameter(4,0.4);
-  fitfun->FixParameter(5,0.8);
-  fitfun->FixParameter(6,1.2);
-  fitfun->FixParameter(7,1.8);
-  fitfun->FixParameter(8,2.4);
-  fitfun->FixParameter(9,3.2);
-  fitfun->FixParameter(10,4.5);
-  fitfun->FixParameter(11,6.0);
-  fitfun->FixParameter(12,8.0);
+void SetUpSplPars(TF1 *&fitfun)
+{
+    fitfun = new TF1("fitfun", DlmTSplineFitPositive, 0, 8, 3 + 2 * 10);
+    fitfun->FixParameter(0, 10);
+    fitfun->FixParameter(1, 0);
+    fitfun->FixParameter(2, 0);
+    fitfun->FixParameter(3, 0.0);
+    fitfun->FixParameter(4, 0.4);
+    fitfun->FixParameter(5, 0.8);
+    fitfun->FixParameter(6, 1.2);
+    fitfun->FixParameter(7, 1.8);
+    fitfun->FixParameter(8, 2.4);
+    fitfun->FixParameter(9, 3.2);
+    fitfun->FixParameter(10, 4.5);
+    fitfun->FixParameter(11, 6.0);
+    fitfun->FixParameter(12, 8.0);
 }
 
+// Mode = 0: default
+// Mode = 1: reduced: we use only 8 of the Disots, making bigger distance and no allowing sharp peaks (small stdv)
+// Mode = 2: reduced+: only 6 Distos
+void SetUpKdpPars(TF1 *&fitfun, int Mode)
+{
 
+    fitfun = new TF1("fKdpPars", PoissonSum, 0, 64, 29);
 
-//Mode = 0: default
-//Mode = 1: reduced: we use only 8 of the Disots, making bigger distance and no allowing sharp peaks (small stdv)
-//Mode = 2: reduced+: only 6 Distos
-void SetUpKdpPars(TF1*& fitfun, int Mode){
+    if (Mode == 1)
+    {
+        // P0
+        fitfun->SetParameter(0, 0.4); // mean
+        fitfun->SetParLimits(0, 0.2, 0.6);
+        fitfun->SetParameter(1, 0.2); // stdv
+        fitfun->SetParLimits(1, 0.1, 0.4);
+        fitfun->SetParameter(2, 1. / 10.); // wght
+        fitfun->SetParLimits(2, 0.0, 1.0);
 
-  fitfun = new TF1("fKdpPars",PoissonSum,0,64,29);
+        // P1
+        fitfun->SetParameter(3, 0.8); // mean
+        fitfun->SetParLimits(3, 0.6, 1.0);
+        fitfun->SetParameter(4, 0.4); // stdv
+        fitfun->SetParLimits(4, 0.2, 0.8);
+        fitfun->SetParameter(5, 1. / 9.); // wght
+        fitfun->SetParLimits(5, 0.0, 1.0);
 
-  if(Mode==1){
-    //P0
-    fitfun->SetParameter(0,0.4);//mean
-    fitfun->SetParLimits(0,0.2,0.6);
-    fitfun->SetParameter(1,0.2);//stdv
-    fitfun->SetParLimits(1,0.1,0.4);
-    fitfun->SetParameter(2,1./10.);//wght
-    fitfun->SetParLimits(2,0.0,1.0);
+        // P2
+        fitfun->SetParameter(6, 1.2); // mean
+        fitfun->SetParLimits(6, 0.6, 1.5);
+        fitfun->SetParameter(7, 0.6); // stdv
+        fitfun->SetParLimits(7, 0.3, 1.2);
+        fitfun->SetParameter(8, 1. / 8.); // wght
+        fitfun->SetParLimits(8, 0.0, 1.0);
 
-    //P1
-    fitfun->SetParameter(3,0.8);//mean
-    fitfun->SetParLimits(3,0.6,1.0);
-    fitfun->SetParameter(4,0.4);//stdv
-    fitfun->SetParLimits(4,0.2,0.8);
-    fitfun->SetParameter(5,1./9.);//wght
-    fitfun->SetParLimits(5,0.0,1.0);
+        // P3
+        fitfun->SetParameter(9, 1.8); // mean
+        fitfun->SetParLimits(9, 1.5, 2.1);
+        fitfun->SetParameter(10, 0.9); // stdv
+        fitfun->SetParLimits(10, 0.45, 1.8);
+        fitfun->SetParameter(11, 1. / 7.); // wght
+        fitfun->SetParLimits(11, 0.0, 1.0);
 
-    //P2
-    fitfun->SetParameter(6,1.2);//mean
-    fitfun->SetParLimits(6,0.6,1.5);
-    fitfun->SetParameter(7,0.6);//stdv
-    fitfun->SetParLimits(7,0.3,1.2);
-    fitfun->SetParameter(8,1./8.);//wght
-    fitfun->SetParLimits(8,0.0,1.0);
+        // P4
+        fitfun->SetParameter(12, 2.4); // mean
+        fitfun->SetParLimits(12, 2.1, 3.0);
+        fitfun->SetParameter(13, 1.2); // stdv
+        fitfun->SetParLimits(13, 0.6, 2.4);
+        fitfun->SetParameter(14, 1. / 6.); // wght
+        fitfun->SetParLimits(14, 0.0, 1.0);
 
-    //P3
-    fitfun->SetParameter(9,1.8);//mean
-    fitfun->SetParLimits(9,1.5,2.1);
-    fitfun->SetParameter(10,0.9);//stdv
-    fitfun->SetParLimits(10,0.45,1.8);
-    fitfun->SetParameter(11,1./7.);//wght
-    fitfun->SetParLimits(11,0.0,1.0);
+        // P5
+        fitfun->SetParameter(15, 3.6); // mean
+        fitfun->SetParLimits(15, 3.0, 4.5);
+        fitfun->SetParameter(16, 1.8); // stdv
+        fitfun->SetParLimits(16, 0.9, 3.6);
+        fitfun->SetParameter(17, 1. / 5.); // wght
+        fitfun->SetParLimits(17, 0.0, 1.0);
 
-    //P4
-    fitfun->SetParameter(12,2.4);//mean
-    fitfun->SetParLimits(12,2.1,3.0);
-    fitfun->SetParameter(13,1.2);//stdv
-    fitfun->SetParLimits(13,0.6,2.4);
-    fitfun->SetParameter(14,1./6.);//wght
-    fitfun->SetParLimits(14,0.0,1.0);
+        // P6
+        fitfun->SetParameter(18, 5.4); // mean
+        fitfun->SetParLimits(18, 4.5, 6.2);
+        fitfun->SetParameter(19, 2.7); // stdv
+        fitfun->SetParLimits(19, 1.35, 5.4);
+        fitfun->SetParameter(20, 1. / 4.); // wght
+        fitfun->SetParLimits(20, 0.0, 1.0);
 
-    //P5
-    fitfun->SetParameter(15,3.6);//mean
-    fitfun->SetParLimits(15,3.0,4.5);
-    fitfun->SetParameter(16,1.8);//stdv
-    fitfun->SetParLimits(16,0.9,3.6);
-    fitfun->SetParameter(17,1./5.);//wght
-    fitfun->SetParLimits(17,0.0,1.0);
+        // P7
+        fitfun->SetParameter(21, 7.0); // mean
+        fitfun->SetParLimits(21, 6.2, 8.0);
+        fitfun->SetParameter(22, 3.5); // stdv
+        fitfun->SetParLimits(22, 1.75, 7.0);
+        fitfun->SetParameter(23, 1. / 3.); // wght
+        fitfun->SetParLimits(23, 0.0, 1.0);
 
-    //P6
-    fitfun->SetParameter(18,5.4);//mean
-    fitfun->SetParLimits(18,4.5,6.2);
-    fitfun->SetParameter(19,2.7);//stdv
-    fitfun->SetParLimits(19,1.35,5.4);
-    fitfun->SetParameter(20,1./4.);//wght
-    fitfun->SetParLimits(20,0.0,1.0);
+        // P8
+        fitfun->FixParameter(24, 0); // mean
+        fitfun->FixParameter(25, 0); // stdv
+        fitfun->FixParameter(26, 0); // wght
 
-    //P7
-    fitfun->SetParameter(21,7.0);//mean
-    fitfun->SetParLimits(21,6.2,8.0);
-    fitfun->SetParameter(22,3.5);//stdv
-    fitfun->SetParLimits(22,1.75,7.0);
-    fitfun->SetParameter(23,1./3.);//wght
-    fitfun->SetParLimits(23,0.0,1.0);
-
-    //P8
-    fitfun->FixParameter(24,0);//mean
-    fitfun->FixParameter(25,0);//stdv
-    fitfun->FixParameter(26,0);//wght
-
-    //P9
-    fitfun->FixParameter(27,0);//mean
-    fitfun->FixParameter(28,0);//stdv
-  }
-  else if(Mode==2){
-    //P0
-    fitfun->SetParameter(0,0.45);//mean
-    fitfun->SetParameter(3,0.9);//mean
-    fitfun->SetParameter(6,1.4);//mean
-    fitfun->SetParameter(9,2.0);//mean
-    fitfun->SetParameter(12,3.2);//mean
-    fitfun->SetParameter(15,5.4);//mean
-
-    fitfun->SetParLimits(0,0.225,0.9);
-    for(unsigned uP=1; uP<5; uP++){
-      double low_lim = 0.55*(fitfun->GetParameter(-3+uP*3)+fitfun->GetParameter(0+uP*3));
-      double up_lim = 0.45*(fitfun->GetParameter(3+uP*3)+fitfun->GetParameter(0+uP*3));
-      fitfun->SetParLimits(0+uP*3,low_lim,up_lim);
+        // P9
+        fitfun->FixParameter(27, 0); // mean
+        fitfun->FixParameter(28, 0); // stdv
     }
-    fitfun->SetParLimits(15,4.3,6.5);
+    else if (Mode == 2)
+    {
+        // P0
+        fitfun->SetParameter(0, 0.45); // mean
+        fitfun->SetParameter(3, 0.9);  // mean
+        fitfun->SetParameter(6, 1.4);  // mean
+        fitfun->SetParameter(9, 2.0);  // mean
+        fitfun->SetParameter(12, 3.2); // mean
+        fitfun->SetParameter(15, 5.4); // mean
 
-    for(unsigned uP=0; uP<6; uP++){
-      double mu = fitfun->GetParameter(0+uP*3);
-      fitfun->SetParameter(1+uP*3,mu*0.4);
-      fitfun->SetParLimits(1+uP*3,mu*0.3,mu*0.45);
-      //fitfun->FixParameter(1+uP*3,mu*0.4);
+        fitfun->SetParLimits(0, 0.225, 0.9);
+        for (unsigned uP = 1; uP < 5; uP++)
+        {
+            double low_lim = 0.55 * (fitfun->GetParameter(-3 + uP * 3) + fitfun->GetParameter(0 + uP * 3));
+            double up_lim = 0.45 * (fitfun->GetParameter(3 + uP * 3) + fitfun->GetParameter(0 + uP * 3));
+            fitfun->SetParLimits(0 + uP * 3, low_lim, up_lim);
+        }
+        fitfun->SetParLimits(15, 4.3, 6.5);
+
+        for (unsigned uP = 0; uP < 6; uP++)
+        {
+            double mu = fitfun->GetParameter(0 + uP * 3);
+            fitfun->SetParameter(1 + uP * 3, mu * 0.4);
+            fitfun->SetParLimits(1 + uP * 3, mu * 0.3, mu * 0.45);
+            // fitfun->FixParameter(1+uP*3,mu*0.4);
+        }
+
+        for (unsigned uP = 0; uP < 5; uP++)
+        {
+            fitfun->SetParameter(2 + uP * 3, 1. / (6. - double(uP)));
+            fitfun->SetParLimits(2 + uP * 3, 0, 1.0);
+        }
+        fitfun->FixParameter(17, 1);
+
+        // P6
+        fitfun->FixParameter(18, 0); // mean
+        fitfun->FixParameter(19, 0); // stdv
+        fitfun->FixParameter(20, 0); // wght
+
+        // P7
+        fitfun->FixParameter(21, 0); // mean
+        fitfun->FixParameter(22, 0); // stdv
+        fitfun->FixParameter(23, 0); // wght
+
+        // P8
+        fitfun->FixParameter(24, 0); // mean
+        fitfun->FixParameter(25, 0); // stdv
+        fitfun->FixParameter(26, 0); // wght
+
+        // P9
+        fitfun->FixParameter(27, 0); // mean
+        fitfun->FixParameter(28, 0); // stdv
+    }
+    else
+    {
+        // P0
+        fitfun->SetParameter(0, 0.3); // mean
+        fitfun->SetParLimits(0, 0.15, 0.45);
+        fitfun->SetParameter(1, 0.15); // stdv
+        fitfun->SetParLimits(1, 0.0, 0.3);
+        fitfun->SetParameter(2, 1. / 10.); // wght
+        fitfun->SetParLimits(2, 0.0, 1.0);
+
+        // P1
+        fitfun->SetParameter(3, 0.6); // mean
+        fitfun->SetParLimits(3, 0.45, 0.75);
+        fitfun->SetParameter(4, 0.15); // stdv
+        fitfun->SetParLimits(4, 0.0, 0.3);
+        fitfun->SetParameter(5, 1. / 9.); // wght
+        fitfun->SetParLimits(5, 0.0, 1.0);
+
+        // P2
+        fitfun->SetParameter(6, 0.9); // mean
+        fitfun->SetParLimits(6, 0.75, 1.05);
+        fitfun->SetParameter(7, 0.15); // stdv
+        fitfun->SetParLimits(7, 0.0, 0.3);
+        fitfun->SetParameter(8, 1. / 8.); // wght
+        fitfun->SetParLimits(8, 0.0, 1.0);
+
+        // P3
+        fitfun->SetParameter(9, 1.2); // mean
+        fitfun->SetParLimits(9, 1.05, 1.5);
+        fitfun->SetParameter(10, 0.3); // stdv
+        fitfun->SetParLimits(10, 0.0, 0.6);
+        fitfun->SetParameter(11, 1. / 7.); // wght
+        fitfun->SetParLimits(11, 0.0, 1.0);
+
+        // P4
+        fitfun->SetParameter(12, 1.8); // mean
+        fitfun->SetParLimits(12, 1.5, 2.1);
+        fitfun->SetParameter(13, 0.3); // stdv
+        fitfun->SetParLimits(13, 0.0, 0.6);
+        fitfun->SetParameter(14, 1. / 6.); // wght
+        fitfun->SetParLimits(14, 0.0, 1.0);
+
+        // P5
+        fitfun->SetParameter(15, 2.4); // mean
+        fitfun->SetParLimits(15, 2.1, 2.8);
+        fitfun->SetParameter(16, 0.4); // stdv
+        fitfun->SetParLimits(16, 0.0, 0.8);
+        fitfun->SetParameter(17, 1. / 5.); // wght
+        fitfun->SetParLimits(17, 0.0, 1.0);
+
+        // P6
+        fitfun->SetParameter(18, 3.2); // mean
+        fitfun->SetParLimits(18, 2.8, 3.6);
+        fitfun->SetParameter(19, 0.4); // stdv
+        fitfun->SetParLimits(19, 0.0, 0.8);
+        fitfun->SetParameter(20, 1. / 4.); // wght
+        fitfun->SetParLimits(20, 0.0, 1.0);
+
+        // P7
+        fitfun->SetParameter(21, 4.0); // mean
+        fitfun->SetParLimits(21, 3.6, 4.6);
+        fitfun->SetParameter(22, 0.6); // stdv
+        fitfun->SetParLimits(22, 0.0, 1.2);
+        fitfun->SetParameter(23, 1. / 3.); // wght
+        fitfun->SetParLimits(23, 0.0, 1.0);
+
+        // P8
+        fitfun->SetParameter(24, 5.2); // mean
+        fitfun->SetParLimits(24, 4.6, 6.1);
+        fitfun->SetParameter(25, 0.9); // stdv
+        fitfun->SetParLimits(25, 0.0, 1.8);
+        fitfun->SetParameter(26, 1. / 2.); // wght
+        fitfun->SetParLimits(26, 0.0, 1.0);
+
+        // P9
+        fitfun->SetParameter(27, 7.0); // mean
+        fitfun->SetParLimits(27, 6.1, 8.5);
+        fitfun->SetParameter(28, 1.5); // stdv
+        fitfun->SetParLimits(28, 0.0, 3.0);
     }
 
-    for(unsigned uP=0; uP<5; uP++){
-      fitfun->SetParameter(2+uP*3,1./(6.-double(uP)));
-      fitfun->SetParLimits(2+uP*3,0,1.0);
-    }
-    fitfun->FixParameter(17,1);
-
-    //P6
-    fitfun->FixParameter(18,0);//mean
-    fitfun->FixParameter(19,0);//stdv
-    fitfun->FixParameter(20,0);//wght
-
-    //P7
-    fitfun->FixParameter(21,0);//mean
-    fitfun->FixParameter(22,0);//stdv
-    fitfun->FixParameter(23,0);//wght
-
-    //P8
-    fitfun->FixParameter(24,0);//mean
-    fitfun->FixParameter(25,0);//stdv
-    fitfun->FixParameter(26,0);//wght
-
-    //P9
-    fitfun->FixParameter(27,0);//mean
-    fitfun->FixParameter(28,0);//stdv
-  }
-  else{
-    //P0
-    fitfun->SetParameter(0,0.3);//mean
-    fitfun->SetParLimits(0,0.15,0.45);
-    fitfun->SetParameter(1,0.15);//stdv
-    fitfun->SetParLimits(1,0.0,0.3);
-    fitfun->SetParameter(2,1./10.);//wght
-    fitfun->SetParLimits(2,0.0,1.0);
-
-    //P1
-    fitfun->SetParameter(3,0.6);//mean
-    fitfun->SetParLimits(3,0.45,0.75);
-    fitfun->SetParameter(4,0.15);//stdv
-    fitfun->SetParLimits(4,0.0,0.3);
-    fitfun->SetParameter(5,1./9.);//wght
-    fitfun->SetParLimits(5,0.0,1.0);
-
-    //P2
-    fitfun->SetParameter(6,0.9);//mean
-    fitfun->SetParLimits(6,0.75,1.05);
-    fitfun->SetParameter(7,0.15);//stdv
-    fitfun->SetParLimits(7,0.0,0.3);
-    fitfun->SetParameter(8,1./8.);//wght
-    fitfun->SetParLimits(8,0.0,1.0);
-
-    //P3
-    fitfun->SetParameter(9,1.2);//mean
-    fitfun->SetParLimits(9,1.05,1.5);
-    fitfun->SetParameter(10,0.3);//stdv
-    fitfun->SetParLimits(10,0.0,0.6);
-    fitfun->SetParameter(11,1./7.);//wght
-    fitfun->SetParLimits(11,0.0,1.0);
-
-    //P4
-    fitfun->SetParameter(12,1.8);//mean
-    fitfun->SetParLimits(12,1.5,2.1);
-    fitfun->SetParameter(13,0.3);//stdv
-    fitfun->SetParLimits(13,0.0,0.6);
-    fitfun->SetParameter(14,1./6.);//wght
-    fitfun->SetParLimits(14,0.0,1.0);
-
-    //P5
-    fitfun->SetParameter(15,2.4);//mean
-    fitfun->SetParLimits(15,2.1,2.8);
-    fitfun->SetParameter(16,0.4);//stdv
-    fitfun->SetParLimits(16,0.0,0.8);
-    fitfun->SetParameter(17,1./5.);//wght
-    fitfun->SetParLimits(17,0.0,1.0);
-
-    //P6
-    fitfun->SetParameter(18,3.2);//mean
-    fitfun->SetParLimits(18,2.8,3.6);
-    fitfun->SetParameter(19,0.4);//stdv
-    fitfun->SetParLimits(19,0.0,0.8);
-    fitfun->SetParameter(20,1./4.);//wght
-    fitfun->SetParLimits(20,0.0,1.0);
-
-    //P7
-    fitfun->SetParameter(21,4.0);//mean
-    fitfun->SetParLimits(21,3.6,4.6);
-    fitfun->SetParameter(22,0.6);//stdv
-    fitfun->SetParLimits(22,0.0,1.2);
-    fitfun->SetParameter(23,1./3.);//wght
-    fitfun->SetParLimits(23,0.0,1.0);
-
-    //P8
-    fitfun->SetParameter(24,5.2);//mean
-    fitfun->SetParLimits(24,4.6,6.1);
-    fitfun->SetParameter(25,0.9);//stdv
-    fitfun->SetParLimits(25,0.0,1.8);
-    fitfun->SetParameter(26,1./2.);//wght
-    fitfun->SetParLimits(26,0.0,1.0);
-
-    //P9
-    fitfun->SetParameter(27,7.0);//mean
-    fitfun->SetParLimits(27,6.1,8.5);
-    fitfun->SetParameter(28,1.5);//stdv
-    fitfun->SetParLimits(28,0.0,3.0);
-
-  }
-
-  fitfun->SetNpx(4096);
-
+    fitfun->SetNpx(4096);
 }
 
-bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFit, TF1*& fitSP,
-  const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh){
-  Kitty.KillTheCat();
-  double* MomBins = Kitty.CopyMomBin();
-  hFit = new TH1F("hFit52351","hFit52351",Kitty.GetNumMomBins(),MomBins);
-  double LAST_POINT;
-  double CURRENT_POINT;
-  for(unsigned uMom=0; uMom<Kitty.GetNumMomBins(); uMom++){
-    CURRENT_POINT = Kitty.GetMomentum(uMom)/tan(Kitty.GetPhaseShift(uMom,usCh,0));
-    if(uMom){
-      if(CURRENT_POINT*LAST_POINT<0&&fabs(CURRENT_POINT-LAST_POINT)>1000&&Kitty.GetMomentum(uMom)<120)
-      {fitSP=NULL;delete[]MomBins;return false;}
+bool GetScattParameters(CATS &Kitty, double &ScatLen, double &EffRan, TH1F *&hFit, TF1 *&fitSP,
+                        const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh)
+{
+    Kitty.KillTheCat();
+    double *MomBins = Kitty.CopyMomBin();
+    hFit = new TH1F("hFit52351", "hFit52351", Kitty.GetNumMomBins(), MomBins);
+    double LAST_POINT;
+    double CURRENT_POINT;
+    for (unsigned uMom = 0; uMom < Kitty.GetNumMomBins(); uMom++)
+    {
+        CURRENT_POINT = Kitty.GetMomentum(uMom) / tan(Kitty.GetPhaseShift(uMom, usCh, 0));
+        if (uMom)
+        {
+            if (CURRENT_POINT * LAST_POINT < 0 && fabs(CURRENT_POINT - LAST_POINT) > 1000 && Kitty.GetMomentum(uMom) < 120)
+            {
+                fitSP = NULL;
+                delete[] MomBins;
+                return false;
+            }
+        }
+        hFit->SetBinContent(uMom + 1, CURRENT_POINT);
+        hFit->SetBinError(uMom + 1, 1.);
+        LAST_POINT = CURRENT_POINT;
     }
-    hFit->SetBinContent(uMom+1,CURRENT_POINT);
-    hFit->SetBinError(uMom+1,1.);
-    LAST_POINT = CURRENT_POINT;
-  }
-  TF1* fitSP2 = new TF1("fitSP2","0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
-  TF1* fitSP4 = new TF1("fitSP4","[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
-  TF1* fitSP6 = new TF1("fitSP6","[3]*pow(x,6.)+[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
-  double inv_f0 = ScatLen==0?0:1./ScatLen;
-  if(Fixf0) {fitSP2->FixParameter(0,inv_f0);fitSP4->FixParameter(0,inv_f0);fitSP6->FixParameter(0,inv_f0);}
-  else {fitSP2->SetParameter(0,inv_f0);fitSP2->SetParLimits(0,-100,100);
-        fitSP4->SetParameter(0,inv_f0);fitSP4->SetParLimits(0,-100,100);
-        fitSP6->SetParameter(0,inv_f0);fitSP6->SetParLimits(0,-100,100);}
-  if(Fixd0) { fitSP2->FixParameter(1,EffRan);
-              fitSP4->FixParameter(1,EffRan);
-              fitSP6->FixParameter(1,EffRan);}
-  else {fitSP2->SetParameter(1,EffRan);fitSP2->SetParLimits(1,-50,50);
-        fitSP4->SetParameter(1,EffRan);fitSP4->SetParLimits(1,-50,50);
-        fitSP6->SetParameter(1,EffRan);fitSP6->SetParLimits(1,-50,50);}
-  fitSP4->SetParameter(2,0);fitSP6->SetParameter(2,0);
-  fitSP6->SetParameter(3,0);
+    TF1 *fitSP2 = new TF1("fitSP2", "0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
+    TF1 *fitSP4 = new TF1("fitSP4", "[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
+    TF1 *fitSP6 = new TF1("fitSP6", "[3]*pow(x,6.)+[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
+    double inv_f0 = ScatLen == 0 ? 0 : 1. / ScatLen;
+    if (Fixf0)
+    {
+        fitSP2->FixParameter(0, inv_f0);
+        fitSP4->FixParameter(0, inv_f0);
+        fitSP6->FixParameter(0, inv_f0);
+    }
+    else
+    {
+        fitSP2->SetParameter(0, inv_f0);
+        fitSP2->SetParLimits(0, -100, 100);
+        fitSP4->SetParameter(0, inv_f0);
+        fitSP4->SetParLimits(0, -100, 100);
+        fitSP6->SetParameter(0, inv_f0);
+        fitSP6->SetParLimits(0, -100, 100);
+    }
+    if (Fixd0)
+    {
+        fitSP2->FixParameter(1, EffRan);
+        fitSP4->FixParameter(1, EffRan);
+        fitSP6->FixParameter(1, EffRan);
+    }
+    else
+    {
+        fitSP2->SetParameter(1, EffRan);
+        fitSP2->SetParLimits(1, -50, 50);
+        fitSP4->SetParameter(1, EffRan);
+        fitSP4->SetParLimits(1, -50, 50);
+        fitSP6->SetParameter(1, EffRan);
+        fitSP6->SetParLimits(1, -50, 50);
+    }
+    fitSP4->SetParameter(2, 0);
+    fitSP6->SetParameter(2, 0);
+    fitSP6->SetParameter(3, 0);
 
+    double Chi2_Old = 1e64;
 
-  double Chi2_Old = 1e64;
+    // hFit->Fit(fitSP2, "Q, S, N, R, M");
+    ROOT::Math::MinimizerOptions MinOpt;
+    MinOpt.SetMinimizerType("Minuit2");
+    MinOpt.SetPrintLevel(0);
+    DLM_FitHisto(hFit, fitSP2, "Q, S, N, R, M", "", &MinOpt);
+    // printf("f0 %f\n", 1./fitSP2->GetParameter(0));
+    ScatLen = 1. / fitSP2->GetParameter(0);
+    EffRan = fitSP2->GetParameter(1);
+    if (Nterms <= 2)
+    {
+        delete fitSP4;
+        delete fitSP6;
+        fitSP = fitSP2;
+        delete[] MomBins;
+        return true;
+    }
 
-  //hFit->Fit(fitSP2, "Q, S, N, R, M");
-  ROOT::Math::MinimizerOptions MinOpt;
-  MinOpt.SetMinimizerType("Minuit2");
-  MinOpt.SetPrintLevel(0);
-  DLM_FitHisto(hFit, fitSP2, "Q, S, N, R, M", "", &MinOpt);
-  //printf("f0 %f\n", 1./fitSP2->GetParameter(0));
-  ScatLen = 1./fitSP2->GetParameter(0);
-  EffRan = fitSP2->GetParameter(1);
-  if(Nterms<=2){delete fitSP4; delete fitSP6; fitSP=fitSP2; delete[]MomBins; return true;}
+    // hFit->Fit(fitSP4, "Q, S, N, R, M");
+    DLM_FitHisto(hFit, fitSP4, "Q, S, N, R, M", "", &MinOpt);
+    if (fitSP4->GetChisquare() / fitSP2->GetChisquare() > 0.8)
+    {
+        delete fitSP4;
+        delete fitSP6;
+        fitSP = fitSP2;
+        delete[] MomBins;
+        return true;
+    }
+    ScatLen = 1. / fitSP4->GetParameter(0);
+    EffRan = fitSP4->GetParameter(1);
+    if (Nterms <= 3)
+    {
+        delete fitSP2;
+        delete fitSP6;
+        fitSP = fitSP4;
+        delete[] MomBins;
+        return true;
+    }
 
-  //hFit->Fit(fitSP4, "Q, S, N, R, M");
-  DLM_FitHisto(hFit, fitSP4, "Q, S, N, R, M", "", &MinOpt);
-  if(fitSP4->GetChisquare()/fitSP2->GetChisquare()>0.8)
-  {delete fitSP4; delete fitSP6; fitSP=fitSP2; delete[]MomBins; return true;}
-  ScatLen = 1./fitSP4->GetParameter(0);
-  EffRan = fitSP4->GetParameter(1);
-  if(Nterms<=3){delete fitSP2; delete fitSP6; fitSP=fitSP4; delete[]MomBins; return true;}
-
-  //hFit->Fit(fitSP6, "Q, S, N, R, M");
-  DLM_FitHisto(hFit, fitSP6, "Q, S, N, R, M", "", &MinOpt);
-  if(fitSP6->GetChisquare()/fitSP4->GetChisquare()>0.8)
-  {delete fitSP2; delete fitSP6; fitSP=fitSP4; delete[]MomBins; return true;}
-  ScatLen = 1./fitSP6->GetParameter(0);
-  EffRan = fitSP6->GetParameter(1);
-  delete fitSP2; delete fitSP4; fitSP=fitSP6; delete[]MomBins; return true;
+    // hFit->Fit(fitSP6, "Q, S, N, R, M");
+    DLM_FitHisto(hFit, fitSP6, "Q, S, N, R, M", "", &MinOpt);
+    if (fitSP6->GetChisquare() / fitSP4->GetChisquare() > 0.8)
+    {
+        delete fitSP2;
+        delete fitSP6;
+        fitSP = fitSP4;
+        delete[] MomBins;
+        return true;
+    }
+    ScatLen = 1. / fitSP6->GetParameter(0);
+    EffRan = fitSP6->GetParameter(1);
+    delete fitSP2;
+    delete fitSP4;
+    fitSP = fitSP6;
+    delete[] MomBins;
+    return true;
 }
-
 
 /*
 void DLM_CommonAnaFunctions::Clean_CommonAnaFunctions(){
