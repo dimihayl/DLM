@@ -3405,7 +3405,7 @@ void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOUR
     double rad2;
     double w_source;
     double lam_source;
-    if (DataSample == "pp13TeV_HM_BBarMAC")
+    if (DataSample == "pp13TeV_HM_LKMAC")
     {
         rad1 = 1.202;
         rad2 = 2.33;
@@ -3413,7 +3413,7 @@ void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOUR
         lam_source = 0.9806;
         ExternalWF = Init_LAntiK_Vidana("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
     }
-    else if (DataSample == "pp13TeV_HM_BBar")
+    else if (DataSample == "pp13TeV_HM_LK")
     {
         rad1 = 1.202;
         rad2 = 2.33;
