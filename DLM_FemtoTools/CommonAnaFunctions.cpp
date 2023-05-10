@@ -3405,12 +3405,21 @@ void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOUR
     double rad2;
     double w_source;
     double lam_source;
-    if (DataSample == "pp13TeV_HM_BBar")
+    if (DataSample == "pp13TeV_HM_BBarMAC")
     {
         rad1 = 1.202;
         rad2 = 2.33;
         w_source = 0.7993;
         lam_source = 0.9806;
+        ExternalWF = Init_LAntiK_Vidana("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
+    }
+    else if (DataSample == "pp13TeV_HM_BBar")
+    {
+        rad1 = 1.202;
+        rad2 = 2.33;
+        w_source = 0.7993;
+        lam_source = 0.9806;
+        ExternalWF = Init_LAntiK_Vidana("/home/valentina/thor/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
     }
 
     if (SOURCE == "Gauss")
@@ -3440,7 +3449,6 @@ void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOUR
         goto CLEAN_SetUpCats_pApHaide;
     }
 
-    ExternalWF = Init_LAntiK_Vidana("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
     NumChannels = 6;
 
     Kitty.SetMomentumDependentSource(false);
