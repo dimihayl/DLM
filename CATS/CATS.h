@@ -290,6 +290,10 @@ public:
     //has no information of the length of this array, it is the responsibility of the user to make source there is
     //no segmentation violation!!!
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value);
+    void SetShortRangeSquareWell(const unsigned usCh, const unsigned usPW, const double depth, const double width);
+    //wSchroedinger, wExternal, wSquareWell
+    //N.B. SetShortRangePotential, SetShortRangeSquareWell and SetExternalWaveFunction all change the type automatically
+    void SetWfType(const unsigned usCh, const unsigned usPW, const int type);
 
     void RemoveAnaSource();
 
@@ -357,6 +361,7 @@ void test_ad5(){
     //!------------------------------------------------
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
+    enum WfOptions { wSchroedinger, wExternal, wSquareWell };
 //DLM_Histo<double> SourceHistoTemp;
 protected:
 
@@ -447,6 +452,7 @@ protected:
     double StartRad;
     //practically scales linearly with the step size. A perfect value would be around 1e-7, which would balance perfectly
     //between numerical and machine precision. It is recommended to keep this value between 1e-4 and 1e-9. The default value is 5e-6
+    //for the case of wSquareWell, 50 x EpsilonProp = dr (e.g. 1e-7 is 1e-3 fm, or 1000 steps in 1 fm)
     double EpsilonProp;
     //determines the criteria for a convergence. It is the threshold value for the relative difference between
     //the propagating function with or without potential. Similarly as for EpsilonProp it is assumed that the perfect value
@@ -468,6 +474,13 @@ protected:
     unsigned short MaxPw;
     bool* OnlyNumPw;
     unsigned short MaxNumThreads;
+    //[usCh, usPW] -> 0, 1 or 2
+    // 0 = Schroedinger solver
+    // 1 = External wave function, VERY fast, as long as it is available
+    // 2 = square well approximation (credit to Gleb Romanenko). Analytical soultion, VERY fast
+    char** WfType;
+    //[usCh, usPW, depth/width]
+    double*** Sw_Pars;
 
     bool ExcludeFailedConvergence;
     bool MomDepSource;
