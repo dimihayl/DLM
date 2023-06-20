@@ -141,8 +141,9 @@ public:
     DLM_CleverMcLevyResoTM *GetCleverMcLevyResoTM_ppic();
 
     DLM_CleverMcLevyResoTM *GaussCoreRsm_LK(const int &SourceVar);
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_SigmaK(const int &SourceVar);
     DLM_CleverMcLevyResoTM *GaussCoreRsm_pK(const int &SourceVar);
-    DLM_CleverMcLevyResoTM *GaussCoreRsm_pp(const int &SourceVar);
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_XiPi(const int &SourceVar);
 
 private:
     void Clean_CommonAnaFunctions();
