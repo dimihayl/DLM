@@ -6222,7 +6222,7 @@ DLM_Histo<complex<double>> ***Init_LAntiK_Vidana(const char *InputFolder,
 {
     double RadiusStepSize = 0.02;
     double RadiusMinimum = 0.;
-    double RadiusMaximum = 15.;
+    double RadiusMaximum = 50.;
     double MomStepSize = 4.;
     double MomMinimum = 0.;
     double MomMaximum = 500.;
