@@ -171,6 +171,14 @@ double HulthenSmooth(double* Pars) {
   return -V0*exp(-mu*r*FmToNu)/(1.+Pars[4]*exp(-Pars[4]*mu*r*FmToNu)-exp(-mu*r*FmToNu));
 }
 
+double SquareWell(double* Pars){
+  double r = fabs(Pars[0]);
+  double& depth = Pars[2];//MeV
+  double& width = Pars[3];//fm
+  if(r<=width) return depth;
+  else return 0;
+}
+
 //i(x) = −exp(−x−0)/(x+g(x))+20h(x)
 /*
 double CustomUsmaniStefano1(const double& Radius,const int& ipart){

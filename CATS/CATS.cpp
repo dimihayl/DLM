@@ -42,6 +42,8 @@ CATS::CATS():
     MaxRho = 16;
     MaxPw = 256;
     OnlyNumPw = NULL;
+    WfType = NULL;
+    Sw_Pars = NULL;
     //MaxNumThreads = 32767;
     MaxNumThreads = 1;
     ExcludeFailedConvergence = true;
@@ -293,6 +295,13 @@ void CATS::DelPotPw(const unsigned short& usCh, const unsigned short& usPW){
     if(ShortRangePotential&&ShortRangePotential[usCh]&&ShortRangePotential[usCh][usPW]){
         ShortRangePotential[usCh][usPW] = NULL;
     }
+    if(WfType&&WfType[usCh]&&WfType[usCh][usPW]){
+      WfType[usCh][usPW] = NULL;
+    }
+    if(Sw_Pars&&Sw_Pars[usCh]&&Sw_Pars[usCh][usPW]){
+      delete [] Sw_Pars[usCh][usPW];
+      Sw_Pars[usCh][usPW] = NULL;
+    }
     if(PotPar&&PotPar[usCh]&&PotPar[usCh][usPW]){
         delete PotPar[usCh][usPW];
         PotPar[usCh][usPW] = NULL;
@@ -317,6 +326,14 @@ void CATS::DelPotCh(const unsigned short& usCh){
     if(ShortRangePotential&&ShortRangePotential[usCh]){
         delete[]ShortRangePotential[usCh];
         ShortRangePotential[usCh] = NULL;
+    }
+    if(WfType&&WfType[usCh]){
+        delete[]WfType[usCh];
+        WfType[usCh] = NULL;
+    }
+    if(Sw_Pars&&Sw_Pars[usCh]){
+        delete[]Sw_Pars[usCh];
+        Sw_Pars[usCh] = NULL;
     }
     if(PotPar&&PotPar[usCh]){
         delete[]PotPar[usCh];
@@ -427,14 +444,20 @@ void CATS::SetNumChannels(const unsigned short& numCh){
         DelPotCh(usCh);
     }
     if(ShortRangePotential){delete[]ShortRangePotential;}
+    if(WfType){delete[]WfType;}
+    if(Sw_Pars){delete[]Sw_Pars;}
 
     ShortRangePotential = new CatsPotential* [numCh];
+    WfType = new char* [numCh];
+    Sw_Pars = new double** [numCh];
     PotPar = new CATSparameters** [numCh];
     ExternalWF = new DLM_Histo<complex<double>>** [numCh];
     ExternalPS = new DLM_Histo<complex<double>>** [numCh];
 
     for(unsigned short usCh=0; usCh<numCh; usCh++){
         ShortRangePotential[usCh] = NULL;
+        WfType[usCh] = NULL;
+        Sw_Pars[usCh] = NULL;
         PotPar[usCh] = NULL;
         ExternalWF[usCh] = NULL;
         ExternalPS[usCh] = NULL;
@@ -483,11 +506,16 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     NumPW[usCh] = numPW;
 
     ShortRangePotential[usCh] = new CatsPotential [numPW];
+    WfType[usCh] = new char [numPW];
+    Sw_Pars[usCh] = new double* [numPW];
     PotPar[usCh] = new CATSparameters* [numPW];
     ExternalWF[usCh] = new DLM_Histo<complex<double>>* [numPW];
     ExternalPS[usCh] = new DLM_Histo<complex<double>>* [numPW];
     for(unsigned short usPW=0; usPW<numPW; usPW++){
         ShortRangePotential[usCh][usPW] = 0;
+        WfType[usCh][usPW] = 0;
+        Sw_Pars[usCh][usPW] = new double [2];
+        Sw_Pars[usCh][usPW][0]=0;Sw_Pars[usCh][usPW][1]=0;
         PotPar[usCh][usPW] = NULL;
         ExternalWF[usCh][usPW] = NULL;
         ExternalPS[usCh][usPW] = NULL;
@@ -1396,6 +1424,7 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
 
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
+    SetWfType(usCh,usPW,wSchroedinger);
 }
 /*
 void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars){
@@ -1441,7 +1470,30 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, co
 
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
-
+    SetWfType(usCh,usPW,wSchroedinger);
+}
+void CATS::SetShortRangeSquareWell(const unsigned usCh, const unsigned usPW, const double depth, const double width){
+  if(NumCh<=usCh || NumPW[usCh]<=usPW){
+      if(Notifications>=nError)
+          printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangeSquareWell(...)\n");
+      return;
+  }
+  Sw_Pars[usCh][usPW][0] = depth*FmToNu;
+  Sw_Pars[usCh][usPW][1] = width*FmToNu;
+  SetWfType(usCh,usPW,wSquareWell);
+}
+void CATS::SetWfType(const unsigned usCh, const unsigned usPW, const int type){
+  if(NumCh<=usCh || NumPW[usCh]<=usPW){
+      if(Notifications>=nError)
+          printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetWfType(...)\n");
+      return;
+  }
+  if(type!=wSchroedinger&&type!=wExternal&&type!=wSquareWell){
+      if(Notifications>=nError)
+          printf("\033[1;31mERROR:\033[0m Bad type in CATS::SetWfType(...)\n");
+      return;
+  }
+  WfType[usCh][usPW] = type;
 }
 
 void CATS::RemoveAnaSource(){
@@ -1590,6 +1642,7 @@ void CATS::SetExternalWaveFunction(const unsigned& usCh, const unsigned& usPW, D
     if(!ExternalPS[usCh][usPW]){ExternalPS[usCh][usPW] = new DLM_Histo<complex<double>> ();}
     *ExternalPS[usCh][usPW] = histPS;
     UpdateExternalPhaseShifts(usCh, usPW);
+    SetWfType(usCh,usPW,wExternal);
 }
 void CATS::SetExternalWaveFunction(DLM_Histo<complex<double>>*** ExternalWF){
     if(!ExternalWF){
@@ -1795,7 +1848,10 @@ void CATS::ComputeWaveFunction(){
             MaxNumPW = NumPW[usCh];
         }
         for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
-            if(!ShortRangePotential[usCh][usPW] && !ExternalWF[usCh][usPW]) continue;
+            //if(!ShortRangePotential[usCh][usPW] && !ExternalWF[usCh][usPW]) continue;
+            if(WfType[usCh][usPW]==wSchroedinger && !ShortRangePotential[usCh][usPW]) continue;
+            else if(WfType[usCh][usPW]==wExternal && !ExternalWF[usCh][usPW]) continue;
+            else if(WfType[usCh][usPW]==wSquareWell && Sw_Pars[usCh][usPW][0]*Sw_Pars[usCh][usPW][1]) continue;
             TotNumSteps++;
         }
     }
@@ -1831,7 +1887,10 @@ void CATS::ComputeWaveFunction(){
         //one has to check if usPW has a meaningful value!
         if(usPW>=NumPW[usCh]) continue;
         //if the potential for this channel and PW is zero => continue
-        if(!ShortRangePotential[usCh][usPW] && !ExternalWF[usCh][usPW]) continue;
+        //if(!ShortRangePotential[usCh][usPW] && !ExternalWF[usCh][usPW]) continue;
+        if(WfType[usCh][usPW]==wSchroedinger && !ShortRangePotential[usCh][usPW]) continue;
+        else if(WfType[usCh][usPW]==wExternal && !ExternalWF[usCh][usPW]) continue;
+        else if(WfType[usCh][usPW]==wSquareWell && Sw_Pars[usCh][usPW][0]*Sw_Pars[usCh][usPW][1]) continue;
         //skip momentum bins which have obtained an error code
         if(!MomBinConverged[uMomBin] && ExcludeFailedConvergence) continue;
 
@@ -1847,7 +1906,7 @@ void CATS::ComputeWaveFunction(){
         //Momentum = 0.5*(MomBin[uMomBin]+MomBin[uMomBin+1]);
 
         //perform the numerical computation
-        if(!ExternalWF[usCh][usPW]){
+        if(WfType[usCh][usPW]==wSchroedinger){
             double* BufferWaveFunction;
             double* BufferRad;
 
@@ -2218,7 +2277,7 @@ DEBUG=-1;
             delete [] BufferWaveFunction;
         }//end of the numerical computation
         //the case with external wave function
-        else{
+        else if(WfType[usCh][usPW]==wExternal){
             SavedWaveFunBins[uMomBin][usCh][usPW] = ExternalWF[usCh][usPW]->GetNbins(1);
             unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
 
@@ -2239,6 +2298,35 @@ DEBUG=-1;
                 EvalPoint[1] = ExternalWF[usCh][usPW]->GetBinCenter(1,uPoint);
                 WaveFunctionU[uMomBin][usCh][usPW][uPoint] = CPF[uMomBin]*ExternalWF[usCh][usPW]->Eval(EvalPoint)*FmToNu;
             }
+        }
+        else if(WfType[usCh][usPW]==wSquareWell){
+          double& sw_depth = Sw_Pars[usCh][usPW][0];
+          double& sw_width = Sw_Pars[usCh][usPW][1];
+          double DeltaRad = EpsilonProp*50.;
+          SavedWaveFunBins[uMomBin][usCh][usPW] = ceil(sw_width/DeltaRad);
+          unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
+
+          if(WaveFunRad[uMomBin][usCh][usPW]) delete [] WaveFunRad[uMomBin][usCh][usPW];
+          WaveFunRad[uMomBin][usCh][usPW] = new double [SWFB+1];
+
+          if(WaveFunctionU[uMomBin][usCh][usPW]) delete [] WaveFunctionU[uMomBin][usCh][usPW];
+          WaveFunctionU[uMomBin][usCh][usPW] = new complex<double> [SWFB];
+
+          for(unsigned uPoint=0; uPoint<=SWFB; uPoint++){
+              WaveFunRad[uMomBin][usCh][usPW][uPoint] = uPoint*DeltaRad;
+          }
+
+          double EvalPoint[2];
+          EvalPoint[0] = GetMomentum(uMomBin);
+          for(unsigned uPoint=0; uPoint<SWFB; uPoint++){
+//WORK IN PROGRESS !! ??
+              WaveFunctionU[uMomBin][usCh][usPW][uPoint] = CPF[uMomBin];
+          }
+        }
+        else{
+          if(Notifications>=nError)
+              printf("          \033[1;31mERROR:\033[0m Major bug in ComputeWaveFunction \033[0m contact the developers!\n", InputFileName);
+          return;
         }
 
         //#pragma omp atomic
@@ -3203,6 +3291,30 @@ double CATS::CoulombPartialWave(const double& Radius, const double& Momentum, co
     }
     return Result;
 }
+/*
+double CATS::CoulombPartialWaveSquareWell(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const{
+    if(Radius*NuToFm>SwWidth){
+      return CoulombPartialWave(Radius,Momentum);
+    }
+    double MomentumBar = sqrt(Momentum*Momentum-2.*RedMass*SwDepth);
+    double EtaBar = RedMass*double(q1q2)*AlphaFS/MomentumBar;
+    double RhoBar = Radius*MomentumBar;
+    double Overflow=0;
+    double Result;
+    if(RhoBar==0) return 0;
+    gsl_sf_coulomb_wave_F_array (usPW, 0, EtaBar, fabs(RhoBar), &Result, &Overflow);
+
+    Result /= MomentumBar;
+
+    //N.B. gsl_sf_coulomb_wave_F_array are defined for Rho>0, but in principle the Coulomb functions are symmetric for odd l
+    //and anti-symmetric for even l. However here I assume that Momentum>0, and if rho is negative so is the Momentum. Thus
+    //the final result for u_l should be symmetric for even l and antisymmetric for odd l. This is implemented here.
+    if(RhoBar<0 && usPW%2==1){
+        Result = -Result;
+    }
+    return Result;
+}
+*/
 
 //note that this function is never corrected for the Gamow factor, as in the asymptotic region one could just take the exact solution
 //instead of correcting a plane wave by Gamow factor

@@ -41,6 +41,7 @@ double YukawaDimiSmooth(double* Pars);
 
 double Hulthen(double* Pars);
 double HulthenSmooth(double* Pars);
+double SquareWell(double* Pars);
 
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);
