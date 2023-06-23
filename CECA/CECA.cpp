@@ -181,6 +181,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_kstar_rstar_RR = NULL;
   Ghetto_kstar_rstar_mT = NULL;
   Ghetto_kstar_rcore_mT = NULL;
+  Ghetto_kstar_reso_mT = NULL;
   Ghetto_mT_rstar = NULL;
   GhettoFemto_rstar = NULL;
   GhettoFemto_rcore = NULL;
@@ -266,6 +267,7 @@ CECA::~CECA(){
   if(Ghetto_kstar_rstar_RR){delete Ghetto_kstar_rstar_RR; Ghetto_kstar_rstar_RR=NULL;}
   if(Ghetto_kstar_rstar_mT){delete Ghetto_kstar_rstar_mT; Ghetto_kstar_rstar_mT=NULL;}
   if(Ghetto_kstar_rcore_mT){delete Ghetto_kstar_rcore_mT; Ghetto_kstar_rcore_mT=NULL;}
+  if(Ghetto_kstar_reso_mT){delete Ghetto_kstar_reso_mT; Ghetto_kstar_reso_mT=NULL;}
   if(Ghetto_mT_rstar){delete Ghetto_mT_rstar; Ghetto_mT_rstar=NULL;}
   if(GhettoFemto_rstar){delete GhettoFemto_rstar; GhettoFemto_rstar=NULL;}
   if(GhettoFemto_rcore){delete GhettoFemto_rcore; GhettoFemto_rcore=NULL;}
@@ -1515,6 +1517,7 @@ FemtoPermutations++;
         GhettoFemto_rcore->Fill(rcore);
       }
       GhettoFemto_mT_rcore->Fill(mT,rcore);
+      Ghetto_kstar_reso_mT->Fill(kstar,0,mT);
     }
     //GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
     //GhettoFemtoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
@@ -1522,15 +1525,31 @@ FemtoPermutations++;
     //GhettoFemtoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
     GhettoFemtoPrimReso[3] += (!prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
-    if(prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial()){
-           if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0))GhettoFemtoPrimReso[1]++;
-      else if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1))GhettoFemtoPrimReso[2]++;
+    if(prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulProduct()){
+       if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(0)){
+         GhettoFemtoPrimReso[1]++;
+         Ghetto_kstar_reso_mT->Fill(kstar,1,mT);
+       }
+      else if(prt_cm[0].Trepni()->GetName()==ListOfParticles.at(1)){
+        GhettoFemtoPrimReso[2]++;
+        Ghetto_kstar_reso_mT->Fill(kstar,2,mT);
+      }
       else printf("BAD BAD BAD 1\n");
+
     }
-    if(prt_cm[1].IsUsefulPrimordial() && !prt_cm[0].IsUsefulPrimordial()){
-           if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1))GhettoFemtoPrimReso[2]++;
-      else if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0))GhettoFemtoPrimReso[1]++;
+    if(prt_cm[1].IsUsefulPrimordial() && prt_cm[0].IsUsefulProduct()){
+      if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(1)){
+        GhettoFemtoPrimReso[2]++;
+        Ghetto_kstar_reso_mT->Fill(kstar,2,mT);
+      }
+      else if(prt_cm[1].Trepni()->GetName()==ListOfParticles.at(0)){
+        GhettoFemtoPrimReso[1]++;
+        Ghetto_kstar_reso_mT->Fill(kstar,1,mT);
+      }
       else printf("BAD BAD BAD 2\n");
+    }
+    if(prt_cm[1].IsUsefulProduct() && prt_cm[0].IsUsefulProduct()){
+      Ghetto_kstar_reso_mT->Fill(kstar,3,mT);
     }
   }
 //}
@@ -1538,7 +1557,7 @@ FemtoPermutations++;
 
 /////////////////////////////// RAFA
   else if(SDIM==3){
-    
+
   }
 ///////////////////////////////
 
@@ -2237,6 +2256,20 @@ void CECA::GhettoInit(){
     Ghetto_kstar_rcore_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
   }
   Ghetto_kstar_rcore_mT->Initialize();
+
+  if(Ghetto_kstar_reso_mT) delete Ghetto_kstar_reso_mT;
+  Ghetto_kstar_reso_mT = new DLM_Histo<float>();
+  Ghetto_kstar_reso_mT->SetUp(3);
+  Ghetto_kstar_reso_mT->SetUp(0,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  Ghetto_kstar_reso_mT->SetUp(1,4,-0.5,3.5);
+  if(Ghetto_MtBins){
+    Ghetto_kstar_reso_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    Ghetto_kstar_reso_mT->SetUp(2,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+  Ghetto_kstar_reso_mT->Initialize();
+
 
   if(Ghetto_mT_rstar) delete Ghetto_mT_rstar;
   Ghetto_mT_rstar = new DLM_Histo<float>();

@@ -217,6 +217,8 @@ public:
   DLM_Histo<float>* Ghetto_kstar_rstar_PR;
   DLM_Histo<float>* Ghetto_kstar_rstar_RP;
   DLM_Histo<float>* Ghetto_kstar_rstar_mT;
+  //reso type is PP = 0, PR = 1, RP = 2 and RR = 3
+  DLM_Histo<float>* Ghetto_kstar_reso_mT;
   DLM_Histo<float>* Ghetto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_rstar;
   DLM_Histo<float>* GhettoFemto_rcore;
