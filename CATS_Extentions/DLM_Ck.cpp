@@ -278,13 +278,11 @@ void DLM_Ck::Update(const bool& FORCE){
         SourceUpToDate = true;
         PotUpToDate = true;
     }
-    else{
-        return;
-    }
 
     //the CutOff
     for(unsigned uBin=0; uBin<NumBins[0]; uBin++){
       double Momentum = BinCenter[0][uBin];
+      if(Momentum<CutOff && Momentum<BinRange[0][NumBins[0]]){continue;}
       double kf;
       if(CutOff>BinRange[0][NumBins[0]]){
           kf = BinRange[0][NumBins[0]];
