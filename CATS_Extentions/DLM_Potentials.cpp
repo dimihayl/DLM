@@ -1496,6 +1496,22 @@ double UsmaniFitAll(double* Pars){
     return v;
 }
 
+double UsmaniPotentialLonardoni(double* Pars){
+    double& r = Pars[0];
+    double& Spin = Pars[2];
+    //Values for the potential
+    const double vbar = 6.15;
+    const double vsigma = 0.24;
+    const double wc = 2137;
+    double x=r*0.7;
+    double vc = wc/(1+exp((r-0.5)/0.2));
+    double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-2.*r*r),2.);
+    double v = 0.;
+    if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
+    else if (Spin == 1)  v = vc - (vbar - 0.25*vsigma)*tpi*tpi;//Usmani triplet
+    else printf ("wrong polarization\n");
+    return v;
+}
 
 ////////////////////////////////////////////
 
