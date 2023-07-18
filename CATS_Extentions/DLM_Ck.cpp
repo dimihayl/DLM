@@ -281,29 +281,55 @@ void DLM_Ck::Update(const bool& FORCE){
     else{
         return;
     }
+
+    //the CutOff
+    for(unsigned uBin=0; uBin<NumBins[0]; uBin++){
+      double Momentum = BinCenter[0][uBin];
+      double kf;
+      if(CutOff>BinRange[0][NumBins[0]]){
+          kf = BinRange[0][NumBins[0]];
+      }
+      //Momentum>CutOff
+      else{
+          kf = CutOff;
+      }
+      const double Cf = BinValue[GetBin(0,kf)-1];
+      if(CutOff_kc<0) {BinValue[uBin] = fabs(CutOff_kc); continue;}
+      if(CutOff_kc<=kf || Cf==1) {BinValue[uBin] = Cf; continue;}
+      //we have to make sure that the correlation becomes unity ones we cross the CutOff_kc value
+      if(Momentum>=CutOff_kc) {BinValue[uBin] = 1; continue;};
+      double BinVal = ((Momentum-kf)-Cf*(Momentum-CutOff_kc))/(CutOff_kc-kf);
+      //QA
+      if(Cf<1&&BinVal>1){
+        BinVal=1;
+        printf("\033[1;33mWARNING:\033[0m DLM_Ck::Update got an error called Cf<1. Please share with the developers!\n");
+      }
+      if(Cf>1&&BinVal<1){
+        BinVal=1;
+        printf("\033[1;33mWARNING:\033[0m DLM_Ck::Update got an error called Cf>1. Please share with the developers!\n");
+      }
+      BinValue[uBin] = BinVal;
+    }
 }
 double DLM_Ck::Eval(const double& Momentum){
+    //zero if we are below the first bin
     if(Momentum<BinRange[0][0]) return 0;
+    //the saved values within the histogram if we are within the range of the histo
+    else if(Momentum<BinRange[0][NumBins[0]]) return DLM_Histo::Eval(&Momentum);
+
+    //if we are above the range, we can still do the interpolation with the cutoff
     double kf;
-    if(Momentum<CutOff&&Momentum<BinRange[0][NumBins[0]]){
-//printf(" --> I should be evaluating here\n");
-        return DLM_Histo::Eval(&Momentum);
-    }
-    else if(CutOff>BinRange[0][NumBins[0]]){
+    if(CutOff>BinRange[0][NumBins[0]]){
         kf = BinRange[0][NumBins[0]];
     }
     //Momentum>CutOff
     else{
         kf = CutOff;
     }
-///THIS IS STILL BUGGY, QUICK FIXED !!!!!!!!!!!!
-    //const double Cf = DLM_Histo::Eval(&kf);
-
     //--------> k*
     //0....kf....(interpolation)..CutOff_kc...(unity)...
     //value of the correlation function at the end of the femto region (kf)
     const double Cf = BinValue[GetBin(0,kf)-1];
-    //printf("Cf = %f\n",Cf);
     if(CutOff_kc<0) return fabs(CutOff_kc);
     if(CutOff_kc<=kf || Cf==1) return Cf;
     //we have to make sure that the correlation becomes unity ones we cross the CutOff_kc value

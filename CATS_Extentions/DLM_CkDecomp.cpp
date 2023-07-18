@@ -554,7 +554,7 @@ void DLM_CkDecomp::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseM
                 double DTRUE = CkToSmear->GetBinSize(uBinTrue);
                 double DSMEAR = CkSmeared->GetBinSize(uBinSmear);
                 //the phase space is assumed to be counts normalized to the bin width (i.e. function)
-                double TrueCrd = CkToSmear->GetBinCenter(0,uBinTrue);
+                double TrueCrd = CkToSmear->GetBinCenter(0,uBinTrue);  
                 //unsigned PSBIN = PhaseSpace->GetBin(0,TrueCrd);
                 //double PSVOL = 1./PhaseSpace->GetBinSize(PSBIN);
                 //this would be converting counts to functional value
