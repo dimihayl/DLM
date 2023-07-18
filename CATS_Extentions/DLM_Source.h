@@ -580,6 +580,7 @@ struct KdpPars { // This structure is named "myDataType"
 
 //if the histo is 2D -> we evaluate k and r
 //if it is 1D -> we evaluate only r
+//for the future: if 3D do all of the r,k, and costheta
 class DLM_HistoSource:public CatsSource{
 public:
     //the histogram is NOT copied

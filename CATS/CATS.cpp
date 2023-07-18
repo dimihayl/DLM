@@ -2909,6 +2909,7 @@ void CATS::FoldSourceAndWF(){
     //#pragma omp parallel for private(NumGridPts,SourceVal,WaveFunVal,Integrand,SourceInt,SourceIntCut) num_threads(NumThreads)
     for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
         uMomBinSource = MomDepSource?uMomBin:0;
+//printf("uMomBinSource = %u\n",uMomBinSource);
         kCorrFun[uMomBin] = 0;
         kCorrFunErr[uMomBin] = 0;
         for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
@@ -3096,7 +3097,6 @@ void CATS::SetUpSourceGrid(){
     if(UseAnalyticSource){
         //for setting up the grid we take the "mean" value of k
         AnaSourcePar->SetVariable(0,(MomBin[0]+MomBin[NumMomBins])*0.5,false);
-//printf("BaseSourceGrid = new CATSelder\n");
 //printf(" AnaSourcePar[3]=%e\n",AnaSourcePar->GetParameter(0));
         BaseSourceGrid = new CATSelder(DIM, GridMinDepth, MAXDEPTH, LIMIT, MEAN, LENGTH,
                          this, AnaSourcePar, NULL, 0, AutoNormSource);
@@ -3137,6 +3137,7 @@ void CATS::SetUpSourceGrid(){
         if(!MomDepSource&&uMomBin>0){
             break;
         }
+        AnaSourcePar->SetVariable(0,MomBinCenter[uMomBin],false);
         if(UseAnalyticSource){
             kSourceGrid[uMomBin] = new CATSelder(BaseSourceGrid, this, AnaSourcePar, NULL, 0, AutoNormSource);
         }

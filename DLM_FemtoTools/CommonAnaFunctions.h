@@ -35,6 +35,7 @@ const double Mass_Dch = 1869.62;
 const double Mass_D0 = 1864.84;
 const double Mass_Dch_star = 2010;
 const double Mass_D0_star = 2007;
+const double Mass_eta = 547.862;
 
 
 class DLM_CommonAnaFunctions{
