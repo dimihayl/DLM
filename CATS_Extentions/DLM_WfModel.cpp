@@ -5428,6 +5428,269 @@ DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char *InputFolder,
   return Init_pDminus_Haidenbauer(InputFolder, *Kitty, TYPE);
 }
 
+DLM_Histo<complex<double>> ***Init_LAntiK_Vidana(const char *InputFolder,
+                                                 CATS &Kitty,
+                                                 const int &TYPE)
+{
+  double RadiusStepSize = 0.02;
+  double RadiusMinimum = 0.;
+  double RadiusMaximum = 50.;
+  double MomStepSize = 4.;
+  double MomMinimum = 0.;
+  double MomMaximum = 500.;
+  unsigned short NumChannels = 6;
+  unsigned short NumPwPerCh = 1;
+  unsigned NumMomBins = 0;
+  unsigned short NumFiles = 1; //
+
+  // Channels for CATS object
+  // ch 0: ΛK-
+  // ch 1: π-Ξ0
+  // ch 2: π0Ξ-
+  // ch 3: K-Σ0
+  // ch 4: K0barΣ-
+  // ch 5: ηΞ-
+  Kitty.SetNumChannels(NumChannels);
+  for (unsigned short uCh = 0; uCh < NumChannels; uCh++)
+  {
+    Kitty.SetNumPW(uCh, NumPwPerCh);
+    Kitty.SetChannelWeight(uCh, 1.);
+    Kitty.SetSpin(uCh, 0); // so CATS it´s a boson and do not antisymm.
+  }
+
+  Kitty.SetQ1Q2(0);
+  Kitty.SetPdgId(3122, -321);
+  const double Mass_L = 1115.683;
+  const double Mass_Km = 493.677;
+  Kitty.SetRedMass((Mass_L * Mass_Km) / (Mass_L + Mass_Km));
+
+  for (unsigned short uCh = 1; uCh < NumChannels; uCh++)
+  {
+    Kitty.SetOnlyNumericalPw(uCh, true);
+  }
+
+  const unsigned NumRadBins = round((RadiusMaximum - RadiusMinimum) / RadiusStepSize) + 1 + 1;
+  double *RadBins = new double[NumRadBins + 1];
+  bool *RadBinLoaded = new bool[NumRadBins + 1];
+  for (unsigned uRad = 1; uRad <= NumRadBins; uRad++)
+  {
+    // uRad-1 as we have special treatment of the zeroth bin
+    // the -0.5*RadiusStepSize comes from the fact, that else we compute the bin center, while we would like
+    // to define the bin edges
+    RadBins[uRad] = RadiusMinimum + double(uRad) * RadiusStepSize - 0.5 * RadiusStepSize;
+    RadBinLoaded[uRad] = false;
+  }
+  // we want to have the very first bin (center) exactly at zero!
+  RadBins[0] = -RadBins[1];
+  RadBinLoaded[0] = false;
+
+  // Let´s read the files
+  char **InputFileName = new char *[NumFiles];
+  for (unsigned uFile = 0; uFile < NumFiles; uFile++)
+  {
+    InputFileName[uFile] = new char[256];
+    strcpy(InputFileName[uFile], InputFolder);
+  }
+  strcat(InputFileName[0], "WAVE_FUNCTIONS.dat");
+
+  // const unsigned MaxNumMomBins = int((MomMaximum - MomMinimum) / MomStepSize);
+  const unsigned MaxNumMomBins = 256;
+  double *MomentumBins = new double[MaxNumMomBins + 1];
+  double *Momentum = new double[MaxNumMomBins];
+
+  char *cdummy = new char[1024];
+  float fMomentum;
+  FILE *InFile;
+  InFile = fopen(InputFileName[0], "r");
+  if (!InFile)
+  {
+    printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[0]);
+    return NULL;
+  }
+  int CurrentLine = 0;
+  MomentumBins[0] = 0;
+  while (!feof(InFile))
+  {
+
+    if (!fgets(cdummy, 1023, InFile))
+      continue;
+    if ((CurrentLine) % int(NumRadBins) == 0)
+    {
+      sscanf(cdummy, "%f", &fMomentum);
+      Momentum[NumMomBins] = fMomentum;
+
+      if (NumMomBins)
+      {
+        // set the bin range in between the last two bin centers
+        MomentumBins
+            [NumMomBins] = 0.5 * (Momentum[NumMomBins] + Momentum[NumMomBins - 1]);
+      }
+      NumMomBins++;
+    }
+    CurrentLine++;
+  }
+  fclose(InFile);
+
+  // set the upper edge of the last bin, where we just add the bin width of the last bin
+  // i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
+  MomentumBins[NumMomBins] = 2. * Momentum[NumMomBins - 1] - MomentumBins[NumMomBins - 1];
+
+  const unsigned NumDLM_Histos = NumChannels;
+
+  // the first one is WF, second is PS
+  DLM_Histo<complex<double>> ***Histo = new DLM_Histo<complex<double>> **[2];
+
+  DLM_Histo<complex<double>> **&HistoWF = Histo[0];
+  DLM_Histo<complex<double>> **&HistoPS = Histo[1];
+
+  HistoWF = new DLM_Histo<complex<double>> *[NumDLM_Histos];
+  for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++)
+  {
+    HistoWF[uHist] = new DLM_Histo<complex<double>>[Kitty.GetNumPW(uHist)];
+    for (unsigned uPw = 0; uPw < Kitty.GetNumPW(uHist); uPw++)
+    {
+      HistoWF[uHist][uPw].SetUp(2);
+      HistoWF[uHist][uPw].SetUp(0, NumMomBins, MomentumBins);
+      HistoWF[uHist][uPw].SetUp(1, NumRadBins, RadBins);
+      HistoWF[uHist][uPw].Initialize();
+    }
+  }
+  HistoPS = new DLM_Histo<complex<double>> *[NumDLM_Histos];
+  for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++)
+  {
+    HistoPS[uHist] = new DLM_Histo<complex<double>>[Kitty.GetNumPW(uHist)];
+    for (unsigned uPw = 0; uPw < Kitty.GetNumPW(uHist); uPw++)
+    {
+      HistoPS[uHist][uPw].SetUp(1);
+      HistoPS[uHist][uPw].SetUp(0, NumMomBins, MomentumBins);
+      HistoPS[uHist][uPw].Initialize();
+    }
+  }
+
+  for (unsigned uFile = 0; uFile < NumFiles; uFile++)
+  {
+    int WhichMomBin = -1;
+    InFile = fopen(InputFileName[uFile], "r");
+    if (!InFile)
+    {
+      printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+      return Histo;
+    }
+
+    fseek(InFile, 0, SEEK_END);
+    fseek(InFile, 0, SEEK_SET);
+    if (feof(InFile))
+    {
+      printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+      return Histo;
+    }
+
+    float fRadius;
+    float fReWf_piMinXi0;
+    float fImWf_piMinXi0;
+    float fWf2_piMinXi0;
+    float fReWf_pi0XiMin;
+    float fImWf_pi0XiMin;
+    float fWf2_pi0XiMin;
+    float fReWf_LKMin;
+    float fImWf_LKMin;
+    float fWf2_LKMin;
+    float fReWf_KminSig0;
+    float fImWf_KminSig0;
+    float fWf2_KminSig0;
+    float fReWf_K0barSigMin;
+    float fImWf_K0barSigMin;
+    float fWf2_K0barSigMin;
+    float fReWf_etaXiMin;
+    float fImWf_etaXiMin;
+    float fWf2_etaXiMin;
+    float fDummy;
+
+    int RadBin = -1;
+    int LineNum = 0;
+    //!---Iteration over all events---
+    while (!feof(InFile))
+    {
+      if (!fgets(cdummy, 1023, InFile))
+      {
+        continue;
+      }
+      if (WhichMomBin >= int(NumMomBins))
+      {
+        printf("\033[1;31mERROR:\033[0m Trying to read more momentum bins than set up (%u)!\n", NumMomBins);
+        printf(" Reading file:: %s\n", InputFileName[uFile]);
+        printf(" Buffer reads: %s\n", cdummy);
+        break;
+      }
+      // the first line contains info about the momentum
+      if (RadBin == -1)
+      {
+        sscanf(cdummy, "%f", &fMomentum);
+
+        RadBin++;
+        WhichMomBin++;
+        continue;
+      }
+      if (WhichMomBin < 0)
+      {
+        printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
+        continue;
+      }
+      unsigned WhichBin[2];
+      WhichBin[0] = unsigned(WhichMomBin);
+      // we fill up the radius bins with and offset of 1, due to the special zeroth bin
+      WhichBin[1] = RadBin + 1;
+      sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f", &fDummy, &fRadius, &fReWf_piMinXi0, &fImWf_piMinXi0, &fWf2_piMinXi0,
+             &fReWf_pi0XiMin, &fImWf_pi0XiMin, &fWf2_pi0XiMin, &fReWf_LKMin, &fImWf_LKMin, &fWf2_LKMin, &fReWf_KminSig0, &fImWf_KminSig0, &fWf2_KminSig0,
+             &fReWf_K0barSigMin, &fImWf_K0barSigMin, &fWf2_K0barSigMin, &fReWf_etaXiMin, &fImWf_etaXiMin, &fWf2_etaXiMin);
+      // Isaac sent the full ψ=R(r) -> CATS wants u(r)=r*R(r) so need to multiply by r
+      float spher = 0.5 * (1. / sqrt(Pi));
+      // Ch 0: LKMin
+      HistoWF[0][0].SetBinContent(WhichBin, (fReWf_LKMin + fi * fImWf_LKMin) * fRadius);
+      HistoPS[0][0].SetBinContent(WhichBin, 0.);
+      // Ch 1: piMinXi0
+      HistoWF[1][0].SetBinContent(WhichBin, (fReWf_piMinXi0 + fi * fImWf_piMinXi0) * fRadius);
+      HistoPS[1][0].SetBinContent(WhichBin, 0.);
+      // Ch 2: pi0XiMin
+      HistoWF[2][0].SetBinContent(WhichBin, (fReWf_pi0XiMin + fi * fImWf_pi0XiMin) * fRadius);
+      HistoPS[2][0].SetBinContent(WhichBin, 0.);
+      // Ch 3: KMinSig0
+      HistoWF[3][0].SetBinContent(WhichBin, (fReWf_KminSig0 + fi * fImWf_KminSig0) * fRadius);
+      HistoPS[3][0].SetBinContent(WhichBin, 0.);
+      // Ch 4: K0barSigMin
+      HistoWF[4][0].SetBinContent(WhichBin, (fReWf_K0barSigMin + fi * fImWf_K0barSigMin) * fRadius);
+      HistoPS[4][0].SetBinContent(WhichBin, 0.);
+      // Ch 5: etaXiMin
+      HistoWF[5][0].SetBinContent(WhichBin, (fReWf_etaXiMin + fi * fImWf_etaXiMin) * fRadius);
+      HistoPS[5][0].SetBinContent(WhichBin, 0.);
+
+      RadBin++;
+      LineNum++;
+      // if we have are passed the last radius bin in this momentum bin => we start over.
+      // the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
+      if (RadBin == int(NumRadBins) - 1)
+      {
+        RadBin = -1;
+      }
+    }
+
+    fclose(InFile);
+
+    if (WhichMomBin + 1 != int(NumMomBins))
+    {
+      printf("\033[1;31mERROR:\033[0m WhichMomBin!=NumMomBins (%u vs %u)\n", WhichMomBin, NumMomBins);
+    }
+
+  } // uFile
+
+  delete[] RadBinLoaded;
+  delete[] MomentumBins;
+  delete[] Momentum;
+  delete[] cdummy;
+  delete[] RadBins;
+
+  return Histo;
+}
 
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo){
     for(unsigned short usCh=0; usCh<NumChannels; usCh++){

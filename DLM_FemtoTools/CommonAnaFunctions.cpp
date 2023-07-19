@@ -2998,6 +2998,97 @@ void DLM_CommonAnaFunctions::SetUpCats_XiKCoulomb(CATS &Kitty, const TString &PO
 CLEAN_SetUpCats_pApCoulomb:;
 }
 
+void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample)
+{
+    CATSparameters *cPars = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    unsigned NumChannels = 6;
+
+    double rad1;
+    double rad2;
+    double w_source;
+    double lam_source;
+    if (DataSample == "pp13TeV_HM_LKMAC")
+    {
+        rad1 = 1.202;
+        rad2 = 2.33;
+        w_source = 0.7993;
+        lam_source = 0.9806;
+        ExternalWF = Init_LAntiK_Vidana("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
+    }
+    else if (DataSample == "pp13TeV_HM_LK")
+    {
+        rad1 = 1.202;
+        rad2 = 2.33;
+        w_source = 0.7993;
+        lam_source = 0.9806;
+        ExternalWF = Init_LAntiK_Vidana("/home/valentina/thor/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
+    }
+
+    if (SOURCE == "Gauss")
+    {
+        cout << "Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, rad1);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "DoubleGauss")
+    {
+        cout << "Double Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 4, true);
+        cPars->SetParameter(0, rad1);
+        cPars->SetParameter(1, rad2);
+        cPars->SetParameter(2, w_source);
+        cPars->SetParameter(3, lam_source);
+        Kitty.SetUseAnalyticSource(true);
+        Kitty.SetAnaSource(NormDoubleGaussSource, *cPars);
+        Kitty.SetAutoNormSource(false);  // MUST ALWAYS BE FALSE!!
+        Kitty.SetNormalizedSource(true); // do not touch the source, set to true so CATS adds (1-λs), if false it changes the distribution
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pApHaide;
+    }
+
+    NumChannels = 6;
+
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(0);
+    Kitty.SetPdgId(3122, -321);
+    Kitty.SetRedMass((Mass_L * Mass_Kch) / (Mass_L + Mass_Kch));
+
+    Kitty.SetNumChannels(NumChannels);
+
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        if (ExternalWF)
+        {
+            Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+        }
+        else
+        {
+            printf("\033[1;31mERROR:\033[0m SetUpCats_LKVidana says that you should NEVER see this message! BIG BUG!\n");
+            goto CLEAN_SetUpCats_pApHaide;
+        }
+
+    } // end of for
+
+CLEAN_SetUpCats_pApHaide:;
+
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    CleanUpWfHisto(Kitty, ExternalWF);
+}
+
 DLM_Ck *DLM_CommonAnaFunctions::SetUpLednicky_pL(const unsigned &NumMomBins, const double *MomBins, const TString &POT)
 {
     double p0, p1, p2, p3;
@@ -5176,6 +5267,306 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
         }
     }
     delete F_EposDisto_LK;
+
+    MagicSource->InitNumMcIter(1000000);
+
+    return MagicSource;
+}
+
+// Crosscheck on effect of CC in LK correlations
+// Assuming same kinematics as ΛΚ but now for Σ we have 0.6265 primordial
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &SourceVar)
+{
+    DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
+    MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
+    MagicSource->InitScale(38, 0.15, 2.0);
+    MagicSource->InitRad(257 * 2, 0, 64);
+    MagicSource->InitType(2);
+    MagicSource->SetUpReso(0, 0.3735); // Res. contrib. for Σ
+    MagicSource->SetUpReso(1, 0.476);  // Res. contrib. for Κ.
+
+    const double k_CutOff = int(int(SourceVar) / 10) * 10.;
+    const int SVAR = SourceVar % 10;
+    int PPid, PRid, RPid, RRid;
+    // EPOS
+    if (SVAR == 0)
+    {
+        PPid = 0;
+        PRid = 1;
+        RPid = 10;
+        RPid = 11;
+    }
+    // CECA
+    else if (SVAR == 1)
+    {
+        PPid = 100;
+        PRid = 101;
+        RPid = 110;
+        RPid = 111;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+        delete MagicSource;
+        return NULL;
+    }
+
+    Float_t Type;
+    Float_t k_D;
+    Float_t fP1;
+    Float_t fP2;
+    Float_t fM1;
+    Float_t fM2;
+    Float_t Tau1;
+    Float_t Tau2;
+    Float_t AngleRcP1;
+    Float_t AngleRcP2;
+    Float_t AngleP1P2;
+    DLM_Random RanGen(11);
+    double RanVal1;
+    double RanVal2;
+    double RanVal3;
+
+    TFile *F_EposDisto_LK = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/LK_ALL.root");
+    TNtuple *T_EposDisto_LK = (TNtuple *)F_EposDisto_LK->Get("nt_LK");
+    T_EposDisto_LK->SetBranchAddress("Type", &Type);
+    T_EposDisto_LK->SetBranchAddress("k_D", &k_D);
+    T_EposDisto_LK->SetBranchAddress("P1", &fP1);
+    T_EposDisto_LK->SetBranchAddress("P2", &fP2);
+    T_EposDisto_LK->SetBranchAddress("M1", &fM1);
+    T_EposDisto_LK->SetBranchAddress("M2", &fM2);
+    T_EposDisto_LK->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto_LK->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto_LK->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto_LK->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto_LK->SetBranchAddress("AngleP1P2", &AngleP1P2);
+
+    for (unsigned uEntry = 0; uEntry < T_EposDisto_LK->GetEntries(); uEntry++)
+    {
+        T_EposDisto_LK->GetEntry(uEntry);
+        if (Type == PPid)
+        {
+            continue;
+        }
+        else if (Type == PRid)
+        {
+            Tau1 = 0;
+            Tau2 = 3.66;
+            fM2 = 1054;
+            if (k_D > k_CutOff)
+                continue;
+            RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+            MagicSource->AddBGT_PR(RanVal2, cos(AngleRcP2));
+        }
+        else if (Type == PRid)
+        {
+            Tau1 = 4.69;
+            Tau2 = 0;
+            fM1 = 1463;
+            if (k_D > k_CutOff)
+                continue;
+            RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+            MagicSource->AddBGT_RP(RanVal1, cos(AngleRcP1));
+        }
+        else if (Type == RRid)
+        {
+            Tau1 = 4.69;
+            Tau2 = 3.66;
+            fM1 = 1463;
+            fM2 = 1054;
+
+            if (k_D > k_CutOff)
+                continue;
+            RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+            RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+            MagicSource->AddBGT_RR(RanVal1, cos(AngleRcP1), RanVal2, cos(AngleRcP2), cos(AngleP1P2));
+        }
+        else
+        {
+            continue;
+        }
+    }
+    delete F_EposDisto_LK;
+
+    MagicSource->InitNumMcIter(1000000);
+
+    return MagicSource;
+}
+
+// Crosscheck on effect of CC in LK correlations
+// Assuming kinematics taken from Dπ analysis, which used Ωπ
+// ctau and Meff given by pions since other particles is assumed primordian
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &SourceVar)
+{
+    DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
+    MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
+    MagicSource->InitScale(38, 0.15, 2.0);
+    MagicSource->InitRad(257 * 2, 0, 64);
+    MagicSource->InitType(2);
+    MagicSource->SetUpReso(0, 0.0);   // Ξ assumed primary
+    MagicSource->SetUpReso(1, 0.682); // Res. contrib. for π.
+    MagicSource->InitNumMcIter(1000000);
+
+    const double k_CutOff = int(int(SourceVar) / 10) * 10.;
+    const int SVAR = SourceVar % 10;
+    int PPid, PRid, RPid, RRid;
+    // EPOS
+    if (SVAR == 0)
+    {
+        PPid = 0;
+        PRid = 1;
+        RPid = 10;
+        RPid = 11;
+    }
+    // CECA
+    else if (SVAR == 1)
+    {
+        PPid = 100;
+        PRid = 101;
+        RPid = 110;
+        RPid = 111;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+        delete MagicSource;
+        return NULL;
+    }
+
+    Float_t Type;
+    Float_t k_D;
+    Float_t fP1;
+    Float_t fP2;
+    Float_t fM1;
+    Float_t fM2;
+    Float_t Tau1;
+    Float_t Tau2;
+    Float_t AngleRcP1;
+    Float_t AngleRcP2;
+    Float_t AngleP1P2;
+    DLM_Random RanGen(11);
+    double RanVal1;
+    double RanVal2;
+    double RanVal3;
+
+    TFile *F_EposDisto_XiPi = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/ALL_D_piReso.root");
+    TNtuple *T_EposDisto = (TNtuple *)F_EposDisto_XiPi->Get("InfoTuple_ClosePairs");
+    unsigned N_EposDisto = T_EposDisto->GetEntries();
+    T_EposDisto->SetBranchAddress("k_D", &k_D);
+    T_EposDisto->SetBranchAddress("P1", &fP1);
+    T_EposDisto->SetBranchAddress("P2", &fP2);
+    T_EposDisto->SetBranchAddress("M1", &fM1);
+    T_EposDisto->SetBranchAddress("M2", &fM2);
+    T_EposDisto->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto->SetBranchAddress("AngleP1P2", &AngleP1P2);
+
+    for (unsigned uEntry = 0; uEntry < T_EposDisto->GetEntries(); uEntry++)
+    {
+        T_EposDisto->GetEntry(uEntry);
+        if (k_D > k_CutOff)
+            continue;
+        Tau1 = 0;
+        Tau2 = 1.5;
+        fM2 = 1124;
+
+        RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+        MagicSource->AddBGT_PR(RanVal2, cos(AngleRcP2)); // here put angle between
+    }
+    delete F_EposDisto_XiPi;
+
+    MagicSource->InitNumMcIter(1000000);
+
+    return MagicSource;
+}
+
+// Crosscheck on effect of CC in LK correlations
+// Assuming kinematics taken from pΞ analysis
+// ctau and Meff given by pions since other particles is assumed primordian
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &SourceVar)
+{
+    DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
+    MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
+    MagicSource->InitScale(38, 0.15, 2.0);
+    MagicSource->InitRad(257 * 2, 0, 64);
+    MagicSource->InitType(2);
+    MagicSource->SetUpReso(0, 0.51); // η with resonances
+    MagicSource->SetUpReso(1, 0.);   // Ξ assumed primary
+    MagicSource->InitNumMcIter(1000000);
+
+    const double k_CutOff = int(int(SourceVar) / 10) * 10.;
+    const int SVAR = SourceVar % 10;
+    int PPid, PRid, RPid, RRid;
+    // EPOS
+    if (SVAR == 0)
+    {
+        PPid = 0;
+        PRid = 1;
+        RPid = 10;
+        RPid = 11;
+    }
+    // CECA
+    else if (SVAR == 1)
+    {
+        PPid = 100;
+        PRid = 101;
+        RPid = 110;
+        RPid = 111;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+        delete MagicSource;
+        return NULL;
+    }
+
+    Float_t Type;
+    Float_t k_D;
+    Float_t fP1;
+    Float_t fP2;
+    Float_t fM1;
+    Float_t fM2;
+    Float_t Tau1;
+    Float_t Tau2;
+    Float_t AngleRcP1;
+    Float_t AngleRcP2;
+    Float_t AngleP1P2;
+    DLM_Random RanGen(11);
+    double RanVal1;
+    double RanVal2;
+    double RanVal3;
+
+    // TFile *F_EposDisto_XiEta = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/EposDisto_pReso_Xim.root");
+    TFile *F_EposDisto_XiEta = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/Vale_etaReso_Xi.root");
+
+    TNtuple *T_EposDisto = (TNtuple *)F_EposDisto_XiEta->Get("InfoTuple_ClosePairs");
+    unsigned N_EposDisto = T_EposDisto->GetEntries();
+    T_EposDisto->SetBranchAddress("k_D", &k_D);
+    T_EposDisto->SetBranchAddress("P1", &fP1);
+    T_EposDisto->SetBranchAddress("P2", &fP2);
+    T_EposDisto->SetBranchAddress("M1", &fM1);
+    T_EposDisto->SetBranchAddress("M2", &fM2);
+    T_EposDisto->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto->SetBranchAddress("AngleP1P2", &AngleP1P2);
+
+    for (unsigned uEntry = 0; uEntry < T_EposDisto->GetEntries(); uEntry++)
+    {
+        T_EposDisto->GetEntry(uEntry);
+        if (k_D > k_CutOff)
+            continue;
+        Tau1 = 2.1;
+        Tau2 = 0.;
+        fM1 = 1230;
+
+        RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+        MagicSource->AddBGT_RP(RanVal1, cos(AngleRcP1)); // here put angle between
+    }
+    delete F_EposDisto_XiEta;
 
     MagicSource->InitNumMcIter(1000000);
 
