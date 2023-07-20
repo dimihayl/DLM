@@ -1869,10 +1869,22 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
         }
         // printf("PotVar=%i\n",PotVar);
         // printf("CUTOFF=%i\n",CUTOFF);
-        // printf("TYPE=%i\n",TYPE);
+         //printf("TYPE=%i\n",TYPE);
         // original, NLO13 at 600 MeV
-        ExternalWF = Init_pL_Haidenbauer2019(CatsFilesFolder[0] + "/Interaction/Haidenbauer/pLambda_Coupled_SD/",
-                                             Kitty, TYPE, CUTOFF);
+        if(TYPE==0 || TYPE==1){
+          ExternalWF = Init_pL_Haidenbauer2019(CatsFilesFolder[0] + "/Interaction/Haidenbauer/pLambda_Coupled_SD/",
+                                               Kitty, TYPE, CUTOFF);
+        }
+        //
+        else if(TYPE==2){
+          ExternalWF = Init_pL_Haidenbauer2019(CatsFilesFolder[0] + "/Interaction/Haidenbauer/pLambdaN2LO/",
+                                               Kitty, TYPE, CUTOFF);
+        }
+        else{
+          printf("\033[1;31mERROR:\033[0m Non-existing pL potential '%s'\n", POT.Data());
+          goto CLEAN_SetUpCats_pL;
+        }
+
         NumChannels = 16;
     }
     else if (POT == "Usmani")

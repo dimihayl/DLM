@@ -467,9 +467,13 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS*
 }
 
 
+//(ABCD)(XY)(KLM)
+//KLM = CutOff, where M is aways zero, and can be used as an additional flag
+//XY is the generic type of potential, 01 is NLO13, 11 is NLO19, 21 is N2LO (Eur.Phys.J.A 59 (2023) 3, 63)
+//  note that the Y digit seems to control if we want to include p and d-waves (so put it to zero for false)
+//ABCD is the scheme explaned below, where AB is a flag for 1S0 and CD for 3S1
 
-
-
+//if CutOff is 602,603 we have some special cases that are not really used any more
 //if the CutOff is 601, than we switch to FineTuneMode (for CutOff 600), where TYPE is 4 digits, ABCD, where:
 //  AB is a variation of the 1S0. So far we have:
 //    00 default (f_s = 2.91 fm)
@@ -521,8 +525,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS*
 //    S=1
 //    00-04: all 1.1 fm, only that different LEPs inside chEFT were changed
 
-
-//TYPE==0 is NLO13, TYPE==1 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19
+//TYPE==0 is NLO13, TYPE==1 is NLO19, TYPE==-1 is LO 13 TYPE==-2 is LO19, 2 is N2LO
 //if TYPE is two digti: XY, X is the setting for 1S0, Y for 3S1,
 //where both can be {1,2,3} = {ORIGINAL, CSB, FineTune}
 //CSB = charge symmetry breaking included, FineTine is where the 3S1 scattreing ampitude is reduced to 1.3
@@ -709,7 +712,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         strcat(InputFileName[uFile],"Chiral");
     }
 
-    if(TYPE==0){
+    if(TYPE==0){//NLO13
         char strCutOff[16];
         sprintf(strCutOff,"13_%i/",CUTOFF);
         for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
@@ -721,6 +724,42 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         strcat(InputFileName[f3P2], "NLO3P2.data");
         strcat(InputFileName[f3D1], "NLO3d1.data");
     }
+    //N2LO --> for the s-waves only, the rest are == to NLO19
+    else if(TYPE==2){
+      if(CUTOFF!=600){
+        printf("Possible BUG in Init_pL_Haidenbauer2019, or a wrong set up of the N2LO pL potential\n");
+        printf("The CutOff 600 is the only allowed one at this time\n");
+      }
+      int ABCD = TYPE/10;
+      for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        strcpy(InputFileName[uFile],InputFolder);
+        //1S0 ---------------------------------------------------------
+        if(uFile==f1S0){//this is set differently in this case
+          strcat(InputFileName[uFile], "Original_sWave/");
+          strcat(InputFileName[uFile], "B21s0.600");
+        }
+        // ------------------------------------------------------------
+        //3S1 ---------------------------------------------------------
+        else if(uFile==f3S1){
+          strcat(InputFileName[uFile], "Original_sWave/");
+          strcat(InputFileName[uFile], "B23s1.600");
+        }
+        // ------------------------------------------------------------
+        else{
+          strcat(InputFileName[uFile], "Chiral19_600/");
+          switch (uFile) {
+            case f1S0: strcat(InputFileName[uFile], "NLO1s0.data"); break;
+            case f3S1: strcat(InputFileName[uFile], "NLO3s1.data"); break;
+            case fP1: strcat(InputFileName[uFile], "NLOPU.data"); break;
+            case f3P0: strcat(InputFileName[uFile], "NLO3P0.data"); break;
+            case f3P2: strcat(InputFileName[uFile], "NLO3P2.data"); break;
+            case f3D1: strcat(InputFileName[uFile], "NLO3d1.data"); break;
+            default: printf("Something bad has happend in Init_pL_Haidenbauer2019\n"); break;
+          }
+        }
+      }
+    }
+    //all the NLO19 cases
     //the special case for fine tunes of the 600 cutoff (for NLO19)
     else if(CUTOFF==601){
       //  AB is a variation of the 1S0. So far we have:
@@ -971,7 +1010,6 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
         }
       }
     }//CUTOFF 603
-
     //the 1S0 for the fine tune is not changed
     else if(TYPE==1||TYPE==11||TYPE==31){
         char strCutOff[16];
