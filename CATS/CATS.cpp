@@ -2963,7 +2963,12 @@ void CATS::FoldSourceAndWF(){
             //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
             //a flat residual that is added to the correlation
             if(NormalizedSource && SourceIntCut<1.){
-                kbCorrFun[uMomBin][uIpBin] += 1.-double(SourceIntCut);
+                //this is an additional scale factor, evaluated based on the weight of channels with non-zero asymptotic solution
+                double AsympWeight = 0;
+                for(unsigned short usCh=0; usCh<NumCh; usCh++){
+                  AsympWeight += ChannelWeight[usCh]*(!OnlyNumPw[usCh]);
+                }
+                kbCorrFun[uMomBin][uIpBin] += (1.-double(SourceIntCut))*AsympWeight;
                 kbCorrFunErr[uMomBin][uIpBin] = sqrt(kbCorrFunErr[uMomBin][uIpBin]);
             }
             //else simply re-normalize the source to the total value of the integral (even if below 1)
@@ -3029,7 +3034,12 @@ void CATS::FoldSourceAndWF(){
                 //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
                 //a flat residual that is added to the correlation
                 if(NormalizedSource && SourceIntCut<1.){
-                    kCorrFun[uMomBin] += 1.-double(SourceIntCut);
+                    //this is an additional scale factor, evaluated based on the weight of channels with non-zero asymptotic solution
+                    double AsympWeight = 0;
+                    for(unsigned short usCh=0; usCh<NumCh; usCh++){
+                      AsympWeight += ChannelWeight[usCh]*(!OnlyNumPw[usCh]);
+                    }
+                    kCorrFun[uMomBin] += (1.-double(SourceIntCut))*AsympWeight;
                     kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin]);
                     //printf("Added %f to C(%.0f)\n",1.-double(SourceIntCut),GetMomentum(uMomBin));
                 }

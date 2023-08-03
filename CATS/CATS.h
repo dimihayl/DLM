@@ -120,6 +120,8 @@ public:
 
     //if true, the total wave function is computed ONLY by adding the available numerical partial waves
     //this was implemented with the idea to be used whenever the WF for a coupled channel is available
+    //N.B. IF THIS IS THE CASE, THE ASYMPTOTIC SOL IS ASSUMED TO BE ZERO, AS THERE ARE NO HIGHER PARTIAL WAVES
+    //this plays a role for the NormalizedSource functionallity
     void SetOnlyNumericalPw(const unsigned short& usCh, const bool& val);
     bool GetOnlyNumericalPw(const unsigned short& usCh) const;
 
