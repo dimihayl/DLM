@@ -1718,6 +1718,41 @@ double pp_Norfolk(double* Pars){
     return fNorfolkPot_pp[upot][uemp][uslj].Eval(&Pars[0]);
 }
 
+double pp_AV18_Toy(double* Pars){
+  int Spin = 0;
+  int AngMom = 0;
+  int TotAngMom = 0;
+  if(Pars[2]==0){
+    Spin = 0;
+    AngMom = 0;
+    TotAngMom = 0;
+  }
+  else if(Pars[2]==1){
+    Spin = 1;
+    AngMom = 1;
+    TotAngMom = 0;
+  }
+  else if(Pars[2]==2){
+    Spin = 1;
+    AngMom = 1;
+    TotAngMom = 1;
+  }
+  else if(Pars[2]==3){
+    Spin = 1;
+    AngMom = 1;
+    TotAngMom = 2;
+  }
+  //d-wave
+  else if(Pars[2]==4){
+    Spin = 0;
+    AngMom = 2;
+    TotAngMom = 2;
+  }
+  double AV18 = fV18potential(9, v18_Coupled3P2, 1, 1, 1, Spin, AngMom, TotAngMom, Pars);
+  double RC = Pars[3]*exp(-Pars[0]*Pars[0]/Pars[4]/Pars[4]);
+  return AV18+RC;
+}
+
 double ppDlmPot(const int& DlmPot, const int& DlmFlag, const int& Spin, const int& AngMom, const int& TotMom, double* Radius){
     return fDlmPot(DlmPot,DlmFlag,1,1,1,Spin,AngMom,TotMom,Radius,0);
 }

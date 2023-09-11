@@ -47,6 +47,12 @@ double SquareWell(double* Pars);
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);
 
+//the AV18 with tons of options to play with
+//a repulsive core here is just a Gaussian centered at 0
+//P0 [2] = which channel. 0 = 1S0, 1 = 3P0, 2 = 3P1, 3 = 3P2
+//P1/2 [3/4] = amplitude/width of a PW
+double pp_AV18_Toy(double* Pars);
+
 double LatticePots_pXi(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars);
@@ -58,7 +64,6 @@ double LatticePots_pOmega(const int& WhichPot, const int& DlmPotFlag,
                      const int& Spin, const int& AngMom, const int& TotMom, double* Radius, double* OtherPars);
 struct LatticeValues;
 struct LatticeValuesPaper;
-
 
 double Tetsuo_pKm(const int& WhichPot, const int& DlmPotFlag,
                      const int& IsoSpin, const int& t2p1, const int& t2p2,

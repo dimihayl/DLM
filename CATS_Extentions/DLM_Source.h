@@ -60,6 +60,8 @@ double GaussExpTotIdenticalSimple(double* Pars);
 double GaussExpTotIdenticalSimple_2body(double* Pars);
 double GaussExpTotSimple_2body(double* Pars);
 
+
+
 /*
 class MS_Gauss:public CatsSource{
 public:

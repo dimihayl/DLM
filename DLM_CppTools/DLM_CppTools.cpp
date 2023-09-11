@@ -8,6 +8,41 @@
 #include <fcntl.h>
 #include <cerrno>
 #include <stdlib.h>
+#include <sstream>
+#include <string>
+#include <stdexcept>
+#include <math.h>
+
+
+bool isNumber(const char* str) {
+    std::istringstream iss(str);
+    double number;
+
+    // Try to read the value as a double
+    if (!(iss >> number)) {
+        // Conversion failed or input is not a valid number
+        return false;
+    }
+
+    // Check if there are any remaining characters (e.g., scientific notation)
+    char remaining;
+    if (iss >> remaining) {
+        // There are remaining characters after parsing the number
+        return false;
+    }
+
+    // The input is a valid number
+    return true;
+}
+
+bool isInteger(const char* str){
+  if(!isNumber(str)){
+    return false;
+  }
+  double value = atof(str);
+  if(value != round(value)) return false;
+  else return true;
+}
 
 std::vector<std::string> ParseString(const std::string& text, const std::string& delim){
   std::vector<std::string> tokens;

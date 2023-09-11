@@ -10,6 +10,10 @@
 extern long DLM_CppHelp_TimeS;
 extern long DLM_CppHelp_TimeUS;
 
+//check if a string correponds to a number
+bool isNumber(const char* str);
+bool isInteger(const char* str);
+
 std::vector<std::string> ParseString(const std::string& text, const std::string& delim);
 std::vector<std::string> ParseString(const std::string& text, const std::vector<std::string>& delim);
 
