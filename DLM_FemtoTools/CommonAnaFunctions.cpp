@@ -7019,7 +7019,7 @@ bool PotentialDesignerEngine(char* BaseFileName){
     //  }
     //}
     if(strcmp(ch_dummy_1,"pot")==0){
-      if(strcmp(ch_dummy_2,"Gauss")&&strcmp(ch_dummy_2,"DoubleGauss")&&strcmp(ch_dummy_2,"Yukawa")&&strcmp(ch_dummy_2,"YukawaDLM")){
+      if(strcmp(ch_dummy_2,"gauss")&&strcmp(ch_dummy_2,"doublegauss")&&strcmp(ch_dummy_2,"yukawa")&&strcmp(ch_dummy_2,"yukawadlm")){
         printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set an unknown potential %s!\n",TextFileName.Data(),ch_dummy_2);
       }
       else{
@@ -7117,13 +7117,13 @@ bool PotentialDesignerEngine(char* BaseFileName){
   Kitty.SetSpin(0,0);
   Kitty.SetChannelWeight(0, 1);
 
-  if(strcmp(pot,"Gauss")==0){
+  if(strcmp(pot,"gauss")==0){
     pPars = new CATSparameters(CATSparameters::tPotential,2,true);
     Kitty.SetShortRangePotential(0,NumPW-1,SingleGauss,*pPars);
     Kitty.SetShortRangePotential(0,NumPW-1,0,par1);
     Kitty.SetShortRangePotential(0,NumPW-1,1,par2);
   }
-  if(strcmp(pot,"DoubleGauss")==0){
+  if(strcmp(pot,"doublegauss")==0){
     pPars = new CATSparameters(CATSparameters::tPotential,4,true);
     Kitty.SetShortRangePotential(0,NumPW-1,DoubleGaussSum,*pPars);
     Kitty.SetShortRangePotential(0,NumPW-1,0,par1);
@@ -7136,13 +7136,13 @@ bool PotentialDesignerEngine(char* BaseFileName){
     //printf("p4 = %f\n",par4);
     //printf("kBin = %u\n",kBin);
   }
-  if(strcmp(pot,"Yukawa")==0){
+  if(strcmp(pot,"yukawa")==0){
     pPars = new CATSparameters(CATSparameters::tPotential,2,true);
     Kitty.SetShortRangePotential(0,NumPW-1,Yukawa,*pPars);
     Kitty.SetShortRangePotential(0,NumPW-1,0,par1);
     Kitty.SetShortRangePotential(0,NumPW-1,1,par2);
   }
-  if(strcmp(pot,"YukawaDLM")==0){
+  if(strcmp(pot,"yukawadlm")==0){
     pPars = new CATSparameters(CATSparameters::tPotential,2,true);
     Kitty.SetShortRangePotential(0,NumPW-1,YukawaDimiSmooth,*pPars);
     Kitty.SetShortRangePotential(0,NumPW-1,0,par1);
