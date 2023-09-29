@@ -74,6 +74,9 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     CATSparameters *cPars = NULL;
 
     CATSparameters *cPotPars1S0 = NULL;
+    CATSparameters *cPotPars1P1 = NULL;
+
+    CATSparameters *cPotPars3S1 = NULL;
     CATSparameters *cPotPars3P0 = NULL;
     CATSparameters *cPotPars3P1 = NULL;
     CATSparameters *cPotPars3P2 = NULL;
@@ -454,6 +457,34 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars1D2->SetParameters(PotPars1D2);
     }
+    else if (POT == "AV18_pn")
+    {
+        // #,#,POT_ID,POT_FLAG,t_tot,t1,t2,s,l,j
+        int POT_FLAG = v18_Coupled3P2;
+        if(PotVar==1) POT_FLAG = v18_SingleChannelMagic;
+        double PotPars1S0[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 0, 0, 0};
+        double PotPars1P1[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 0, 1, 1};
+        //const int& Spin, const int& AngMom, const int& TotMom
+        double PotPars3S1[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 0, 1};
+        double PotPars3P0[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 1, 0};
+        double PotPars3P1[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 1, 1};
+        double PotPars3P2[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 1, 2};
+        double PotPars1D2[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 0, 2, 2};
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars1S0->SetParameters(PotPars1S0);
+        cPotPars1P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars1P1->SetParameters(PotPars1P1);
+        cPotPars3S1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3S1->SetParameters(PotPars3S1);
+        cPotPars3P0 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3P0->SetParameters(PotPars3P0);
+        cPotPars3P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3P1->SetParameters(PotPars3P1);
+        cPotPars3P2 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3P2->SetParameters(PotPars3P2);
+        cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars1D2->SetParameters(PotPars1D2);
+    }
     else if(POT == "pp_AV18_Toy"){
       double PotPars1S0[3] = {0,0,0};
       double PotPars3P0[3] = {1,0,0};
@@ -564,9 +595,16 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     // Kitty.SetThetaDependentSource(false);
     Kitty.SetExcludeFailedBins(false);
 
-    Kitty.SetQ1Q2(1);
+    if(POT == "AV18_pn")
+      Kitty.SetQ1Q2(0);
+    else
+      Kitty.SetQ1Q2(1);
     Kitty.SetPdgId(2212, 2212);
-    Kitty.SetRedMass(0.5 * Mass_p);
+    if(POT == "AV18_pn")
+      Kitty.SetRedMass((Mass_p*Mass_n)/(Mass_p+Mass_n));
+    else
+      Kitty.SetRedMass(0.5 * Mass_p);
+
 
     Kitty.SetNumChannels(4);
     Kitty.SetNumPW(0, 3);
@@ -611,14 +649,26 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     {
         if (cPotPars1S0)
             Kitty.SetShortRangePotential(0, 0, fDlmPot, *cPotPars1S0);
+        if (cPotPars1P1)
+            Kitty.SetShortRangePotential(3, 1, fDlmPot, *cPotPars1P1);
         if (cPotPars1D2)
             Kitty.SetShortRangePotential(0, 2, fDlmPot, *cPotPars1D2);
+        if (cPotPars3S1){
+          Kitty.SetShortRangePotential(1, 1, fDlmPot, *cPotPars3S1);
+          if (cPotPars3P1){
+            Kitty.SetShortRangePotential(2, 1, fDlmPot, *cPotPars3S1);
+          }
+          if (cPotPars3P2){
+            Kitty.SetShortRangePotential(3, 1, fDlmPot, *cPotPars3P2);
+          }
+        }
         if (cPotPars3P0)
             Kitty.SetShortRangePotential(1, 1, fDlmPot, *cPotPars3P0);
         if (cPotPars3P1)
             Kitty.SetShortRangePotential(2, 1, fDlmPot, *cPotPars3P1);
         if (cPotPars3P2)
             Kitty.SetShortRangePotential(3, 1, fDlmPot, *cPotPars3P2);
+
     }
 
 CLEAN_SetUpCats_pp:;
@@ -652,6 +702,16 @@ CLEAN_SetUpCats_pp:;
     {
         delete cPotPars3P2;
         cPotPars3P2 = NULL;
+    }
+    if (cPotPars1P1)
+    {
+        delete cPotPars1P1;
+        cPotPars1P1 = NULL;
+    }
+    if (cPotPars3S1)
+    {
+        delete cPotPars3S1;
+        cPotPars3S1 = NULL;
     }
 }
 
@@ -4626,6 +4686,11 @@ TH2F *DLM_CommonAnaFunctions::GetResidualMatrix(const TString &&FinalSystem, con
     {
         FileName = "/home/valentina/thor/cernbox/CATSFiles/DecaySmear/histDecayKinematics_LK_pp13HM.root";
         HistoName = "KXi_KLambda";
+    }
+    else if (FinalSystem == "pp" && InitialSystem == "pSigmaPlus")
+    {
+        FileName = CatsFilesFolder[0]+"/DecaySmear/Decay_matrix_pp_pSp.root";
+        HistoName = "hRes_pp_pSp";
     }
     else
     {
