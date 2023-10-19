@@ -1447,6 +1447,268 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, C
     return Init_pL_Haidenbauer2019(InputFolder,*Kitty,TYPE,CUTOFF);
 }
 
+DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE){
+    Init_pSigmaPlus_Haidenbauer(InputFolder,*Kitty,TYPE);
+}
+
+DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE){
+    double RadiusStepSize;
+    double RadiusMinimum;
+    double RadiusMaximum;
+    //unsigned NumRadiusBins;
+
+    const unsigned short NumFiles = 2; // (to cover all 1s0 and 3s1)
+    unsigned* NumMomBins = new unsigned [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        NumMomBins[uFile] = 0;
+    }
+
+    enum HaideFiles {f1S0, f3S1};
+    bool FileAvailable[NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
+ 
+    const unsigned short NumChannels = 2;
+
+    RadiusStepSize = 0.02;
+    RadiusMinimum = 0.02;
+    RadiusMaximum = 10.;
+
+    Kitty.SetNumChannels(NumChannels);
+    Kitty.SetNumPW(0,1);
+    Kitty.SetNumPW(1,1);
+
+    Kitty.SetChannelWeight(0,1./4.);
+    Kitty.SetChannelWeight(1,3./4.);
+
+    Kitty.SetSpin(0,0);
+    Kitty.SetSpin(1,1);
+
+    Kitty.SetQ1Q2(0);
+    Kitty.SetQuantumStatistics(false);
+    const double Mass_p = 938.272;
+    const double Mass_Sch = 1189.37;
+    Kitty.SetRedMass((Mass_p*Mass_Sch)/(Mass_p+Mass_Sch));
+
+    unsigned short** WhichFile = new unsigned short* [NumChannels];
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){WhichFile[usCh] = new unsigned short [Kitty.GetNumPW(usCh)];}
+    WhichFile[0][0] = f1S0;
+    WhichFile[1][0] = f3S1;
+
+    //we always add 1 bin at zero, so if we have e.g. 0.1 to 0.3, these are 3 bins + 1 extra
+    const unsigned NumRadBins = round((RadiusMaximum-RadiusMinimum)/RadiusStepSize)+1+1;
+    double* RadBins = new double [NumRadBins+1];
+    bool* RadBinLoaded = new bool [NumRadBins+1];
+    for(unsigned uRad=1; uRad<=NumRadBins; uRad++){
+        //uRad-1 as we have special treatment of the zeroth bin
+        //the -0.5*RadiusStepSize comes from the fact, that else we compute the bin center, while we would like
+        //to define the bin edges
+        RadBins[uRad] = RadiusMinimum+double(uRad-1)*RadiusStepSize-0.5*RadiusStepSize;
+        RadBinLoaded[uRad] = false;
+    }
+    //we want to have the very first bin (center) exactly at zero!
+    RadBins[0] = -RadBins[1];
+    RadBinLoaded[0] = false;
+
+    char** InputFileName = new char* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char[256];
+        strcpy(InputFileName[uFile],InputFolder);
+        strcat(InputFileName[uFile],"Spp");
+    }
+
+    //different types, if we introduce them later (TYPE)
+    if(true){
+        char strCutOff[16];
+        strcat(InputFileName[f1S0], "1s0C.data");
+        strcat(InputFileName[f3S1], "3s1C.data");
+    }
+    
+    else{
+        printf("YOU BROKE SOMETHING in Init_pSigmaPlus_Haidenbauer\n");
+        return NULL;
+    }
+
+    FILE *InFile;
+    int CurrentLine=0;
+
+    const unsigned MaxNumMomBins = 256;
+    double** MomentumBins = new double* [NumFiles];
+    double** Momentum = new double* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        MomentumBins[uFile] = new double [MaxNumMomBins+1];
+        Momentum[uFile] = new double [MaxNumMomBins];
+    }
+
+    char* cdummy = new char [512];
+    float fMomentum;
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            printf("1-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
+            return NULL;
+        }
+
+        CurrentLine=0;
+        MomentumBins[uFile][0] = 0;
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if((CurrentLine)%int(NumRadBins)==0){
+                sscanf(cdummy, "%f",&fMomentum);
+                Momentum[uFile][NumMomBins[uFile]] = fMomentum;
+                if(NumMomBins[uFile]){
+                    //set the bin range in between the last two bin centers
+                    MomentumBins[uFile][NumMomBins[uFile]] = 0.5*(Momentum[uFile][NumMomBins[uFile]]+Momentum[uFile][NumMomBins[uFile]-1]);
+                }
+                NumMomBins[uFile]++;
+            }
+            CurrentLine++;
+        }
+        fclose(InFile);
+        //set the upper edge of the last bin, where we just add the bin width of the last bin
+        //i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
+        MomentumBins[uFile][NumMomBins[uFile]] = 2.*Momentum[uFile][NumMomBins[uFile]-1]-MomentumBins[uFile][NumMomBins[uFile]-1];
+    }
+    const unsigned NumDLM_Histos = NumChannels;
+    //the first one is WF, second is PS
+    DLM_Histo<complex<double>>*** Histo = new DLM_Histo<complex<double>>** [2];
+
+    DLM_Histo<complex<double>>**& HistoWF = Histo[0];
+    DLM_Histo<complex<double>>**& HistoPS = Histo[1];
+    //DLM_Histo<complex<double>> HistoWF[NumChannels];
+    HistoWF = new DLM_Histo<complex<double>>* [NumDLM_Histos];
+    for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
+        HistoWF[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
+            HistoWF[uHist][uPw].SetUp(2);
+            HistoWF[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
+            HistoWF[uHist][uPw].SetUp(1,NumRadBins,RadBins);
+            HistoWF[uHist][uPw].Initialize();
+        }
+    }
+    HistoPS = new DLM_Histo<complex<double>>* [NumDLM_Histos];
+    for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
+        HistoPS[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
+            HistoPS[uHist][uPw].SetUp(1);
+            HistoPS[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
+            HistoPS[uHist][uPw].Initialize();
+        }
+    }
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
+        int WhichMomBin=-1;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
+            return Histo;
+        }
+
+        fseek ( InFile , 0 , SEEK_END );
+        fseek ( InFile , 0 , SEEK_SET );
+
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return Histo;
+        }
+
+        float fDummy;
+        float fRadius;
+        float fReWf1;
+        float fImWf1;
+        float fReWf2;
+        float fImWf2;
+        float fReWf3;
+        float fImWf3;
+        float fReWf4;
+        float fImWf4;
+
+        int RadBin=-1;
+        //!---Iteration over all events---
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if(WhichMomBin>=int(NumMomBins[uFile])){
+                printf("\033[1;31mERROR:\033[0m Trying to read more momentum bins than set up (%u)!\n",NumMomBins[uFile]);
+                printf(" Buffer reads: %s\n",cdummy);
+                break;
+            }
+
+            //the first line contains info about the momentum
+            if(RadBin==-1) {
+                sscanf(cdummy, "%f",&fMomentum);
+
+                RadBin++;
+                WhichMomBin++;
+                continue;
+            }
+
+
+            if(WhichMomBin<0){
+                printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
+                continue;
+            }
+
+            unsigned WhichBin[2];
+            WhichBin[0] = unsigned(WhichMomBin);
+            //we fill up the radius bins with and offset of 1, due to the special zeroth bin
+            WhichBin[1] = RadBin+1;
+
+
+            if(uFile==f1S0){
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fDummy,&fDummy,&fDummy,&fDummy);
+                HistoWF[0][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[0][0].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3S1){
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fDummy,&fDummy,&fDummy,&fDummy);
+                HistoWF[1][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[1][0].SetBinContent(WhichBin,0);
+            }
+            else{
+                printf("WTF from Init_pSigmaPlus_Haidenbauer\n");
+            }
+
+            RadBin++;
+            //if we have are passed the last radius bin in this momentum bin => we start over.
+            //the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
+            if(RadBin==int(NumRadBins)-1){
+                RadBin=-1;
+            }
+
+        }
+
+        fclose(InFile);
+        if(WhichMomBin+1!=int(NumMomBins[uFile])){
+            printf("\033[1;31mERROR:\033[0m WhichMomBin!=NumMomBins (%u vs %u)\n",WhichMomBin,NumMomBins[uFile]);
+        }
+
+    }//uFile
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] MomentumBins[uFile];
+        delete [] Momentum[uFile];
+    }
+    delete [] NumMomBins;
+    delete [] RadBinLoaded;
+    delete [] MomentumBins;
+    delete [] Momentum;
+    delete [] cdummy;
+    delete [] RadBins;
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){
+        delete [] WhichFile[usCh];
+    }
+    delete [] WhichFile;
+    return Histo;
+
+}
+
+
+
 
 
 //TYPE = 0 (no options)

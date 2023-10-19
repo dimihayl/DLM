@@ -2118,6 +2118,457 @@ CLEAN_SetUpCats_pL:;
     CleanUpWfHisto(Kitty, ExternalWF);
 }
 
+
+void DLM_CommonAnaFunctions::SetUpCats_pSp(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar, const int &SourceVar)
+{
+    CATSparameters *cPars = NULL;
+    CATSparameters *pPars = NULL;
+
+    CATSparameters *cPotPars1S0 = NULL;
+    CATSparameters *cPotPars3S1 = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    unsigned NumChannels = 0;
+
+    Kitty.SetThetaDependentSource(false);
+
+    if(SOURCE == "NULL" || SOURCE == ""){
+
+    }
+    else if (SOURCE == "Gauss")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, 1.2);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "GaussTheta")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, 1.2);
+        Kitty.SetAnaSource(GaussSourceTheta, *cPars);
+        Kitty.SetThetaDependentSource(true);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Cauchy")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, 1.2);
+        Kitty.SetAnaSource(CauchySource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Levy_Nolan")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 2, true);
+        cPars->SetParameter(0, 1.2);
+        cPars->SetParameter(1, 1.2);
+        Kitty.SetAnaSource(LevySource3D, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Levy_Single")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 2, true);
+        cPars->SetParameter(0, sqrt(1.2) * 1.2);
+        cPars->SetParameter(1, 1.2);
+        Kitty.SetAnaSource(LevySource3D_single, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Levy_Diff")
+    {
+        cPars->SetParameter(0, 0.5 * 1.2 * 1.2);
+        cPars->SetParameter(1, 1.2);
+        Kitty.SetAnaSource(LevySource3D_2particle, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "CleverLevy_Nolan")
+    {
+        CleverLevy[1].InitStability(20, 1, 2);
+        CleverLevy[1].InitScale(35, 0.25, 2.0);
+        CleverLevy[1].InitRad(256, 0, 64);
+        CleverLevy[1].InitType(2);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverLevy[1], 2);
+        Kitty.SetAnaSource(0, 1.2);
+        Kitty.SetAnaSource(1, 1.2);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "CleverLevy_Single")
+    {
+        CleverLevy[1].InitStability(20, 1, 2);
+        CleverLevy[1].InitScale(35, 0.25, 2.0);
+        CleverLevy[1].InitRad(256, 0, 64);
+        CleverLevy[1].InitType(0);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverLevy[1], 2);
+        Kitty.SetAnaSource(0, sqrt(1.2) * 1.2);
+        Kitty.SetAnaSource(1, 1.2);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "CleverLevy_Diff")
+    {
+        CleverLevy[1].InitStability(20, 1, 2);
+        CleverLevy[1].InitScale(35, 0.25, 2.0);
+        CleverLevy[1].InitRad(256, 0, 64);
+        CleverLevy[1].InitType(1);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverLevy[1], 2);
+        Kitty.SetAnaSource(0, 0.5 * 1.2 * 1.2);
+        Kitty.SetAnaSource(1, 1.2);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "GaussExpTotSimple_2body")
+    {
+        printf("\033[1;33mWARNING:\033[0m The CommonAnaFunction is still under construction (GaussExpTotSimple_2body)\n");
+        goto CLEAN_SetUpCats_pSp;
+    }
+    else if (SOURCE == "McLevyNolan_Reso")
+    {
+        CleverMcLevyReso[1].InitStability(21, 1, 2);
+        CleverMcLevyReso[1].InitScale(38, 0.15, 2.0);
+        CleverMcLevyReso[1].InitRad(257, 0, 64);
+        CleverMcLevyReso[1].InitType(2);
+        CleverMcLevyReso[1].InitReso(0, 1);
+        CleverMcLevyReso[1].InitReso(1, 1);
+        // bool MassSmear = SourceVar%10;
+        // double MomSmear = SourceVar/100;
+        if (SourceVar == 0)
+        {
+            CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtBackwards); // rdtBackwards,rdtRandom
+            CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtBackwards);
+        }
+        else
+        {
+            CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom); // rdtBackwards,rdtRandom
+            CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+        }
+
+        if (SourceVar == 2)
+        {
+            DLM_Histo<double> *HISTO = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/DimiPhi_pp.root", "h_rkAngle_Mom2", 400, 700);
+            CleverMcLevyReso[1].SetUpResoEmission(0, 0, HISTO);
+            CleverMcLevyReso[1].SetUpResoEmission(1, 0, HISTO);
+        }
+        CleverMcLevyReso[1].InitNumMcIter(200000);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverMcLevyReso[1], 2);
+        Kitty.SetAnaSource(0, 1.0);
+        Kitty.SetAnaSource(1, 1.6);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "McGauss_Reso")
+    {
+        CleverMcLevyReso[1].InitStability(1, 2 - 1e-6, 2 + 1e-6);
+        CleverMcLevyReso[1].InitScale(35, 0.25, 2.0);
+        CleverMcLevyReso[1].InitRad(257 * 2, 0, 64);
+        CleverMcLevyReso[1].InitType(2);
+        if (SourceVar == 0)
+        {
+            CleverMcLevyReso[1].InitReso(0, 1);
+            CleverMcLevyReso[1].InitReso(1, 1);
+            CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtBackwards); // rdtBackwards,rdtRandom
+            CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtBackwards);
+        }
+        else if (SourceVar == 1)
+        {
+            CleverMcLevyReso[1].InitReso(0, 1);
+            CleverMcLevyReso[1].InitReso(1, 1);
+            CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom); // rdtBackwards,rdtRandom
+            CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+        }
+        if (SourceVar == 2)
+        {
+            CleverMcLevyReso[1].InitReso(0, 1);
+            CleverMcLevyReso[1].InitReso(1, 1);
+            CleverMcLevyReso[1].SetUpReso(0, 0, 1. - 0.3578, 1361.52, 1.65, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom); // rdtBackwards,rdtRandom
+            CleverMcLevyReso[1].SetUpReso(1, 0, 1. - 0.3562, 1462.93, 4.69, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+
+            DLM_Histo<double> *HISTO_p = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/EPOS_HM_4PI/pp/DimiPhi_pp.root", "h_rkAngle_Mom2", 400, 600);
+            DLM_Histo<double> *HISTO_L = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/EPOS_HM_4PI/pp/DimiPhi_pp.root", "h_rkAngle_Mom2", 270, 470);
+
+            CleverMcLevyReso[1].SetUpResoEmission(0, 0, HISTO_p);
+            CleverMcLevyReso[1].SetUpResoEmission(1, 0, HISTO_L);
+        }
+        // improved reso
+        else if (SourceVar == 3)
+        {
+            CleverMcLevyReso[1].InitReso(0, 2);
+            CleverMcLevyReso[1].InitReso(1, 2);
+            CleverMcLevyReso[1].SetUpReso(0, 0, 0.4368, 1231.98, 1.67, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+            CleverMcLevyReso[1].SetUpReso(0, 1, 0.2054, 1636.98, 1.62, Mass_p, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+            CleverMcLevyReso[1].SetUpReso(1, 0, 0.4864, 1384.54, 5.34, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+            CleverMcLevyReso[1].SetUpReso(1, 1, 0.1573, 1705.26, 2.70, Mass_L, Mass_pic, false, false, DLM_CleverMcLevyReso::rdtRandom);
+
+            DLM_Histo<double> *HISTO_p_0 = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/EPOS_HM_4PI/pp/DimiPhi_pp.root", "h_rkAngle_Mom2", 200, 400);
+            DLM_Histo<double> *HISTO_p_1 = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/EPOS_HM_4PI/pp/DimiPhi_pp.root", "h_rkAngle_Mom2", 880, 1000);
+            DLM_Histo<double> *HISTO_L_0 = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/EPOS_HM_4PI/pp/DimiPhi_pp.root", "h_rkAngle_Mom2", 160, 360);
+            DLM_Histo<double> *HISTO_L_1 = ConvertThetaAngleHisto("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/Using_CATS3/Output/MixedEvents/AngleStudy_1/EPOS_HM_4PI/pp/DimiPhi_pp.root", "h_rkAngle_Mom2", 620, 820);
+
+            CleverMcLevyReso[1].SetUpResoEmission(0, 0, HISTO_p_0);
+            CleverMcLevyReso[1].SetUpResoEmission(0, 1, HISTO_p_1);
+            CleverMcLevyReso[1].SetUpResoEmission(1, 0, HISTO_L_0);
+            CleverMcLevyReso[1].SetUpResoEmission(1, 1, HISTO_L_1);
+        }
+
+        CleverMcLevyReso[1].InitNumMcIter(SourceVar == 3 ? 100000 : 1000000);
+
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverMcLevyReso[1], 2);
+        Kitty.SetAnaSource(0, 1.0);
+        Kitty.SetAnaSource(1, 2.0);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    // SourceVar last digit is 0-9 the type
+    //(SourceVar/10)*10 is the cutoff value (e.g. 192 is cutoff value of 190 and type 2)
+    else if (SOURCE == "McGauss_ResoTM" || SOURCE == "McLevy_ResoTM")
+    {
+        if (SOURCE == "McGauss_ResoTM")
+            CleverMcLevyResoTM[1].InitStability(1, 2 - 1e-6, 2 + 1e-6);
+        else
+            CleverMcLevyResoTM[1].InitStability(21, 1, 2);
+        CleverMcLevyResoTM[1].InitScale(38, 0.15, 2.0);
+        CleverMcLevyResoTM[1].InitRad(257 * 2, 0, 64);
+        CleverMcLevyResoTM[1].InitType(2);
+        CleverMcLevyResoTM[1].SetUpReso(0, 0.6422);
+        CleverMcLevyResoTM[1].SetUpReso(1, 0.6438);
+        // pure Gauss
+        if (SourceVar % 100 == 0)
+        {
+        }
+        // back-to-back
+        else if (SourceVar % 100 == 1)
+        {
+            CleverMcLevyResoTM[1].AddBGT_PR(360. / 1462. * 4.69, 1.);
+            CleverMcLevyResoTM[1].AddBGT_RP(490. / 1362. * 1.65, -1.);
+            CleverMcLevyResoTM[1].AddBGT_RR(490. / 1362. * 1.65, -1., 360. / 1462. * 4.69, 1., -1.);
+        }
+        // EPOS, 2 is with fixed mass, 3 is with EPOS mass
+        else
+        {
+            const double k_CutOff = int(int(SourceVar) / 10) * 10.;
+            Float_t k_D;
+            Float_t fP1;
+            Float_t fP2;
+            Float_t fM1;
+            Float_t fM2;
+            Float_t Tau1;
+            Float_t Tau2;
+            Float_t AngleRcP1;
+            Float_t AngleRcP2;
+            Float_t AngleP1P2;
+            DLM_Random RanGen(11);
+            double RanVal1;
+            double RanVal2;
+            double RanVal3;
+
+            TFile *F_EposDisto_p_LamReso = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/EposDisto_p_LamReso.root");
+            TNtuple *T_EposDisto_p_LamReso = (TNtuple *)F_EposDisto_p_LamReso->Get("InfoTuple_ClosePairs");
+            unsigned N_EposDisto_p_LamReso = T_EposDisto_p_LamReso->GetEntries();
+            T_EposDisto_p_LamReso->SetBranchAddress("k_D", &k_D);
+            T_EposDisto_p_LamReso->SetBranchAddress("P1", &fP1);
+            T_EposDisto_p_LamReso->SetBranchAddress("P2", &fP2);
+            T_EposDisto_p_LamReso->SetBranchAddress("M1", &fM1);
+            T_EposDisto_p_LamReso->SetBranchAddress("M2", &fM2);
+            T_EposDisto_p_LamReso->SetBranchAddress("Tau1", &Tau1);
+            T_EposDisto_p_LamReso->SetBranchAddress("Tau2", &Tau2);
+            T_EposDisto_p_LamReso->SetBranchAddress("AngleRcP1", &AngleRcP1);
+            T_EposDisto_p_LamReso->SetBranchAddress("AngleRcP2", &AngleRcP2);
+            T_EposDisto_p_LamReso->SetBranchAddress("AngleP1P2", &AngleP1P2);
+            for (unsigned uEntry = 0; uEntry < N_EposDisto_p_LamReso; uEntry++)
+            {
+                T_EposDisto_p_LamReso->GetEntry(uEntry);
+                Tau1 = 0;
+                Tau2 = 4.69;
+                if (SourceVar % 100 == 2)
+                {
+                    fM2 = 1462;
+                }
+                if (k_D > k_CutOff)
+                    continue;
+                RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+                CleverMcLevyResoTM[1].AddBGT_PR(RanVal2, cos(AngleRcP2));
+            }
+            delete F_EposDisto_p_LamReso;
+
+            TFile *F_EposDisto_pReso_Lam = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/EposDisto_pReso_Lam.root");
+            TNtuple *T_EposDisto_pReso_Lam = (TNtuple *)F_EposDisto_pReso_Lam->Get("InfoTuple_ClosePairs");
+            unsigned N_EposDisto_pReso_Lam = T_EposDisto_pReso_Lam->GetEntries();
+            T_EposDisto_pReso_Lam->SetBranchAddress("k_D", &k_D);
+            T_EposDisto_pReso_Lam->SetBranchAddress("P1", &fP1);
+            T_EposDisto_pReso_Lam->SetBranchAddress("P2", &fP2);
+            T_EposDisto_pReso_Lam->SetBranchAddress("M1", &fM1);
+            T_EposDisto_pReso_Lam->SetBranchAddress("M2", &fM2);
+            T_EposDisto_pReso_Lam->SetBranchAddress("Tau1", &Tau1);
+            T_EposDisto_pReso_Lam->SetBranchAddress("Tau2", &Tau2);
+            T_EposDisto_pReso_Lam->SetBranchAddress("AngleRcP1", &AngleRcP1);
+            T_EposDisto_pReso_Lam->SetBranchAddress("AngleRcP2", &AngleRcP2);
+            T_EposDisto_pReso_Lam->SetBranchAddress("AngleP1P2", &AngleP1P2);
+            for (unsigned uEntry = 0; uEntry < N_EposDisto_pReso_Lam; uEntry++)
+            {
+                T_EposDisto_pReso_Lam->GetEntry(uEntry);
+                Tau1 = 1.65;
+                Tau2 = 0;
+                if (SourceVar % 100 == 2)
+                {
+                    fM1 = 1362;
+                }
+                if (k_D > k_CutOff)
+                    continue;
+                RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+                CleverMcLevyResoTM[1].AddBGT_RP(RanVal1, cos(AngleRcP1));
+            }
+            delete F_EposDisto_pReso_Lam;
+
+            TFile *F_EposDisto_pReso_LamReso = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/EposDisto_pReso_LamReso.root");
+            TNtuple *T_EposDisto_pReso_LamReso = (TNtuple *)F_EposDisto_pReso_LamReso->Get("InfoTuple_ClosePairs");
+            unsigned N_EposDisto_pReso_LamReso = T_EposDisto_pReso_LamReso->GetEntries();
+            T_EposDisto_pReso_LamReso->SetBranchAddress("k_D", &k_D);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("P1", &fP1);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("P2", &fP2);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("M1", &fM1);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("M2", &fM2);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("Tau1", &Tau1);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("Tau2", &Tau2);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("AngleRcP1", &AngleRcP1);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("AngleRcP2", &AngleRcP2);
+            T_EposDisto_pReso_LamReso->SetBranchAddress("AngleP1P2", &AngleP1P2);
+            for (unsigned uEntry = 0; uEntry < N_EposDisto_pReso_LamReso; uEntry++)
+            {
+                T_EposDisto_pReso_LamReso->GetEntry(uEntry);
+                Tau1 = 1.65;
+                Tau2 = 4.69;
+                if (SourceVar % 100 == 2)
+                {
+                    fM1 = 1362;
+                    fM2 = 1462;
+                }
+                if (k_D > k_CutOff)
+                    continue;
+                RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+                RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+                CleverMcLevyResoTM[1].AddBGT_RR(RanVal1, cos(AngleRcP1), RanVal2, cos(AngleRcP2), cos(AngleP1P2));
+            }
+            delete F_EposDisto_pReso_LamReso;
+        }
+
+        if (SOURCE == "McGauss_ResoTM")
+            CleverMcLevyResoTM[1].InitNumMcIter(1000000);
+        else
+            CleverMcLevyResoTM[1].InitNumMcIter(100000);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverMcLevyResoTM[1], 2);
+        Kitty.SetAnaSource(0, 1.0);
+        Kitty.SetAnaSource(1, 2.0);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "EPOS")
+    {
+        printf("\033[1;33mWARNING:\033[0m The CommonAnaFunction is still under construction (EPOS)\n");
+        goto CLEAN_SetUpCats_pSp;
+    }
+    else if (SOURCE == "EPOSrescaled")
+    {
+        printf("\033[1;33mWARNING:\033[0m The CommonAnaFunction is still under construction (EPOSrescaled)\n");
+        goto CLEAN_SetUpCats_pSp;
+    }
+    else if (SOURCE == "Levy_mT_Reso")
+    {
+        printf("\033[1;33mWARNING:\033[0m The CommonAnaFunction is still under construction (Levy_mT_Reso)\n");
+        goto CLEAN_SetUpCats_pSp;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pSp;
+    }
+
+    //a double gaussian, that reproduces the correct scattering parameters
+    if (POT == "DG_NLO19")
+    {
+        double PotPars1S0[4] = {-82.20693060436437, 1.3392323926534693, 2274.508479434418, 0.4182867242441114};
+        double PotPars3S1[4] = {6.295180245126864, 1.995145226219902, -58.68689895288922, 0.32017712049353114};
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 4, true);
+        cPotPars1S0->SetParameters(PotPars1S0);
+        cPotPars3S1 = new CATSparameters(CATSparameters::tPotential, 4, true);
+        cPotPars3S1->SetParameters(PotPars3S1);
+        NumChannels = 2;
+    }
+    //a double gaussian, that reproduces the correct scattering parameters
+    else if (POT == "DG_N2LO")
+    {
+        double PotPars1S0[4] = {-79.07298063891983, 1.3716237629795942, 2287.907638142889, 0.43371332814881547};
+        double PotPars3S1[4] = {6.6923386649252645, 1.970250601599477, -48.30709539991798, 0.3549784459798298};
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 4, true);
+        cPotPars1S0->SetParameters(PotPars1S0);
+        cPotPars3S1 = new CATSparameters(CATSparameters::tPotential, 4, true);
+        cPotPars3S1->SetParameters(PotPars3S1);
+        NumChannels = 2;
+    }
+    //the WF obtained from Johann
+    else if (POT == "N2LO")
+    {
+        ExternalWF = Init_pSigmaPlus_Haidenbauer(CatsFilesFolder[0] + "/Interaction/Haidenbauer/pSigmaPlus/",
+                                         Kitty, 0);
+        NumChannels = 2;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing pSigmaPlus potential '%s'\n", POT.Data());
+        goto CLEAN_SetUpCats_pSp;
+    }
+
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(1);
+    Kitty.SetQuantumStatistics(false);
+    Kitty.SetRedMass((Mass_p * Mass_Sch) / (Mass_p + Mass_Sch));
+
+    Kitty.SetNumChannels(NumChannels);
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        if (!ExternalWF)
+        {
+            Kitty.SetNumPW(uCh, 1);
+            Kitty.SetSpin(uCh, uCh % 2 == 0 ? 0 : 1);
+            Kitty.SetChannelWeight(uCh, uCh % 2 == 0 ? 0.25 : 0.75);
+        }
+
+        if (POT.Contains("DG_") && cPotPars1S0 && uCh == 0)
+            Kitty.SetShortRangePotential(uCh, 0, DoubleGaussSum, *cPotPars1S0);
+        else if (POT.Contains("DG_") && cPotPars3S1 && uCh == 1)
+            Kitty.SetShortRangePotential(uCh, 0, DoubleGaussSum, *cPotPars3S1);
+        else if (ExternalWF)
+        {
+            Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+        }
+        else
+        {
+            printf("PotVar=%i\n", PotVar);
+            printf("\033[1;31mERROR:\033[0m SetUpCats_pSp says that you should NEVER see this message! BIG BUG!\n");
+            goto CLEAN_SetUpCats_pSp;
+        }
+    }
+CLEAN_SetUpCats_pSp:;
+
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    if (pPars)
+    {
+        delete pPars;
+        pPars = NULL;
+    }
+    if (cPotPars1S0)
+    {
+        delete cPotPars1S0;
+        cPotPars1S0 = NULL;
+    }
+    if (cPotPars3S1)
+    {
+        delete cPotPars3S1;
+        cPotPars3S1 = NULL;
+    }
+    CleanUpWfHisto(Kitty, ExternalWF);
+}
+
+
+
 // for the moment only gauss
 // models are NLO and ESC16
 void DLM_CommonAnaFunctions::SetUpCats_pS0(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar, const int &SourceVar)
@@ -6858,6 +7309,71 @@ void SetUpKdpPars(TF1*& fitfun, int Mode){
 
 }
 
+//! N.B. the femto sign convension used (+ scat len = attraction)
+//Coulomb case, following Nuclear Physics A253 (1975) 355--364
+//the return value is the k*cotg(delta_(c))
+//i.e. to get the phase shifts: atan(kstar/EffRangeExp)
+//x = kstar (MeV)
+//[0] = q1q2 * RedMass (MeV) -> if zero we go back to the default ERE
+//[1] = Coulomb corrected inversed scattering length (1/fm)
+//[2] = Coulomb corrected effective range (fm)
+//[3,4] = the two extra pars in the expansion after effective range (in NU since we dont really care about the values)
+double EffRangeExp(double* x, double* par){
+    double& kstar = *x;
+    double& q1q2rm = par[0];
+    double invf_cs = par[1]/FmToNu;
+    double d_cs = par[2]*FmToNu;
+    double& ere4 = par[3];
+    double& ere6 = par[4];
+
+    //this is Eta = RedMass*double(q1q2)*AlphaFS/Momentum, aka Sommerfeld parameter (sometimes called gamma);
+    double Eta;
+    double hgam;
+    //the precision to which we would like to eval the function h(gamma)
+    const double eps = 0.0001;
+    double precision;
+    int nstep = 1;
+
+    if(q1q2rm){
+        Eta = AlphaFS*q1q2rm/kstar;
+        hgam = -EulerConst - log(Eta);
+        precision = 1;
+    }
+    else{
+        Eta = 0;
+        hgam = 0;
+        precision = 0;
+    }
+
+//printf("kstar = %.3e\n",kstar);
+//printf("q1q2rm = %.3e\n",q1q2rm);
+//printf("Eta = %.3e\n",Eta);
+//printf("hgam = %.3e\n",hgam);
+
+    while(precision>eps && nstep<32){
+        double dn = nstep;
+        double dh = Eta*Eta/(dn*(dn*dn+Eta*Eta));
+        hgam += dh;
+        //this says we have to take at least the first two terms of the sum
+        if(nstep>1) precision = fabs(dh/hgam);
+        nstep++;
+    }
+//printf("HGAM = %.3e\n",hgam);
+    double PreFactor;
+    double AddFactor;
+    if(q1q2rm){
+        PreFactor = (exp(2.*Pi*Eta)-1.)/2.*Pi*Eta;
+        AddFactor = -2.*kstar*Eta*hgam;
+    }
+    else{
+        PreFactor = 1;
+        AddFactor = 0;
+    }
+//printf("PreFactor = %.3e\n",PreFactor);
+//printf("AddFactor = %.3e\n",AddFactor);
+    return PreFactor*(AddFactor + invf_cs + 0.5*d_cs*pow(kstar,2.) + ere4*pow(kstar,4.) + ere6*pow(kstar,6.));
+}
+
 bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFit, TF1*& fitSP,
   const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh){
   Kitty.KillTheCat();
@@ -6875,23 +7391,36 @@ bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFi
     hFit->SetBinError(uMom+1,1.);
     LAST_POINT = CURRENT_POINT;
   }
-  TF1* fitSP2 = new TF1("fitSP2","0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
-  TF1* fitSP4 = new TF1("fitSP4","[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
-  TF1* fitSP6 = new TF1("fitSP6","[3]*pow(x,6.)+[2]*pow(x,4.)+0.5*[1]/197.327*x*x+197.327*[0]", 10, 90);
-  double inv_f0 = ScatLen==0?0:1./ScatLen;
-  if(Fixf0) {fitSP2->FixParameter(0,inv_f0);fitSP4->FixParameter(0,inv_f0);fitSP6->FixParameter(0,inv_f0);}
-  else {fitSP2->SetParameter(0,inv_f0);fitSP2->SetParLimits(0,-100,100);
-        fitSP4->SetParameter(0,inv_f0);fitSP4->SetParLimits(0,-100,100);
-        fitSP6->SetParameter(0,inv_f0);fitSP6->SetParLimits(0,-100,100);}
-  if(Fixd0) { fitSP2->FixParameter(1,EffRan);
-              fitSP4->FixParameter(1,EffRan);
-              fitSP6->FixParameter(1,EffRan);}
-  else {fitSP2->SetParameter(1,EffRan);fitSP2->SetParLimits(1,-50,50);
-        fitSP4->SetParameter(1,EffRan);fitSP4->SetParLimits(1,-50,50);
-        fitSP6->SetParameter(1,EffRan);fitSP6->SetParLimits(1,-50,50);}
-  fitSP4->SetParameter(2,0);fitSP6->SetParameter(2,0);
-  fitSP6->SetParameter(3,0);
+  TF1* fitSP2; 
+  TF1* fitSP4; 
+  TF1* fitSP6;
 
+
+  fitSP2 = new TF1("fitSP2",EffRangeExp,10,90,5);
+  fitSP2->FixParameter(3,0);
+  fitSP2->FixParameter(4,0);
+  fitSP4 = new TF1("fitSP2",EffRangeExp,10,90,5);
+  fitSP4->FixParameter(4,0);
+  fitSP6 = new TF1("fitSP2",EffRangeExp,10,90,5);
+
+  fitSP2->FixParameter(0,Kitty.GetQ1Q2()*Kitty.GetRedMass());
+  fitSP4->FixParameter(0,Kitty.GetQ1Q2()*Kitty.GetRedMass());
+  fitSP6->FixParameter(0,Kitty.GetQ1Q2()*Kitty.GetRedMass());
+  
+
+  double inv_f0 = ScatLen==0?0:1./ScatLen;
+  if(Fixf0) {fitSP2->FixParameter(1,inv_f0);fitSP4->FixParameter(1,inv_f0);fitSP6->FixParameter(1,inv_f0);}
+  else {fitSP2->SetParameter(1,inv_f0);fitSP2->SetParLimits(1,-100,100);
+        fitSP4->SetParameter(1,inv_f0);fitSP4->SetParLimits(1,-100,100);
+        fitSP6->SetParameter(1,inv_f0);fitSP6->SetParLimits(1,-100,100);}
+  if(Fixd0) { fitSP2->FixParameter(2,EffRan);
+              fitSP4->FixParameter(2,EffRan);
+              fitSP6->FixParameter(2,EffRan);}
+  else {fitSP2->SetParameter(2,EffRan);fitSP2->SetParLimits(2,-50,50);
+        fitSP4->SetParameter(2,EffRan);fitSP4->SetParLimits(2,-50,50);
+        fitSP6->SetParameter(2,EffRan);fitSP6->SetParLimits(2,-50,50);}
+  fitSP4->SetParameter(3,0);fitSP6->SetParameter(3,0);
+  fitSP6->SetParameter(4,0);
 
   double Chi2_Old = 1e64;
 
@@ -6901,24 +7430,24 @@ bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFi
   MinOpt.SetPrintLevel(0);
   DLM_FitHisto(hFit, fitSP2, "Q, S, N, R, M", "", &MinOpt);
   //printf("f0 %f\n", 1./fitSP2->GetParameter(0));
-  ScatLen = 1./fitSP2->GetParameter(0);
-  EffRan = fitSP2->GetParameter(1);
+  ScatLen = 1./fitSP2->GetParameter(1);
+  EffRan = fitSP2->GetParameter(2);
   if(Nterms<=2){delete fitSP4; delete fitSP6; fitSP=fitSP2; delete[]MomBins; return true;}
 
   //hFit->Fit(fitSP4, "Q, S, N, R, M");
   DLM_FitHisto(hFit, fitSP4, "Q, S, N, R, M", "", &MinOpt);
   if(fitSP4->GetChisquare()/fitSP2->GetChisquare()>0.8)
   {delete fitSP4; delete fitSP6; fitSP=fitSP2; delete[]MomBins; return true;}
-  ScatLen = 1./fitSP4->GetParameter(0);
-  EffRan = fitSP4->GetParameter(1);
+  ScatLen = 1./fitSP4->GetParameter(1);
+  EffRan = fitSP4->GetParameter(2);
   if(Nterms<=3){delete fitSP2; delete fitSP6; fitSP=fitSP4; delete[]MomBins; return true;}
 
   //hFit->Fit(fitSP6, "Q, S, N, R, M");
   DLM_FitHisto(hFit, fitSP6, "Q, S, N, R, M", "", &MinOpt);
   if(fitSP6->GetChisquare()/fitSP4->GetChisquare()>0.8)
   {delete fitSP2; delete fitSP6; fitSP=fitSP4; delete[]MomBins; return true;}
-  ScatLen = 1./fitSP6->GetParameter(0);
-  EffRan = fitSP6->GetParameter(1);
+  ScatLen = 1./fitSP6->GetParameter(1);
+  EffRan = fitSP6->GetParameter(2);
   delete fitSP2; delete fitSP4; fitSP=fitSP6; delete[]MomBins; return true;
 }
 

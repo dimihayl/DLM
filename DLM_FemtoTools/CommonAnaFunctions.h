@@ -81,6 +81,7 @@ public:
     //    0 = no smear; 1 = smear according to the life-time
     void SetUpCats_pL(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_pS0(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
+    void SetUpCats_pSp(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);   
     //POT:
     //  "pXim_Lattice" (the first version)
     //  "pXim_HALQCD1" (the second version, THE ONE TO USE)
@@ -261,7 +262,7 @@ bool NormalizeSource_rk(DLM_Histo<float>* dlmSource);
 //return a normalized source, assuming both an rstar and kstar dep.
 //DLM_Histo<float>* GetNormalizedSource_rk(TH2F* hSource);
 
-
+double EffRangeExp(double* x, double* par);
 bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFit, TF1*& fitSP,
   const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh);
 
