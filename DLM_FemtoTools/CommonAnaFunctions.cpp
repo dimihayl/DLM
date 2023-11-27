@@ -5028,6 +5028,10 @@ TH2F *DLM_CommonAnaFunctions::GetResolutionMatrix(const TString &DataSample, con
     {
         FileName = "/home/valentina/thor/cernbox/CATSFiles/SystematicsAndCalib/MomentumSmear/ALICE_pp_13TeVHM_MELKmin.root";
     }
+    else if (DataSample == "pp13TeV_HM_LKMAC")
+    {
+        FileName = "/Users/sartozza/cernbox/CATSFiles/SystematicsAndCalib/MomentumSmear/ALICE_pp_13TeVHM_MELKmin.root";
+    }
     else
     {
         printf("\033[1;31mERROR (GetResolutionMatrix):\033[0m The data sample '%s' does not exist\n", DataSample.Data());
@@ -5142,6 +5146,10 @@ TH2F *DLM_CommonAnaFunctions::GetResidualMatrix(const TString &&FinalSystem, con
     {
         FileName = CatsFilesFolder[0]+"/DecaySmear/Decay_matrix_pp_pSp.root";
         HistoName = "hRes_pp_pSp";
+    else if (FinalSystem == "LKminMAC" && InitialSystem == "XiminKminMAC")
+    {
+        FileName = "/Users/sartozza/cernbox/CATSFiles/DecaySmear/histDecayKinematics_LK_pp13HM.root";
+        HistoName = "KXi_KLambda";
     }
     else
     {
