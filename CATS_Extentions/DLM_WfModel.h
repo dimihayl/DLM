@@ -8,10 +8,17 @@ template <class Type> class DLM_Histo;
 
 using namespace std;
 
+DLM_Histo<complex<double>>*** Init_pp_Haidenbauer(const char* CatsFolder, CATS& Kitty, const int& TYPE);
+DLM_Histo<complex<double>>*** Init_pp_Haidenbauer(const char* CatsFolder, CATS* Kitty, const int& TYPE);
+
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF=600);
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE, const int& CUTOFF=600);
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF=600);
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, CATS* Kitty, const int& TYPE, const int& CUTOFF=600);
+
+DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* InputFolder, CATS& Kitty, const char* Singlet, const char* Triplet);
+DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* InputFolder, CATS* Kitty, const char* Singlet, const char* Triplet);
+
 DLM_Histo<complex<double>>*** Init_pSigma0_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE=0);
 DLM_Histo<complex<double>>*** Init_pSigma0_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE=0);
 DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE=0);

@@ -4,11 +4,316 @@
 #include "DLM_WfModel.h"
 #include "CATS.h"
 #include "DLM_Histo.h"
+#include "DLM_MathFunctions.h"
 
 #include <unistd.h>
 
 const complex<float>fi(0,1);
 const double Pi(3.141592653589793);
+
+DLM_Histo<complex<double>>*** Init_pp_Haidenbauer(const char* CatsFolder, CATS* Kitty, const int& TYPE){
+    if(!Kitty) return NULL;
+    return Init_pp_Haidenbauer(CatsFolder, *Kitty, TYPE);
+}
+
+
+//The two strings should have a dsscription with separation "_", where we start with version (NLO, N2LO), second number is cut off, third value is scattering parameter is s wave, 4th par is which waves we take
+//we may even add more stuff at the back if we want to in the future
+//e.g. NLO19_600_291_sd would be the NLO19 at cutoff 600 MeV, with f0 = 2.91 fm and we consider only s and d waves
+DLM_Histo<complex<double>>*** Init_pp_Haidenbauer(const char* CatsFolder, CATS& Kitty, const int& TYPE){
+    double RadiusStepSize;
+    double RadiusMinimum;
+    double RadiusMaximum;
+    const unsigned short NumFiles = 5; // (to cover all s waves)
+    unsigned* NumMomBins = new unsigned [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        NumMomBins[uFile] = 0;
+    }
+
+    //fP1 is both 1P1 and 3P1
+    enum HaideFiles {f1S0, f3P0, f3P1, f3P2, f1D2, fNull};
+    bool FileAvailable[NumFiles+1];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=false;
+
+    const unsigned short NumChannels = 4;
+
+
+    RadiusStepSize = 0.02;
+    RadiusMinimum = 0.02;
+    RadiusMaximum = 10.;
+
+    Kitty.SetNumChannels(NumChannels);
+    Kitty.SetNumPW(0,3);
+    Kitty.SetNumPW(1,2);
+    Kitty.SetNumPW(2,2);
+    Kitty.SetNumPW(3,2);
+
+    Kitty.SetChannelWeight(0,1./4.);
+    Kitty.SetChannelWeight(1,0.75*1./9.);
+    Kitty.SetChannelWeight(2,0.75*3./9.);
+    Kitty.SetChannelWeight(3,0.75*5./9.);
+
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){Kitty.SetSpin(usCh,1);}
+    Kitty.SetSpin(0,0);
+
+    Kitty.SetQ1Q2(1);
+    Kitty.SetPdgId(2212, 2212);
+    const double Mass_p = 938.272;
+    Kitty.SetRedMass((Mass_p*Mass_p)/(Mass_p+Mass_p));
+
+    unsigned short** WhichFile = new unsigned short* [NumChannels];
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){WhichFile[usCh] = new unsigned short [Kitty.GetNumPW(usCh)];}
+    WhichFile[0][0] = f1S0;
+    WhichFile[0][1] = fNull;
+    WhichFile[0][2] = f1D2;
+    WhichFile[1][0] = fNull;
+    WhichFile[1][1] = f3P0;
+    WhichFile[2][0] = fNull;
+    WhichFile[2][1] = f3P1;
+    WhichFile[3][0] = fNull;
+    WhichFile[3][1] = f3P2;
+
+
+    //we always add 1 bin at zero, so if we have e.g. 0.1 to 0.3, these are 3 bins + 1 extra
+    //NumRadiusBins = round((RadiusMaximum-RadiusMinimum)/RadiusStepSize)+1+1;
+    const unsigned NumRadBins = round((RadiusMaximum-RadiusMinimum)/RadiusStepSize)+1+1;
+    double* RadBins = new double [NumRadBins+1];
+    bool* RadBinLoaded = new bool [NumRadBins+1];
+    for(unsigned uRad=1; uRad<=NumRadBins; uRad++){
+        //uRad-1 as we have special treatment of the zeroth bin
+        //the -0.5*RadiusStepSize comes from the fact, that else we compute the bin center, while we would like
+        //to define the bin edges
+        RadBins[uRad] = RadiusMinimum+double(uRad-1)*RadiusStepSize-0.5*RadiusStepSize;
+        RadBinLoaded[uRad] = false;
+    }
+    //we want to have the very first bin (center) exactly at zero!
+    RadBins[0] = -RadBins[1];
+    RadBinLoaded[0] = false;
+
+    char** InputFileName = new char* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char[256];
+        strcpy(InputFileName[uFile],CatsFolder);
+        strcat(InputFileName[uFile],"/Interaction/Haidenbauer/pp/Nov2023/");
+    }
+
+    if(TYPE==1){//s-waves only
+        strcat(InputFileName[f1S0], "av181s0_4MeV_10fm.data");
+
+        strcpy(InputFileName[f3P0], "NULL");
+        strcpy(InputFileName[f3P1], "NULL");
+        strcpy(InputFileName[f3P2], "NULL");
+        strcpy(InputFileName[f1D2], "NULL");
+
+        FileAvailable[f1S0] =  true;
+    }
+    else if(TYPE==11){
+        strcat(InputFileName[f1S0], "av181s0_4MeV_10fm.data");
+
+        strcat(InputFileName[f3P0], "av183p0_4MeV_10fm.data");
+        strcat(InputFileName[f3P1], "av183p1_4MeV_10fm.data");
+        strcat(InputFileName[f3P2], "av183p2_4MeV_10fm.data");
+        strcpy(InputFileName[f1D2], "NULL");
+
+        FileAvailable[f1S0] =  true;
+        FileAvailable[f3P0] =  true;
+        FileAvailable[f3P1] =  true;
+        FileAvailable[f3P2] =  true;
+    }
+    else{
+        printf("YOU BROKE SOMETHING in Init_pp_Haidenbauer\n");
+        return NULL;
+    }
+    FILE *InFile;
+    int CurrentLine=0;
+
+    const unsigned MaxNumMomBins = 256;
+    double** MomentumBins = new double* [NumFiles];
+    double** Momentum = new double* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        MomentumBins[uFile] = new double [MaxNumMomBins+1];
+        Momentum[uFile] = new double [MaxNumMomBins];
+    }
+
+    char* cdummy = new char [512];
+    float fMomentum;
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+printf("1-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
+            return NULL;
+        }
+
+        CurrentLine=0;
+        MomentumBins[uFile][0] = 0;
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if((CurrentLine)%int(NumRadBins)==0){
+                sscanf(cdummy, "%f",&fMomentum);
+                Momentum[uFile][NumMomBins[uFile]] = fMomentum;
+                if(NumMomBins[uFile]){
+                    //set the bin range in between the last two bin centers
+                    MomentumBins[uFile][NumMomBins[uFile]] = 0.5*(Momentum[uFile][NumMomBins[uFile]]+Momentum[uFile][NumMomBins[uFile]-1]);
+                }
+                NumMomBins[uFile]++;
+            }
+            CurrentLine++;
+        }
+        fclose(InFile);
+        //set the upper edge of the last bin, where we just add the bin width of the last bin
+        //i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
+        MomentumBins[uFile][NumMomBins[uFile]] = 2.*Momentum[uFile][NumMomBins[uFile]-1]-MomentumBins[uFile][NumMomBins[uFile]-1];
+    }
+
+    const unsigned NumDLM_Histos = NumChannels;
+    //the first one is WF, second is PS
+    DLM_Histo<complex<double>>*** Histo = new DLM_Histo<complex<double>>** [2];
+    DLM_Histo<complex<double>>**& HistoWF = Histo[0];
+    DLM_Histo<complex<double>>**& HistoPS = Histo[1];
+
+    //DLM_Histo<complex<double>> HistoWF[NumChannels];
+    HistoWF = new DLM_Histo<complex<double>>* [NumDLM_Histos];
+    for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
+        HistoWF[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
+            HistoWF[uHist][uPw].SetUp(2);
+            HistoWF[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
+            HistoWF[uHist][uPw].SetUp(1,NumRadBins,RadBins);
+            HistoWF[uHist][uPw].Initialize();
+        }
+    }
+
+    HistoPS = new DLM_Histo<complex<double>>* [NumDLM_Histos];
+    for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
+        HistoPS[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
+            HistoPS[uHist][uPw].SetUp(1);
+            HistoPS[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
+            HistoPS[uHist][uPw].Initialize();
+        }
+    }
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
+        int WhichMomBin=-1;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
+            return Histo;
+        }
+
+        fseek ( InFile , 0 , SEEK_END );
+        fseek ( InFile , 0 , SEEK_SET );
+
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return Histo;
+        }
+
+        float fDummy;
+        float fRadius;
+        float fReWf;
+
+        int RadBin=-1;
+        //!---Iteration over all events---
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if(WhichMomBin>=int(NumMomBins[uFile])){
+                printf("\033[1;31mERROR:\033[0m Trying to read more momentum bins than set up (%u)!\n",NumMomBins[uFile]);
+                printf(" Buffer reads: %s\n",cdummy);
+                break;
+            }
+
+            //the first line contains info about the momentum
+            if(RadBin==-1) {
+                sscanf(cdummy, "%f",&fMomentum);
+
+                RadBin++;
+                WhichMomBin++;
+                continue;
+            }
+
+            if(WhichMomBin<0){
+                printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
+                continue;
+            }
+
+            unsigned WhichBin[2];
+            WhichBin[0] = unsigned(WhichMomBin);
+            //we fill up the radius bins with and offset of 1, due to the special zeroth bin
+            WhichBin[1] = RadBin+1;
+
+
+            if(uFile==f1S0){
+                sscanf(cdummy, " %f %f %f %f %f",&fRadius,&fDummy,&fDummy,&fDummy,&fReWf);
+                //0: 1S0+1D2
+                HistoWF[0][0].SetBinContent(WhichBin,(fReWf)*fRadius);
+                HistoPS[0][0].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3P0){
+                sscanf(cdummy, " %f %f %f %f %f",&fRadius,&fDummy,&fDummy,&fDummy,&fReWf);
+                HistoWF[1][1].SetBinContent(WhichBin,(fReWf)*fRadius);
+                HistoPS[1][1].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3P1){
+                sscanf(cdummy, " %f %f %f %f %f",&fRadius,&fDummy,&fDummy,&fDummy,&fReWf);
+                HistoWF[2][1].SetBinContent(WhichBin,(fReWf)*fRadius);
+                HistoPS[2][1].SetBinContent(WhichBin,0);            
+            }
+            else if(uFile==f3P2){
+                sscanf(cdummy, " %f %f %f %f %f",&fRadius,&fDummy,&fDummy,&fDummy,&fReWf);
+                HistoWF[3][1].SetBinContent(WhichBin,(fReWf)*fRadius);
+                HistoPS[3][1].SetBinContent(WhichBin,0);    
+            }
+            else if(uFile==f1D2){
+                sscanf(cdummy, " %f %f %f %f %f",&fRadius,&fDummy,&fDummy,&fDummy,&fReWf);
+                HistoWF[0][2].SetBinContent(WhichBin,(fReWf)*fRadius);
+                HistoPS[0][2].SetBinContent(WhichBin,0);                    
+            }
+            else{
+                printf("WTF from Init_pp_Haidenbauer\n");
+            }
+            RadBin++;
+            //if we have are passed the last radius bin in this momentum bin => we start over.
+            //the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
+            if(RadBin==int(NumRadBins)-1){
+                RadBin=-1;
+            }
+        }
+
+        fclose(InFile);
+        if(WhichMomBin+1!=int(NumMomBins[uFile])){
+            printf("\033[1;31mERROR:\033[0m WhichMomBin!=NumMomBins (%u vs %u)\n",WhichMomBin,NumMomBins[uFile]);
+        }
+
+    }//uFile
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] MomentumBins[uFile];
+        delete [] Momentum[uFile];
+    }
+    delete [] NumMomBins;
+    delete [] RadBinLoaded;
+    delete [] MomentumBins;
+    delete [] Momentum;
+    delete [] cdummy;
+    delete [] RadBins;
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){
+        delete [] WhichFile[usCh];
+    }
+    delete [] WhichFile;
+    return Histo;
+
+}
+
+
+
+
 
 //TYPE = 00 is LO
 //TYPE = 01 is LO+Coupling
@@ -1443,9 +1748,1042 @@ printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
     return Histo;
 
 }
+
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2019(const char* InputFolder, CATS* Kitty, const int& TYPE, const int& CUTOFF){
     return Init_pL_Haidenbauer2019(InputFolder,*Kitty,TYPE,CUTOFF);
 }
+
+
+
+
+//The two strings should have a dsscription with separation "_", where we start with version (NLO, N2LO), second number is cut off, third value is scattering parameter is s wave, 4th par is which waves we take
+//we may even add more stuff at the back if we want to in the future
+//e.g. NLO19_600_291_sd would be the NLO19 at cutoff 600 MeV, with f0 = 2.91 fm and we consider only s and d waves
+DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* CatsInputFolder, CATS& Kitty, const char* Singlet, const char* Triplet){
+    double RadiusStepSize;
+    double RadiusMinimum;
+    double RadiusMaximum;
+    //unsigned NumRadiusBins;
+
+    // Use strtok to split the string
+    char* token  = new char [256];
+    int numTokens1S0;
+    int numTokens3S1;
+    const char* separator = "_";
+    char* inputCopy = new char [256];
+
+    strcpy(inputCopy,Singlet);
+    token = strtok(inputCopy, separator);
+    // Count the number of tokens
+    numTokens1S0 = 0;
+    while (token != nullptr) {
+        numTokens1S0++;
+        token = strtok(nullptr, separator);
+    }   
+    // Allocate an array of char* to store the tokens
+    char** Settings1S0 = new char*[numTokens1S0];
+    // Reset the Singlet and get tokens again
+    strcpy(inputCopy, Singlet);
+    token = strtok(inputCopy, separator);
+    // Store tokens in the array
+    for (int i = 0; i < numTokens1S0; ++i) {
+        Settings1S0[i] = new char [256];
+        strcpy(Settings1S0[i], token);
+        //cout << token << endl;
+        token = strtok(nullptr, separator);
+    }
+
+    strcpy(inputCopy,Triplet);
+    token = strtok(inputCopy, separator);
+    // Count the number of tokens
+    numTokens3S1 = 0;
+    while (token != nullptr) {
+        numTokens3S1++;
+        token = strtok(nullptr, separator);
+    }   
+    // Allocate an array of char* to store the tokens
+    char** Settings3S1 = new char*[numTokens3S1];
+    // Reset the Singlet and get tokens again
+    strcpy(inputCopy, Triplet);
+    token = strtok(inputCopy, separator);
+    // Store tokens in the array
+    for (int i = 0; i < numTokens3S1; ++i) {
+        Settings3S1[i] = new char [256];
+        strcpy(Settings3S1[i], token);
+        token = strtok(nullptr, separator);
+    }
+
+    delete [] token;
+
+    float f1S0_input = atof(Settings1S0[2])/100.;
+    int CutOff_1S0 = atoi(Settings1S0[1]);
+    
+    float f3S1_input = atof(Settings3S1[2])/100.;
+    int CutOff_3S1 = atoi(Settings3S1[1]);
+
+    //QA
+    bool VersionKnown = false;
+    bool CutOffKnown = false;
+    bool fValKnown = false;
+    bool PwKnown = false;
+
+    enum CalcVersions {dflt, su3b};
+    int CalcVersion1S0 = dflt;
+    int CalcVersion3S1 = dflt;
+    for(unsigned uSet=0; uSet<numTokens1S0; uSet++){
+        if(strcmp(Settings1S0[uSet],"su3b")==0){
+            CalcVersion1S0 = su3b;
+        }
+    }
+    for(unsigned uSet=0; uSet<numTokens3S1; uSet++){
+        if(strcmp(Settings3S1[uSet],"su3b")==0){
+            CalcVersion3S1 = su3b;
+        }
+    }    
+
+
+    if(strcmp(Settings1S0[0],"NLO19")==0) {
+        VersionKnown=true;
+        if(CutOff_1S0==600){CutOffKnown = true;}
+
+        if(ApproxEqualF(f1S0_input,2.91)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,3.00)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,3.10)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,3.20)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,3.30)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,3.34)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.10)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.20)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.30)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.45)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.50)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.53)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.55)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.65)){fValKnown=true;}
+        else if(ApproxEqualF(f1S0_input,2.80)){fValKnown=true;}
+
+        if(strcmp(Settings1S0[3],"s")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"p")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"d")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"sd")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"sp")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"pd")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"spd")==0) {PwKnown=true;}        
+    }
+    else if(strcmp(Settings1S0[0],"NLO13")==0) {
+        VersionKnown=true;
+        if(CutOff_1S0==600){CutOffKnown = true;}
+
+        if(f1S0_input==2.91){fValKnown=true;}
+
+        if(strcmp(Settings1S0[3],"s")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"p")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"d")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"sd")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"sp")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"pd")==0) {PwKnown=true;}
+        if(strcmp(Settings1S0[3],"spd")==0) {PwKnown=true;}               
+    }
+    else if(strcmp(Settings1S0[0],"N2LO")==0) {
+        VersionKnown=true;
+        if(CutOff_1S0==550){CutOffKnown = true;}
+
+        if(f1S0_input==2.79){fValKnown=true;}
+    }
+    if(VersionKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %s is an unknown potential version!\n", Settings1S0[0]);
+        return NULL;
+    }
+    if(fValKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %f is an unknown value for f0!\n", f1S0_input);
+        return NULL;
+    }
+    if(CutOffKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %i is an unknown value for the cutoff!\n", CutOff_1S0);
+        return NULL;
+    }
+    if(PwKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %s is an unknown pw!\n", Settings1S0[3]);
+        return NULL;       
+    }
+
+    //TRIPLET
+    VersionKnown = false;
+    CutOffKnown = false;
+    fValKnown = false;
+    PwKnown = false;
+
+
+    if(strcmp(Settings3S1[0],"NLO19")==0) {
+        VersionKnown=true;
+        if(CutOff_3S1==600){CutOffKnown = true;}
+
+        if(ApproxEqualF(f3S1_input,1.41)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,0.90)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,0.95)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.00)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.05)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.10)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.15)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.18)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.20)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.25)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.30)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.32)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.44)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.46)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.56)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.60)){fValKnown=true;}
+        else if(ApproxEqualF(f3S1_input,1.66)){fValKnown=true;}
+
+        if(strcmp(Settings3S1[3],"s")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"p")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"d")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"sd")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"sp")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"pd")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"spd")==0) {PwKnown=true;}
+    }
+    else if(strcmp(Settings3S1[0],"NLO13")==0) {
+         VersionKnown=true;
+        if(CutOff_3S1==600){CutOffKnown = true;}
+
+        if(f3S1_input==1.54){fValKnown=true;}
+
+        if(strcmp(Settings3S1[3],"s")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"p")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"d")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"sd")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"sp")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"pd")==0) {PwKnown=true;}
+        if(strcmp(Settings3S1[3],"spd")==0) {PwKnown=true;}       
+    }
+    else if(strcmp(Settings3S1[0],"N2LO")==0) {
+        VersionKnown=true;
+        if(CutOff_3S1==550){CutOffKnown = true;}
+
+        if(f3S1_input==1.58){fValKnown=true;}
+        else if(f3S1_input==1.33){fValKnown=true;}
+    }
+
+
+    if(VersionKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %s is an unknown potential version!\n", Settings3S1[0]);
+        return NULL;
+    }
+    if(fValKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %f is an unknown value for f1!\n", f3S1_input);
+        return NULL;
+    }
+    if(CutOffKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %i is an unknown value for the cutoff!\n", CutOff_3S1);
+        return NULL;
+    }
+    if(PwKnown==false){
+        printf("\033[1;31mERROR:\033[0m \033[0m %s is an unknown pw!\n", Settings3S1[3]);
+        return NULL;       
+    }
+
+
+    const unsigned short NumFiles = 6; // (to cover all s,p,d, waves)
+    unsigned* NumMomBins = new unsigned [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        NumMomBins[uFile] = 0;
+    }
+    //fP1 is both 1P1 and 3P1
+    enum HaideFiles {f1S0, f3S1, fP1, f3P0, f3P2, f3D1};
+    bool FileAvailable[NumFiles];
+    bool InludePwaves=true;
+    //if a p-wave does not exist, we take it from the NLO 600
+    for(unsigned uFile=0; uFile<NumFiles; uFile++) FileAvailable[uFile]=true;
+
+
+    //LIST OF CHANNELS:
+    //main channels:
+    //0: 1S0+1P1
+    //1: 3S1+3P0+3D1
+    //2: 3S1+3P1+3D1
+    //3: 3S1+3P2+3D1
+    //4: 3S1+3P0
+    //5: 3S1+3P1
+    //6: 3S1+3P2
+    //coupled channels:
+    //7: 1S0 SN(s) -> LN(s)
+    //8: 3S1 SN(s) -> LN(s)
+    //9: 3S1 LN(d) -> LN(s)
+    //10: 3S1 SN(d) -> LN(s)
+    //11: 3P0 SN(p) -> LN(p)
+    //12: 3P2 SN(p) -> LN(p)
+    //13: 3D1 SN(d) -> LN(d)
+    //14: 3D1 LN(s) -> LN(d)
+    //15: 3D1 SN(s) -> LN(d)
+    const unsigned short NumChannels = 16;
+
+    RadiusStepSize = 0.02;
+    RadiusMinimum = 0.02;
+    RadiusMaximum = 10.;
+
+    Kitty.SetNumChannels(NumChannels);
+    Kitty.SetNumPW(0,2);
+    Kitty.SetNumPW(1,3);
+    Kitty.SetNumPW(2,3);
+    Kitty.SetNumPW(3,3);
+    Kitty.SetNumPW(4,2);
+    Kitty.SetNumPW(5,2);
+    Kitty.SetNumPW(6,2);
+
+    //for the coupled channels we only take the integral of the wave function
+    //hence it does not matter if we set the waves to s,p,d or whatever
+    //thus for simplification, everything is saved in the s-wave
+    Kitty.SetNumPW(7,1);
+    Kitty.SetNumPW(8,1);
+    Kitty.SetNumPW(9,1);
+    Kitty.SetNumPW(10,1);
+    Kitty.SetNumPW(11,1);
+    Kitty.SetNumPW(12,1);
+    Kitty.SetNumPW(13,1);
+    Kitty.SetNumPW(14,1);
+    Kitty.SetNumPW(15,1);
+
+    Kitty.SetChannelWeight(0,1./4.);
+    Kitty.SetChannelWeight(1,1./60.);
+    Kitty.SetChannelWeight(2,1./20.);
+    Kitty.SetChannelWeight(3,1./12.);
+    Kitty.SetChannelWeight(4,1./15.);
+    Kitty.SetChannelWeight(5,1./5.);
+    Kitty.SetChannelWeight(6,1./3.);
+
+    Kitty.SetChannelWeight(7,1./4.);
+    Kitty.SetChannelWeight(8,3./4.);
+    Kitty.SetChannelWeight(9,3./4.);
+    Kitty.SetChannelWeight(10,3./4.);
+    Kitty.SetChannelWeight(11,1./12.*InludePwaves);
+    Kitty.SetChannelWeight(12,5./12.*InludePwaves);
+    Kitty.SetChannelWeight(13,3./20.);
+    Kitty.SetChannelWeight(14,3./20.);
+    Kitty.SetChannelWeight(15,3./20.);
+
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){Kitty.SetSpin(usCh,1);}
+    Kitty.SetSpin(0,0);
+    Kitty.SetSpin(7,0);
+
+    Kitty.SetQ1Q2(0);
+    Kitty.SetPdgId(2212, 3122);
+    const double Mass_p = 938.272;
+    const double Mass_L = 1115.683;
+    Kitty.SetRedMass((Mass_p*Mass_L)/(Mass_p+Mass_L));
+//printf("1\n");
+    for(unsigned short usCh=7; usCh<NumChannels; usCh++){Kitty.SetOnlyNumericalPw(usCh,true);}
+
+
+    //LIST OF CHANNELS:
+    //main channels:
+    //0: 1S0+1P1
+    //1: 3S1+3P0+3D1
+    //2: 3S1+3P1+3D1
+    //3: 3S1+3P2+3D1
+    //4: 3S1+3P0
+    //5: 3S1+3P1
+    //6: 3S1+3P2
+    //coupled channels:
+    //7: 1S0 SN(s) -> LN(s)
+    //8: 3S1 SN(s) -> LN(s)
+    //9: 3S1 LN(d) -> LN(s)
+    //10: 3S1 SN(d) -> LN(s)
+    //11: 3P0 SN(p) -> LN(p)//
+    //12: 3P2 SN(p) -> LN(p)//
+    //13: 3D1 SN(d) -> LN(d)
+    //14: 3D1 LN(s) -> LN(d)
+    //15: 3D1 SN(s) -> LN(d)
+    unsigned short** WhichFile = new unsigned short* [NumChannels];
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){WhichFile[usCh] = new unsigned short [Kitty.GetNumPW(usCh)];}
+    WhichFile[0][0] = f1S0;
+    WhichFile[0][1] = fP1;
+    WhichFile[1][0] = f3S1;
+    WhichFile[1][1] = f3P0;
+    WhichFile[1][2] = f3D1;
+    WhichFile[2][0] = f3S1;
+    WhichFile[2][1] = fP1;
+    WhichFile[2][2] = f3D1;
+    WhichFile[3][0] = f3S1;
+    WhichFile[3][1] = f3P2;
+    WhichFile[3][2] = f3D1;
+    WhichFile[4][0] = f3S1;
+    WhichFile[4][1] = f3P0;
+    WhichFile[5][0] = f3S1;
+    WhichFile[5][1] = fP1;
+    WhichFile[6][0] = f3S1;
+    WhichFile[6][1] = f3P2;
+    WhichFile[7][0] = f1S0;
+    WhichFile[8][0] = f3S1;
+    WhichFile[9][0] = f3S1;
+    WhichFile[10][0] = f3S1;
+    WhichFile[11][0] = f3P0;
+    WhichFile[12][0] = f3P2;
+    WhichFile[13][0] = f3D1;
+    WhichFile[14][0] = f3D1;
+    WhichFile[15][0] = f3D1;
+
+    //we always add 1 bin at zero, so if we have e.g. 0.1 to 0.3, these are 3 bins + 1 extra
+    const unsigned NumRadBins = round((RadiusMaximum-RadiusMinimum)/RadiusStepSize)+1+1;
+    double* RadBins = new double [NumRadBins+1];
+    bool* RadBinLoaded = new bool [NumRadBins+1];
+    for(unsigned uRad=1; uRad<=NumRadBins; uRad++){
+        //uRad-1 as we have special treatment of the zeroth bin
+        //the -0.5*RadiusStepSize comes from the fact, that else we compute the bin center, while we would like
+        //to define the bin edges
+        RadBins[uRad] = RadiusMinimum+double(uRad-1)*RadiusStepSize-0.5*RadiusStepSize;
+        RadBinLoaded[uRad] = false;
+    }
+    //we want to have the very first bin (center) exactly at zero!
+    RadBins[0] = -RadBins[1];
+    RadBinLoaded[0] = false;
+
+    char** InputFileName = new char* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        InputFileName[uFile] = new char[256];
+        strcpy(InputFileName[uFile],CatsInputFolder);
+        strcat(InputFileName[uFile],"/Interaction/Haidenbauer/");
+    }
+
+
+//SINGLET
+    if(strcmp(Settings1S0[0],"NLO13")==0){
+        char strCutOff[64];
+        sprintf(strCutOff,"pLambda_Coupled_SD/Chiral13_%i/",CutOff_1S0);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
+
+        strcat(InputFileName[f1S0], "NLO1s0.data");
+        strcat(InputFileName[fP1], "NLOPU.data");      
+    }
+    else if(strcmp(Settings1S0[0],"NLO19")==0){
+        if(CutOff_1S0==600){
+            //1S0 ---------------------------------------------------------
+            if(ApproxEqualF(f1S0_input,2.91)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p91.600");
+            }
+            else if(ApproxEqualF(f1S0_input,2.1)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion1S0==su3b){
+                    strcat(InputFileName[f1S0], "NLO19_1s0_2p10.su3b");
+                }
+                else{
+                    strcat(InputFileName[f1S0], "NLO19_1s0_2p10.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p10 does not have a default version, using su3b instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f1S0_input,2.2)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p20.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p20 does not have su3b version, using the default instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f1S0_input,2.3)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p30.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p30 does not have su3b version, using the default instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f1S0_input,2.45)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p45.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p45 does not have su3b version, using the default instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f1S0_input,2.5)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion1S0==su3b){
+                    strcat(InputFileName[f1S0], "NLO19_1s0_2p50.su3b");
+                }
+                else{
+                    strcat(InputFileName[f1S0], "NLO19_1s0_2p50.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p50 does not have a default version, using su3b instead!\n");
+                }
+            }            
+            else if(ApproxEqualF(f1S0_input,2.53)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p53.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p53 does not have su3b version, using the default instead!\n");
+                }        
+            }         
+            else if(ApproxEqualF(f1S0_input,2.55)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p55.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p55 does not have su3b version, using the default instead!\n");
+                }                  
+            }
+            else if(ApproxEqualF(f1S0_input,2.65)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p65.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p65 does not have su3b version, using the default instead!\n");
+                }       
+            }
+            else if(ApproxEqualF(f1S0_input,2.80)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_2p80.600");
+                 if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_2p80 does not have su3b version, using the default instead!\n");
+                }                      
+            }
+            else if(ApproxEqualF(f1S0_input,3.00)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_3p00.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_3p00 does not have su3b version, using the default instead!\n");
+                }                       
+            }
+            else if(ApproxEqualF(f1S0_input,3.10)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_3p10.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_3p10 does not have su3b version, using the default instead!\n");
+                }                      
+            }
+            else if(ApproxEqualF(f1S0_input,3.20)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_3p20.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_3p20 does not have su3b version, using the default instead!\n");
+                }       
+            }
+            else if(ApproxEqualF(f1S0_input,3.30)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f1S0], "NLO19_1s0_3p30.600");
+                if(CalcVersion1S0==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_3p30 does not have su3b version, using the default instead!\n");
+                }       
+            }
+            else if(ApproxEqualF(f1S0_input,3.34)){
+                strcat(InputFileName[f1S0], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion1S0==su3b){
+                    strcat(InputFileName[f1S0], "NLO19_1s0_3p34.su3b");
+                }
+                else{
+                    strcat(InputFileName[f1S0], "NLO19_1s0_3p34.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_1s0_3p34 does not have a default version, using su3b instead!\n");
+                }
+            }               
+            else{
+                printf("Something very bad has happend in Init_pL_Haidenbauer2023\n");
+            }
+
+            strcat(InputFileName[fP1], "pLambda_Coupled_SD/Chiral19_600/NLOPU.data");
+        }
+        // ------------------------------------------------------------
+        else{
+            printf("Something bad has happend in Init_pL_Haidenbauer2023\n");
+        }
+    }
+
+
+
+//TRIPLET
+    if(strcmp(Settings1S0[0],"NLO13")==0){
+        char strCutOff[64];
+        sprintf(strCutOff,"pLambda_Coupled_SD/Chiral13_%i/",CutOff_3S1);
+        for(unsigned uFile=0; uFile<NumFiles; uFile++) strcat(InputFileName[uFile], strCutOff);
+
+        strcat(InputFileName[f3S1], "NLO3s1.data");
+        strcat(InputFileName[f3P0], "NLO3P0.data");
+        strcat(InputFileName[f3P2], "NLO3P2.data");
+        strcat(InputFileName[f3D1], "NLO3d1.data");
+    }
+    else if(strcmp(Settings1S0[0],"NLO19")==0){
+        if(CutOff_3S1==600){
+            //1S0 ---------------------------------------------------------
+            if(ApproxEqualF(f3S1_input,1.41)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p41.600");
+            }
+            else if(ApproxEqualF(f3S1_input,0.90)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_0p90.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_0p90 does not have su3b version, using the default instead!\n");
+                }               
+            }
+            else if(ApproxEqualF(f3S1_input,0.95)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_0p95.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_0p95 does not have su3b version, using the default instead!\n");
+                }                   
+            }    
+            else if(ApproxEqualF(f3S1_input,1.00)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p00.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p00 does not have su3b version, using the default instead!\n");
+                }                     
+            } 
+            else if(ApproxEqualF(f3S1_input,1.05)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p05.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p05 does not have su3b version, using the default instead!\n");
+                }   
+            }
+            else if(ApproxEqualF(f3S1_input,1.1)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p10.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p10 does not have su3b version, using the default instead!\n");
+                }   
+            }
+            else if(ApproxEqualF(f3S1_input,1.15)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p15.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p15 does not have su3b version, using the default instead!\n");
+                }   
+            }
+            else if(ApproxEqualF(f3S1_input,1.18)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion3S1==su3b){
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p18.su3b");
+                }   
+                else{
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p18.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p18 does not have a default version, using su3b instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f3S1_input,1.20)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p20.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p20 does not have su3b version, using the default instead!\n");
+                }                  
+            }
+            else if(ApproxEqualF(f3S1_input,1.25)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p25.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p25 does not have su3b version, using the default instead!\n");
+                }   
+            }
+            else if(ApproxEqualF(f3S1_input,1.30)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p30.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p30 does not have su3b version, using the default instead!\n");
+                }                   
+            }
+            else if(ApproxEqualF(f3S1_input,1.32)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion3S1==su3b){
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p32.su3b");
+                }   
+                else{
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p32.600");
+                }                
+            }
+            else if(ApproxEqualF(f3S1_input,1.35)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p35.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p35 does not have su3b version, using the default instead!\n");
+                }                    
+            }
+            else if(ApproxEqualF(f3S1_input,1.44)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion3S1==su3b){
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p44.su3b");
+                }   
+                else{
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p44.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p44 does not have a default version, using su3b instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f3S1_input,1.46)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion3S1==su3b){
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p46.su3b");
+                }   
+                else{
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p46.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p46 does not have a default version, using su3b instead!\n");
+                }
+            }
+            else if(ApproxEqualF(f3S1_input,1.56)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion3S1==su3b){
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p56.su3b");
+                }   
+                else{
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p56.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p56 does not have a default version, using su3b instead!\n");
+                }
+            }            
+            else if(ApproxEqualF(f3S1_input,1.60)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                strcat(InputFileName[f3S1], "NLO19_3s1_1p60.600");
+                if(CalcVersion3S1==su3b){
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p60 does not have su3b version, using the default instead!\n");
+                }  
+            }
+            else if(ApproxEqualF(f3S1_input,1.66)){
+                strcat(InputFileName[f3S1], "pLambda_Coupled_SD/Chiral19_FineTunes/");
+                if(CalcVersion3S1==su3b){
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p66.su3b");
+                }   
+                else{
+                    strcat(InputFileName[f3S1], "NLO19_3s1_1p66.su3b");
+                    printf("\033[1;33mWARNING:\033[0m NLO19_3s1_1p66 does not have a default version, using su3b instead!\n");
+                }
+            }                     
+            else{
+                printf("Something very bad has happend in Init_pL_Haidenbauer2023\n");
+            }
+
+            strcat(InputFileName[f3P0], "pLambda_Coupled_SD/Chiral19_600/NLO3P0.data");
+            strcat(InputFileName[f3P2], "pLambda_Coupled_SD/Chiral19_600/NLO3P2.data");
+            strcat(InputFileName[f3D1], "pLambda_Coupled_SD/Chiral19_600/NLO3d1.data");
+        }
+        // ------------------------------------------------------------
+        else{
+            printf("Something bad has happend in Init_pL_Haidenbauer2023\n");
+        }
+    }
+
+
+    FILE *InFile;
+    int CurrentLine=0;
+    //unsigned WhichMomBin;
+
+    const unsigned MaxNumMomBins = 256;
+    double** MomentumBins = new double* [NumFiles];
+    double** Momentum = new double* [NumFiles];
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        MomentumBins[uFile] = new double [MaxNumMomBins+1];
+        Momentum[uFile] = new double [MaxNumMomBins];
+    }
+
+    char* cdummy = new char [512];
+    float fMomentum;
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            return NULL;
+        }
+
+        CurrentLine=0;
+        MomentumBins[uFile][0] = 0;
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if((CurrentLine)%int(NumRadBins)==0){
+                sscanf(cdummy, "%f",&fMomentum);
+                Momentum[uFile][NumMomBins[uFile]] = fMomentum;
+                if(NumMomBins[uFile]){
+                    //set the bin range in between the last two bin centers
+                    MomentumBins[uFile][NumMomBins[uFile]] = 0.5*(Momentum[uFile][NumMomBins[uFile]]+Momentum[uFile][NumMomBins[uFile]-1]);
+                }
+                NumMomBins[uFile]++;
+            }
+            CurrentLine++;
+        }
+        fclose(InFile);
+        //set the upper edge of the last bin, where we just add the bin width of the last bin
+        //i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
+        MomentumBins[uFile][NumMomBins[uFile]] = 2.*Momentum[uFile][NumMomBins[uFile]-1]-MomentumBins[uFile][NumMomBins[uFile]-1];
+    }
+
+    const unsigned NumDLM_Histos = NumChannels;
+    //the first one is WF, second is PS
+    DLM_Histo<complex<double>>*** Histo = new DLM_Histo<complex<double>>** [2];
+
+    DLM_Histo<complex<double>>**& HistoWF = Histo[0];
+    DLM_Histo<complex<double>>**& HistoPS = Histo[1];
+    //DLM_Histo<complex<double>> HistoWF[NumChannels];
+    HistoWF = new DLM_Histo<complex<double>>* [NumDLM_Histos];
+    for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
+        HistoWF[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
+            HistoWF[uHist][uPw].SetUp(2);
+            HistoWF[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
+            HistoWF[uHist][uPw].SetUp(1,NumRadBins,RadBins);
+            HistoWF[uHist][uPw].Initialize();
+        }
+    }
+
+    HistoPS = new DLM_Histo<complex<double>>* [NumDLM_Histos];
+    for(unsigned uHist=0; uHist<NumDLM_Histos; uHist++){
+        HistoPS[uHist] = new DLM_Histo<complex<double>> [Kitty.GetNumPW(uHist)];
+        for(unsigned uPw=0; uPw<Kitty.GetNumPW(uHist); uPw++){
+            if(!FileAvailable[WhichFile[uHist][uPw]]) continue;
+            HistoPS[uHist][uPw].SetUp(1);
+            HistoPS[uHist][uPw].SetUp(0,NumMomBins[WhichFile[uHist][uPw]],MomentumBins[WhichFile[uHist][uPw]]);
+            HistoPS[uHist][uPw].Initialize();
+        }
+    }
+
+
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        if(!FileAvailable[uFile]) continue;
+//if(uFile>2) break;
+//printf("uf=%u\n",uFile);
+        int WhichMomBin=-1;
+        InFile = fopen(InputFileName[uFile], "r");
+        if(!InFile){
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
+            return Histo;
+        }
+
+        fseek ( InFile , 0 , SEEK_END );
+        fseek ( InFile , 0 , SEEK_SET );
+
+        if(feof(InFile)){
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return Histo;
+        }
+
+        //unsigned LastRadBin;
+
+        float fDummy;
+        float fRadius;
+        float fReWf1;
+        float fImWf1;
+        float fReWf2;
+        float fImWf2;
+        float fReWf3;
+        float fImWf3;
+        float fReWf4;
+        float fImWf4;
+
+        //MomentumBins[0] = 0;
+
+        int RadBin=-1;
+        //!---Iteration over all events---
+        while(!feof(InFile)){
+            if(!fgets(cdummy, 511, InFile)) continue;
+            if(WhichMomBin>=int(NumMomBins[uFile])){
+                printf("\033[1;31mERROR:\033[0m Trying to read more momentum bins than set up (%u)!\n",NumMomBins[uFile]);
+                printf(" Buffer reads: %s\n",cdummy);
+                break;
+            }
+
+            //the first line contains info about the momentum
+            if(RadBin==-1) {
+                sscanf(cdummy, "%f",&fMomentum);
+
+                RadBin++;
+                WhichMomBin++;
+                continue;
+            }
+
+
+            if(WhichMomBin<0){
+                printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
+                continue;
+            }
+
+            unsigned WhichBin[2];
+            WhichBin[0] = unsigned(WhichMomBin);
+            //we fill up the radius bins with and offset of 1, due to the special zeroth bin
+            WhichBin[1] = RadBin+1;
+
+
+            if(uFile==f1S0){
+                //Wf1 is LN->LN
+                //Wf2 is SN->LN
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2);
+                //0: 1S0+1P1
+                HistoWF[0][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[0][0].SetBinContent(WhichBin,0);
+                //7: 1S0 SN(s) -> LN(s)
+                HistoWF[7][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[7][0].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==fP1){
+                //Wf1 is 1P1
+                //Wf2 is 3P1
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2);
+                //0: 1S0+1P1
+                HistoWF[0][1].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[0][1].SetBinContent(WhichBin,0);
+                //2: 3S1+3P1+3D1
+                HistoWF[2][1].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[2][1].SetBinContent(WhichBin,0);
+                ////5: 3S1+3P1
+                HistoWF[5][1].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[5][1].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3S1){
+                //Wf1 is LN->LN (s wave)
+                //Wf2 is SN->LN (s wave)
+                //Wf3 is LN->LN (d->s wave)
+                //Wf4 is SN->LN (d->s wave)
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2,&fReWf3,&fImWf3,&fReWf4,&fImWf4);
+                //1: 3S1+3P0+3D1
+                HistoWF[1][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[1][0].SetBinContent(WhichBin,0);
+                //2: 3S1+3P1+3D1
+                HistoWF[2][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[2][0].SetBinContent(WhichBin,0);
+                //3: 3S1+3P2+3D1
+                HistoWF[3][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[3][0].SetBinContent(WhichBin,0);
+                //4: 3S1+3P0
+                HistoWF[4][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[4][0].SetBinContent(WhichBin,0);
+                //5: 3S1+3P1
+                HistoWF[5][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[5][0].SetBinContent(WhichBin,0);
+                //6: 3S1+3P2
+                HistoWF[6][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[6][0].SetBinContent(WhichBin,0);
+                //8: 3S1 SN(s) -> LN(s)
+                HistoWF[8][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[8][0].SetBinContent(WhichBin,0);
+                //9: 3S1 LN(d) -> LN(s)
+                HistoWF[9][0].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
+                HistoPS[9][0].SetBinContent(WhichBin,0);
+                //10: 3S1 SN(d) -> LN(s)
+                HistoWF[10][0].SetBinContent(WhichBin,(fReWf4+fi*fImWf4)*fRadius);
+                HistoPS[10][0].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3P0){
+                //Wf1 is LN->LN
+                //Wf2 is SN->LN
+                sscanf(cdummy, " %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2);
+                //1: 3S1+3P0+3D1
+                HistoWF[1][1].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[1][1].SetBinContent(WhichBin,0);
+                //4: 3S1+3P0
+                HistoWF[4][1].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[4][1].SetBinContent(WhichBin,0);
+                //11: 3P0 SN(p) -> LN(p)
+                HistoWF[11][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[11][0].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3P2){
+                //Wf1 is LN->LN (p wave)
+                //Wf2 is SN->LN (p wave)
+                //Wf3 is (??? but small, so we ignore it)
+                //Wf4 is (??? but small, so we ignore it)
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2,&fReWf3,&fImWf3,&fReWf4,&fImWf4);
+                //3: 3S1+3P2+3D1
+                HistoWF[3][1].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[3][1].SetBinContent(WhichBin,0);
+                //6: 3S1+3P2
+                HistoWF[6][1].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[6][1].SetBinContent(WhichBin,0);
+                //12: 3P2 SN(p) -> LN(p)
+                HistoWF[12][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[12][0].SetBinContent(WhichBin,0);
+            }
+            else if(uFile==f3D1){
+                //Wf1 is LN->LN (d wave) WRONG
+                //Wf2 is SN->LN (d wave) WRONG
+                //Wf3 is LN->LN (s->d wave) WRONG
+                //Wf4 is SN->LN (s->d wave) WRONG
+                //in reality it is:
+                //Wf1 is LN->LN (s->d wave)
+                //Wf2 is SN->LN (s->d wave)
+                //Wf3 is LN->LN (d wave)
+                //Wf4 is SN->LN (d wave)
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fReWf2,&fImWf2,&fReWf3,&fImWf3,&fReWf4,&fImWf4);
+                //1: 3S1+3P0+3D1
+                HistoWF[1][2].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
+                HistoPS[1][2].SetBinContent(WhichBin,0);
+                //2: 3S1+3P1+3D1
+                HistoWF[2][2].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
+                HistoPS[2][2].SetBinContent(WhichBin,0);
+                //3: 3S1+3P2+3D1
+                HistoWF[3][2].SetBinContent(WhichBin,(fReWf3+fi*fImWf3)*fRadius);
+                HistoPS[3][2].SetBinContent(WhichBin,0);
+                //13: 3D1 SN(d) -> LN(d)
+                HistoWF[13][0].SetBinContent(WhichBin,(fReWf4+fi*fImWf4)*fRadius);
+                HistoPS[13][0].SetBinContent(WhichBin,0);
+                //14: 3D1 LN(s) -> LN(d)
+                HistoWF[14][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                HistoPS[14][0].SetBinContent(WhichBin,0);
+                //15: 3D1 SN(s) -> LN(d)
+                HistoWF[14][0].SetBinContent(WhichBin,(fReWf2+fi*fImWf2)*fRadius);
+                HistoPS[14][0].SetBinContent(WhichBin,0);
+            }
+            else{
+                printf("WTF from Init_pL_Haidenbauer2019\n");
+            }
+
+            RadBin++;
+            //if we have are passed the last radius bin in this momentum bin => we start over.
+            //the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
+            if(RadBin==int(NumRadBins)-1){
+                RadBin=-1;
+            }
+
+        }
+
+        fclose(InFile);
+        if(WhichMomBin+1!=int(NumMomBins[uFile])){
+            printf("\033[1;31mERROR:\033[0m WhichMomBin!=NumMomBins (%u vs %u)\n",WhichMomBin,NumMomBins[uFile]);
+        }
+
+    }//uFile
+
+
+    for(unsigned uFile=0; uFile<NumFiles; uFile++){
+        delete [] MomentumBins[uFile];
+        delete [] Momentum[uFile];
+    }
+    delete [] NumMomBins;
+    delete [] RadBinLoaded;
+    delete [] MomentumBins;
+    delete [] Momentum;
+    delete [] cdummy;
+    delete [] RadBins;
+    for(unsigned short usCh=0; usCh<NumChannels; usCh++){
+        delete [] WhichFile[usCh];
+    }
+    delete [] WhichFile;
+
+    for (int istr=0; istr<numTokens1S0; istr++){
+        delete [] Settings1S0[istr];
+    }
+    for (int istr=0; istr<numTokens3S1; istr++){
+        delete [] Settings3S1[istr];
+    }
+
+    delete [] Settings1S0;
+    delete [] Settings3S1;
+
+    return Histo;
+
+}
+
+
+DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* InputFolder, CATS* Kitty, const char* Singlet, const char* Triplet){
+    return Init_pL_Haidenbauer2023(InputFolder,*Kitty,Singlet,Triplet);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE){
     Init_pSigmaPlus_Haidenbauer(InputFolder,*Kitty,TYPE);

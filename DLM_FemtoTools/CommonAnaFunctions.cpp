@@ -82,6 +82,9 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     CATSparameters *cPotPars3P2 = NULL;
     CATSparameters *cPotPars1D2 = NULL;
 
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    //unsigned NumChannels = 0;
+
     Kitty.SetThetaDependentSource(false);
 
     if (SOURCE == "NULL" || SOURCE == "")
@@ -586,6 +589,9 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         cPotPars3P2->SetParameter(2, 312);
         cPotPars1D2->SetParameter(2, 122);
     }
+    else if(POT == "Johann"){
+        ExternalWF = Init_pp_Haidenbauer(CatsFilesFolder[0],Kitty,PotVar);
+    }
     else
     {
         printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n", POT.Data());
@@ -605,20 +611,22 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     else
       Kitty.SetRedMass(0.5 * Mass_p);
 
+    if(!Kitty.GetNumChannels()){
+        Kitty.SetNumChannels(4);
+        Kitty.SetNumPW(0, 3);
+        Kitty.SetNumPW(1, 2);
+        Kitty.SetNumPW(2, 2);
+        Kitty.SetNumPW(3, 2);
+        Kitty.SetSpin(0, 0);
+        Kitty.SetSpin(1, 1);
+        Kitty.SetSpin(2, 1);
+        Kitty.SetSpin(3, 1);
+        Kitty.SetChannelWeight(0, 3. / 12.);
+        Kitty.SetChannelWeight(1, 1. / 12.);
+        Kitty.SetChannelWeight(2, 3. / 12.);
+        Kitty.SetChannelWeight(3, 5. / 12.);
+    }
 
-    Kitty.SetNumChannels(4);
-    Kitty.SetNumPW(0, 3);
-    Kitty.SetNumPW(1, 2);
-    Kitty.SetNumPW(2, 2);
-    Kitty.SetNumPW(3, 2);
-    Kitty.SetSpin(0, 0);
-    Kitty.SetSpin(1, 1);
-    Kitty.SetSpin(2, 1);
-    Kitty.SetSpin(3, 1);
-    Kitty.SetChannelWeight(0, 3. / 12.);
-    Kitty.SetChannelWeight(1, 1. / 12.);
-    Kitty.SetChannelWeight(2, 3. / 12.);
-    Kitty.SetChannelWeight(3, 5. / 12.);
 
     if (POT == "Norfolk")
     {
@@ -644,6 +652,15 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
           Kitty.SetShortRangePotential(2, 1, pp_AV18_Toy, *cPotPars3P1);
       if (cPotPars3P2)
           Kitty.SetShortRangePotential(3, 1, pp_AV18_Toy, *cPotPars3P2);
+    }
+    else if(POT == "Johann"){
+        unsigned uCh = 0;
+        Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+        if(PotVar==11){
+            uCh=1; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
+            uCh=2; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
+            uCh=3; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
+        }
     }
     else
     {
@@ -1558,6 +1575,10 @@ CLEAN_SetUpCats_pipi:;
 //   "NLO"
 //   "NLO_Coupled_S"
 //   "Usmani"
+//   "Chiral_Coupled_SPD"
+//   "Chiral2023" N.B. it has to start with that, following some stuff related to the actual variation
+//      "_INFOon1S0_and_INFOon3S1"
+//      see Init_pL_Haidenbauer2023 for information on the naming convension
 // SourceVar:
 //   0 = back-to-back
 //   1 = flat theta
@@ -1577,6 +1598,9 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
 
     DLM_Histo<complex<double>> ***ExternalWF = NULL;
     unsigned NumChannels = 0;
+
+    std::string singlet;
+    std::string triplet;
 
     Kitty.SetThetaDependentSource(false);
 
@@ -1983,6 +2007,16 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
 
         NumChannels = 16;
     }
+    else if(POT.BeginsWith("Chiral2023_")){
+        std::string inputString = POT.Data();
+        // Find the positions of "_" and "and"
+        size_t underscorePos = inputString.find("_");
+        size_t andPos = inputString.find("_and_");
+        singlet = inputString.substr(underscorePos + 1, andPos - underscorePos - 1);
+        triplet = inputString.substr(andPos + 5);
+        ExternalWF = Init_pL_Haidenbauer2023(CatsFilesFolder[0],Kitty,singlet.c_str(),triplet.c_str());
+        NumChannels = 16;        
+    }
     else if (POT == "Usmani")
     {
         // #,#,POT_ID,POT_FLAG,t_tot,t1,t2,s,l,j
@@ -2054,34 +2088,170 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
             Kitty.SetShortRangePotential(uCh, 0, fDlmPot, *cPotPars3S1);
         else if (ExternalWF)
         {
-            // for(unsigned uMomBin=0; uMomBin<Kitty.GetNumMomBins(); uMomBin++){
-            // Kitty.UseExternalWaveFunction(uMomBin,uCh,0,WaveFunctionU[uMomBin][uCh][0], NumRadBins, RadBins, PhaseShifts[uMomBin][uCh][0]);
-            // printf("Look at that view (%u)!\n",uCh);
-            int SPD = (PotVar / 1000) % 10;
-            // unless p-wave
-            if (ExternalWF[0][uCh][0].GetDim())
-                Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
-            if (POT == "Chiral_Coupled_SPD")
-            {
+            if(false){
+                    //this produces same Ck for both !!!!
+                    Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+                    //if (uCh <= 6)//main channels, p-waves
+                    //{
+                        //this produces same Ck for both !!!!
+                        //Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
+                    //}
+                    //if (uCh >= 1 && uCh <= 3)//the d-waves for the S=1 main channel
+                    //{
+                        //this produces same Ck for both !!!!
+                        //Kitty.SetExternalWaveFunction(uCh, 2, ExternalWF[0][uCh][2], ExternalWF[1][uCh][2]);
+                    //}                   
 
-                if (uCh <= 6 && SPD == 2)
+            }
+            else if(POT.BeginsWith("Chiral2023_")){
+
+                // Use strtok to split the string
+                std::string separator = "_";
+
+                // Create a stringstream to tokenize the string
+                std::stringstream ss1S0(singlet);
+                std::string token1S0;
+                // Tokenize the string using the separator
+                std::vector<std::string> tokens1S0;
+                while (std::getline(ss1S0, token1S0, separator[0])) {
+                    tokens1S0.push_back(token1S0);
+                }
+
+                // Create a stringstream to tokenize the string
+                std::stringstream ss3S1(triplet);
+                std::string token3S1;
+                // Tokenize the string using the separator
+                std::vector<std::string> tokens3S1;
+                while (std::getline(ss3S1, token3S1, separator[0])) {
+                    tokens3S1.push_back(token3S1);
+                }
+                
+                if(token1S0<4){
+                    printf("\033[1;31mERROR:\033[0m Something wrong with the pL set up (%s)!\n",singlet.c_str());
+                }
+                if(token3S1<4){
+                    printf("\033[1;31mERROR:\033[0m Something wrong with the pL set up (%s)!\n",singlet.c_str());
+                }
+                //N.B. all CC are listed as s-waves for some technical reason. So it is a bit of a mess,
+                //but some are actually s-waves, others, p or d. This is taken care of below
+
+                bool ElasticOnly1S0 = false;
+                bool ElasticOnly3S1 = false;
+                if(tokens1S0.size()>=5){
+                    for(unsigned uLen=4; uLen<tokens1S0.size(); uLen++)
+                    if(tokens1S0.at(uLen)=="elastic"){
+                        ElasticOnly1S0 = true;
+                    }
+                }
+
+                if(tokens3S1.size()>=5){
+                    for(unsigned uLen=4; uLen<tokens3S1.size(); uLen++)
+                    if(tokens3S1.at(uLen)=="elastic"){
+                        ElasticOnly3S1 = true;
+                    }
+                }  
+
+    //main channels:
+    //0: 1S0+1P1
+    //1: 3S1+3P0+3D1
+    //2: 3S1+3P1+3D1
+    //3: 3S1+3P2+3D1
+    //4: 3S1+3P0
+    //5: 3S1+3P1
+    //6: 3S1+3P2
+    //coupled channels:
+    //7: 1S0 SN(s) -> LN(s)
+    //8: 3S1 SN(s) -> LN(s)
+    //9: 3S1 LN(d) -> LN(s)
+    //10: 3S1 SN(d) -> LN(s)
+    //11: 3P0 SN(p) -> LN(p)//
+    //12: 3P2 SN(p) -> LN(p)//
+    //13: 3D1 SN(d) -> LN(d)
+    //14: 3D1 LN(s) -> LN(d)
+    //15: 3D1 SN(s) -> LN(d)
+
+//Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+
+                // for(unsigned uMomBin=0; uMomBin<Kitty.GetNumMomBins(); uMomBin++){
+                // Kitty.UseExternalWaveFunction(uMomBin,uCh,0,WaveFunctionU[uMomBin][uCh][0], NumRadBins, RadBins, PhaseShifts[uMomBin][uCh][0]);
+                // printf("Look at that view (%u)!\n",uCh);
+
+
+                //the s-wave channels for the singlet
+                if(tokens1S0.at(3).find("s")!=std::string::npos){
+                    if(uCh==0)
+                        {Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);}
+                    if(uCh==7 && !ElasticOnly1S0)
+                        {Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);}                  
+                }
+                //the s-wave channels for the triplet
+                if(tokens3S1.at(3).find("s")!=std::string::npos){
+                    if(uCh>=1 && uCh<=6)//main channels
+                        {Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);}
+                    if(uCh>=8 && uCh<=10 && !ElasticOnly3S1)//coupled channels
+                        {Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);}                   
+                }
+
+                //the p-wave channels for the singlet
+                if(tokens1S0.at(3).find("p")!=std::string::npos){
+                    if(uCh==0)
+                        {Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);}
+                }
+                //the p-wave channels for the triplet
+                if(tokens3S1.at(3).find("p")!=std::string::npos){
+                    if(uCh>=1 && uCh<=3)
+                        {Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);}
+                    if( (uCh==11 || uCh==12) && !ElasticOnly3S1 )
+                        {Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);}
+                }
+
+                //the d-wave channels for the singlet
+                if(tokens1S0.at(3).find("d")!=std::string::npos){
+
+                }
+                //the d-wave channels for the triplet
+                if(tokens3S1.at(3).find("d")!=std::string::npos){
+                    if(uCh>=1 && uCh<=3)
+                        {Kitty.SetExternalWaveFunction(uCh, 2, ExternalWF[0][uCh][2], ExternalWF[1][uCh][2]);}
+                    if(uCh>=13 && uCh<=15 && !ElasticOnly3S1)
+                        {Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);}
+                }
+
+            }
+            else{
+                // for(unsigned uMomBin=0; uMomBin<Kitty.GetNumMomBins(); uMomBin++){
+                // Kitty.UseExternalWaveFunction(uMomBin,uCh,0,WaveFunctionU[uMomBin][uCh][0], NumRadBins, RadBins, PhaseShifts[uMomBin][uCh][0]);
+                //printf("Look at that view (%u)!\n",uCh);
+                int SPD = (PotVar / 1000) % 10;
+                // unless p-wave
+                if (ExternalWF[0][uCh][0].GetDim()){//sets all s-waves (main and coupled channels)
+                    Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+                    //printf("%u s\n",uCh);
+                }
+                if (POT == "Chiral_Coupled_SPD")
+                {
+                    if (uCh <= 6 && SPD == 2)//main channels, p-waves
+                    {
+                        Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
+                        //printf("%u p\n",uCh);
+                        // printf("1: uCh=%u\n",uCh);
+                    }
+                    if (uCh >= 1 && uCh <= 3 && SPD != 0)//the d-waves for the S=1 main channel
+                    {
+                        Kitty.SetExternalWaveFunction(uCh, 2, ExternalWF[0][uCh][2], ExternalWF[1][uCh][2]);
+                        //printf("%u d\n",uCh);
+                        // printf("uCh=%u\n",uCh);
+                    }
+                }
+                else if (Kitty.GetNumPW(uCh) >= 2)
                 {
                     Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
-                    // printf("1: uCh=%u\n",uCh);
+                    //printf("???\n");
                 }
-                if (uCh >= 1 && uCh <= 3 && SPD != 0)
-                {
-                    Kitty.SetExternalWaveFunction(uCh, 2, ExternalWF[0][uCh][2], ExternalWF[1][uCh][2]);
-                    // printf("uCh=%u\n",uCh);
-                }
-            }
-            else if (Kitty.GetNumPW(uCh) >= 2)
-            {
-                Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
-            }
 
-            // printf(" --Look at that view (%u)!\n",uCh);
-            // }
+                // printf(" --Look at that view (%u)!\n",uCh);
+                // }
+            }
         }
         else
         {

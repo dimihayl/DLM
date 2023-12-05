@@ -8,6 +8,8 @@ double gammln(const double xx);
 double factrl(const unsigned n);
 double DLM_Poisson(double x, double par);
 
+bool ApproxEqualF(const float val1, const float val2);
+bool ApproxEqualD(const double val1, const double val2);
 
 //computes the value of phi, given the convention that it is in 0 to 2pi
 //n.b. the atan2 gives values that are -pi to pi, and if you simply add pi to it

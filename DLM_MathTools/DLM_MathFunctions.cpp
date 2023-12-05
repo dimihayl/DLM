@@ -63,6 +63,14 @@ double DLM_Poisson(double x, double par){
    }
 }
 
+bool ApproxEqualF(const float val1, const float val2){
+	if(fabs(val1-val2)/fabs(val1*val2)<5e-7) return true;
+	return false;
+}
+bool ApproxEqualD(const double val1, const double val2){
+	if(fabs(val1-val2)/fabs(val1*val2)<5e-15) return true;
+	return false;	
+}
 
 double atanPhi(const double& y, const double& x){
 	if(x==0){
