@@ -5316,6 +5316,7 @@ TH2F *DLM_CommonAnaFunctions::GetResidualMatrix(const TString &&FinalSystem, con
     {
         FileName = CatsFilesFolder[0]+"/DecaySmear/Decay_matrix_pp_pSp.root";
         HistoName = "hRes_pp_pSp";
+    }
     else if (FinalSystem == "LKminMAC" && InitialSystem == "XiminKminMAC")
     {
         FileName = "/Users/sartozza/cernbox/CATSFiles/DecaySmear/histDecayKinematics_LK_pp13HM.root";
