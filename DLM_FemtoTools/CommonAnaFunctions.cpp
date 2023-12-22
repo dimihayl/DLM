@@ -97,6 +97,15 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         Kitty.SetAnaSource(GaussSource, *cPars);
         Kitty.SetUseAnalyticSource(true);
     }
+    else if (SOURCE == "DoubleGauss")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 3, true);
+        cPars->SetParameter(0, 1.0);
+        cPars->SetParameter(1, 2.0);
+        cPars->SetParameter(2, 0.5);
+        Kitty.SetAnaSource(DoubleGaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
     else if (SOURCE == "GaussTheta")
     {
         cPars = new CATSparameters(CATSparameters::tSource, 1, true);
