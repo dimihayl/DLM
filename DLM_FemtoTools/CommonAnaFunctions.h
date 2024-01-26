@@ -151,7 +151,10 @@ public:
     DLM_CleverMcLevyResoTM* GaussCoreRsm_pK(const int& SourceVar);
     DLM_CleverMcLevyResoTM* GaussCoreRsm_pp(const int& SourceVar);
 
-private:
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_XiK(const int &SourceVar);
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_LPi(const int &SourceVar);
+
+  private:
     void Clean_CommonAnaFunctions();
     //MS_GaussExp_mT_Simple* Simple_Reso;
     DLM_CleverLevy* CleverLevy;
