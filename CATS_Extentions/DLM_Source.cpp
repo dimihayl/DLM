@@ -43,6 +43,17 @@ double GaussSource(double* Pars){
     return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 
+double GaussSourceKstarParabola(double* Pars){
+    double& Momentum = Pars[0];
+    double& Radius = Pars[1];
+    //double& CosTheta = Pars[2];
+    double Size = Pars[3];
+
+    Size += Pars[4]*0.001*Momentum*Momentum;
+    return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+}
+
+
 //this source will not be normalized! However, CATS does a renormalization itself, so it should be fine.
 //in case of problems, contact the developers!
 double GaussSourceCutOff(double* Pars){
@@ -284,6 +295,7 @@ double PoissonSum(const double& xVal, const KdpPars& kdppars){
       }
     }
   }
+
   return Rslt;
 }
 
@@ -2809,4 +2821,59 @@ double* DLM_CecaSource_v0::GetBinCenters(unsigned WhichPar){
   double* BinCtr;
   BinCtr = dlmSource->GetBinCenters(WhichPar);
   return BinCtr;
+}
+
+
+
+DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>& InputHisto){
+    MyOwnCopy = true;
+    dlmSource = new DLM_Histo<KdpPars> (InputHisto);
+}
+DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>* InputHisto){
+    dlmSource = NULL;
+    MyOwnCopy = false;
+    if(!InputHisto){
+        printf("\033[1;31mERROR:\033[0m  NULL pointer in the constructor of DLM_MtKstar_KdpSource\n");
+        return;
+    }
+    if(InputHisto->GetDim()!=2){
+        printf("\033[1;31mERROR:\033[0m  Bad input in the constructor of DLM_MtKstar_KdpSource\n");
+        return;
+    }
+    dlmSource = InputHisto;
+}
+
+DLM_MtKstar_KdpSource::~DLM_MtKstar_KdpSource(){
+  if(MyOwnCopy && dlmSource){delete dlmSource; dlmSource=NULL;}
+}
+
+//[0] = kstar
+//[1] = rstar
+//[2] = empty
+//[3] = mt
+double DLM_MtKstar_KdpSource::Eval(double* pars){
+    double& kstar = pars[0];
+    double& rstar = pars[1];
+    double& Mt = pars[3];
+    double EvalAt[3];
+    EvalAt[0] = Mt;
+    EvalAt[1] = kstar;
+    if(!dlmSource) {printf("ZERO\n"); return 0;}
+    KdpPars SrcPars = dlmSource->Eval(EvalAt);
+    double Result = PoissonSum(rstar,SrcPars);
+    //if(Result){
+        //printf("Result(%.3f) = %.3e\n",rstar,Result);
+    //}
+    return Result;
+}
+
+//pars[0] = mt
+//pars[1] = kstar
+double DLM_MtKstar_KdpSource::RootEval(double* rstar, double* pars){
+    double PARS[4];
+    PARS[0] = pars[1];
+    PARS[1] = *rstar;
+    PARS[2] = 0;
+    PARS[3] = pars[0];
+    return Eval(PARS);
 }

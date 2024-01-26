@@ -862,7 +862,27 @@ public:
     unsigned short GetDim() const{
         return Dim;
     }
-    void Rebin(const unsigned RebFactor){
+    void Rebin(const unsigned dimX, const unsigned dimY=0, const unsigned dimZ=0){
+        unsigned* reb_fact = new unsigned [Dim];
+
+        if(dimX==0) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Rebin(...) function failed, check your arguments!\n"); return;}
+        if(dimY==0 && dimZ!=0) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Rebin(...) function failed, check your arguments!\n"); return;}
+
+        if(dimY==0 && Dim>1) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Rebin(...) function failed, check your arguments!\n"); return;}
+        if(dimY!=0 && Dim==1) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Rebin(...) function failed, check your arguments!\n"); return;}
+
+        if(dimZ==0 && Dim>2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Rebin(...) function failed, check your arguments!\n"); return;}
+        if(dimZ!=0 && Dim==2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Rebin(...) function failed, check your arguments!\n"); return;}
+
+        reb_fact[0] = dimX;
+        if(Dim>1) reb_fact[1] = dimY;
+        if(Dim>2) reb_fact[2] = dimZ;
+
+        Rebin(reb_fact);
+
+        delete [] reb_fact;
+    }
+    void RebinAll(const unsigned RebFactor){
       unsigned* reb_fact = new unsigned [Dim];
       for(unsigned short sDim=0; sDim<Dim; sDim++){
         reb_fact[sDim] = RebFactor;
@@ -897,6 +917,18 @@ public:
         WhichBin[1]=WhichY;
         SetBinContent(GetTotBin(WhichBin),Val);
     }
+    void SetBinContent(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ, const Type& Val){
+        if(!Initialized) {InitWarning(); return;}
+        if(Dim!=3) {printf("\033[1;33mWARNING:\033[0m DLM_Histo SetBinContent function failed, this set up works only for Dim=3!\n"); return;}
+        if(WhichX>=NumBins[0]) return;
+        if(WhichY>=NumBins[1]) return;
+        if(WhichZ>=NumBins[2]) return;
+        unsigned WhichBin[3];
+        WhichBin[0]=WhichX;
+        WhichBin[1]=WhichY;
+        WhichBin[2]=WhichZ;
+        SetBinContent(GetTotBin(WhichBin),Val);
+    }
      void SetBinError(const unsigned& WhichTotBin, const Type& Val){
         if(!Initialized) {InitWarning(); return;}
         if(WhichTotBin>=TotNumBins) return;
@@ -912,6 +944,19 @@ public:
         WhichBin[1]=WhichY;
         SetBinError(GetTotBin(WhichBin),Val);
     }
+    void SetBinError(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ, const Type& Val){
+        if(!Initialized) {InitWarning(); return;}
+        if(Dim!=3) {printf("\033[1;33mWARNING:\033[0m DLM_Histo SetBinError function failed, this set up works only for Dim=2!\n"); return;}
+        if(WhichX>=NumBins[0]) return;
+        if(WhichY>=NumBins[1]) return;
+        if(WhichZ>=NumBins[2]) return;
+        unsigned WhichBin[3];
+        WhichBin[0]=WhichX;
+        WhichBin[1]=WhichY;
+        WhichBin[2]=WhichZ;
+        SetBinError(GetTotBin(WhichBin),Val);
+    }
+
     void SetBinContentAll(const Type& Val){
         if(!Initialized) {InitWarning(); return;}
         for(unsigned uBin=0; uBin<TotNumBins; uBin++){

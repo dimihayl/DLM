@@ -133,6 +133,7 @@ CATS::CATS():
     LegPol = NULL;
 
     CPF = NULL;
+    TheTrueSource = NULL;
 DEBUG=-1;
     SetIpBins(1, -1000, 1000);
 
@@ -2912,6 +2913,8 @@ void CATS::FoldSourceAndWF(){
 //printf("uMomBinSource = %u\n",uMomBinSource);
         kCorrFun[uMomBin] = 0;
         kCorrFunErr[uMomBin] = 0;
+        //N.B. this whole for-looped was stopped to be maintained, there could be issues with 
+        //the normalization of the source and the correlation
         for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
             //perform the k,b analysis only for a data-source which has at least 2 b-bins
             if(UseAnalyticSource || NumIpBins<=1) continue;
@@ -3259,7 +3262,7 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     else{
         return;
     }
-if(DEBUG==omp_get_thread_num())
+if(DEBUG==true)
 {
 printf("  Basic=%.15e\n",Basic);
 printf("  ShortRangePotential[%u][%u]=%.15e\n",usCh,usPW,ShortRangePotential[usCh][usPW](Parameters));
@@ -3772,6 +3775,33 @@ unsigned CATS::GetNumSourcePars() const{
     //}
     return 0;
 }
+
+
+void CATS::ComputeTheSource(const bool& yesno){
+    /*
+    if(yesno){
+        if(!TheTrueSource){
+            TheTrueSource = new DLM_Histo<float> ();
+            TheTrueSource->SetUp(3);
+            TheTrueSource->SetUp(0,NumMomBins,MomBin);
+            TheTrueSource->SetUp(1,int(MaxRad*16),0,MaxRad);
+            TheTrueSource->SetUp(2,64,-1,1);
+        }        
+    }
+    else{
+        if(TheTrueSource){
+            delete TheTrueSource;
+            TheTrueSource = NULL;
+        }
+    }
+    */
+}
+double CATS::ComputedSource(const double& Momentum, const double& Radius, const double& CosTheta) const{
+    //if(!TheTrueSource) {return 0;}
+    //return TheTrueSource->Eval(Momentum,Radius,CosTheta);
+}
+
+
 double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const{
     if(!ShortRangePotential){
         return 0;

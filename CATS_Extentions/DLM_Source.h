@@ -14,6 +14,8 @@ double GaussSourceCutOff(double* Pars);
 double GaussSourceTF1(double* x, double* Pars);
 double GaussSourceScaledTF1(double* x, double* Pars);
 
+double GaussSourceKstarParabola(double* Pars);
+
 double GaussSourceTheta(double* Pars);
 double CauchySource(double* Pars);
 double CauchySourceTheta(double* Pars);
@@ -500,8 +502,6 @@ private:
     void Init();
 };
 
-
-
 //the parametes I used for the CECA source poisson parameterization
 //something similar to KDE, but with several P distos
 struct KdpPars { // This structure is named "myDataType"
@@ -641,6 +641,28 @@ private:
   bool LoadSource();
   bool ErrorState;
 };
+
+//this source aims at using kdp to fit the mt, kstar, rstar relation 
+//of a provided source. It is assumed, that the source itself has no free parameters,
+//i.e. this is only used for extrapolation purposes.
+//the kdp is used to fit fixed Mt and Kstar bins
+//InputHisto is a 2D histo, in Mt and Kstar
+class DLM_MtKstar_KdpSource:public CatsSource{
+public:
+    //creates a copy
+    DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>& InputHisto);
+    //uses the pointer
+    DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>* InputHisto);
+    ~DLM_MtKstar_KdpSource();
+    double Eval(double* kxc);
+    double RootEval(double* x, double* pars);
+
+private:
+  //2D, in Mt and Kstar, the 3rd DIM comes from the rstar dependence
+  DLM_Histo<KdpPars>* dlmSource;
+  bool MyOwnCopy;
+};
+
 
 
 /*

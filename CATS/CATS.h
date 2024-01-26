@@ -270,6 +270,14 @@ public:
                        const unsigned short& usCh, const unsigned short& usPW) const;
     double EvaluateTheSource(CATSparameters* Pars) const;
     double EvaluateTheSource(const double& Momentum, const double& Radius, const double& CosTheta) const;
+    //if yes, when we kill the cat the source is saved exactly in the shape as used in the 
+    //koonin pratt eq., taking all normalization settings into account. The above two functions do not
+    //consider the renormalization procedures, which may lead to some inaccuracies. By default we do not 
+    //save the source to be efficient on memory.
+    //THIS IS WORK IN PROGRESS, AND MAY WELL BE SCRAPPED DUE TO SOME DIFFICULTIES
+    void ComputeTheSource(const bool& yesno);
+    double ComputedSource(const double& Momentum, const double& Radius, const double& CosTheta) const;
+
     unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
     double EvaluateCoulombPotential(const double& Radius) const;
@@ -694,6 +702,11 @@ protected:
     //[usCh][usPW]
     DLM_Histo<complex<double>>*** ExternalWF;
     DLM_Histo<complex<double>>*** ExternalPS;
+
+    //this is the source function, directly out of the solver,
+    //i.e. with all normalizations etc, as used to evaluate C(k*).
+    //It is given as a function of kstar, rstar, costheta
+    DLM_Histo<float>* TheTrueSource;
 
     //these are used as buffers when it comes to computing the Reference Partial Waves and the Legendre Polynomials
     //in particular, when we loop over all PWs twice, we actually evaluate the same functions multiple times => save them in an array to save CPU time

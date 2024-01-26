@@ -14,6 +14,7 @@ class DLM_CleverLevy;
 class DLM_CleverMcLevyReso;
 class DLM_CleverMcLevyResoTM;
 class DLM_Ck;
+class KdpPars;
 
 //class MS_GaussExp_mT_Simple;
 
@@ -289,6 +290,12 @@ bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFi
 //          N.B. IF YOU INCLUDE COULOMB, THE PHASE SHIFTS ARE EVALUATED WITH RESPECT TO COULOMB.
 //          This is very rare in theory, even if you are investigating charged-charged pair.
 bool PotentialDesignerEngine(char* BaseFileName);
+
+//fits the kdp parameters of a source
+TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2);
+//takes a 3D histo of Mt Kstar Rstar and returns a 2D kdp histo of Mt Kstar
+DLM_Histo<KdpPars>* Convert_3Dsource_Kdp(DLM_Histo<float>& dlmMtKstarRstar);
+
 
 /*
 class DLM_Analyzer{

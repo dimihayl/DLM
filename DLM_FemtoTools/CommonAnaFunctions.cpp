@@ -2,7 +2,7 @@
 #include <cctype> // for tolower
 #include <cstring> // for strlen
 
-
+//#include "DLM_Histo.h"
 #include "CommonAnaFunctions.h"
 #include "CATS.h"
 #include "CATStools.h"
@@ -7962,6 +7962,137 @@ bool PotentialDesignerEngine(char* BaseFileName){
   if(hPotential){delete hPotential; hPotential=NULL;}
   if(pPars){delete pPars; pPars=NULL;}
   return true;
+}
+
+TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2){
+  double lowerlimit, upperlimit;
+  GetCentralInterval(*hSrc, 0.98, lowerlimit, upperlimit, true);
+  //if(lowerlimit>5) lowerlimit = 5;
+  lowerlimit = 0;
+  if(upperlimit>10) upperlimit = 10;
+
+
+  const double Chi2_Limit = 3;
+  const double KdpFitMax = 8;
+
+  TF1* fSrc;
+  SetUpKdpPars(fSrc,2);
+
+  //for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
+  //  fSrc->SetParLimits(1+uP*3,0.1,fSrc->GetParameter(0+uP*3));
+  //}
+  //fSrc->FixParameter(0,1);
+  //fSrc->FixParameter(1,0.5);
+  //fSrc->FixParameter(2,0.5);
+
+  //fSrc->FixParameter(3,6);
+  //fSrc->FixParameter(4,2);
+  //fSrc->FixParameter(5,1);
+
+  hSrc->Fit(fSrc,"Q, S, N, R, M","",lowerlimit,upperlimit);
+
+  double Integral = fSrc->Integral(0,KdpFitMax*4);
+  if(fabs(Integral-1)>1e-2){
+    printf("SUPER BIG BUG WITH THE KDP (%f)!!!\n",Integral);
+  }
+
+  Chi2 = 0;
+  double NDPts_chi2 = 0;
+
+  //up to 8 fm
+  for(unsigned uRad=0; uRad<hSrc->GetNbinsX(); uRad++){
+    double Rad = hSrc->GetBinCenter(uRad+1);
+    if(Rad>KdpFitMax) break;
+    double dst = hSrc->GetBinContent(uRad+1)-fSrc->Eval(Rad);
+    double err = hSrc->GetBinError(uRad+1);
+    if(hSrc->GetBinContent(uRad+1)){
+      Chi2 += (dst*dst)/(err*err);
+      NDPts_chi2++;
+    }
+  }
+  Chi2 /= NDPts_chi2;
+
+  if(Chi2>Chi2_Limit){
+    printf("WARNING: BadFitWarning (Chi2/ndf = %.2f)\n",Chi2);
+  }
+
+  for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
+    SrcPar.mean[uP] = fSrc->GetParameter(0+uP*3);
+    SrcPar.stdv[uP] = fSrc->GetParameter(1+uP*3);
+    if(uP!=KdpPars::NumDistos-1)
+      SrcPar.wght[uP] = fSrc->GetParameter(2+uP*3);
+  }
+
+  return fSrc;
+}
+
+//takes a 3D histo of Mt Kstar Rstar and returns a 2D kdp histo of Mt Kstar
+DLM_Histo<KdpPars>* Convert_3Dsource_Kdp(DLM_Histo<float>& dlmMtKstarRstar){
+TString BaseFileName = TString::Format("/home/dimihayl/Software/LocalFemto/Output/HighMtProblem/CECA_kstar_vs_integrated/");
+TFile fTest(BaseFileName + "fTEST.root","recreate");
+    DLM_Histo<KdpPars>* KdpResult = NULL;
+
+    if(dlmMtKstarRstar.GetDim()!=3){
+        printf("\033[1;31mERROR:\033[0m Convert_3Dsource_Kdp has to be a 3D histo\n");
+        return KdpResult;
+    }
+
+    const unsigned NumMtBins = dlmMtKstarRstar.GetNbins(0);
+    double* MtBinRange = dlmMtKstarRstar.GetBinRange(0);
+    const unsigned NumKstarBins = dlmMtKstarRstar.GetNbins(1);
+    double* KstarBinRange = dlmMtKstarRstar.GetBinRange(1);
+    const unsigned NumRadBins = dlmMtKstarRstar.GetNbins(2);
+    double* RadBinRange = dlmMtKstarRstar.GetBinRange(2);
+    const double rMin = dlmMtKstarRstar.GetLowEdge(2);
+    const double rMax = dlmMtKstarRstar.GetLowEdge(2);
+
+    KdpResult = new DLM_Histo<KdpPars> ();
+    KdpResult->SetUp(2);
+    KdpResult->SetUp(0,NumMtBins,MtBinRange);
+    KdpResult->SetUp(1,NumKstarBins,KstarBinRange);
+    KdpResult->Initialize();
+
+    for(unsigned uMt=0; uMt<NumMtBins; uMt++){
+        for(unsigned uKstar=0; uKstar<NumKstarBins; uKstar++){
+            TH1F* hToFit = new TH1F("hToFit_c3dskdp","hToFit_c3dskdp",NumRadBins,RadBinRange);
+            for(unsigned uRad=0; uRad<NumRadBins; uRad++){
+                double src_val = dlmMtKstarRstar.GetBinContent(uMt,uKstar,uRad);
+                double src_err;
+                if(src_val==0){src_err = 1;}
+                else{
+                    src_err = sqrt(dlmMtKstarRstar.GetBinError(uMt,uKstar,uRad));
+                }
+                //printf("src_val = %.4f +/- %.4f\n",src_val,src_err);
+                hToFit->SetBinContent(uRad+1, src_val);
+                hToFit->SetBinError(uRad+1, src_err);
+            }
+            hToFit->Scale(1./hToFit->Integral(),"width");
+            double Chi2=0;
+            KdpPars my_kdp;
+            TF1* fit_ptr = fit_source_kdp(hToFit, my_kdp, Chi2);
+            fTest.cd();
+            //if(Chi2>3){
+                static int counter = 0;
+
+                hToFit->SetName(TString::Format("hToFit_%u_%.0f",uMt,dlmMtKstarRstar.GetBinCenter(1,uKstar)));
+                fit_ptr->SetName(TString::Format("fit_ptr_%u_%.0f",uMt,dlmMtKstarRstar.GetBinCenter(1,uKstar)));
+                
+                hToFit->Write();
+                fit_ptr->Write();
+
+                counter++;
+            //}
+
+            KdpResult->SetBinContent(uMt, uKstar, my_kdp);
+            delete hToFit;
+            delete fit_ptr;
+        }
+    }
+
+    delete [] MtBinRange;
+    delete [] KstarBinRange;
+    delete [] RadBinRange;
+    return KdpResult;
 }
 
 
