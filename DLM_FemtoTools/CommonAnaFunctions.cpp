@@ -453,11 +453,11 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         // #,#,POT_ID,POT_FLAG,t_tot,t1,t2,s,l,j
         int POT_FLAG = v18_Coupled3P2;
         if(PotVar==1) POT_FLAG = v18_SingleChannelMagic;
-        double PotPars1S0[8] = {NN_AV18, POT_FLAG, 1, 1, 1, 0, 0, 0};
-        double PotPars3P0[8] = {NN_AV18, POT_FLAG, 1, 1, 1, 1, 1, 0};
-        double PotPars3P1[8] = {NN_AV18, POT_FLAG, 1, 1, 1, 1, 1, 1};
-        double PotPars3P2[8] = {NN_AV18, POT_FLAG, 1, 1, 1, 1, 1, 2};
-        double PotPars1D2[8] = {NN_AV18, POT_FLAG, 1, 1, 1, 0, 2, 2};
+        double PotPars1S0[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, 1, 0, 0, 0};
+        double PotPars3P0[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, 1, 1, 1, 0};
+        double PotPars3P1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, 1, 1, 1, 1};
+        double PotPars3P2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, 1, 1, 1, 2};
+        double PotPars1D2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, 1, 0, 2, 2};
         cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars1S0->SetParameters(PotPars1S0);
         cPotPars3P0 = new CATSparameters(CATSparameters::tPotential, 8, true);
@@ -474,14 +474,14 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         // #,#,POT_ID,POT_FLAG,t_tot,t1,t2,s,l,j
         int POT_FLAG = v18_Coupled3P2;
         if(PotVar==1) POT_FLAG = v18_SingleChannelMagic;
-        double PotPars1S0[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 0, 0, 0};
-        double PotPars1P1[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 0, 1, 1};
+        double PotPars1S0[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 0, 0, 0};
+        double PotPars1P1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 0, 1, 1};
         //const int& Spin, const int& AngMom, const int& TotMom
-        double PotPars3S1[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 0, 1};
-        double PotPars3P0[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 1, 0};
-        double PotPars3P1[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 1, 1};
-        double PotPars3P2[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 1, 1, 2};
-        double PotPars1D2[8] = {NN_AV18, POT_FLAG, 1, 1, -1, 0, 2, 2};
+        double PotPars3S1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 1, 0, 1};
+        double PotPars3P0[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 1, 1, 0};
+        double PotPars3P1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 1, 1, 1};
+        double PotPars3P2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 1, 1, 2};
+        double PotPars1D2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, -1, 0, 2, 2};
         cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars1S0->SetParameters(PotPars1S0);
         cPotPars1P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
@@ -3763,7 +3763,6 @@ void DLM_CommonAnaFunctions::SetUpCats_LKVidana(CATS &Kitty, const TString &SOUR
         lam_source = 0.9806;
         ExternalWF = Init_LAntiK_Vidana("/home/valentina/thor/cernbox/CATSFiles/Models_WFs_Theoreticians/Vidana/", Kitty, 0);
     }
-
     if (SOURCE == "Gauss")
     {
         cout << "Gaussian source" << endl;
@@ -6319,6 +6318,252 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &So
         MagicSource->AddBGT_RP(RanVal1, cos(AngleRcP1)); // here put angle between
     }
     delete F_EposDisto_XiEta;
+
+    MagicSource->InitNumMcIter(1000000);
+
+    return MagicSource;
+}
+
+// Getting total source for ΞK analysis
+// Assuming kinematics taken from DK analysis, which used ΩK
+// ctau and Meff given by kaons since other particles is assumed primordian
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiK(const int &SourceVar)
+{
+    DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
+    MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
+    MagicSource->InitScale(38, 0.15, 2.0);
+    MagicSource->InitRad(257 * 2, 0, 64);
+    MagicSource->InitType(2);
+    MagicSource->SetUpReso(0, 0.0);   // Ξ assumed primary
+    MagicSource->SetUpReso(1, 0.476); // Res. contrib. for K.
+    MagicSource->InitNumMcIter(1000000);
+
+    const double k_CutOff = int(int(SourceVar) / 10) * 10.;
+    const int SVAR = SourceVar % 10;
+    int PPid, PRid, RPid, RRid;
+    // EPOS
+    if (SVAR == 0)
+    {
+        PPid = 0;
+        PRid = 1;
+        RPid = 10;
+        RPid = 11;
+    }
+    // CECA
+    else if (SVAR == 1)
+    {
+        PPid = 100;
+        PRid = 101;
+        RPid = 110;
+        RPid = 111;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+        delete MagicSource;
+        return NULL;
+    }
+
+    Float_t Type;
+    Float_t k_D;
+    Float_t fP1;
+    Float_t fP2;
+    Float_t fM1;
+    Float_t fM2;
+    Float_t Tau1;
+    Float_t Tau2;
+    Float_t AngleRcP1;
+    Float_t AngleRcP2;
+    Float_t AngleP1P2;
+    DLM_Random RanGen(11);
+    double RanVal1;
+    double RanVal2;
+    double RanVal3;
+
+    TFile *F_EposDisto_XiK = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/ALL_D_KaonReso.root");
+    TNtuple *T_EposDisto = (TNtuple *)F_EposDisto_XiK->Get("InfoTuple_ClosePairs");
+    unsigned N_EposDisto = T_EposDisto->GetEntries();
+    T_EposDisto->SetBranchAddress("k_D", &k_D);
+    T_EposDisto->SetBranchAddress("P1", &fP1);
+    T_EposDisto->SetBranchAddress("P2", &fP2);
+    T_EposDisto->SetBranchAddress("M1", &fM1);
+    T_EposDisto->SetBranchAddress("M2", &fM2);
+    T_EposDisto->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto->SetBranchAddress("AngleP1P2", &AngleP1P2);
+
+    for (unsigned uEntry = 0; uEntry < T_EposDisto->GetEntries(); uEntry++)
+    {
+        T_EposDisto->GetEntry(uEntry);
+        if (k_D > k_CutOff)
+            continue;
+        Tau1 = 0;
+        Tau2 = 3.66; // Kaons
+        fM2 = 1054;  // Kaons
+
+        RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+        MagicSource->AddBGT_PR(RanVal2, cos(AngleRcP2)); // here put angle between
+    }
+    delete F_EposDisto_XiK;
+
+    MagicSource->InitNumMcIter(1000000);
+
+    return MagicSource;
+}
+
+// Getting total source for Λπ analysis
+// Following the work on Kp coupled channel analysis, resonances from Σπ
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LPi(const int &SourceVar)
+{
+    DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
+    MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
+    MagicSource->InitScale(38, 0.15, 2.0);
+    MagicSource->InitRad(257 * 2, 0, 64);
+    MagicSource->InitType(2);
+    MagicSource->SetUpReso(0, 0.6438);//lambda
+    MagicSource->SetUpReso(1, 0.682);//Pion
+
+    const double k_CutOff = int(int(SourceVar) / 10) * 10.;
+    const int SVAR = SourceVar % 10;
+    int PPid, PRid, RPid, RRid;
+    // EPOS
+    if (SVAR == 0)
+    {
+        PPid = 0;
+        PRid = 1;
+        RPid = 10;
+        RPid = 11;
+    }
+    // CECA
+    else if (SVAR == 1)
+    {
+        PPid = 100;
+        PRid = 101;
+        RPid = 110;
+        RPid = 111;
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Unknown source variation for LK\n");
+        delete MagicSource;
+        return NULL;
+    }
+
+    Float_t Type;
+    Float_t k_D;
+    Float_t fP1;
+    Float_t fP2;
+    Float_t fM1;
+    Float_t fM2;
+    Float_t Tau1;
+    Float_t Tau2;
+    Float_t AngleRcP1;
+    Float_t AngleRcP2;
+    Float_t AngleP1P2;
+    DLM_Random RanGen(11);
+    double RanVal1;
+    double RanVal2;
+    double RanVal3;
+
+    TFile *F_EposDisto_pReso_Kaon = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/ForMaxRamona_pi_SigReso.root");
+    TNtuple *T_EposDisto_pReso_Kaon = (TNtuple *)F_EposDisto_pReso_Kaon->Get("InfoTuple_ClosePairs");
+    unsigned N_EposDisto_pReso_Kaon = T_EposDisto_pReso_Kaon->GetEntries();
+    T_EposDisto_pReso_Kaon->SetBranchAddress("k_D", &k_D);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("P1", &fP1);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("P2", &fP2);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("M1", &fM1);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("M2", &fM2);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto_pReso_Kaon->SetBranchAddress("AngleP1P2", &AngleP1P2);
+    gROOT->cd();
+    // iterate over the ntuple
+    for (unsigned uEntry = 0; uEntry < N_EposDisto_pReso_Kaon; uEntry++)
+    {
+        // get each entry
+        T_EposDisto_pReso_Kaon->GetEntry(uEntry);
+        // disregard the entry of you are outside the desired k*
+        if (k_D > k_CutOff)
+            continue;
+        Tau1 = 4.69; // Lambda
+        Tau2 = 0;
+        fM1 = 1463;
+        RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+        MagicSource->AddBGT_RP(RanVal1, cos(AngleRcP1));
+    }
+    delete T_EposDisto_pReso_Kaon;
+    delete F_EposDisto_pReso_Kaon;
+
+    TFile *F_EposDisto_p_KaonReso = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/ForMaxRamona_piReso_Sig.root");
+    TNtuple *T_EposDisto_p_KaonReso = (TNtuple *)F_EposDisto_p_KaonReso->Get("InfoTuple_ClosePairs");
+    unsigned N_EposDisto_p_KaonReso = T_EposDisto_p_KaonReso->GetEntries();
+    T_EposDisto_p_KaonReso->SetBranchAddress("k_D", &k_D);
+    T_EposDisto_p_KaonReso->SetBranchAddress("P1", &fP1);
+    T_EposDisto_p_KaonReso->SetBranchAddress("P2", &fP2);
+    T_EposDisto_p_KaonReso->SetBranchAddress("M1", &fM1);
+    T_EposDisto_p_KaonReso->SetBranchAddress("M2", &fM2);
+    T_EposDisto_p_KaonReso->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto_p_KaonReso->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto_p_KaonReso->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto_p_KaonReso->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto_p_KaonReso->SetBranchAddress("AngleP1P2", &AngleP1P2);
+    gROOT->cd();
+    // iterate over the ntuple
+    for (unsigned uEntry = 0; uEntry < N_EposDisto_p_KaonReso; uEntry++)
+    {
+        // get each entry
+        T_EposDisto_p_KaonReso->GetEntry(uEntry);
+        // disregard the entry of you are outside the desired k*
+        if (k_D > k_CutOff)
+            continue;
+        Tau1 = 0;
+        Tau2 = 1.5;
+        fM2 = 1130;
+        RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+        MagicSource->AddBGT_PR(RanVal2, cos(AngleRcP2));
+    }
+    delete T_EposDisto_p_KaonReso;
+    delete F_EposDisto_p_KaonReso;
+
+    TFile *F_EposDisto_pReso_KaonReso = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/ForMaxRamona_piReso_SigReso.root");
+    // TFile* F_EposDisto_pReso_KaonReso = new TFile(TString::Format("%s/CatsFiles/Source/EposAngularDist/EposDisto_pReso_dReso.root",GetCernBoxDimi()));
+
+    TNtuple *T_EposDisto_pReso_KaonReso = (TNtuple *)F_EposDisto_pReso_KaonReso->Get("InfoTuple_ClosePairs");
+    unsigned N_EposDisto_pReso_KaonReso = T_EposDisto_pReso_KaonReso->GetEntries();
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("k_D", &k_D);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("P1", &fP1);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("P2", &fP2);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("M1", &fM1);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("M2", &fM2);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("Tau1", &Tau1);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("Tau2", &Tau2);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("AngleRcP1", &AngleRcP1);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("AngleRcP2", &AngleRcP2);
+    T_EposDisto_pReso_KaonReso->SetBranchAddress("AngleP1P2", &AngleP1P2);
+    gROOT->cd();
+    // iterate over the ntuple
+    for (unsigned uEntry = 0; uEntry < N_EposDisto_pReso_KaonReso; uEntry++)
+    {
+        // get each entry
+        T_EposDisto_pReso_KaonReso->GetEntry(uEntry);
+        // disregard the entry of you are outside the desired k*
+        if (k_D > k_CutOff)
+            continue;
+        Tau1 = 4.69; // Lambda
+        fM1 = 1463;
+        RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
+        Tau2 = 1.5;//pion
+        fM2 = 1130;
+        RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
+        // check the signs
+        MagicSource->AddBGT_RR(RanVal1, cos(AngleRcP1), RanVal2, cos(AngleRcP2), cos(AngleP1P2));
+    }
+    delete T_EposDisto_pReso_KaonReso;
+    delete F_EposDisto_pReso_KaonReso;
 
     MagicSource->InitNumMcIter(1000000);
 
