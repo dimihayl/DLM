@@ -68,7 +68,7 @@ TFitResultPtr DLM_FitHisto( TH1* h1, TF1* f1, Option_t* option, Option_t* goptio
 
   // implementation of Fit method is in file hist/src/HFitImpl.cxx
   Foption_t fitOption;
-  ROOT::Fit::FitOptionsMake(ROOT::Fit::kHistogram,option,fitOption);
+  ROOT::Fit::FitOptionsMake(ROOT::Fit::EFitObjectType::kHistogram,option,fitOption);
 
   // create range and minimizer options with default values
   ROOT::Fit::DataRange range(xxmin,xxmax);
