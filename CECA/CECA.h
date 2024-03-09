@@ -137,6 +137,34 @@ public:
   //if zero, than by default this is set to Dim*Dim
   void SetEventMult(const unsigned short& emult=0);//done
 
+
+  void SetExportPairs(int flag, std::string file_name);
+  //event-by-event fluctuations of the parameters
+  void SetDisplacementEbeX(const float& fwidth=0, const float& flevy=0);//done
+  void SetDisplacementEbeY(const float& fwidth=0, const float& flevy=0);//done
+  void SetDisplacementEbeZ(const float& fwidth=0, const float& flevy=0);//done
+  void SetDisplacementEbeT(const float& fwidth=0, const float& flevy=0);//done
+  void SetDisplacementEbe(const float& fwidth=0, const float& flevy=0);//done
+  //float GetDisplacementEbeX() const;
+  //float GetDisplacementEbeY() const;
+  //float GetDisplacementEbeZ() const;
+  //float GetDisplacementEbeT() const;
+  //float GetDisplacementEbe() const;
+
+  void SetHadronizationEbeX(const float& fwidth=0, const float& flevy=0);
+  void SetHadronizationEbeY(const float& fwidth=0, const float& flevy=0);
+  void SetHadronizationEbeZ(const float& fwidth=0, const float& flevy=0);
+  void SetHadronizationEbeT(const float& fwidth=0, const float& flevy=0);
+  void SetHadronizationEbe(const float& fwidth=0, const float& flevy=0);
+  //float GetHadronizationEbeX() const;
+  //float GetHadronizationEbeY() const;
+  //float GetHadronizationEbeZ() const;
+  //float GetHadronizationEbeT() const;
+  //float GetHadronizationEbe() const;
+
+  void SetTauEbe(const float& fwidth=0);
+  //float GetTauEbeX() const;
+
   //the number of desired systematic variations
   //dont go overboard, as generating a new variation within the database
   //takes some time. The idea is that we equally split our TargetYield
@@ -225,6 +253,11 @@ public:
   DLM_Histo<float>* GhettoFemto_mT_rstar;
   DLM_Histo<float>* GhettoFemto_mT_rcore;
   DLM_Histo<float>* GhettoFemto_mT_kstar;
+  DLM_Histo<float>* GhettoFemtoPrimordial_mT_kstar;
+  DLM_Histo<float>* GhettoFemto_pT1_pT2;
+  DLM_Histo<float>* GhettoFemto_pT1_div_pT;
+  DLM_Histo<float>* Ghetto_mT_mTwrong;
+  DLM_Histo<float>* GhettoFemto_mT_mTwrong;
   DLM_Histo<float>* Ghetto_kstar_rcore_mT;
   DLM_Histo<float>* Ghetto_mT_costh;
   //pT/theta of all primary particles
@@ -282,15 +315,18 @@ bool GHETTO_EVENT=false;
 private:
   const TREPNI& Database;
   std::vector<std::string> ListOfParticles;
+  std::string exp_file_name;
+  int exp_file_flag;
 
   short SourceConvention;
-  //XYZ
+  //XYZ, + 3 coord. for the event by event fluct.
   float* Displacement;
   float* DisplacementAlpha;
   float* Hadronization;
   float* HadronizationAlpha;
   float HadrFluct;
   float Tau;
+  float TauEbe;
   float TauFluctuation;
   bool ProperTau;
   bool FixedHadr;

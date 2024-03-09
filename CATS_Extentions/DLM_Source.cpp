@@ -43,13 +43,14 @@ double GaussSource(double* Pars){
     return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 
-double GaussSourceKstarParabola(double* Pars){
+double GaussSourceKstarPol2(double* Pars){
     double& Momentum = Pars[0];
     double& Radius = Pars[1];
     //double& CosTheta = Pars[2];
     double Size = Pars[3];
 
-    Size += Pars[4]*0.001*Momentum*Momentum;
+    Size += Pars[4]*Momentum*1e-3;
+    Size += Pars[5]*Momentum*Momentum*1e-6;
     return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
 }
 

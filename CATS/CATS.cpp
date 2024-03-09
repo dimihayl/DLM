@@ -1583,7 +1583,10 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
     if(!AnaSourcePar) return;
 //printf("SetAnaSource\n");
 //usleep(1e6);
-    if(WhichPar>=AnaSourcePar->GetNumPars()) return;
+    if(WhichPar>=AnaSourcePar->GetNumPars()){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m The source parameter was not set, as it exceeds the number of allowed parameters.\n");
+        return;
+    }
     //if we use a member function, we assume that there are no parameters to be changed here
     //if(ForwardedSource){
     //    if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m Using a source member function does not allow to set any parameters!\n");

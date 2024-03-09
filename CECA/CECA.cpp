@@ -112,11 +112,11 @@ CecaParticle& CecaParticle::operator=(const CecaParticle& other){
 CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_particles):
 //CECA::CECA(const TREPNI& database):
   Database(database),MaxThreads(std::thread::hardware_concurrency()?std::thread::hardware_concurrency():1){
-  Displacement = new float [3];
-  DisplacementAlpha = new float [3];
-  Hadronization = new float [3];
-  HadronizationAlpha = new float [3];
-  for(int i=0; i<3; i++){
+  Displacement = new float [6];
+  DisplacementAlpha = new float [6];
+  Hadronization = new float [6];
+  HadronizationAlpha = new float [6];
+  for(int i=0; i<6; i++){
     Displacement[i]=0;
     DisplacementAlpha[i]=2;
     Hadronization[i]=0;
@@ -126,6 +126,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   //Hadronization = 0;
   //HadronizationAlpha = 2;
   Tau = 0;
+  TauEbe = 0;
   TauFluctuation = 0;
   ProperTau = true;
   FixedHadr = true;
@@ -141,6 +142,8 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   EMULT = 0;
   SrcCnv = 1;
   DebugMode = false;
+  exp_file_name = "";
+  exp_file_flag = 0;
   //CLV.clear();
 
   ///////////////////////////////////////////////
@@ -211,6 +214,11 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   GhettoFemto_mT_rstar = NULL;
   GhettoFemto_mT_rcore = NULL;
   GhettoFemto_mT_kstar = NULL;
+  GhettoFemtoPrimordial_mT_kstar = NULL;
+  GhettoFemto_pT1_pT2 = NULL;
+  GhettoFemto_pT1_div_pT = NULL;
+  Ghetto_mT_mTwrong = NULL;
+  GhettoFemto_mT_mTwrong = NULL;
   GhettoPrimReso[0]=0;
   GhettoPrimReso[1]=0;
   GhettoPrimReso[2]=0;
@@ -297,6 +305,11 @@ CECA::~CECA(){
   if(GhettoFemto_mT_rstar){delete GhettoFemto_mT_rstar; GhettoFemto_mT_rstar=NULL;}
   if(GhettoFemto_mT_rcore){delete GhettoFemto_mT_rcore; GhettoFemto_mT_rcore=NULL;}
   if(GhettoFemto_mT_kstar){delete GhettoFemto_mT_kstar; GhettoFemto_mT_kstar=NULL;}
+  if(GhettoFemtoPrimordial_mT_kstar){delete GhettoFemtoPrimordial_mT_kstar; GhettoFemtoPrimordial_mT_kstar=NULL;}
+  if(GhettoFemto_pT1_pT2){delete GhettoFemto_pT1_pT2; GhettoFemto_pT1_pT2=NULL;}
+  if(GhettoFemto_pT1_div_pT){delete GhettoFemto_pT1_div_pT; GhettoFemto_pT1_div_pT=NULL;}
+  if(Ghetto_mT_mTwrong){delete Ghetto_mT_mTwrong; Ghetto_mT_mTwrong=NULL;}
+  if(GhettoFemto_mT_mTwrong){delete GhettoFemto_mT_mTwrong; GhettoFemto_mT_mTwrong=NULL;}
   if(Ghetto_MtBins){delete [] Ghetto_MtBins; Ghetto_MtBins=NULL;}
   if(ThreadClock){delete [] ThreadClock; ThreadClock=NULL;}
   if(RanGen){
@@ -373,6 +386,59 @@ void CECA::SetDisplacement(const float& width, const float& levy){
 float CECA::GetDisplacement() const{
   return sqrt(Displacement[0]*Displacement[0]+Displacement[1]*Displacement[1]+Displacement[2]*Displacement[2])/sqrt(3.);
 }
+
+void CECA::SetExportPairs(int flag, std::string file_name){
+  exp_file_flag = flag;
+  exp_file_name = file_name;
+}
+//event-by-event fluctuations of the parameters
+void CECA::SetDisplacementEbeX(const float& fwidth, const float& flevy){
+  Displacement[3] = fwidth;
+  DisplacementAlpha[3] = flevy;
+}
+void CECA::SetDisplacementEbeY(const float& fwidth, const float& flevy){
+  Displacement[4] = fwidth;
+  DisplacementAlpha[4] = flevy;
+}
+void CECA::SetDisplacementEbeZ(const float& fwidth, const float& flevy){
+  Displacement[5] = fwidth;
+  DisplacementAlpha[5] = flevy;
+}
+void CECA::SetDisplacementEbeT(const float& fwidth, const float& flevy){
+  SetDisplacementEbeX(fwidth,flevy);
+  SetDisplacementEbeY(fwidth,flevy);
+}
+void CECA::SetDisplacementEbe(const float& fwidth, const float& flevy){
+  SetDisplacementEbeX(fwidth,flevy);
+  SetDisplacementEbeY(fwidth,flevy);
+  SetDisplacementEbeZ(fwidth,flevy);
+}
+
+void CECA::SetHadronizationEbeX(const float& fwidth, const float& flevy){
+  Hadronization[3] = fwidth;
+  HadronizationAlpha[3] = flevy;
+}
+void CECA::SetHadronizationEbeY(const float& fwidth, const float& flevy){
+  Hadronization[4] = fwidth;
+  HadronizationAlpha[4] = flevy;
+}
+void CECA::SetHadronizationEbeZ(const float& fwidth, const float& flevy){
+  Hadronization[5] = fwidth;
+  HadronizationAlpha[5] = flevy;
+}
+void CECA::SetHadronizationEbeT(const float& fwidth, const float& flevy){
+  SetHadronizationEbeX(fwidth,flevy);
+  SetHadronizationEbeY(fwidth,flevy);  
+}
+void CECA::SetHadronizationEbe(const float& fwidth, const float& flevy){
+  SetHadronizationEbeX(fwidth,flevy);
+  SetHadronizationEbeY(fwidth,flevy);
+  SetHadronizationEbeZ(fwidth,flevy);
+}
+void CECA::SetTauEbe(const float& fwidth){
+  TauEbe = fwidth;
+}
+
 
 void CECA::SetHadronizationX(const float& width, const float& levy){
   if(levy<1||levy>2){
@@ -598,6 +664,30 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     printf(" Detected threads: %u\n",NumThreads);
   }
 
+  if(exp_file_name!=""){
+    FILE *file_ptr;
+    // Open the file in write mode
+    file_ptr = fopen(exp_file_name.c_str(), "w");
+    if (file_ptr == NULL) {
+      printf("Error opening file: %s\n", exp_file_name.c_str());
+      exp_file_flag = 0;
+    }
+    else{
+      //only rd, hT, tau
+      if(exp_file_flag==2){
+        fprintf(file_ptr, " kstar\t\trstar\t\tmT\t\trd\t\th\t\ttau\n");
+      }
+      else{
+        fprintf(file_ptr, " kstar\t\trstar\t\tmT\t\trx\t\try\t\trz\t\thx\t\thy\t\thz\t\ttau\n");
+      }
+      
+      fclose(file_ptr);
+    }
+  }
+  else{
+    exp_file_flag = 0;
+  }
+
   unsigned* BufferYield = new unsigned [NumThreads];
   unsigned ExeTime=0;
   DLM_Timer GlobalClock;
@@ -678,6 +768,31 @@ unsigned CECA::GenerateEventTEMP(){
 unsigned CECA::GenerateEvent(const unsigned& ThId){
     //unsigned ThId = omp_get_thread_num();
 
+    //the event-by-event fluctuations, in absolute value
+    float disp_ebe[3];
+    float hadr_ebe[3];
+    float tau_ebe;
+    for(int xyz=0; xyz<3; xyz++){
+      if(Displacement[3+xyz]){
+        disp_ebe[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]*Displacement[xyz+3]);
+      }
+      else{
+        disp_ebe[xyz] = 0;
+      }
+      if(Hadronization[3+xyz]){
+        hadr_ebe[xyz] = RanGen[ThId]->Gauss(0,Hadronization[xyz]*Hadronization[xyz+3]);
+      }
+      else{
+        hadr_ebe[xyz] = 0;
+      }
+    }
+    if(TauEbe){
+      tau_ebe = RanGen[ThId]->Gauss(0,Tau*TauEbe);
+    }
+    else{
+      tau_ebe = 0;
+    }
+    
     //there was some issue using the objects
     //a silly workaround: I will only keep track of pointers,
     //however we will need to call delete for each object whenever required
@@ -825,15 +940,15 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
         for(int xyz=0; xyz<3; xyz++) primordial->Cats()->SetMomXYZ(mom0[0],mom0[1],mom0[2]);
         if(ResampleCount==0){
           for(int xyz=0; xyz<3; xyz++){
-            rd[xyz] = RanGen[ThId]->Gauss(0,Displacement[xyz]);
+            rd[xyz] = RanGen[ThId]->Gauss(0,(Displacement[xyz]+disp_ebe[xyz]));
             //rh is the extension of the ellipsoid in each direction
-            rh[xyz] = RanGen[ThId]->Gauss(Hadronization[xyz],Hadronization[xyz]*HadrFluct);
+            rh[xyz] = RanGen[ThId]->Gauss((Hadronization[xyz]+hadr_ebe[xyz]),(Hadronization[xyz]+hadr_ebe[xyz])*HadrFluct);
           }
           //this comes from the definition of an ellipsoid, where each term inside is x,y,z coordinate evaluated
           //from the angles and spacial extension of the ellipsoid
           rh_len = sqrt(pow(rh[0]*sin_th*cos_phi,2.)+pow(rh[1]*sin_th*sin_phi,2.)+pow(rh[2]*cos_th,2.));
-          if(TauFluctuation<0) tau = RanGen[ThId]->Exp(fabs(Tau));
-          else tau = Tau+RanGen[ThId]->Gauss(0,Tau*TauFluctuation);
+          if(TauFluctuation<0) tau = RanGen[ThId]->Exp(fabs(Tau+tau_ebe));
+          else tau = (Tau+tau_ebe)+RanGen[ThId]->Gauss(0,(Tau+tau_ebe)*TauFluctuation);
           if(ProperTau) tau *= primordial->Cats()->Gamma();
         }
         //at resampling, we do not change momentum or hadronization, or time component, we just shift a little bit
@@ -1090,11 +1205,13 @@ FragCorr = 1;
       //these are all particles we need to include in a multiplet
       CatsLorentzVector boost_v;
       CecaParticle* prt_cm = new CecaParticle[SDIM];
+      CecaParticle* prt_lab = new CecaParticle[SDIM];
       unsigned char ud=0;
       std::vector<float> cos_th;
       for(unsigned ID : pid){
         boost_v = boost_v+*(Primary.at(ID)->Cats());//
         prt_cm[ud] = *Primary.at(ID);
+        prt_lab[ud] = *Primary.at(ID); 
         //prt_cm[ud].SetCats(Primary.at(ID)->Cats());
         //is_promordial[ud] = Primary.at(ID)->IsUsefulPrimordial();
         if(Primary.at(ID)->IsUseful()==false){printf("How did this happen!?!?!\n");}
@@ -1186,11 +1303,33 @@ double mavg = (m1+m2)*0.5;
 double mT = 0.5*boost_v.GetMt();
 double mT_wrong = sqrt(kT*kT+mavg*mavg);
 
+
 double AngleP1P2=0;
 double AngleRcP1=0;
 double AngleRcP2=0;
 double BGT,BGT1,BGT2;
 if(kstar<FemtoLimit){
+
+  if(exp_file_flag){
+    FILE *file_ptr;
+    // Open the file in append mode
+    file_ptr = fopen(exp_file_name.c_str(), "a");
+    if(exp_file_flag==2){
+      fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n", kstar, rstar, mT, 
+              sqrt(pow(Displacement[0]+disp_ebe[0],2.)+pow(Displacement[1]+disp_ebe[1],2.)+pow(Displacement[2]+disp_ebe[2],2.))/sqrt(3.),
+              sqrt(pow(Hadronization[0]+hadr_ebe[0],2.)+pow(Hadronization[1]+hadr_ebe[1],2.))/sqrt(2.),
+              Tau+tau_ebe);
+    }
+    else{
+      fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n", kstar, rstar, mT, 
+              Displacement[0], Displacement[1], Displacement[2],
+              Hadronization[0], Hadronization[1], Hadronization[2],
+              Tau);
+    }
+
+    fclose(file_ptr);
+  }
+
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
     double cosine = cm_core.GetCosAngleRP(prt_cm[0].Cats());
     AngleRcP1 = acos(cosine);
@@ -1432,9 +1571,27 @@ if(kstar<FemtoLimit){
     }
   }
 Ghetto_ScatteringAngle->Fill(cm_rel.GetScatAngle());
+GhettoFemto_mT_mTwrong->Fill(mT,mT_wrong);
+//the heavier particle is on x
+if(prt_lab[0].Cats()->GetMass()>prt_lab[1].Cats()->GetMass()){
+  GhettoFemto_pT1_pT2->Fill(prt_lab[0].Cats()->GetPt(),prt_lab[1].Cats()->GetPt());
+  GhettoFemto_pT1_div_pT->Fill(prt_lab[0].Cats()->GetPt()/boost_v.GetPt());
+}
+else{
+  GhettoFemto_pT1_pT2->Fill(prt_lab[1].Cats()->GetPt(),prt_lab[0].Cats()->GetPt());
+  GhettoFemto_pT1_div_pT->Fill(prt_lab[1].Cats()->GetPt()/boost_v.GetPt());
+}
+//printf("%f, %f\n",prt_cm[0].Cats()->GetPt()/prt_cm[1].Cats()->GetPt(),prt_cm[0].Cats()->GetPz(),prt_lab[0].Cats()->GetPt()/prt_lab[1].Cats()->GetPt());
+
 
 FemtoPermutations++;
 }//femto particles
+
+//if(kstar>150 && kstar<250){
+  Ghetto_mT_mTwrong->Fill(mT,mT_wrong);
+//}
+
+
   Ghetto_rstar->Fill(rstar);
   Ghetto_kstar->Fill(kstar);
   Ghetto_kstar_rstar->Fill(kstar,rstar);
@@ -1485,6 +1642,10 @@ FemtoPermutations++;
     Ghetto_mT_costh->Fill(mT,ct);
   }
   GhettoFemto_mT_kstar->Fill(mT,kstar);
+  if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
+    GhettoFemtoPrimordial_mT_kstar->Fill(mT,kstar);
+  }
+  
   //GhettoPrimReso[0] += (prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
   //GhettoPrimReso[1] += (prt_cm[0].IsUsefulPrimordial() && !prt_cm[1].IsUsefulPrimordial());
   //GhettoPrimReso[2] += (!prt_cm[0].IsUsefulPrimordial() && prt_cm[1].IsUsefulPrimordial());
@@ -1565,6 +1726,7 @@ FemtoPermutations++;
 ///////////////////////////
 }
       delete [] prt_cm;
+      delete [] prt_lab;
     }//permutations over possible multiplets
 
 
@@ -2345,5 +2507,64 @@ void CECA::GhettoInit(){
 
   GhettoFemto_mT_kstar->SetUp(1,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
   GhettoFemto_mT_kstar->Initialize();
+
+
+  if(GhettoFemtoPrimordial_mT_kstar) delete GhettoFemtoPrimordial_mT_kstar;
+  GhettoFemtoPrimordial_mT_kstar = new DLM_Histo<float>();
+  GhettoFemtoPrimordial_mT_kstar->SetUp(2);
+  if(Ghetto_MtBins){
+    GhettoFemtoPrimordial_mT_kstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    GhettoFemtoPrimordial_mT_kstar->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+
+  GhettoFemtoPrimordial_mT_kstar->SetUp(1,Ghetto_NumMomBins,Ghetto_MomMin,Ghetto_MomMax);
+  GhettoFemtoPrimordial_mT_kstar->Initialize();
+
+
+
+
+
+  if(GhettoFemto_pT1_pT2) delete GhettoFemto_pT1_pT2;
+  GhettoFemto_pT1_pT2 = new DLM_Histo<float>();
+  GhettoFemto_pT1_pT2->SetUp(2);
+  GhettoFemto_pT1_pT2->SetUp(0,1024,0,4096);
+  GhettoFemto_pT1_pT2->SetUp(1,1024,0,4096);
+  GhettoFemto_pT1_pT2->Initialize();
+
+  if(GhettoFemto_pT1_div_pT) delete GhettoFemto_pT1_div_pT;
+  GhettoFemto_pT1_div_pT = new DLM_Histo<float>();
+  GhettoFemto_pT1_div_pT->SetUp(1);
+  GhettoFemto_pT1_div_pT->SetUp(0,1024,0,1);
+  GhettoFemto_pT1_div_pT->Initialize();
+
+
+  if(Ghetto_mT_mTwrong) delete Ghetto_mT_mTwrong;
+  Ghetto_mT_mTwrong = new DLM_Histo<float>();
+  Ghetto_mT_mTwrong->SetUp(2);
+  if(Ghetto_MtBins){
+    Ghetto_mT_mTwrong->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+    Ghetto_mT_mTwrong->SetUp(1,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    Ghetto_mT_mTwrong->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+    Ghetto_mT_mTwrong->SetUp(1,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+  Ghetto_mT_mTwrong->Initialize();
+
+
+  if(GhettoFemto_mT_mTwrong) delete GhettoFemto_mT_mTwrong;
+  GhettoFemto_mT_mTwrong = new DLM_Histo<float>();
+  GhettoFemto_mT_mTwrong->SetUp(2);
+  if(Ghetto_MtBins){
+    GhettoFemto_mT_mTwrong->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+    GhettoFemto_mT_mTwrong->SetUp(1,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    GhettoFemto_mT_mTwrong->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+    GhettoFemto_mT_mTwrong->SetUp(1,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+  GhettoFemto_mT_mTwrong->Initialize();
 
 }

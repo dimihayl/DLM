@@ -14,7 +14,7 @@ double GaussSourceCutOff(double* Pars);
 double GaussSourceTF1(double* x, double* Pars);
 double GaussSourceScaledTF1(double* x, double* Pars);
 
-double GaussSourceKstarParabola(double* Pars);
+double GaussSourceKstarPol2(double* Pars);
 
 double GaussSourceTheta(double* Pars);
 double CauchySource(double* Pars);
