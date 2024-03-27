@@ -4,7 +4,12 @@
 #include <limits>
 #include "math.h"
 
+#include <cmath>
+#include <complex>
+
 using namespace std;
+
+const std::complex<double> i(0,1);
 
 Bessel* BESSEL_OBJECT = NULL;
 
@@ -394,4 +399,38 @@ double DLM_Bessel1(const double& order, const double& arg, const bool& Threadsaf
     BESSEL_OBJECT[WhichThread].besseljy(order,arg);
 //printf(" BESSEL_OBJECT\n");
     return BESSEL_OBJECT[WhichThread].jo;
+}
+
+
+
+//from Gemini
+
+// Spherical Bessel function j_0(x) for complex argument (previously defined)
+std::complex<double> spherical_bessel_j0(std::complex<double> x) {
+  if (abs(x) < 1e-10) {
+    // Handle x near zero (replace with your preferred handling)
+    return 1.0;
+  }
+  return (exp(i * x) - exp(-i * x)) / (2.0 * i * x);
+}
+
+// Spherical Bessel function j_1(x) for complex argument (previously defined)
+std::complex<double> spherical_bessel_j1(std::complex<double> x) {
+  if (abs(x) < 1e-10) {
+    // Handle x near zero (replace with your preferred handling)
+    return std::complex<double>(0.0, 0.5); // Corrected: using std::complex<double>
+  }
+  return (i * (exp(i * x) + exp(-i * x))) / (2.0 * x);
+}
+
+// Spherical Bessel function j_n(x) for complex argument
+std::complex<double> spherical_bessel_jn(int n, std::complex<double> x) {
+  if (n == 0) {
+    return spherical_bessel_j0(x);  // Initial value for j_0(x)
+  } else if (n == 1) {
+    return spherical_bessel_j1(x);  // Initial value for j_1(x)
+  } else {
+  	return ((2.0 * n - 1.0) * spherical_bessel_jn(n - 1, x)
+         - std::complex<double>(n) * spherical_bessel_jn(n - 2, x)) / x; // Corrected: explicit conversion to complex
+  }
 }

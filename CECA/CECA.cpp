@@ -663,7 +663,6 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     printf("Running GoBabyGo\n");
     printf(" Detected threads: %u\n",NumThreads);
   }
-
   if(exp_file_name!=""){
     FILE *file_ptr;
     // Open the file in write mode
@@ -1271,6 +1270,100 @@ FragCorr = 1;
 //test for two particles first!!!
 //so plot rstar for femto pairs and see how it looks
 //also plot the angles relevant for epos comparison
+
+
+//ASKED RAFFA, ALL OF THE STUFF IN HIS NOTES SHOULD BE IN CM OF THE 3B. IT SAYS LAB, BUT 
+//WHAT HE MEANS IS A REF FRAME WHERE ALL PARTICLES ARE APPROX NON RELATIVISTIC
+      //Definitions relevant for 3-body studies
+      if(SDIM==3){
+        double m1 = prt_cm[0].Cats()->GetMass();
+        double m2 = prt_cm[1].Cats()->GetMass();
+        double m3 = prt_cm[2].Cats()->GetMass();
+        double mtot = m1 + m2 + m3;
+        //reduced mass 12, as in the notes
+        //note, that in c++ we will have actally 01
+        double mu12 = m1*m2/(m1+m2);
+        double alpha_m = 4*m3*m3/pow(m3+m1,2.) + 4*m3*m3/pow(m3+m2,2.) + 4;
+        double beta_m = 4*m3*mtot/(m1+m2)*(m2/pow(m2+m3,2.)-m1/pow(m1+m3,2.));
+        double gamma_m = 4*pow(mtot/(m1+m2),2.)*(pow(m1/(m1+m3),2.)+pow(m2/(m2+m3),2.));
+        double m3_12 = m3*(m1+m2)/mtot;
+        double Malpha = mu12*alpha_m;
+        
+        //CatsLorentzVector clv12 = *prt_cm[0].Cats() - *prt_cm[1].Cats();
+
+        std::vector<double> v_r1 = {prt_cm[0].Cats()->GetX(), prt_cm[0].Cats()->GetY(), prt_cm[0].Cats()->GetZ()};
+        std::vector<double> v_r2 = {prt_cm[1].Cats()->GetX(), prt_cm[1].Cats()->GetY(), prt_cm[1].Cats()->GetZ()};
+        std::vector<double> v_r3 = {prt_cm[2].Cats()->GetX(), prt_cm[2].Cats()->GetY(), prt_cm[2].Cats()->GetZ()};
+
+        std::vector<double> v_p1 = {prt_cm[0].Cats()->GetPx(), prt_cm[0].Cats()->GetPy(), prt_cm[0].Cats()->GetPz()};
+        std::vector<double> v_p2 = {prt_cm[1].Cats()->GetPx(), prt_cm[1].Cats()->GetPy(), prt_cm[1].Cats()->GetPz()};
+        std::vector<double> v_p3 = {prt_cm[2].Cats()->GetPx(), prt_cm[2].Cats()->GetPy(), prt_cm[2].Cats()->GetPz()};
+
+
+        double r12 = 0;
+        for(unsigned uv=0; uv<3; uv++) r12 += pow(v_r1.at(uv) - v_r2.at(uv), 2.);
+        r12 = sqrt(r12);
+
+        double r3_12 = 0;
+        for(unsigned uv=0; uv<3; uv++){
+          r3_12 += pow(v_r3.at(uv) - (m1*v_r1.at(uv)+m2*v_r2.at(uv))/(m1+m2), 2.);
+        }
+        r3_12 = sqrt(r3_12);
+
+        double k12 = 0;
+        for(unsigned uv=0; uv<3; uv++) k12 += pow(m2*v_p1.at(uv) - m1*v_p2.at(uv), 2.);
+        k12 = sqrt(k12)/(m1+m2);
+
+        double k3_12 = 0;
+        for(unsigned uv=0; uv<3; uv++){
+          k3_12 += pow((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)), 2.);
+        }
+        k3_12 = sqrt(k3_12)/mtot;
+
+        double dot_k12_k3_12 = 0;
+        for(unsigned uv=0; uv<3; uv++){
+          dot_k12_k3_12 += (m2*v_p1.at(uv) - m1*v_p2.at(uv))/(m1+m2) * ((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)))/mtot;
+        }
+
+        double hyp_rad = sqrt(mu12/Malpha*r12*r12 + m3_12/Malpha*r3_12*r3_12);
+        double Q3 = sqrt(alpha_m*k12*k12 + 2*beta_m*dot_k12_k3_12 + gamma_m*k3_12*k3_12);
+
+        if(Q3<FemtoLimit){
+          FemtoPermutations++;
+        }
+
+        #pragma omp critical
+        {
+        Ghetto_kstar_rstar->Fill(Q3,hyp_rad);
+        }
+        
+/*
+        if(Q3<500){
+        printf("Malpha = %f\n",Malpha);
+        printf("k12 = %.0f; Q3 = %.0f; HR = %.2f\n", k12, Q3, hyp_rad);
+
+        CatsLorentzVector cm_rel_12 = *prt_cm[1].Cats()-*prt_cm[0].Cats();
+        double kstar12 = 0.5*cm_rel_12.GetP();
+        double rstar12 = cm_rel_12.GetR();
+
+        CatsLorentzVector cm_rel_13 = *prt_cm[2].Cats()-*prt_cm[0].Cats();
+        double kstar13 = 0.5*cm_rel_13.GetP();
+        double rstar13 = cm_rel_13.GetR();
+
+        CatsLorentzVector cm_rel_23 = *prt_cm[2].Cats()-*prt_cm[1].Cats();
+        double kstar23 = 0.5*cm_rel_23.GetP();
+        double rstar23 = cm_rel_23.GetR();        
+        printf("12: kstar = %.0f; rstar = %.2f\n", kstar12, rstar12);
+        printf("13: kstar = %.0f; rstar = %.2f\n", kstar13, rstar13);
+        printf("23: kstar = %.0f; rstar = %.2f\n", kstar23, rstar23);
+        double mean_r = (rstar12+rstar13+rstar23)/3.;
+        printf("HR ghetto/true = %.3f\n",(mean_r/sqrt(3.))/hyp_rad);
+
+        }
+*/
+
+      }
+
 
 #pragma omp critical
 {
