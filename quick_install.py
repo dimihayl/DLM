@@ -182,6 +182,7 @@ def quick_install(type):
     PATH_DLM = PATH_DLM.replace('\n','')
     #path to the installation folder for CATS
     PATH_CATS = PATH_DLM+'/install'
+    PATH_CATS_EXE = PATH_DLM+'/install/bin'
     PATH_CATS_CMAKE = PATH_CATS+'/CMake'
 
 
@@ -484,7 +485,7 @@ def quick_install(type):
                 continue
             cmakelists.write('              ${DLM_REPO}/'+dir+'/'+file+'.cpp\n')
     cmakelists.write('              )\n')
-
+    
     cmakelists.write('\n')
     if install_lvl>=1:
         cmakelists.write('execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --cflags" OUTPUT_VARIABLE CFLAGS)\n')
@@ -493,11 +494,11 @@ def quick_install(type):
         cmakelists.write('string(REGEX REPLACE "\n$" "" LIBS "${LIBS}")\n')
 
     if install_lvl==0:
-        cmakelists.write('set(CFLAGS " -O2 -std=c++11")\n')
+        cmakelists.write('set(CFLAGS " -O2 -std=c++11 -Wnonnull ")\n')
     elif install_lvl==1:
-        cmakelists.write('set(CFLAGS " -O2 -std=c++11 ${CFLAGS}")\n')
+        cmakelists.write('set(CFLAGS " -O2 -std=c++11 -Wnonnull ${CFLAGS}")\n')
     elif install_lvl==2:
-        cmakelists.write('set(CFLAGS " -O2 -lgomp -pthread -fopenmp -std=c++11 ${CFLAGS}")\n')
+        cmakelists.write('set(CFLAGS " -O2 -lgomp -pthread -fopenmp -std=c++11 -Wnonnull ${CFLAGS}")\n')
 
     if install_lvl>=2:
         cmakelists.write('set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")\n')
@@ -524,6 +525,18 @@ def quick_install(type):
     cmakelists.write('file(APPEND ${CATS_INSTALL}/bin/CMakeDLM.txt "${GSL_INCLUDE}\\n")\n')
     cmakelists.write('file(APPEND ${CATS_INSTALL}/bin/CMakeDLM.txt "${GSL_LIB}\\n")\n')
     cmakelists.write('\n')
+
+    cmakelists.write('\n')
+    cmakelists.write('SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CATS_INSTALL}/bin)\n')
+
+    if('DLM_FemtoTools' in IncFile):
+        cmakelists.write('add_executable(PotentialDesigner \n')
+        cmakelists.write('               ${DLM_REPO}/DLM_FemtoTools/DLMain_PotentialDesigner.cpp\n')
+        cmakelists.write(')\n')
+        cmakelists.write('target_link_libraries(PotentialDesigner CATS -L${GSL_LIB} -lgsl -lgslcblas ${LIBS} -lgomp)\n')
+
+
+    #target_link_libraries(your_executable CATS)  # Link against the CATS library
 
     cmakelists.close()
 

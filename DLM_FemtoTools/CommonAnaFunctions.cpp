@@ -7925,7 +7925,7 @@ bool PotentialDesignerEngine(char* BaseFileName){
   FILE* InFile;
   InFile = fopen(TextFileName.Data(), "r");
   if(InFile == nullptr){
-    printf("\033[1;31mERROR:\033[0m Cannot open the file %s!",TextFileName.Data());
+    printf("\033[1;31mERROR:\033[0m Cannot open the file %s!\n",TextFileName.Data());
     delete [] pw;
     delete [] pot;
     return false;
@@ -7938,6 +7938,18 @@ bool PotentialDesignerEngine(char* BaseFileName){
     if(!fscanf(InFile, "%s %s", ch_dummy_1, ch_dummy_2)){
       printf("\033[1;33mWARNING (1)!\033[0m Possible bad input-file, error when reading from %s!\n",TextFileName.Data());
     }
+
+    // Consume remaining characters on the line
+    int chr;
+    //std::cout << "XXX\n";
+    do{
+    chr = fgetc(InFile);
+    //std::cout << chr;
+    }
+    while (chr != EOF && chr != '\n');
+    //std::cout << "\n";
+
+    printf("%s %s\n",ch_dummy_1, ch_dummy_2);
 
     //convert to only lower letters
     for (int ich = 0; ich < strlen(ch_dummy_1); ich++) {
@@ -8046,7 +8058,7 @@ bool PotentialDesignerEngine(char* BaseFileName){
     //  }
     //}
     if(strcmp(ch_dummy_1,"pot")==0){
-      if(strcmp(ch_dummy_2,"gauss")&&strcmp(ch_dummy_2,"doublegauss")&&strcmp(ch_dummy_2,"yukawa")&&strcmp(ch_dummy_2,"yukawadlm")){
+      if(strcmp(ch_dummy_2,"gauss")&&strcmp(ch_dummy_2,"doublegauss")&&strcmp(ch_dummy_2,"yukawa")&&strcmp(ch_dummy_2,"yukawadlm")&&strcmp(ch_dummy_2,"usmanicore")){
         printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set an unknown potential %s!\n",TextFileName.Data(),ch_dummy_2);
       }
       else{
@@ -8174,6 +8186,14 @@ bool PotentialDesignerEngine(char* BaseFileName){
     Kitty.SetShortRangePotential(0,NumPW-1,YukawaDimiSmooth,*pPars);
     Kitty.SetShortRangePotential(0,NumPW-1,0,par1);
     Kitty.SetShortRangePotential(0,NumPW-1,1,par2);
+  }
+  if(strcmp(pot,"usmanicore")==0){
+    pPars = new CATSparameters(CATSparameters::tPotential,4,true);
+    Kitty.SetShortRangePotential(0,NumPW-1,UsmaniFit,*pPars);
+    Kitty.SetShortRangePotential(0,NumPW-1,0,0);
+    Kitty.SetShortRangePotential(0,NumPW-1,1,par1);
+    Kitty.SetShortRangePotential(0,NumPW-1,2,par2);
+    Kitty.SetShortRangePotential(0,NumPW-1,3,par3);
   }
 
   Kitty.SetEpsilonConv(eps);
