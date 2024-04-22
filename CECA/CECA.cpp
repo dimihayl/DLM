@@ -1287,6 +1287,8 @@ FragCorr = 1;
         double beta_m = 4*m3*mtot/(m1+m2)*(m2/pow(m2+m3,2.)-m1/pow(m1+m3,2.));
         double gamma_m = 4*pow(mtot/(m1+m2),2.)*(pow(m1/(m1+m3),2.)+pow(m2/(m2+m3),2.));
         double m3_12 = m3*(m1+m2)/mtot;
+        //arbitrary mass. For identical particles this definition
+        //works out to 3x mass of the particle
         double Malpha = mu12*alpha_m;
         
         //CatsLorentzVector clv12 = *prt_cm[0].Cats() - *prt_cm[1].Cats();

@@ -8190,10 +8190,10 @@ bool PotentialDesignerEngine(char* BaseFileName){
   if(strcmp(pot,"usmanicore")==0){
     pPars = new CATSparameters(CATSparameters::tPotential,4,true);
     Kitty.SetShortRangePotential(0,NumPW-1,UsmaniFit,*pPars);
-    Kitty.SetShortRangePotential(0,NumPW-1,0,0);
-    Kitty.SetShortRangePotential(0,NumPW-1,1,par1);
-    Kitty.SetShortRangePotential(0,NumPW-1,2,par2);
-    Kitty.SetShortRangePotential(0,NumPW-1,3,par3);
+    Kitty.SetShortRangePotential(0,NumPW-1,0,par1);
+    Kitty.SetShortRangePotential(0,NumPW-1,1,par2);
+    Kitty.SetShortRangePotential(0,NumPW-1,2,par3);
+    Kitty.SetShortRangePotential(0,NumPW-1,3,par4);
   }
 
   Kitty.SetEpsilonConv(eps);
