@@ -313,7 +313,8 @@ double DLM_Ck::Eval(const double& Momentum){
     //zero if we are below the first bin
     if(Momentum<BinRange[0][0]) return 0;
     //the saved values within the histogram if we are within the range of the histo
-    else if(Momentum<BinRange[0][NumBins[0]]) return DLM_Histo::Eval(&Momentum);
+    //else if(Momentum<BinRange[0][NumBins[0]]) return DLM_Histo::Eval(&Momentum);
+    else if(Momentum<CutOff && Momentum<BinRange[0][NumBins[0]]) return DLM_Histo::Eval(&Momentum);
 
     //if we are above the range, we can still do the interpolation with the cutoff
     double kf;
