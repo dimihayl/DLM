@@ -1449,6 +1449,39 @@ public:
       return EvalError(&xVal);
     }
 
+    //makes this histogram equal in values to other, without re-initialization.
+    //This only works if we have the same Dim.
+    //Only overlapping bin regions are set equal (using Eval), the rest are zero
+    bool SetEqualTo(const DLM_Histo& other){
+        if(Dim!=other.Dim){
+            printf("\033[1;33mWARNING:\033[0m DLM_Histo::SetEqualTo function failed, this set up works only for histos with the same Dim.\n");
+            return false;
+        }
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            unsigned* WhichTotBin = new unsigned[Dim];
+            GetBinCoordinates(uBin, WhichTotBin);
+            Type* xVal = new Type [Dim];
+            bool InRange = true;
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                xVal[sDim] = BinCenter[sDim][WhichTotBin[sDim]];
+                if(xVal[sDim]<other.GetLowEdge(sDim) || xVal[sDim]>other.GetUpEdge(sDim)){
+                    InRange = false;
+                    break;
+                }
+            }
+            if(InRange){
+                BinValue[uBin] = other.Eval(xVal);
+                BinError[uBin] = other.EvalError(xVal);
+            }
+            else{
+                BinValue[uBin] = 0;
+                BinError[uBin] = 0;  
+            }
+            delete [] WhichTotBin;
+            delete [] xVal;
+        }
+    }
+
     bool operator=(const DLM_Histo& other){
 //printf("operator=\n");
         //if(!Initialized) {InitWarning(); return false;}
@@ -1476,6 +1509,20 @@ public:
         BinValue[TotNumBins] = other.BinValue[TotNumBins];
         BinValue[TotNumBins+1] = other.BinValue[TotNumBins+1];
         CumUpdated = false;
+        return true;
+    }
+    bool operator==(const DLM_Histo& other){
+        if(!SameStructure(other)) return false;
+        for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+            if(BinValue[uBin]!=other.BinValue[uBin]) return false;
+            if(uBin<TotNumBins){
+                if(BinError[uBin]!=other.BinError[uBin]) return false;
+                if(BinCenter[uBin]!=other.BinCenter[uBin]) return false;
+            }
+            if(uBin<TotNumBins+1){
+                if(BinRange[uBin]!=other.BinRange[uBin]) return false;
+            }
+        }
         return true;
     }
 //! FOR DIVISION/MULT:
