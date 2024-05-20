@@ -514,6 +514,8 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
         }
       }
     }
+
+
     CurrentStatus = CkMain->Status();
     for(unsigned uChild=0; uChild<NumChildren; uChild++){
         if(Child[uChild]){
@@ -542,115 +544,63 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
         CkMainFeed->MultiplyHisto(*LambdaMain);
         CkMainFeed->DivideHisto(*MuPar);
 
-        for(unsigned uMom=0; uMom<CkMainFeed->GetNbins(); uMom++){
-            if(strcmp(Name,"pp")==0 && uMom==70)
-                printf(" %u %.2f %.3f %.3f x%.3f /%.3f \n", uMom, CkMainFeed->GetBinCenter(0,uMom), CkMainFeed->GetBinContent(uMom), CkMain->GetBinContent(uMom), 
-            LambdaMain->GetBinContent(uMom), MuPar->GetBinContent(uMom));
-        }
-
         if(UpdateDecomp){
 			SignalMain[0] = CkMain[0];
-            SignalMain->MultiplyHisto(*LambdaMain);
+			SignalMain->MultiplyHisto(*LambdaMain);
+		 }
+		else{
+        	SignalMain->SetBinContentAll(0);
+        	SignalSmearedMain->SetBinContentAll(0);
 		}
-        else{
-            SignalMain->SetBinContentAll(0);
-            SignalSmearedMain->SetBinContentAll(0);
-        }
+
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
 			SignalChild[uChild]->SetBinContentAll(0);
 			SignalSmearedChild[uChild]->SetBinContentAll(0);
-            if(Child[uChild]){
-                if(Type[uChild]!=cFeedDown){
-                    //SignalChild[uChild] was not scaled with lambda, now it is
-                    for(unsigned uBin=0; uBin<SignalSmearedChild[uChild]->GetNbins(); uBin++){
-                        Momentum = SignalSmearedChild[uChild]->GetBinCenter(0,uBin);
-                        //be careful here, I changed something, where I think there was a bug before
-                        SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(Momentum)*LambdaPar[uChild]->Eval(Momentum) - LambdaPar[uChild]->Eval(Momentum));
-                        //SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(Momentum) - LambdaPar[uChild]->Eval(Momentum));
-                        SignalSmearedChild[uChild]->SetBinContent(uBin,LambdaPar[uChild]->Eval(Momentum)*Child[uChild]->CkSmearedMainFeed->Eval(Momentum) - LambdaPar[uChild]->Eval(Momentum));
-                    }
-                    //continue;
-                }
-                else{
-                    //get the shape of the correlation, as it contributes to the final signal
-                    //i.e. this would be lambda(k*)/mu(k*) * C(k*)
-                    CkChildMainFeed[uChild]->SetEqualTo(*Child[uChild]->CkMainFeed);
-                    CkChildMainFeed[uChild]->MultiplyHisto(*LambdaPar[uChild]);
-                    CkChildMainFeed[uChild]->DivideHisto(*MuPar);
-                    //smear the contribution
-                    Smear(CkChildMainFeed[uChild], RM_Child[uChild], CkChildMainFeed[uChild], PS_Child[uChild]);
-                    for(unsigned uBin=0; uBin<CkMainFeed->GetNbins(); uBin++){
-                        Momentum = CkMainFeed->GetBinCenter(0,uBin);
-                        CkMainFeed->Add(uBin, CkChildMainFeed[uChild]->Eval(Momentum));
-                        SignalChild[uChild]->SetBinContent(uBin,CkChildMainFeed[uChild]->Eval(Momentum)/MuPar->Eval(Momentum));
-                    }
-                    if(UpdateDecomp){
-                        SignalSmearedChild[uChild]->SetEqualTo(*SignalChild[uChild]);
-                        Smear(SignalSmearedChild[uChild], RM_MomResolution, SignalSmearedChild[uChild], PS_Main);
-                        *SignalChild[uChild] -= *LambdaPar[uChild];
-                        *SignalSmearedChild[uChild] -= *LambdaPar[uChild];
-                    } 
-                }
-            }
-            else if(LambdaPar[uChild]){
-                *CkMainFeed += (*LambdaPar[uChild] / *MuPar);
-            }
-
-            /*
             if(Type[uChild]!=cFeedDown){
-				if(Child[uChild]){
-                    //be careful here, I changed something, where I think there was a bug before
-                    //SignalChild[uChild] was not scaled with lambda, now it is
+                if(Child[uChild]){
                     for(unsigned uBin=0; uBin<SignalSmearedChild[uChild]->GetNbins(); uBin++){
                         Momentum = SignalSmearedChild[uChild]->GetBinCenter(0,uBin);
-                        SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(Momentum)*LambdaPar[uChild]->Eval(Momentum) - LambdaPar[uChild]->Eval(Momentum));
-                        SignalSmearedChild[uChild]->SetBinContent(uBin,LambdaPar[uChild]->Eval(Momentum)*Child[uChild]->CkSmearedMainFeed->Eval(Momentum) - LambdaPar[uChild]->Eval(Momentum));
+                        SignalChild[uChild]->SetBinContent(uBin,Child[uChild]->CkMainFeed->Eval(&Momentum));
+                        if(LambdaPar[uChild])
+                            SignalSmearedChild[uChild]->SetBinContent(uBin,LambdaPar[uChild]->Eval(Momentum)*Child[uChild]->CkSmearedMainFeed->Eval(&Momentum));
                     }
-          		}
-          		continue;
-        	}
+                    if(LambdaPar[uChild]){
+                        SignalChild[uChild][0] -= *LambdaPar[uChild];
+                        SignalSmearedChild[uChild][0] -= *LambdaPar[uChild];
+                    }
+                }
+                continue;
+            }
             if(Child[uChild]){
-                //get the shape of the correlation, as it contributes to the final signal
-                //i.e. this would be lambda(k*)/mu(k*) * C(k*)
-                CkChildMainFeed[uChild]->SetEqualTo(*Child[uChild]->CkMainFeed);
-                CkChildMainFeed[uChild]->MultiplyHisto(*LambdaPar[uChild]);
-                CkChildMainFeed[uChild]->DivideHisto(*MuPar);
-                //smear the contribution
-                Smear(CkChildMainFeed[uChild], RM_Child[uChild], CkChildMainFeed[uChild], PS_Child[uChild]);
+                Smear(Child[uChild]->CkMainFeed, RM_Child[uChild], CkChildMainFeed[uChild], PS_Child[uChild]);
                 for(unsigned uBin=0; uBin<CkMainFeed->GetNbins(); uBin++){
                     Momentum = CkMainFeed->GetBinCenter(0,uBin);
-                    CkMainFeed->Add(uBin, CkChildMainFeed[uChild]->Eval(Momentum)*LambdaPar[uChild]->Eval(Momentum)/MuPar->Eval(Momentum));
-                    SignalChild[uChild]->SetBinContent(uBin,CkChildMainFeed[uChild]->Eval(Momentum)*LambdaPar[uChild]->Eval(Momentum));
+                    if(LambdaPar[uChild]){
+                        CkMainFeed->Add(uBin, CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]->Eval(Momentum)/MuPar->Eval(Momentum));
+                        SignalChild[uChild]->SetBinContent(uBin,CkChildMainFeed[uChild]->Eval(&Momentum)*LambdaPar[uChild]->Eval(Momentum));
+                    }
                 }
                 if(UpdateDecomp){
-                    SignalSmearedChild[uChild]->SetEqualTo(*SignalChild[uChild]);
-                    Smear(SignalSmearedChild[uChild], RM_MomResolution, SignalSmearedChild[uChild], PS_Main);
-                    *SignalChild[uChild] -= *LambdaPar[uChild];
-                    *SignalSmearedChild[uChild] -= *LambdaPar[uChild];
+                    Smear(SignalChild[uChild], RM_MomResolution, SignalSmearedChild[uChild], PS_Main);
+                    if(LambdaPar[uChild]){
+                        SignalChild[uChild][0] -= *LambdaPar[uChild];
+                        SignalSmearedChild[uChild][0] -= *LambdaPar[uChild];
+                    }
                 }
             }
             else{
                 *CkMainFeed += (*LambdaPar[uChild] / *MuPar);
             }
-            */
         }
         Smear(CkMainFeed, RM_MomResolution, CkSmearedMainFeed, PS_Main);
-
-        //for(unsigned uMom=0; uMom<CkMainFeed->GetNbins(); uMom++){
-        //    printf(" %u %.2f %.3f->%.3f %.3f\n", uMom, CkMainFeed->GetBinCenter(0,uMom), CkMainFeed->GetBinContent(uMom), CkSmearedMainFeed->GetBinContent(uMom), CkMain->GetBinContent(uMom));
-       // }
-
         if(UpdateDecomp){
-            SignalSmearedMain->SetEqualTo(*SignalMain);
-			Smear(SignalSmearedMain, RM_MomResolution, SignalSmearedMain, PS_Main);
-            *SignalMain -= *LambdaMain;
-            *SignalSmearedMain -= *LambdaMain;
+			Smear(SignalMain, RM_MomResolution, SignalSmearedMain, PS_Main);
+			SignalMain[0] -= *LambdaMain;
+			SignalSmearedMain[0] -= *LambdaMain;
 		}
     }
     DecompositionStatus = true;
-    SignalsUpdated = UpdateDecomp;
-//if(strcmp(Name,"pp")==0 && uMom==70)
-//printf("EXIT\n");
+    SignalsUpdated = UpdateDecomp;    
 }
 
 void DLM_CkDecomp::Smear(const DLM_Histo<double>* CkToSmear, const DLM_ResponseMatrix* SmearMatrix, DLM_Histo<double>* CkSmeared, DLM_Histo<float>* PhaseSpace){
