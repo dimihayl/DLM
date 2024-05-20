@@ -1457,7 +1457,9 @@ public:
             printf("\033[1;33mWARNING:\033[0m DLM_Histo::SetEqualTo function failed, this set up works only for histos with the same Dim.\n");
             return false;
         }
+
         for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            //printf("uBin %u\n",uBin);
             unsigned* WhichTotBin = new unsigned[Dim];
             GetBinCoordinates(uBin, WhichTotBin);
             Type* xVal = new Type [Dim];
@@ -1469,6 +1471,7 @@ public:
                     break;
                 }
             }
+            //printf("uBin=%u(%u) %i; xVal[0]=%.3f\n",uBin,TotNumBins,uBin>=TotNumBins,xVal[0]);
             if(InRange){
                 BinValue[uBin] = other.Eval(xVal);
                 BinError[uBin] = other.EvalError(xVal);
@@ -1477,9 +1480,11 @@ public:
                 BinValue[uBin] = 0;
                 BinError[uBin] = 0;  
             }
+
             delete [] WhichTotBin;
             delete [] xVal;
         }
+        return true;
     }
 
     bool operator=(const DLM_Histo& other){

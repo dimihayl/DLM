@@ -56,7 +56,9 @@ public:
 
     //!! only has an effect of set AFTER the AddContribution
     void SetLambdaMain(const DLM_Histo<double>& lambda_par);
+    void SetLambdaMain(const double& lambda_par);
     void SetLambdaChild(const unsigned& WhichChild, const DLM_Histo<double>& lambda_par);
+    void SetLambdaChild(const unsigned& WhichChild, const double& lambda_par);
 
     //if yes, we check if the lambda pars sum up to 1
     //if no, the QA is skipped

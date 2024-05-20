@@ -49,6 +49,24 @@ DLM_CkDecomposition::~DLM_CkDecomposition(){
     if(dlmPhaseSpaceMain){delete dlmPhaseSpaceMain; dlmPhaseSpaceMain=NULL;}
 }
 
+void DLM_CkDecomposition::AddContribution(unsigned WhichCk, DLM_Histo<double>& fraction, int type, DLM_CkDecomposition* child,
+                         const TH2F* hResidualMatrix, const bool& InvertedAxis){
+    if(WhichCk>=NumChildren){
+        return;
+    }
+    if(!dlmFeedMatrix){
+        dlmFeedMatrix = new DLM_Histo<float>* [NumChildren];
+        for(unsigned uChild=0; uChild<NumChildren; uChild++){
+            dlmFeedMatrix[uChild] = NULL;
+        }
+    }
+    if(dlmFeedMatrix[WhichCk]){
+        delete dlmFeedMatrix[WhichCk];
+        dlmFeedMatrix[WhichCk] = NULL;
+    }
+    if(hResidualMatrix) dlmFeedMatrix[WhichCk] = Convert_TH2F_DlmHisto(hResidualMatrix);
+    DLM_CkDecomp::AddContribution(WhichCk,fraction,type,child,dlmFeedMatrix[WhichCk],InvertedAxis);
+}
 void DLM_CkDecomposition::AddContribution(unsigned WhichCk, double fraction, int type, DLM_CkDecomposition* child,
                          const TH2F* hResidualMatrix, const bool& InvertedAxis){
     if(WhichCk>=NumChildren){
