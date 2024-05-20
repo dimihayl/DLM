@@ -160,7 +160,6 @@ void DLM_CkDecomp::AddPhaseSpace(const DLM_Histo<float>* hPhaseSpace){
 
 void DLM_CkDecomp::AddContribution(unsigned WhichCk, DLM_Histo<double>& fraction, int type, DLM_CkDecomp* child,
                                           const DLM_Histo<float>* hResidualMatrix, const bool& InvertedAxis){
-//printf("AddContribution!\n");
     if(ERROR_STATE) return;
 
     if(WhichCk>=NumChildren){
@@ -226,7 +225,6 @@ void DLM_CkDecomp::AddContribution(unsigned WhichCk, DLM_Histo<double>& fraction
             if(Type[uChild]==cFake) *MuPar -= *LambdaPar[uChild];
         }
     }
- //printf("ALLES GUT!\n");
 }
 
 
