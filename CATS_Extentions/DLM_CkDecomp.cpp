@@ -503,7 +503,7 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
       }
       for(unsigned uMom=0; uMom<TotLambda.GetNbins(); uMom++){
         if(fabs(TotLambda.GetBinContent(uMom)-1.)>1e-6){
-            printf("\033[1;33mWARNING:\033[0m The lambda parameters sum to %f. Rescaling them such as to add to unity!\n",TotLambda);
+            printf("\033[1;33mWARNING:\033[0m The lambda parameters sum to %f. Rescaling them such as to add to unity!\n",TotLambda.GetBinContent(uMom));
             LambdaMain->SetBinContent(uMom, LambdaMain->GetBinContent(uMom)/TotLambda.GetBinContent(uMom));
             for(unsigned uChild=0; uChild<NumChildren; uChild++){
                 if(LambdaPar[uChild])
