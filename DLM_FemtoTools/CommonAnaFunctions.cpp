@@ -1584,6 +1584,9 @@ CLEAN_SetUpCats_pipi:;
 //   "NLO"
 //   "NLO_Coupled_S"
 //   "Usmani"
+//   "UsmaniPLB" as used Phys.Lett.B 850 (2024) 138550. 
+//              The PotVar corresponds to the point number of Tab. 1
+//              The NLO13(600) is 13, NLO19(600) is 19 and N2LO is 20
 //   "Chiral_Coupled_SPD"
 //   "Chiral2023" N.B. it has to start with that, following some stuff related to the actual variation
 //      "_INFOon1S0_and_INFOon3S1"
@@ -2047,6 +2050,105 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
         cPotPars3S1->SetParameters(PotPars3S1);
         NumChannels = 2;
     }
+    else if (POT == "UsmaniPLB")
+    {
+        double PotPars1S0[4] = {0, 2137, 0.5, 0.2};
+        double PotPars3S1[4] = {1, 2137, 0.5, 0.2};
+        if(PotVar==1){
+            PotPars1S0[1] = 2029.21;
+            PotPars1S0[2] = 0.516704;
+            PotPars1S0[3] = 0.201386;
+            PotPars3S1[1] = 1900.49;
+            PotPars3S1[2] = 0.447223;
+            PotPars3S1[3] = 0.238315;
+        }
+        else if(PotVar==2){
+            PotPars1S0[1] = 2084.27;
+            PotPars1S0[2] = 0.501872;
+            PotPars1S0[3] = 0.204962;
+            PotPars3S1[1] = 2069.51;
+            PotPars3S1[2] = 0.442597;
+            PotPars3S1[3] = 0.228846;
+        }
+        else if(PotVar==3){
+            PotPars1S0[1] = 2079.81;
+            PotPars1S0[2] = 0.519965;
+            PotPars1S0[3] = 0.197214;
+            PotPars3S1[1] = 1983.95;
+            PotPars3S1[2] = 0.456457;
+            PotPars3S1[3] = 0.227331;
+        }
+        else if(PotVar==4){
+            PotPars1S0[1] = 2111.71;
+            PotPars1S0[2] = 0.512425;
+            PotPars1S0[3] = 0.197126;
+            PotPars3S1[1] = 2024.79;
+            PotPars3S1[2] = 0.428883;
+            PotPars3S1[3] = 0.238985;
+        }        
+        else if(PotVar==5){
+            PotPars1S0[1] = 2099.52;
+            PotPars1S0[2] = 0.518209;
+            PotPars1S0[3] = 0.195196;
+            PotPars3S1[1] = 1932.33;
+            PotPars3S1[2] = 0.456657;
+            PotPars3S1[3] = 0.231787;
+        }       
+        else if(PotVar==6){
+            PotPars1S0[1] = 2169.98;
+            PotPars1S0[2] = 0.506783;
+            PotPars1S0[3] = 0.196690;
+            PotPars3S1[1] = 2129.60;
+            PotPars3S1[2] = 0.438970;
+            PotPars3S1[3] = 0.227010;
+        }    
+        else if(PotVar==7){
+            PotPars1S0[1] = 1976.88;
+            PotPars1S0[2] = 0.520216;
+            PotPars1S0[3] = 0.199594;
+            PotPars3S1[1] = 2057.49;
+            PotPars3S1[2] = 0.443663;
+            PotPars3S1[3] = 0.230643;
+        }    
+        else if(PotVar==8){
+            PotPars1S0[1] = 2098.16;
+            PotPars1S0[2] = 0.512709;
+            PotPars1S0[3] = 0.195045;
+            PotPars3S1[1] = 1957.61;
+            PotPars3S1[2] = 0.434795;
+            PotPars3S1[3] = 0.241739;
+        }    
+        else if(PotVar==13){
+            PotPars1S0[1] = 2155.97;
+            PotPars1S0[2] = 0.514819;
+            PotPars1S0[3] = 0.192401;
+            PotPars3S1[1] = 2176.83;
+            PotPars3S1[2] = 0.432072;
+            PotPars3S1[3] = 0.227458;
+        }   
+        else if(PotVar==19){
+            PotPars1S0[1] = 1950.83;
+            PotPars1S0[2] = 0.532720;
+            PotPars1S0[3] = 0.195344;
+            PotPars3S1[1] = 2009.28;
+            PotPars3S1[2] = 0.449633;
+            PotPars3S1[3] = 0.230304;
+        }  
+        else if(PotVar==20){
+            PotPars1S0[1] = 2098.16;
+            PotPars1S0[2] = 0.512709;
+            PotPars1S0[3] = 0.195045;
+            PotPars3S1[1] = 1957.61;
+            PotPars3S1[2] = 0.434795;
+            PotPars3S1[3] = 0.241739;
+        }  
+
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 4, true);
+        cPotPars1S0->SetParameters(PotPars1S0);
+        cPotPars3S1 = new CATSparameters(CATSparameters::tPotential, 4, true);
+        cPotPars3S1->SetParameters(PotPars3S1);
+        NumChannels = 2;
+    }
     else if (POT == "UsmaniFitAll")
     {
         double PotPars1S0[8] = {0, 2137, 0.5, 0.2, 6.2, 0.25, 0.7, 2.0};
@@ -2083,9 +2185,9 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
             Kitty.SetChannelWeight(uCh, uCh % 2 == 0 ? 0.25 : 0.75);
         }
 
-        if (POT == "UsmaniFit" && cPotPars1S0 && uCh == 0)
+        if ( (POT == "UsmaniFit"||POT == "UsmaniPLB")  && cPotPars1S0 && uCh == 0)
             Kitty.SetShortRangePotential(uCh, 0, UsmaniFit, *cPotPars1S0);
-        else if (POT == "UsmaniFit" && cPotPars3S1 && uCh == 1)
+        else if ( (POT == "UsmaniFit"||POT == "UsmaniPLB") && cPotPars3S1 && uCh == 1)
             Kitty.SetShortRangePotential(uCh, 0, UsmaniFit, *cPotPars3S1);
         else if (POT == "UsmaniFitAll" && cPotPars1S0 && uCh == 0)
             Kitty.SetShortRangePotential(uCh, 0, UsmaniFitAll, *cPotPars1S0);
