@@ -550,7 +550,6 @@ void DLM_CkDecomp::Update(const bool& FORCE_FULL_UPDATE, const bool& UpdateDecom
         	SignalMain->SetBinContentAll(0);
         	SignalSmearedMain->SetBinContentAll(0);
 		}
-//fuck you D.
         for(unsigned uChild=0; uChild<NumChildren; uChild++){
 			SignalChild[uChild]->SetBinContentAll(0);
 			SignalSmearedChild[uChild]->SetBinContentAll(0);
