@@ -5,6 +5,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <complex>
 
 #include "gsl_sf_coulomb.h"
 #include "gsl_sf_bessel.h"
@@ -59,6 +60,7 @@ CATS::CATS():
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
     GamowCorrected = false;
+    UsingiCATS = false;
 
     MaxPairsPerBin = 8e3;
     MaxPairsToRead = 4294967295;
@@ -109,6 +111,7 @@ CATS::CATS():
     kbSourceGrid = NULL;
 
     ShortRangePotential = NULL;
+    ShortRangeComplexPotential = NULL;
 
     AnalyticSource = NULL;
     ForwardedSource = NULL;
@@ -135,6 +138,8 @@ CATS::CATS():
     CPF = NULL;
     TheTrueSource = NULL;
 DEBUG=-1;
+DEBUGCOMPLEX = true;
+// DEBUG = true;
     SetIpBins(1, -1000, 1000);
 
 //SourceHistoTemp.SetUp(1);
@@ -296,6 +301,10 @@ void CATS::DelPotPw(const unsigned short& usCh, const unsigned short& usPW){
     if(ShortRangePotential&&ShortRangePotential[usCh]&&ShortRangePotential[usCh][usPW]){
         ShortRangePotential[usCh][usPW] = NULL;
     }
+    if (ShortRangeComplexPotential && ShortRangeComplexPotential[usCh] && ShortRangeComplexPotential[usCh][usPW])
+    {
+        ShortRangeComplexPotential[usCh][usPW] = NULL;
+    }
     if(WfType&&WfType[usCh]&&WfType[usCh][usPW]){
       WfType[usCh][usPW] = NULL;
     }
@@ -327,6 +336,11 @@ void CATS::DelPotCh(const unsigned short& usCh){
     if(ShortRangePotential&&ShortRangePotential[usCh]){
         delete[]ShortRangePotential[usCh];
         ShortRangePotential[usCh] = NULL;
+    }
+    if (ShortRangeComplexPotential && ShortRangeComplexPotential[usCh])
+    {
+        delete[] ShortRangeComplexPotential[usCh];
+        ShortRangeComplexPotential[usCh] = NULL;
     }
     if(WfType&&WfType[usCh]){
         delete[]WfType[usCh];
@@ -445,10 +459,14 @@ void CATS::SetNumChannels(const unsigned short& numCh){
         DelPotCh(usCh);
     }
     if(ShortRangePotential){delete[]ShortRangePotential;}
+    if (ShortRangeComplexPotential){delete[] ShortRangeComplexPotential;}
+
     if(WfType){delete[]WfType;}
     if(Sw_Pars){delete[]Sw_Pars;}
 
     ShortRangePotential = new CatsPotential* [numCh];
+    ShortRangeComplexPotential = new CatsComplexPotential *[numCh];
+
     WfType = new char* [numCh];
     Sw_Pars = new double** [numCh];
     PotPar = new CATSparameters** [numCh];
@@ -457,6 +475,7 @@ void CATS::SetNumChannels(const unsigned short& numCh){
 
     for(unsigned short usCh=0; usCh<numCh; usCh++){
         ShortRangePotential[usCh] = NULL;
+        ShortRangeComplexPotential[usCh] = NULL;
         WfType[usCh] = NULL;
         Sw_Pars[usCh] = NULL;
         PotPar[usCh] = NULL;
@@ -507,6 +526,7 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     NumPW[usCh] = numPW;
 
     ShortRangePotential[usCh] = new CatsPotential [numPW];
+    ShortRangeComplexPotential[usCh] = new CatsComplexPotential [numPW];
     WfType[usCh] = new char [numPW];
     Sw_Pars[usCh] = new double* [numPW];
     PotPar[usCh] = new CATSparameters* [numPW];
@@ -514,6 +534,7 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     ExternalPS[usCh] = new DLM_Histo<complex<double>>* [numPW];
     for(unsigned short usPW=0; usPW<numPW; usPW++){
         ShortRangePotential[usCh][usPW] = 0;
+        ShortRangeComplexPotential[usCh][usPW] = 0;
         WfType[usCh][usPW] = 0;
         Sw_Pars[usCh][usPW] = new double [2];
         Sw_Pars[usCh][usPW][0]=0;Sw_Pars[usCh][usPW][1]=0;
@@ -874,6 +895,17 @@ void CATS::SetMaxPw(const unsigned short& maxpw){
 }
 unsigned short CATS::GetMaxPw() const{
     return MaxRho;
+}
+
+void CATS::SetUsingiCATS(const bool &usiCATS)
+{
+    UsingiCATS = usiCATS;
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;
+}
+bool CATS::GetUsingiCATS() const
+{
+    return UsingiCATS;
 }
 
 void CATS::SetOnlyNumericalPw(const unsigned short& usCh, const bool& val){
@@ -1368,10 +1400,12 @@ const double& CATS::NuFm() const{
 }
 
 void CATS::RemoveShortRangePotential(){
-    if(!ShortRangePotential) return;
+    if (!ShortRangePotential && !ShortRangeComplexPotential)
+        return;
     for(unsigned short usCh=0; usCh<NumCh; usCh++){
         for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
             ShortRangePotential[usCh][usPW] = 0;
+            ShortRangeComplexPotential[usCh][usPW] = 0;
             PotPar[usCh][usPW] = NULL;
             //PotParArray[usCh][usPW] = NULL;
         }
@@ -1391,9 +1425,25 @@ void CATS::RemoveShortRangePotential(const unsigned& usCh, const unsigned& usPW)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::RemoveShortRangePotential(...)\n");
         return;
     }
-    if(!ShortRangePotential) return;
-    if(!ShortRangePotential[usCh]) return;
-    ShortRangePotential[usCh][usPW] = 0;
+    if(ShortRangePotential){
+        if (ShortRangePotential[usCh]) {
+            ShortRangePotential[usCh][usPW] = 0;
+        }
+        else
+        {
+            return;
+        }
+    }
+    else if (ShortRangeComplexPotential) {
+        if (ShortRangeComplexPotential[usCh])
+        {
+            ShortRangeComplexPotential[usCh][usPW] = 0;
+        } else {
+            return;
+        }
+    } else {
+        return;
+    }
     if(PotPar[usCh][usPW]) delete PotPar[usCh][usPW];
     PotPar[usCh][usPW] = NULL;
     //PotParArray[usCh][usPW] = NULL;
@@ -1414,8 +1464,8 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
     }
     if(ShortRangePotential[usCh][usPW]==pot && PotPar[usCh][usPW]==&Pars){
         return;
-    }
-
+    }    
+    RemoveShortRangePotential();
     ShortRangePotential[usCh][usPW] = pot;
     if(PotPar[usCh][usPW]){
         delete PotPar[usCh][usPW];
@@ -1426,6 +1476,39 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
     SetWfType(usCh,usPW,wSchroedinger);
+}
+
+void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, complex<double> (*pot)(double *Pars), CATSparameters &Pars)
+{
+    cout << "Using Complex short range potential" << endl;
+    if (usCh >= NumCh)
+    {
+        if (Notifications >= nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
+        return;
+    }
+    if (NumPW && usPW >= NumPW[usCh])
+    {
+        if (Notifications >= nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetShortRangePotential(...)\n");
+        return;
+    }
+    if (ShortRangeComplexPotential[usCh][usPW] == pot && PotPar[usCh][usPW] == &Pars)
+    {
+        return;
+    }
+    RemoveShortRangePotential();
+    ShortRangeComplexPotential[usCh][usPW] = pot;
+    if (PotPar[usCh][usPW])
+    {
+        delete PotPar[usCh][usPW];
+    }
+    PotPar[usCh][usPW] = new CATSparameters(Pars);
+    // PotParArray[usCh][usPW] = NULL;
+
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;
+    SetWfType(usCh, usPW, wSchroedinger);
 }
 /*
 void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars){
@@ -1800,13 +1883,23 @@ void CATS::KillTheCat(const int& Options){
 
     if(Notifications>=nAll)
         printf("\033[1;37m Stage 3:\033[0m Solving the Schroedinger equation...\n");
-    if(!ComputedWaveFunction) ComputeWaveFunction();
+    if(!ComputedWaveFunction){
+        if(!UsingiCATS){
+            printf("\033[1;37m Stage 3:\033[0m ... with a real potential...\n");
+            ComputeWaveFunction();
+        } else {
+            printf("\033[1;37m Stage 3:\033[0m ... with a complex potential...\n");
+            ComputeComplexWaveFunction();
+        }
+    }
     if(Notifications>=nAll)
         printf("          \033[1;32mDone!\033[0m\n");
 
     if(Notifications>=nAll)
         printf("\033[1;37m Stage 4:\033[0m Computing the total wave function...\n");
-    if(!TotWaveFunEvaluated) ComputeTotWaveFunction(ReallocateTotWaveFun);
+    if(!TotWaveFunEvaluated) {
+        ComputeTotWaveFunction(ReallocateTotWaveFun);
+    }
     if(Notifications>=nAll)
         printf("          \033[1;32mDone!\033[0m\n");
 
@@ -1958,12 +2051,26 @@ void CATS::ComputeWaveFunction(){
             DeltaRad[kOld] = MinDeltaRad;
             DeltaRad2[kOld] = DeltaRad[kOld]*DeltaRad[kOld];
             PropagatingFunction(PropFunWithoutSI[kOld], PropFunVal[kOld], PosRad[kOld], Momentum, usPW, usCh);
+            if (DEBUGCOMPLEX = true)
+            {
+                printf("  PosRad[kOld]=%.15e\n", PosRad[kOld]);
+                printf("  Momentum=%.15e\n", Momentum);
+                printf("  PropFunWithoutSI[%i]=%.15e\n", kOld, PropFunWithoutSI[kOld]);
+                printf("  PropFunVal[%i]=%.15e\n", kOld, PropFunVal[kOld]);
+            }
 
             PosRad[kCurrent] = PosRad[kOld]+DeltaRad[kOld];
             Rho[kCurrent] = Momentum*PosRad[kCurrent];
             DeltaRad[kCurrent] = MinDeltaRad;
             DeltaRad2[kCurrent] = DeltaRad[kCurrent]*DeltaRad[kCurrent];
             PropagatingFunction(PropFunWithoutSI[kCurrent], PropFunVal[kCurrent], PosRad[kCurrent], Momentum, usPW, usCh);
+            if (DEBUGCOMPLEX = true)
+            {
+                printf("  PosRad[kCurrent]=%.15e\n", PosRad[kCurrent]);
+                printf("  Momentum=%.15e\n", Momentum);
+                printf("  PropFunWithoutSI[%i]=%.15e\n", kCurrent, PropFunWithoutSI[kCurrent]);
+                printf("  PropFunVal[%i]=%.15e\n", kCurrent, PropFunVal[kCurrent]);
+            }
 
             //the initial values for the wave function are set based on the solution without the strong potential.
             //this will of course lead to a wrong normalization in the asymptotic region, but this will be corrected for later on,
@@ -2427,6 +2534,545 @@ void CATS::ComputeTotWaveFunction(const bool& ReallocateTotWaveFun){
     }
     if(Notifications>=nAll) printf("\r\033[K");
     delete [] cdummy;
+}
+
+void CATS::ComputeComplexWaveFunction(){
+    if(!MomBinConverged){
+        MomBinConverged = new bool [NumMomBins];
+    }
+    for(unsigned uMomBin=0; uMomBin<NumMomBins; uMomBin++){
+        MomBinConverged[uMomBin] = true;
+    }
+    // here one finds the max num PWs, this is needed later on for
+    // the correct mapping of all variables
+    unsigned short MaxNumPW = 0;
+    // we also find the total number of steps to iterate over
+    unsigned TotNumSteps = 0;
+    for (unsigned short usCh = 0; usCh < NumCh; usCh++)
+    {
+        if (NumPW[usCh] > MaxNumPW)
+        {
+            MaxNumPW = NumPW[usCh];
+        }
+        for (unsigned short usPW = 0; usPW < NumPW[usCh]; usPW++)
+        {
+            // if(!ShortRangePotential[usCh][usPW] && !ExternalWF[usCh][usPW]) continue;
+            if (WfType[usCh][usPW] == wSchroedinger && !ShortRangeComplexPotential[usCh][usPW])
+                continue;
+            else if (WfType[usCh][usPW] == wExternal && !ExternalWF[usCh][usPW])
+                continue;
+            else if (WfType[usCh][usPW] == wSquareWell && Sw_Pars[usCh][usPW][0] * Sw_Pars[usCh][usPW][1])
+                continue;
+            TotNumSteps++;
+        }
+    }
+    unsigned TotalNumberOfBins = NumMomBins * NumCh * MaxNumPW;
+    TotNumSteps *= NumMomBins;
+
+    unsigned uMomBin;
+    unsigned short usCh;
+    unsigned short usPW;
+
+    double Time;
+    int pTotal;
+    int pTotalOld = 0;
+    double Progress;
+    char *cdummy = new char[512];
+    double TotalSteps = TotNumSteps;
+    long long CurrentStep = 0;
+    DLM_Timer dlmTimer;
+
+    // the problem with the omp is that the same PotPar are used, we need separate instance for each thread if we want it to work
+    // this is however difficult as currently I only pass a single pointer as PotPar, and I do not know how many arguments there are
+    // the same problem should occur for the source
+    unsigned short NumThreads = omp_get_num_procs();
+    if (NumThreads > MaxNumThreads)
+        NumThreads = MaxNumThreads;
+    // #pragma omp parallel for private(uMomBin,usCh,usPW) num_threads(NumThreads)
+
+    for (unsigned uMPP = 0; uMPP < TotalNumberOfBins; uMPP++)
+    {
+        // compute to which MomBin, Polarization and PW corresponds this MPP,
+        // i.e. map uMomBin, usCh and usPW to uMPP
+        uMomBin = uMPP / (NumCh * MaxNumPW);
+        usCh = (uMPP % (NumCh * MaxNumPW)) / (MaxNumPW);
+        usPW = (uMPP % (NumCh * MaxNumPW)) % (MaxNumPW);
+        // since uMPP is build under the assumption all NumPW are the same
+        // one has to check if usPW has a meaningful value!
+        if (usPW >= NumPW[usCh])
+            continue;
+        // if the potential for this channel and PW is zero => continue
+        // if(!ShortRangePotential[usCh][usPW] && !ExternalWF[usCh][usPW]) continue;
+        if (WfType[usCh][usPW] == wSchroedinger && !ShortRangeComplexPotential[usCh][usPW])
+                continue;
+        else if (WfType[usCh][usPW] == wExternal && !ExternalWF[usCh][usPW])
+            continue;
+        else if (WfType[usCh][usPW] == wSquareWell && Sw_Pars[usCh][usPW][0] * Sw_Pars[usCh][usPW][1])
+            continue;
+        // skip momentum bins which have obtained an error code
+        if (!MomBinConverged[uMomBin] && ExcludeFailedConvergence)
+            continue;
+
+        SavedWaveFunBins[uMomBin][usCh][usPW] = 0;
+
+        // if s+l is odd, than this partial wave will cancel out during the
+        // symmetrization for identical particles
+        if (IdenticalParticles && (usPW + Spin[usCh]) % 2)
+            continue;
+        double Momentum;
+        // the momentum is taken from the center of the bin
+        Momentum = GetMomentum(uMomBin);
+        // Momentum = 0.5*(MomBin[uMomBin]+MomBin[uMomBin+1]);
+        
+        // perform the numerical computation
+        if (WfType[usCh][usPW] == wSchroedinger)
+        {
+            complex<double> *BufferWaveFunction;
+            double *BufferRad;
+            int q1q2 = Gamow ? 0 : Q1Q2;
+            unsigned NumComputedPoints = 2; // counting the initial two starting points
+            // index that keeps track of which value in the arrays correspond to the previous, current and next computing step.
+            short kOld;
+            short kCurrent;
+            short kNew;
+            complex<double> WaveFun[3];
+            double PosRad[3];
+            double Rho[3];
+            // value of the propagating function
+            complex<double> PropFunVal[3];
+            // the value of the prop. function without strong interaction.
+            // in case it is equal to the PropFunVal, than the algorithm must have converged
+            double PropFunWithoutSI[3];
+            // Step size
+            double DeltaRad[3];
+            // Step size^2
+            double DeltaRad2[3];
+            
+            double MaxDeltaRad;
+            double MinDeltaRad;
+
+            PropagatingComplexFunction(PropFunWithoutSI[0], PropFunVal[0], StartRad, Momentum, usPW, usCh);
+            MinDeltaRad = sqrt(fabs(EpsilonProp / (abs(PropFunVal[0]) + 1e-64))); /// real or abs
+            MaxDeltaRad = sqrt(EpsilonProp / (Momentum * Momentum));
+
+            if (MinDeltaRad > MaxDeltaRad){
+                MinDeltaRad = MaxDeltaRad;
+            }
+
+            kOld = 0;
+            kCurrent = 1;
+            kNew = 2;
+
+            // set the initial step in r
+            //! This definition of DeltaRad is used in other functions as well.
+            //! It is vital that in case there is a need to change the definition, it is changed
+            //! in all other functions as well!
+            // DeltaRad[kOld] = RhoStep/Momentum;
+            // DeltaRad2 = DeltaRad*DeltaRad;
+
+            PosRad[kOld] = 0;
+            Rho[kOld] = Momentum * PosRad[kOld];
+            DeltaRad[kOld] = MinDeltaRad;
+            DeltaRad2[kOld] = DeltaRad[kOld] * DeltaRad[kOld];
+            PropagatingComplexFunction(PropFunWithoutSI[kOld], PropFunVal[kOld], PosRad[kOld], Momentum, usPW, usCh);
+            if (DEBUGCOMPLEX = true)
+            {
+                printf("  PosRad[kOld]=%.15e\n", PosRad[kOld]);
+                printf("  Momentum=%.15e\n", Momentum);
+                printf("  PropFunWithoutSI[%i]=%.15e\n", kOld, PropFunWithoutSI[kOld]);
+                printf("  PropFunVal[%i]=%.15e\n", kOld, PropFunVal[kOld]);
+            }
+
+            PosRad[kCurrent] = PosRad[kOld] + DeltaRad[kOld];
+            Rho[kCurrent] = Momentum * PosRad[kCurrent];
+            DeltaRad[kCurrent] = MinDeltaRad;
+            DeltaRad2[kCurrent] = DeltaRad[kCurrent] * DeltaRad[kCurrent];
+            PropagatingComplexFunction(PropFunWithoutSI[kCurrent], PropFunVal[kCurrent], PosRad[kCurrent], Momentum, usPW, usCh);
+
+            if (DEBUGCOMPLEX = true)
+            {
+                printf("  PosRad[kCurrent]=%.15e\n", PosRad[kCurrent]);
+                printf("  Momentum=%.15e\n", Momentum);
+                printf("  PropFunWithoutSI[%i]=%.15e\n", kCurrent, PropFunWithoutSI[kCurrent]);
+                printf("  PropFunVal[%i]=%.15e\n", kCurrent, PropFunVal[kCurrent]);
+            }
+            // the initial values for the wave function are set based on the solution without the strong potential.
+            // this will of course lead to a wrong normalization in the asymptotic region, but this will be corrected for later on,
+            // at this stage it is only important that the algorithm gets a meaningful guess so that we do not encounter
+            // overflow problems during the calculation.
+
+            // MMMMMM Here is where I think we should make it COMPLEX!!!
+            WaveFun[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
+            WaveFun[kCurrent] = ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2);
+
+            bool Convergence = false;
+            bool Converged = false;
+            // at which point the convergence criteria first occurred
+            double ConvergenceRadius = 0;
+            // how much after the convergence was the WF propagated
+            //(this is needed for the normalization)
+            const double ConvIntervalLength = 3.14;
+            const double ConvIntervalRadLength = ConvIntervalLength / Momentum;
+            unsigned ConvIntervalSteps = 0;
+
+            unsigned StepOfMaxConvergedNumWF = 0;
+            complex<double> MaxConvergedNumWF = 0;
+            double MaxConvRho = 0;
+            // the last radius at which the computation was performed
+            double MaxConvRad = 0;
+            double DeltaRadAtMaxConvPrev = DeltaRad[kOld];
+            double DeltaRadAtMaxConv = DeltaRad[kCurrent];
+            double ConvPointOldWeight = -1;
+            double ConvPointWeight = 0;
+
+            const unsigned short MinConvSteps = 32;
+
+            // the next two variables are estimates of the max. required bin numbers in case one fails to converge
+            // MaxNumRadSteps assumes the worst case scenario -> we compute always with the worst possible step length
+            // the second one is the optimistic -> we always compute with the best possible step length
+            // bins that converge have usually less than MinNumRadSteps entries, bins that fail to converge a bit above.
+            // EstNumRadSteps is a fair small over-estimation of the actual bins needed. It is computed by assuming we have the worst-case
+            // scenario up until rho=1.57 or r=4 fm (whichever occurs first at this Momentum) and assumes that the rest as best case scenario.
+            // This number looks to be c.a. 10x bigger than the actual num. bins, so use it for memory allocation.
+
+            unsigned EstNumRadSteps = ceil(((MaxRad * Momentum) > MaxRho ? MaxRad - 1.57 / Momentum : MaxRho / Momentum + ConvIntervalRadLength - 1.57 / Momentum) / MaxDeltaRad) + MinConvSteps + 1 +
+                                      ceil((4. * FmToNu < 1.57 / Momentum ? 4. * FmToNu : 1.57 / Momentum) / MinDeltaRad);
+
+            BufferWaveFunction = new complex<double>[EstNumRadSteps];
+            BufferRad = new double[EstNumRadSteps];
+
+            BufferWaveFunction[0] = WaveFun[kOld];
+            BufferWaveFunction[1] = WaveFun[kCurrent];
+
+            BufferRad[0] = PosRad[kOld];
+            BufferRad[1] = PosRad[kCurrent];
+
+            //! this is the main loop, which computes each next WF point until the result converges or
+            //! a maximum value of rho is reached.
+            // N.B. if the result is currently converging, the numerical method should not be interrupted even
+            // if the MaxRad condition is met!
+            while ((!Converged || (PosRad[kCurrent] < ConvergenceRadius + ConvIntervalRadLength)) && (PosRad[kOld] < MaxRad || Rho[kOld] < MaxRho || Converged))
+            {
+
+                PosRad[kNew] = PosRad[kCurrent] + DeltaRad[kCurrent];
+                Rho[kNew] = PosRad[kNew] * Momentum;
+
+                WaveFun[kNew] = WaveFun[kCurrent] * (1. + DeltaRad[kCurrent] / DeltaRad[kOld]) -
+                                WaveFun[kOld] * DeltaRad[kCurrent] / DeltaRad[kOld] +
+                                PropFunVal[kCurrent] * WaveFun[kCurrent] * DeltaRad2[kCurrent];
+
+                // if we run out of memory...
+                if (NumComputedPoints >= EstNumRadSteps)
+                {
+                    EstNumRadSteps *= 2;
+
+                    complex<double> *BufferTempWF = new complex<double>[EstNumRadSteps];
+                    for (unsigned uTmp = 0; uTmp < NumComputedPoints - 1; uTmp++)
+                    {
+                        BufferTempWF[uTmp] = BufferWaveFunction[uTmp];
+                    }
+                    delete[] BufferWaveFunction;
+                    BufferWaveFunction = BufferTempWF;
+
+                    double *BufferTempRad = new double[EstNumRadSteps];
+                    for (unsigned uTmp = 0; uTmp < NumComputedPoints - 1; uTmp++)
+                    {
+                        BufferTempRad[uTmp] = BufferRad[uTmp];
+                    }
+                    delete[] BufferRad;
+                    BufferRad = BufferTempRad;
+                }
+
+                BufferWaveFunction[NumComputedPoints] = WaveFun[kNew];
+                if (NumComputedPoints < 32 && NumComputedPoints % 1 == 0 && uMomBin == 0 && uMPP == 0 && false)
+                {
+                    printf("Momentum=%f\n", Momentum);
+                    DEBUG = omp_get_thread_num();
+                }
+                else
+                {
+                    // #pragma omp critical
+                    {
+                        DEBUG = -1;
+                    }
+                }
+                PropagatingComplexFunction(PropFunWithoutSI[kNew], PropFunVal[kNew], PosRad[kNew], Momentum, usPW, usCh);
+
+                DeltaRad2[kNew] = EpsilonProp / (abs(PropFunVal[kNew]) + 1e-64);
+                DeltaRad[kNew] = sqrt(DeltaRad2[kNew]);
+                if (DeltaRad[kNew] < MinDeltaRad)
+                {
+                    DeltaRad[kNew] = MinDeltaRad;
+                    DeltaRad2[kNew] = DeltaRad[kNew] * DeltaRad[kNew];
+                }
+                else if (DeltaRad[kNew] > MaxDeltaRad)
+                {
+                    DeltaRad[kNew] = MaxDeltaRad;
+                    DeltaRad2[kNew] = DeltaRad[kNew] * DeltaRad[kNew];
+                }
+
+                BufferRad[NumComputedPoints] = PosRad[kNew];
+                if (DEBUG == omp_get_thread_num())
+                {
+                    printf("Stuff: \n");
+                    printf(" PropFunWithoutSI[%u]=%.15e\n", kNew, PropFunWithoutSI[kNew]);
+                    printf(" PropFunVal[%u]=%.15e\n", kNew, PropFunVal[kNew]);
+                    printf(" BufferRad[%u]=%.15e\n", NumComputedPoints, BufferRad[NumComputedPoints]);
+                    DEBUG = -1;
+                }
+
+                Convergence = fabs((PropFunWithoutSI[kOld] - real(PropFunVal[kOld])) / (fabs(PropFunWithoutSI[kOld] + real(PropFunVal[kOld])) + 1e-64)) < EpsilonConv &&
+                              fabs((PropFunWithoutSI[kCurrent] - real(PropFunVal[kCurrent])) / (fabs(PropFunWithoutSI[kCurrent] + real(PropFunVal[kCurrent])) + 1e-64)) < EpsilonConv &&
+                              fabs((PropFunWithoutSI[kNew] - real(PropFunVal[kNew])) / (fabs(PropFunWithoutSI[kNew] + real(PropFunVal[kNew])) + 1e-64)) < EpsilonConv;
+
+                // in case we have detected a Convergence
+                // 1) make sure the convergence is real and not a local artifact of the potential
+                // 2) reset all variables used to characterize the convergence region
+                if (Convergence && !Converged)
+                {
+                    Converged = true;
+                    ConvergenceRadius = PosRad[kNew];
+
+                    // 2):
+                    MaxConvergedNumWF = 0;
+                    MaxConvRho = 0;
+                    MaxConvRad = 0;
+                    StepOfMaxConvergedNumWF = 0;
+                    DeltaRadAtMaxConvPrev = MinDeltaRad;
+                    DeltaRadAtMaxConv = MinDeltaRad;
+                }
+                // this condition makes sure that 1) is fulfilled.
+                else
+                {
+                    Converged = Convergence;
+                }
+
+                // this will reset the ConvIntervalSteps in case the convergence is reset
+                ConvIntervalSteps *= Converged;
+                // this will count the number of steps computed after convergence
+                ConvIntervalSteps += Converged;
+
+                ConvPointWeight = (PosRad[kNew] - ConvergenceRadius) / ConvIntervalRadLength;
+
+                if (abs(MaxConvergedNumWF) * ConvPointOldWeight <= abs(WaveFun[kNew]) * ConvPointWeight)
+                {
+                    MaxConvergedNumWF = WaveFun[kNew];
+                    MaxConvRho = Rho[kNew];
+                    MaxConvRad = PosRad[kNew];
+                    StepOfMaxConvergedNumWF = NumComputedPoints;
+                    DeltaRadAtMaxConvPrev = DeltaRad[kCurrent];
+                    DeltaRadAtMaxConv = DeltaRad[kNew];
+                    ConvPointOldWeight = ConvPointWeight;
+                }
+
+                NumComputedPoints++;
+
+                kNew++;
+                kNew = kNew % 3;
+                kCurrent++;
+                kCurrent = kCurrent % 3;
+                kOld++;
+                kOld = kOld % 3;
+            } // while(!Converged && PosRad[kOld]<MaxRad)
+
+            // this is not desired for the later computation
+            if (StepOfMaxConvergedNumWF == NumComputedPoints - 1)
+            {
+                StepOfMaxConvergedNumWF--;
+                MaxConvergedNumWF = BufferWaveFunction[StepOfMaxConvergedNumWF];
+                MaxConvRho -= DeltaRadAtMaxConvPrev * Momentum;
+                MaxConvRad -= DeltaRadAtMaxConvPrev;
+                DeltaRadAtMaxConv = DeltaRadAtMaxConvPrev;
+            }
+            //! SOMETIMES AT HIGH MOMENTA THE RESULT SIMPLY DOES NOT CONVERGE TO THE REQUIRED VALUE
+            // за това дай на юзера опцията да реши какво да прави с неконвергирали резултати
+            // 1) изхвърли ги
+            // 2) запаза ги, като нормировката я направи на база максимума в MaxRho-3.14 (btw. make 3.14 the min. value for MaxRho!!!)
+
+            // if the maximum wave-function is zero the computation will fail!
+            // By design this should not really happen.
+            if (!real(MaxConvergedNumWF) && !imag(MaxConvergedNumWF) && Notifications >= nWarning)
+            {
+                printf("\033[1;33mWARNING:\033[0m MaxConvergedNumWF is zero, which is not allowed and points to a bug in the code!\n");
+                printf("         Please contact the developers and do not trust your current results!\n");
+            }
+
+            bool NR_Status;
+
+            // //! Now follows the normalization of the numerical wave function to the asymptotic solution
+            // // the individual steps are explained in detail in the official CATS documentation
+            // if (MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
+            // {
+            //     double ShiftRadStepLen = 0.1 / Momentum;
+            //     const unsigned MaximumShiftIter = 121;
+
+            //     double ShiftRad;
+
+            //     double DownShift = 0;
+            //     double UpShift = ShiftRadStepLen;
+            //     if ((!norm(BufferWaveFunction[StepOfMaxConvergedNumWF]) || !norm(BufferWaveFunction[StepOfMaxConvergedNumWF + 1])) && Notifications >= nWarning)
+            //     {
+            //         printf("\033[1;33mWARNING:\033[0m BufferWaveFunction is zero, which is not allowed and points to a bug in the code!\n");
+            //         printf("         Please contact the developers and do not trust your current results!\n");
+            //     }
+            //     double NumRatio = real(BufferWaveFunction[StepOfMaxConvergedNumWF + 1]) / real(BufferWaveFunction[StepOfMaxConvergedNumWF]);
+            //     double DownValue;
+            //     double UpValue;
+            //     double SignProduct;
+            //     double SignRefAtLimits;
+
+            //     // CHECK IF ZERO IS A VIABLE OPTION!
+            //     DownShift = -0.5 * ShiftRadStepLen;
+            //     if (fabs(DownShift) > MaxConvRad)
+            //         DownShift = -MaxConvRad;
+            //     UpShift = 0.5 * ShiftRadStepLen;
+
+            //     // a potential solution should be locked in a region where the ShiftedReferenceWave*NumericalSol have the same sign.
+            //     // furthermore the ShiftedReferenceWave cannot possibly change sign in this region
+            //     for (unsigned uShift = 0; uShift < MaximumShiftIter; uShift++)
+            //     {
+            //         // positive side
+            //         CurrentRhoStep = DeltaRadAtMaxConv * Momentum;
+            //         DownValue = AsymptoticRatio(MaxConvRad + DownShift, Momentum, usPW, q1q2) - NumRatio;
+            //         UpValue = AsymptoticRatio(MaxConvRad + UpShift, Momentum, usPW, q1q2) - NumRatio;
+
+            //         if (DownValue * UpValue < 0)
+            //         {
+            //             ShiftRad = 0.5 * (DownShift + UpShift);
+            //             SignProduct = ReferencePartialWave(MaxConvRad + ShiftRad, Momentum, usPW, q1q2) * MaxConvergedNumWF;
+            //             SignRefAtLimits = ReferencePartialWave(MaxConvRad + DownShift, Momentum, usPW, q1q2) * ReferencePartialWave(MaxConvRad + UpShift, Momentum, usPW, q1q2);
+            //             if (SignProduct > 0 && SignRefAtLimits > 0)
+            //                 break;
+            //         }
+
+            //         // negative side
+            //         if (UpShift <= MaxConvRad)
+            //         {
+            //             DownValue = AsymptoticRatio(MaxConvRad - DownShift, Momentum, usPW, q1q2) - NumRatio;
+            //             UpValue = AsymptoticRatio(MaxConvRad - UpShift, Momentum, usPW, q1q2) - NumRatio;
+            //             if (DownValue * UpValue < 0)
+            //             {
+            //                 ShiftRad = -0.5 * (DownShift + UpShift);
+            //                 SignProduct = ReferencePartialWave(MaxConvRad + ShiftRad, Momentum, usPW, q1q2) * MaxConvergedNumWF;
+            //                 SignRefAtLimits = ReferencePartialWave(MaxConvRad - DownShift, Momentum, usPW, q1q2) * ReferencePartialWave(MaxConvRad - UpShift, Momentum, usPW, q1q2);
+            //                 if (SignProduct > 0 && SignRefAtLimits > 0)
+            //                 {
+            //                     double Temp = DownShift;
+            //                     DownShift = -UpShift;
+            //                     UpShift = -Temp;
+            //                     break;
+            //                 }
+            //             }
+            //         }
+
+            //         // the factor 0.95 is there just to make sure that we don't by accident
+            //         // miss a zero just around the limiting values
+            //         UpShift += 0.95 * ShiftRadStepLen;
+            //         DownShift = UpShift - ShiftRadStepLen;
+            //     }
+
+            //     ShiftRad = NewtonRapson(&CATS::AsymptoticRatio,
+            //                             DeltaRadAtMaxConv, usPW, Momentum, q1q2, MaxConvRad + DownShift, MaxConvRad + UpShift, NumRatio, NR_Status) -
+            //                MaxConvRad;
+            //     // if(!NR_Status&&Notifications>=nWarning) {printf("The above warning triggered for bin nr. %u (k=%.2f)\n",uMomBin,GetMomentum(uMomBin));}
+            //     if (!NR_Status)
+            //     {
+            //         MomBinConverged[uMomBin] = false;
+            //     }
+
+            //     double ShiftRho = ShiftRad * Momentum;
+            //     double Norm = ReferencePartialWave(MaxConvRad + ShiftRad, Momentum, usPW, q1q2) / MaxConvergedNumWF;
+
+            //     PhaseShift[uMomBin][usCh][usPW] = ShiftRho;
+            //     PhaseShiftF[usCh][usPW][uMomBin] = ShiftRho;
+
+            //     // we save all entries up to the point in which the normalization was performed. For higher values
+            //     // we will later on use the asymptotic form. N.B. in principle one could save a bit of space and
+            //     // save the result at the first moment of detected convergence, however than in case the convergence
+            //     // was not "perfect" there might be some inaccuracy in the interval up to the normalization point.
+            //     // btw. the step size is set to be the MaxDeltaRad
+
+            //     SavedWaveFunBins[uMomBin][usCh][usPW] = StepOfMaxConvergedNumWF + 1;
+            //     unsigned &SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
+
+            //     if (WaveFunRad[uMomBin][usCh][usPW])
+            //         delete[] WaveFunRad[uMomBin][usCh][usPW];
+            //     WaveFunRad[uMomBin][usCh][usPW] = new double[SWFB + 1];
+
+            //     if (WaveFunctionU[uMomBin][usCh][usPW])
+            //         delete[] WaveFunctionU[uMomBin][usCh][usPW];
+            //     WaveFunctionU[uMomBin][usCh][usPW] = new complex<double>[SWFB];
+
+            //     for (unsigned uPoint = 0; uPoint < SWFB; uPoint++)
+            //     {
+            //         WaveFunctionU[uMomBin][usCh][usPW][uPoint] = Norm * CPF[uMomBin] * BufferWaveFunction[uPoint];
+            //     }
+
+            //     // we set up those as bin-range (i.e. the middle of the bin should be buffer rad)
+            //     // we start from r=0, than proceed by adding the limit between different bins as the mid-way to the next point
+            //     WaveFunRad[uMomBin][usCh][usPW][0] = 0;
+            //     for (unsigned uPoint = 1; uPoint < SWFB; uPoint++)
+            //     {
+            //         WaveFunRad[uMomBin][usCh][usPW][uPoint] = (BufferRad[uPoint] + BufferRad[uPoint - 1]) * 0.5;
+            //     }
+            //     // the very last point we simply set as the double distance between the last bin-limit and the last radius value
+            //     WaveFunRad[uMomBin][usCh][usPW][SWFB] = 2 * BufferRad[SWFB - 1] - WaveFunRad[uMomBin][usCh][usPW][SWFB - 1];
+
+            // } // if(MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
+
+            // in case the method failed to converge, the whole momentum bin is marked as unreliable and no
+            // further computations are done. This point will be excluded from the final result
+            if (!Converged)
+            {
+                MomBinConverged[uMomBin] = false;
+                if (Notifications >= nWarning)
+                    printf("          \033[1;33mWARNING:\033[0m A momentum bin at %.2f MeV failed to converge!\n", Momentum);
+                if (ExcludeFailedConvergence && Notifications >= nWarning)
+                {
+                    printf("                   It will be excluded from the final result!\n");
+                }
+            }
+            if (!NR_Status)
+            {
+                MomBinConverged[uMomBin] = false;
+                if (Notifications >= nWarning)
+                    printf("          \033[1;33mWARNING:\033[0m The failed NewtonRapson occurred at %.2f MeV!\n", Momentum);
+                if (ExcludeFailedConvergence && Notifications >= nWarning)
+                {
+                    printf("                   The corresponding bin will be excluded from the final result!\n");
+                }
+            }
+
+            delete[] BufferRad;
+            delete[] BufferWaveFunction;
+        } // end of the numerical computation
+        else
+        {
+            if (Notifications >= nError)
+                printf("          \033[1;31mERROR:\033[0m Major bug in ComputeWaveFunction \033[0m contact the developers!\n", InputFileName);
+            return;
+        }
+        CurrentStep++;
+        // #pragma omp critical
+        {
+            Progress = double(CurrentStep) / TotalSteps;
+            pTotal = int(Progress * 100);
+            if (pTotal != pTotalOld)
+            {
+                Time = double(dlmTimer.Stop()) / 1e6;
+                Time = round((1. / Progress - 1.) * Time);
+                ShowTime((long long)(Time), cdummy, 2, true, 5);
+                if (Notifications >= nAll)
+                    printf("\r\033[K          Progress %3d%%, ETA %s", pTotal, cdummy);
+                cout << flush;
+                pTotalOld = pTotal;
+            }
+        }
+    } // for(unsigned uMPP=0; uMPP<TotalNumberOfBins; uMPP++)
+    ComputedWaveFunction = true;
+    if (Notifications >= nAll)
+        printf("\r\033[K");
+    delete[] cdummy;
 }
 
 //! N.B. the units in this function (until the result is saved) are fm and GeV!!!
@@ -3279,6 +3925,43 @@ printf("  Full=%.15e\n",Full);
     Full = Basic + 2*RedMass*ShortRangePotential[usCh][usPW](Parameters);
 }
 
+// the differential equation for the Schroedinger equation with complex potentials
+void CATS::PropagatingComplexFunction(double &Basic, complex<double> &Full,
+                               const double &Radius, const double &Momentum,
+                               const unsigned short &usPW, const unsigned short &usCh)
+{
+    // make sure that there is no division by zero by adding 1e-64
+    // the Basic result is the Prop.Fun. WITHOUT a short range potential, hence it is a full real quantity
+
+    Basic = 2 * RedMass * CoulombPotential(Radius) + double(usPW) * (double(usPW) + 1) / (Radius * Radius + 1e-64) - Momentum * Momentum;
+    // the Full result is the Prop.Fun. WITH a short range complex potential V= Vr + i * Vi
+    double *Parameters = NULL;
+    if (PotPar[usCh][usPW])
+    {
+        PotPar[usCh][usPW]->SetVariable(0, Radius * NuToFm, true);
+        PotPar[usCh][usPW]->SetVariable(1, Momentum, true);
+        Parameters = PotPar[usCh][usPW]->GetParameters();// Vr and Vi are reals
+    }
+    else
+    {
+        return;
+    }
+    if (DEBUGCOMPLEX == true)
+    {
+        printf("  Basic=%.15e\n", Basic);
+        printf("  ShortRangeComplexPotential[%u][%u]=%.15e\n", usCh, usPW, ShortRangeComplexPotential[usCh][usPW](Parameters));
+        printf("  Parameters[0]=%.15e\n", Parameters[0]);
+        printf("  Parameters[1]=%.15e\n", Parameters[1]);
+        printf("  Parameters[2]=%.15e\n", Parameters[2]);
+        printf("  Parameters[3]=%.15e\n", Parameters[3]);
+        printf("  Full=%.15e\n", Full);
+    }
+    //! In principle this should be executed only if ShortRangePotential[usCh][usPW] is defined.
+    //! Do note that this function is NEVER called in case this is not true! Make sure that this stays so!
+    Full = Basic + 2 * RedMass * ShortRangeComplexPotential[usCh][usPW](Parameters);
+    cout << "real(Full) = " << real(Full) << "-----" << "imag(Full) = " << imag(Full) <<endl;
+}
+
 double CATS::PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW) const{
     double Rho = Radius*Momentum;
     //if Rho is zero, the gsl function will not work
@@ -3524,7 +4207,8 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         //numerical solution, no computation result for zero potential
-        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW])){
+        if (usPW < NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ShortRangeComplexPotential[usCh][usPW] || ExternalWF[usCh][usPW]))
+        {
             Result = EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             //Check this!!! Should it be squared?
             //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
@@ -3575,7 +4259,8 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
     for(unsigned short usPW=0; usPW<MaxPw; usPW++){
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
-        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW])){
+        if (usPW < NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ShortRangeComplexPotential[usCh][usPW] || ExternalWF[usCh][usPW]))
+        {
             if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
             if(SolvedPartWave[usPW]==1e6) SolvedPartWave[usPW]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             Result = double(2*usPW+1)*SolvedPartWave[usPW]*LegPol[usPW];
@@ -3829,6 +4514,37 @@ double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned sho
     PotPar[usCh][usPW]->SetVariable(1,Momentum,true);
     double* Parameters =  PotPar[usCh][usPW]->GetParameters();
     return ShortRangePotential[usCh][usPW](Parameters);
+}
+complex<double> CATS::EvaluateTheComplexPotential(const unsigned short &usCh, const unsigned short &usPW, const double &Momentum, const double &Radius) const
+{
+    if (!ShortRangeComplexPotential)
+    {
+        return 0;
+    }
+    if (usCh >= NumCh)
+    {
+        if (Notifications >= nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::EvaluateTheComplexPotential(...)\n");
+        return 0;
+    }
+    if (usPW >= NumPW[usCh])
+    {
+        if (Notifications >= nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::EvaluateTheComplexPotential(...)\n");
+        return 0;
+    }
+    if (!ShortRangeComplexPotential[usCh])
+    {
+        return 0;
+    }
+    if (!ShortRangeComplexPotential[usCh][usPW])
+    {
+        return 0;
+    }
+    PotPar[usCh][usPW]->SetVariable(0, Radius, true);
+    PotPar[usCh][usPW]->SetVariable(1, Momentum, true);
+    double *Parameters = PotPar[usCh][usPW]->GetParameters();
+    return ShortRangeComplexPotential[usCh][usPW](Parameters);
 }
 double CATS::EvaluateCoulombPotential(const double& Radius) const{
     if(Q1Q2==0){

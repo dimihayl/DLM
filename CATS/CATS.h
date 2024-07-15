@@ -39,6 +39,7 @@ using namespace std;
 //this typedef it used to save the potentials for the
 //different channels as an array of function pointers.
 typedef double (*CatsPotential)(double*);
+typedef complex<double> (*CatsComplexPotential)(double*);
 
 //assumptions: the potential is radial-symmetric.
 //internally only Gaussian natural units (in MeV !!!) are used,
@@ -117,6 +118,10 @@ public:
 
     void SetMaxPw(const unsigned short& maxpw);
     unsigned short GetMaxPw() const;
+
+    //Setter and getter to abilitate the use of iCATS
+    void SetUsingiCATS(const bool &usiCATS);
+    bool GetUsingiCATS() const;
 
     //if true, the total wave function is computed ONLY by adding the available numerical partial waves
     //this was implemented with the idea to be used whenever the WF for a coupled channel is available
@@ -280,6 +285,7 @@ public:
 
     unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
+    complex<double> EvaluateTheComplexPotential(const unsigned short &usCh, const unsigned short &usPW, const double &Momentum, const double &Radius) const;
     double EvaluateCoulombPotential(const double& Radius) const;
     unsigned GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const;
     CATSelder* GetTheElder(const double& Momentum);
@@ -300,6 +306,13 @@ public:
     //has no information of the length of this array, it is the responsibility of the user to make source there is
     //no segmentation violation!!!
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value);
+    //For complex potential:
+    void SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, complex<double> (*pot)(double *Pars), CATSparameters &Pars);
+    // void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars);
+    // set the value of the WhichPar-th parameter of the potential corresponding to the usCh,usPW
+    // N.B. WhichPar counts from zero, i.e. CATS sets the value of PotPar[usCh][usPW][3+WhichPar]. Since CATS
+    // has no information of the length of this array, it is the responsibility of the user to make source there is
+    // no segmentation violation!!!
     void SetShortRangeSquareWell(const unsigned usCh, const unsigned usPW, const double depth, const double width);
     //wSchroedinger, wExternal, wSquareWell
     //N.B. SetShortRangePotential, SetShortRangeSquareWell and SetExternalWaveFunction all change the type automatically
@@ -539,6 +552,9 @@ protected:
     bool ComputedCorrFunction;
     bool GamowCorrected;
 
+    //! Boolean to control the use of CATS or iCATS
+    bool UsingiCATS;
+
     //!INFO ABOUT THE ABOVE 3 VARIABLES
     //one should be mindful that at large relative momenta (k above 200 MeV) the solution converges at higher rho values.
     //this means that, especially for a Coulomb potential, that one can be in a situation where the result does not converge
@@ -552,6 +568,7 @@ protected:
     //!THE INPUT FOR THE POTENTIAL IS ASSUMED TO BE IN [fm]
     //!THE OUTPUT SHOULD BE IN [MeV]
     CatsPotential** ShortRangePotential;
+    CatsComplexPotential** ShortRangeComplexPotential;
 
     double CoulombPotential(const double& Radius) const;
 
@@ -591,9 +608,15 @@ protected:
     void PropagatingFunction(double& Basic, double& Full,
                                const double& Radius, const double& Momentum,
                                const unsigned short& AzQN, const unsigned short& Pol);
+    // the differential equation for the Schroedinger equation with complex potential iCATS
+    void PropagatingComplexFunction(double &Basic, complex<double> &Full,
+                                    const double &Radius, const double &Momentum,
+                                    const unsigned short &AzQN, const unsigned short &Pol);
 
     void ComputeWaveFunction();
     void ComputeTotWaveFunction(const bool& ReallocateTotWaveFun);
+    // needed for iCATS
+    void ComputeComplexWaveFunction();
     short LoadData(const unsigned short& NumBlankHeaderLines=3);
     unsigned LoadDataBuffer(const unsigned& WhichIpBin, CatsDataBuffer* KittyBuffer);
     void FoldSourceAndWF();
@@ -686,8 +709,8 @@ protected:
     //in bins of momentum, channel, GridPoints
     double*** WaveFunction2;
 
-    //in bins of momentum/ImpactParameter
-    double** kbCorrFun;
+    // in bins of momentum/ImpactParameter
+    double **kbCorrFun;
     double** kbCorrFunErr;
 
     //in bins of momentum
@@ -716,6 +739,7 @@ protected:
     //the gamow correction factors (Coulomb penetration factor) pre-computed for all momentum bins
     complex<double>* CPF;
 int DEBUG;
+int DEBUGCOMPLEX;
 };
 
 #endif // CATS_H
