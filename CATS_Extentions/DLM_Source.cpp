@@ -2829,6 +2829,7 @@ double* DLM_CecaSource_v0::GetBinCenters(unsigned WhichPar){
 DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>& InputHisto){
     MyOwnCopy = true;
     dlmSource = new DLM_Histo<KdpPars> (InputHisto);
+    DIM = dlmSource->GetDim();
 }
 DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>* InputHisto){
     dlmSource = NULL;
@@ -2837,11 +2838,13 @@ DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>* InputHisto){
         printf("\033[1;31mERROR:\033[0m  NULL pointer in the constructor of DLM_MtKstar_KdpSource\n");
         return;
     }
-    if(InputHisto->GetDim()!=2){
+    if(InputHisto->GetDim()<2){
         printf("\033[1;31mERROR:\033[0m  Bad input in the constructor of DLM_MtKstar_KdpSource\n");
         return;
     }
     dlmSource = InputHisto;
+    DIM = dlmSource->GetDim();
+    printf("%p\n",dlmSource);
 }
 
 DLM_MtKstar_KdpSource::~DLM_MtKstar_KdpSource(){
@@ -2852,29 +2855,49 @@ DLM_MtKstar_KdpSource::~DLM_MtKstar_KdpSource(){
 //[1] = rstar
 //[2] = empty
 //[3] = mt
+//[4...] = extra patameters
 double DLM_MtKstar_KdpSource::Eval(double* pars){
     double& kstar = pars[0];
     double& rstar = pars[1];
     double& Mt = pars[3];
-    double EvalAt[3];
+    double* EvalAt = new double [DIM];
     EvalAt[0] = Mt;
     EvalAt[1] = kstar;
-    if(!dlmSource) {printf("ZERO\n"); return 0;}
+    for(unsigned uPar=2; uPar<DIM; uPar++){
+        EvalAt[uPar] = pars[4+uPar-2];
+    }
+
+    //printf("EvalAt: ");
+    //for(unsigned uPar=0; uPar<DIM; uPar++){
+    //    printf("%.2f ", EvalAt[uPar]);
+    //}
+    //printf("\n");
+    
+    //double EvalAt[3];
+    //EvalAt[0] = Mt;
+    //EvalAt[1] = kstar;
+    if(!dlmSource) {printf("ZERO %p\n",dlmSource); return 0;}
     KdpPars SrcPars = dlmSource->Eval(EvalAt);
     double Result = PoissonSum(rstar,SrcPars);
     //if(Result){
         //printf("Result(%.3f) = %.3e\n",rstar,Result);
     //}
+    delete [] EvalAt;
     return Result;
 }
 
 //pars[0] = mt
 //pars[1] = kstar
 double DLM_MtKstar_KdpSource::RootEval(double* rstar, double* pars){
-    double PARS[4];
-    PARS[0] = pars[1];
+    //3 reserved for the variables
+    //the rest depend on the DIM, however the kstar counts as var, thus the -1
+    double PARS[3+DIM-1];
+    PARS[0] = pars[1];//kstar
     PARS[1] = *rstar;
     PARS[2] = 0;
-    PARS[3] = pars[0];
+    PARS[3] = pars[0];//mt
+    for(unsigned uPar=2; uPar<DIM; uPar++){
+        PARS[4+uPar-2] = pars[uPar];
+    }
     return Eval(PARS);
 }

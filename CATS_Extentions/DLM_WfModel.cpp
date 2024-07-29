@@ -2784,7 +2784,8 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* InputFolder, C
 
 
 
-
+//TYPE 0 is the one Johann originally provided, TYPE 1 is the one Johann provided to Benedict. 
+//it turned out they are identical up to numerical fluctuations.
 DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE){
     Init_pSigmaPlus_Haidenbauer(InputFolder,*Kitty,TYPE);
 }
@@ -2821,7 +2822,7 @@ DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolde
     Kitty.SetSpin(0,0);
     Kitty.SetSpin(1,1);
 
-    Kitty.SetQ1Q2(0);
+    Kitty.SetQ1Q2(1);
     Kitty.SetQuantumStatistics(false);
     const double Mass_p = 938.272;
     const double Mass_Sch = 1189.37;
@@ -2851,16 +2852,21 @@ DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolde
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         InputFileName[uFile] = new char[256];
         strcpy(InputFileName[uFile],InputFolder);
-        strcat(InputFileName[uFile],"Spp");
+        //strcat(InputFileName[uFile],"Spp");
     }
 
     //different types, if we introduce them later (TYPE)
-    if(true){
+    if(TYPE==0){
         char strCutOff[16];
-        strcat(InputFileName[f1S0], "1s0C.data");
-        strcat(InputFileName[f3S1], "3s1C.data");
+        strcat(InputFileName[f1S0], "Spp1s0C.data");
+        strcat(InputFileName[f3S1], "Spp3s1C.data");
     }
-    
+    else if(TYPE==1){
+        char strCutOff[16];
+        strcat(InputFileName[f1S0], "Haidenbauer_NLO19_SigmaPlusProton_Singlet.data");
+        strcat(InputFileName[f3S1], "Haidenbauer_NLO19_SigmaPlusProton_Triplet.data");
+    }
+
     else{
         printf("YOU BROKE SOMETHING in Init_pSigmaPlus_Haidenbauer\n");
         return NULL;
@@ -3000,6 +3006,7 @@ DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolde
             if(uFile==f1S0){
                 sscanf(cdummy, " %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fDummy,&fDummy,&fDummy,&fDummy);
                 HistoWF[0][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                //printf("%f %f %f\n",fRadius,fReWf1,fImWf1);
                 HistoPS[0][0].SetBinContent(WhichBin,0);
             }
             else if(uFile==f3S1){

@@ -519,7 +519,7 @@ struct KdpPars { // This structure is named "myDataType"
 
 
   void Print(){
-    for(short sn=0; sn<10; sn++){
+    for(short sn=0; sn<NumDistos; sn++){
       printf("mean_%i   = %.3e\n",sn,mean[sn]);
       printf(" stdv_%i  = %.3e\n",sn,stdv[sn]);
       printf("  wght_%i = %.3e\n",sn,wght[sn]);
@@ -625,7 +625,6 @@ public:
     double* GetBinRange(unsigned WhichPar);
     double* GetBinCenters(unsigned WhichPar);
 
-
 private:
   //Cigar or Pancake, i.e. d,ht,hz or d,ht,tau
   const std::string AnaVersion;
@@ -647,6 +646,9 @@ private:
 //i.e. this is only used for extrapolation purposes.
 //the kdp is used to fit fixed Mt and Kstar bins
 //InputHisto is a 2D histo, in Mt and Kstar
+//it can have more dimensions, in which case any extra dims are treated as extra parameters.
+//THE NUMBER OF PARAMETERS FOR CATS WILL BE DIM-1, i.e. the mt and any other pars
+//in CATS: Par0 is mt, and than Par1,2,3 ... are all extra pars
 class DLM_MtKstar_KdpSource:public CatsSource{
 public:
     //creates a copy
@@ -661,6 +663,7 @@ private:
   //2D, in Mt and Kstar, the 3rd DIM comes from the rstar dependence
   DLM_Histo<KdpPars>* dlmSource;
   bool MyOwnCopy;
+  unsigned DIM;
 };
 
 

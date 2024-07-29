@@ -31,7 +31,8 @@
 #include "TF1.h"
 #include "TH1F.h"
 
-DLM_CommonAnaFunctions::DLM_CommonAnaFunctions() : NumCleverLevyObjects(7)
+
+DLM_CommonAnaFunctions::DLM_CommonAnaFunctions() : NumCleverLevyObjects(8)
 {
     // Simple_Reso = NULL;
     // Simple_Reso = new MS_GaussExp_mT_Simple [NumCleverLevyObjects];
@@ -5961,6 +5962,284 @@ TH1F *DLM_CommonAnaFunctions::GetAliceExpCorrFun(const TString &DataSample, cons
     return histoCopy;
 }
 
+
+
+
+
+// POT:
+//   double Gaussian based on the scat pars described in https://arxiv.org/abs/2308.16120
+// SRC:
+//    The RSM source is based on Dmeson -- K epos files
+//    The "CECA" based source with SourceVar==1 is the on straight out of the box, using the params from the CECA paper (full fit)
+void DLM_CommonAnaFunctions::SetUpCats_Kd(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar, const int &SourceVar)
+{
+
+    CATSparameters *cPars = NULL;
+
+    CATSparameters *cPotPars_AVG = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    //unsigned NumChannels = 0;
+
+    Kitty.SetThetaDependentSource(false);
+
+    if (SOURCE == "NULL" || SOURCE == "")
+    {
+    }
+    else if (SOURCE == "Gauss")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, 1.2);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "DoubleGauss")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 3, true);
+        cPars->SetParameter(0, 1.0);
+        cPars->SetParameter(1, 2.0);
+        cPars->SetParameter(2, 0.5);
+        Kitty.SetAnaSource(DoubleGaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "GaussTheta")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, 1.2);
+        Kitty.SetAnaSource(GaussSourceTheta, *cPars);
+        Kitty.SetThetaDependentSource(true);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Cauchy")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, 1.2);
+        Kitty.SetAnaSource(CauchySource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Levy_Nolan")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 2, true);
+        cPars->SetParameter(0, 1.2);
+        cPars->SetParameter(1, 1.6);
+        Kitty.SetAnaSource(LevySource3D, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Levy_Single")
+    {
+        cPars = new CATSparameters(CATSparameters::tSource, 2, true);
+        cPars->SetParameter(0, sqrt(1.6) * 1.2);
+        cPars->SetParameter(1, 1.6);
+        Kitty.SetAnaSource(LevySource3D_single, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "Levy_Diff")
+    {
+        cPars->SetParameter(0, 0.5 * 1.6 * 1.2);
+        cPars->SetParameter(1, 1.6);
+        Kitty.SetAnaSource(LevySource3D_2particle, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "CleverLevy_Nolan")
+    {
+        CleverLevy[7].InitStability(20, 1, 2);
+        CleverLevy[7].InitScale(35, 0.25, 2.0);
+        CleverLevy[7].InitRad(256, 0, 64);
+        CleverLevy[7].InitType(2);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverLevy[0], 2);
+        Kitty.SetAnaSource(0, 1.2);
+        Kitty.SetAnaSource(1, 1.6);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "CleverLevy_Single")
+    {
+        CleverLevy[7].InitStability(20, 1, 2);
+        CleverLevy[7].InitScale(35, 0.25, 2.0);
+        CleverLevy[7].InitRad(256, 0, 64);
+        CleverLevy[7].InitType(0);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverLevy[7], 2);
+        Kitty.SetAnaSource(0, sqrt(1.6) * 1.2);
+        Kitty.SetAnaSource(1, 1.6);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "CleverLevy_Diff")
+    {
+        CleverLevy[7].InitStability(20, 1, 2);
+        CleverLevy[7].InitScale(35, 0.25, 2.0);
+        CleverLevy[7].InitRad(256, 0, 64);
+        CleverLevy[7].InitType(1);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverLevy[7], 2);
+        Kitty.SetUseAnalyticSource(true);
+        Kitty.SetAnaSource(0, 0.5 * 1.6 * 1.2);
+        Kitty.SetAnaSource(1, 1.6);
+    }
+    //last digit of SourceVar is the smooth sampling
+    //(SourceVar/10)*10 is the cutoff value
+    else if (SOURCE == "McGauss_ResoTM" || SOURCE == "McLevy_ResoTM")
+    {
+        if (SOURCE == "McGauss_ResoTM")
+            CleverMcLevyResoTM[7].InitStability(1, 2 - 1e-6, 2 + 1e-6);
+        else
+            CleverMcLevyResoTM[7].InitStability(21, 1, 2);
+        CleverMcLevyResoTM[7].InitScale(38, 0.15, 2.0);
+        CleverMcLevyResoTM[7].InitRad(257 * 2, 0, 64);
+        CleverMcLevyResoTM[7].InitType(2);
+        CleverMcLevyResoTM[7].SetUpReso(0, 0.0);//deuterons
+        CleverMcLevyResoTM[7].SetUpReso(1, 0.476);//kaons
+        // pure Gauss
+
+        // EPOS, 2 is with fixed mass, 3 is with EPOS mass, 4 is 3 body with fixed mass, 5 is 3 body with EPOS mass
+        // printf("Hello 2\n");
+        const double k_CutOff = fabs(int(int(SourceVar) / 10) * 10.);
+        Float_t k_D;
+        Float_t fP1;
+        Float_t fP2;
+        Float_t fM1;
+        Float_t fM2;
+        Float_t Tau1;
+        Float_t Tau2;
+        Float_t AngleRcP1;
+        Float_t AngleRcP2;
+        Float_t AngleP1P2;
+        DLM_Random RanGen(11);
+
+        double MeanP2 = 0;
+        double RanVal2 = 0;
+
+
+        TFile *F_EposDisto_Kreso_d;
+        F_EposDisto_Kreso_d = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/TEMP/SecondTry/ALL_D_KaonReso.root");
+        TNtuple *T_EposDisto_Kreso_d = (TNtuple *)F_EposDisto_Kreso_d->Get("InfoTuple_ClosePairs");
+        unsigned N_EposDisto_Kreso_d = T_EposDisto_Kreso_d->GetEntries();
+        T_EposDisto_Kreso_d->SetBranchAddress("k_D", &k_D);
+        T_EposDisto_Kreso_d->SetBranchAddress("P1", &fP1);
+        T_EposDisto_Kreso_d->SetBranchAddress("P2", &fP2);
+        T_EposDisto_Kreso_d->SetBranchAddress("M1", &fM1);
+        T_EposDisto_Kreso_d->SetBranchAddress("M2", &fM2);
+        T_EposDisto_Kreso_d->SetBranchAddress("Tau1", &Tau1);
+        T_EposDisto_Kreso_d->SetBranchAddress("Tau2", &Tau2);
+        T_EposDisto_Kreso_d->SetBranchAddress("AngleRcP1", &AngleRcP1);
+        T_EposDisto_Kreso_d->SetBranchAddress("AngleRcP2", &AngleRcP2);
+        T_EposDisto_Kreso_d->SetBranchAddress("AngleP1P2", &AngleP1P2);
+
+
+        gROOT->cd();
+        TH1F* hAngle = new TH1F("hAngle","hAngle",32,0,TMath::Pi());
+        TH1F* hCos = new TH1F("hCos","hCos",32,-1.,1.);
+        TH1F* hFinalAngle = new TH1F("hFinalAngle","hFinalAngle",32,0,TMath::Pi());
+        TH1F* hFinalCos = new TH1F("hFinalCos","hFinalCos",32,-1.,1.);
+        F_EposDisto_Kreso_d->cd();
+        int NumUsefulEntries = 0;
+        for(unsigned uEntry=0; uEntry<N_EposDisto_Kreso_d; uEntry++){
+          T_EposDisto_Kreso_d->GetEntry(uEntry);
+          if(k_D>k_CutOff) continue;
+          hAngle->Fill(AngleRcP2);
+          hCos->Fill(cos(AngleRcP2));
+          MeanP2 += fP2;
+          NumUsefulEntries++;
+        }
+        MeanP2 /= double(NumUsefulEntries);
+
+        hCos->Scale(1./hAngle->Integral(),"width");
+
+
+      //iterate over the ntuple
+      for(unsigned uEntry=0; uEntry<N_EposDisto_Kreso_d; uEntry++){
+          //get each entry
+          T_EposDisto_Kreso_d->GetEntry(uEntry);
+          //disregard the entry of you are outside the desired k*
+          if(k_D>k_CutOff) continue;
+          //overwrite the value for the lifetime. This is computed from the
+          //stat. hadronization model (Vale) or thermal fist (Max)
+          //this is the value for the secondary protons
+          Tau1 = 0;
+          //for primoridials (the Xis) we put 0
+          Tau2 = 3.66;
+          //put in the average mass of the resonances (again from SHM or TF)
+          //this is the value for protons
+          fM2 = 1054;
+          //generate a random path length for the propagation of the resonances
+          //nothing to change!
+          RanVal2 = RanGen.Exponential(fM2/(fP2*Tau2));
+          //adds a single entry into the PDF for the angular distribution to be used
+          CleverMcLevyResoTM[7].AddBGT_PR(RanVal2,cos(AngleRcP2));
+          hFinalAngle->Fill(AngleRcP2);
+          hFinalCos->Fill(cos(AngleRcP2));
+      }
+
+      delete hAngle;
+      delete hCos;
+      delete hFinalAngle;
+      delete hFinalCos;
+
+        delete F_EposDisto_Kreso_d;
+
+
+        if (SOURCE == "McGauss_ResoTM")
+            CleverMcLevyResoTM[7].InitNumMcIter(1000000);
+        else
+            CleverMcLevyResoTM[7].InitNumMcIter(100000);
+        Kitty.SetAnaSource(CatsSourceForwarder, &CleverMcLevyResoTM[7], 2);
+        Kitty.SetAnaSource(0, 1.0);
+        Kitty.SetAnaSource(1, 2.0);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_Kd;
+    }
+
+    if (POT == "DG_ER")
+    {
+        double PotPars_AVG[4] = {676.1923588303322, 0.7595548889641572, -44.11395844823363, 1.3254079885988337};
+        cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars_AVG->SetParameters(PotPars_AVG);
+    }
+    else if (POT == "DG_FCA")
+    {
+        double PotPars_AVG[4] = {369.4094817373952, 0.7847035161927353, -125.73561350111179, 0.7507974357114263};
+        cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars_AVG->SetParameters(PotPars_AVG);    
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n", POT.Data());
+        goto CLEAN_SetUpCats_Kd;
+    }
+    Kitty.SetMomentumDependentSource(false);
+    // Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(1);
+    Kitty.SetQuantumStatistics(false);
+    Kitty.SetRedMass((Mass_Kch*Mass_d)/(Mass_Kch+Mass_d));
+
+    if(!Kitty.GetNumChannels()){
+        Kitty.SetNumChannels(1);
+        Kitty.SetNumPW(0, 1);
+        Kitty.SetSpin(0, 0);
+        Kitty.SetChannelWeight(0, 1.);
+    }
+
+    Kitty.SetShortRangePotential(0,0,DoubleGaussSum,*cPotPars_AVG);
+
+CLEAN_SetUpCats_Kd:;
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    // if(CleverLevy){delete CleverLevy; CleverLevy=NULL;}
+    if (cPotPars_AVG)
+    {
+        delete cPotPars_AVG;
+        cPotPars_AVG = NULL;
+    }
+}
+
+
+
 DLM_CleverMcLevyReso *DLM_CommonAnaFunctions::GetCleverMcLevyReso_pp()
 {
     return &CleverMcLevyReso[0];
@@ -6671,7 +6950,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LPi(const int &Sour
 
     return MagicSource;
 }
-
+/*
 // the cut off scale in k*, for which the angular distributions from EPOS
 // are evaluated. 200 MeV works okay, you can go up to 300 MeV for systematic checks
 const double k_CutOff = 200;
@@ -6695,8 +6974,7 @@ DLM_Random RanGen(11);
 double RanVal1;
 double RanVal2;
 double RanVal3;
-double RanCos;
-double MeanP1 = 0;
+*/
 
 DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_pK(const int &SourceVar)
 {
@@ -7233,6 +7511,8 @@ void SetUp_RSMflat_pp(DLM_CleverMcLevyResoTM &MagicSource)
 
 // const double FracProtonReso = 0.6422*1;
 // const double FracLambdaReso = 0.6438*1;
+//FLAG = 0 is the CORRECT SIGN !!!
+//FLAG = 1 is the WRONG SIGN
 void SetUp_RSM_pp(DLM_CleverMcLevyResoTM &MagicSource, const TString InputFolder, const int flag)
 {
     Float_t k_D;
@@ -7282,6 +7562,7 @@ void SetUp_RSM_pp(DLM_CleverMcLevyResoTM &MagicSource, const TString InputFolder
         RanVal1 = RanGen.Exponential(fM2 / (fP2 * Tau2));
         // if(flag/10==0){
         // this is with the correct sign
+        //(man, I think its flipped, this should be the wrong sign)
         if (flag % 10 == 1)
         {
             MagicSource.AddBGT_PR(RanVal1, -cos(AngleRcP2));
@@ -7632,9 +7913,10 @@ void SetUpSplPars(TF1*& fitfun){
 //Mode = 0: default
 //Mode = 1: reduced: we use only 8 of the Disots, making bigger distance and no allowing sharp peaks (small stdv)
 //Mode = 2: reduced+: only 6 Distos
-void SetUpKdpPars(TF1*& fitfun, int Mode){
+//Mode = 3: reduced+: only 6 Distos, but extra loose limits for long-range distos
+void SetUpKdpPars(TF1*& fitfun, int Mode, double KdpFitMax){
 
-  fitfun = new TF1("fKdpPars",PoissonSum,0,64,29);
+  fitfun = new TF1("fKdpPars",PoissonSum,0,KdpFitMax,29);
 
   if(Mode==1){
     //P0
@@ -7759,6 +8041,54 @@ void SetUpKdpPars(TF1*& fitfun, int Mode){
     fitfun->FixParameter(27,0);//mean
     fitfun->FixParameter(28,0);//stdv
   }
+  else if(Mode==3){
+    //P0
+    fitfun->SetParameter(0,0.5);//mean
+    fitfun->SetParameter(3,1.0);//mean
+    fitfun->SetParameter(6,2.0);//mean
+    fitfun->SetParameter(9,4.0);//mean
+    fitfun->SetParameter(12,8.0);//mean
+    fitfun->SetParameter(15,16.0);//mean
+
+
+    for(unsigned uP=0; uP<6; uP++){
+        double low_mean = fitfun->GetParameter(uP*3)*0.25;
+        if(low_mean < 0.1) low_mean = 0.1;
+        fitfun->SetParLimits(uP*3,low_mean,fitfun->GetParameter(uP*3)*8.);
+    }
+    
+    for(unsigned uP=0; uP<6; uP++){
+      double mu = fitfun->GetParameter(0+uP*3);
+      fitfun->SetParameter(1+uP*3,mu*0.4);
+      fitfun->SetParLimits(1+uP*3,mu*0.1,mu*1.0);
+    }
+
+    for(unsigned uP=0; uP<5; uP++){
+      fitfun->SetParameter(2+uP*3,1./(6.-double(uP)));
+      fitfun->SetParLimits(2+uP*3,0,1.0);
+    }
+    fitfun->FixParameter(17,1);
+
+    //P6
+    fitfun->FixParameter(18,0);//mean
+    fitfun->FixParameter(19,0);//stdv
+    fitfun->FixParameter(20,0);//wght
+
+    //P7
+    fitfun->FixParameter(21,0);//mean
+    fitfun->FixParameter(22,0);//stdv
+    fitfun->FixParameter(23,0);//wght
+
+    //P8
+    fitfun->FixParameter(24,0);//mean
+    fitfun->FixParameter(25,0);//stdv
+    fitfun->FixParameter(26,0);//wght
+
+    //P9
+    fitfun->FixParameter(27,0);//mean
+    fitfun->FixParameter(28,0);//stdv
+  }
+
   else{
     //P0
     fitfun->SetParameter(0,0.3);//mean
@@ -8331,19 +8661,19 @@ bool PotentialDesignerEngine(char* BaseFileName){
   return true;
 }
 
-TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2){
+TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2, double Chi2_Limit, double KdpFitMax, int KdpMode){
   double lowerlimit, upperlimit;
   GetCentralInterval(*hSrc, 0.98, lowerlimit, upperlimit, true);
   //if(lowerlimit>5) lowerlimit = 5;
   lowerlimit = 0;
-  if(upperlimit>10) upperlimit = 10;
+  if(upperlimit>KdpFitMax+2) upperlimit = KdpFitMax+2;
 
 
-  const double Chi2_Limit = 3;
-  const double KdpFitMax = 8;
+  //const double Chi2_Limit = 3;
+  //const double KdpFitMax = 8;
 
   TF1* fSrc;
-  SetUpKdpPars(fSrc,2);
+  SetUpKdpPars(fSrc,KdpMode,KdpFitMax);
 
   //for(unsigned uP=0; uP<KdpPars::NumDistos; uP++){
   //  fSrc->SetParLimits(1+uP*3,0.1,fSrc->GetParameter(0+uP*3));
@@ -8357,6 +8687,10 @@ TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2){
   //fSrc->FixParameter(5,1);
 
   hSrc->Fit(fSrc,"Q, S, N, R, M","",lowerlimit,upperlimit);
+  //TFile fWTF("fWTF.root","recreate");
+  //hSrc->Write();
+  //fSrc->Write();
+
 
   double Integral = fSrc->Integral(0,KdpFitMax*4);
   if(fabs(Integral-1)>1e-2){
@@ -8394,7 +8728,7 @@ TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2){
 }
 
 //takes a 3D histo of Mt Kstar Rstar and returns a 2D kdp histo of Mt Kstar
-DLM_Histo<KdpPars>* Convert_3Dsource_Kdp(DLM_Histo<float>& dlmMtKstarRstar){
+DLM_Histo<KdpPars>* Convert_3Dsource_Kdp(DLM_Histo<float>& dlmMtKstarRstar, const bool CecaStyle, double Chi2_Limit, double KdpFitMax, int KdpMode){
 TString BaseFileName = TString::Format("/home/dimihayl/Software/LocalFemto/Output/HighMtProblem/CECA_kstar_vs_integrated/");
 TFile fTest(BaseFileName + "fTEST.root","recreate");
     DLM_Histo<KdpPars>* KdpResult = NULL;
@@ -8404,14 +8738,14 @@ TFile fTest(BaseFileName + "fTEST.root","recreate");
         return KdpResult;
     }
 
-    const unsigned NumMtBins = dlmMtKstarRstar.GetNbins(0);
-    double* MtBinRange = dlmMtKstarRstar.GetBinRange(0);
-    const unsigned NumKstarBins = dlmMtKstarRstar.GetNbins(1);
-    double* KstarBinRange = dlmMtKstarRstar.GetBinRange(1);
-    const unsigned NumRadBins = dlmMtKstarRstar.GetNbins(2);
-    double* RadBinRange = dlmMtKstarRstar.GetBinRange(2);
-    const double rMin = dlmMtKstarRstar.GetLowEdge(2);
-    const double rMax = dlmMtKstarRstar.GetLowEdge(2);
+    const unsigned NumMtBins = dlmMtKstarRstar.GetNbins(CecaStyle?2:0);
+    double* MtBinRange = dlmMtKstarRstar.GetBinRange(CecaStyle?2:0);
+    const unsigned NumKstarBins = dlmMtKstarRstar.GetNbins(CecaStyle?0:1);
+    double* KstarBinRange = dlmMtKstarRstar.GetBinRange(CecaStyle?0:1);
+    const unsigned NumRadBins = dlmMtKstarRstar.GetNbins(CecaStyle?1:2);
+    double* RadBinRange = dlmMtKstarRstar.GetBinRange(CecaStyle?1:2);
+    const double rMin = dlmMtKstarRstar.GetLowEdge(CecaStyle?1:2);
+    const double rMax = dlmMtKstarRstar.GetLowEdge(CecaStyle?1:2);
 
     KdpResult = new DLM_Histo<KdpPars> ();
     KdpResult->SetUp(2);
@@ -8421,13 +8755,14 @@ TFile fTest(BaseFileName + "fTEST.root","recreate");
 
     for(unsigned uMt=0; uMt<NumMtBins; uMt++){
         for(unsigned uKstar=0; uKstar<NumKstarBins; uKstar++){
+            //printf("cc %u %u\n",uMt,uKstar);
             TH1F* hToFit = new TH1F("hToFit_c3dskdp","hToFit_c3dskdp",NumRadBins,RadBinRange);
             for(unsigned uRad=0; uRad<NumRadBins; uRad++){
-                double src_val = dlmMtKstarRstar.GetBinContent(uMt,uKstar,uRad);
+                double src_val = CecaStyle?dlmMtKstarRstar.GetBinContent(uKstar,uRad,uMt):dlmMtKstarRstar.GetBinContent(uMt,uKstar,uRad);
                 double src_err;
                 if(src_val==0){src_err = 1;}
                 else{
-                    src_err = sqrt(dlmMtKstarRstar.GetBinError(uMt,uKstar,uRad));
+                    src_err = CecaStyle?dlmMtKstarRstar.GetBinError(uKstar,uRad,uMt):dlmMtKstarRstar.GetBinError(uMt,uKstar,uRad);
                 }
                 //printf("src_val = %.4f +/- %.4f\n",src_val,src_err);
                 hToFit->SetBinContent(uRad+1, src_val);
@@ -8436,13 +8771,13 @@ TFile fTest(BaseFileName + "fTEST.root","recreate");
             hToFit->Scale(1./hToFit->Integral(),"width");
             double Chi2=0;
             KdpPars my_kdp;
-            TF1* fit_ptr = fit_source_kdp(hToFit, my_kdp, Chi2);
+            TF1* fit_ptr = fit_source_kdp(hToFit, my_kdp, Chi2, Chi2_Limit, KdpFitMax, KdpMode);
             fTest.cd();
             //if(Chi2>3){
                 static int counter = 0;
 
-                hToFit->SetName(TString::Format("hToFit_%u_%.0f",uMt,dlmMtKstarRstar.GetBinCenter(1,uKstar)));
-                fit_ptr->SetName(TString::Format("fit_ptr_%u_%.0f",uMt,dlmMtKstarRstar.GetBinCenter(1,uKstar)));
+                hToFit->SetName(TString::Format("hToFit_%u_%.0f",uMt,dlmMtKstarRstar.GetBinCenter(CecaStyle?0:1,uKstar)));
+                fit_ptr->SetName(TString::Format("fit_ptr_%u_%.0f",uMt,dlmMtKstarRstar.GetBinCenter(CecaStyle?0:1,uKstar)));
                 
                 hToFit->Write();
                 fit_ptr->Write();

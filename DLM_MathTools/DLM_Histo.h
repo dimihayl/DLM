@@ -414,6 +414,10 @@ public:
         Initialized = false;
         CumUpdated = false;
     }
+    //sets up the sDim in the same way as the sDim_other of other
+    void SetUp(const unsigned short& sDim, const DLM_Histo<Type>& other, const unsigned short& sDim_other){
+        SetUp(sDim, other.GetNbins(sDim_other), other.BinRange[sDim_other]);
+    }
     bool Initialize(const bool& ZeroElements=true){
 //printf("Initialize 1: %i\n",Initialized);
         if(!Dim||!NumBins||!BinRange||!BinCenter) return false;

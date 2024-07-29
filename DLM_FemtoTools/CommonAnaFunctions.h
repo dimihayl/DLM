@@ -89,6 +89,8 @@ public:
     void SetUpCats_pXim(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_pXi0(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_pOmegam(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
+    void SetUpCats_Kd(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar=0, const int &SourceVar=0);
+
     void SetUpCats_XiKCoulomb(CATS &Kitty, const TString &POT, const TString &SOURCE, const TString &DataSample);
     void SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample);
 
@@ -221,8 +223,8 @@ void SetUpSplPars(TF1*& fitfun);
 
 
 double DecaPoisson(double* xVal, double* Pars);
-void SetUpKdpPars(TF1*& fitfun);
-void SetUpKdpPars(TF1*& fitfun, int Mode=0);
+//void SetUpKdpPars(TF1*& fitfun);
+void SetUpKdpPars(TF1*& fitfun, int Mode=0, double KdpFitMax=64);
 
 
 
@@ -295,9 +297,10 @@ bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFi
 bool PotentialDesignerEngine(char* BaseFileName);
 
 //fits the kdp parameters of a source
-TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2);
+TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2, double Chi2_Limit=3, double KdpFitMax=8, int KdpMode=2);
 //takes a 3D histo of Mt Kstar Rstar and returns a 2D kdp histo of Mt Kstar
-DLM_Histo<KdpPars>* Convert_3Dsource_Kdp(DLM_Histo<float>& dlmMtKstarRstar);
+//CecaStyle==true is the same, but for the f*** up CECA original output with ordring of the type: Kstar, Rstar, mT
+DLM_Histo<KdpPars>* Convert_3Dsource_Kdp(DLM_Histo<float>& dlmMtKstarRstar, const bool CecaStyle = false, double Chi2_Limit=3, double KdpFitMax=8, int KdpMode=2);
 
 
 /*
