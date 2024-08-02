@@ -138,7 +138,7 @@ CATS::CATS():
     CPF = NULL;
     TheTrueSource = NULL;
 DEBUG=-1;
-DEBUGCOMPLEX = true;
+DEBUGCOMPLEX = false;
 // DEBUG = true;
     SetIpBins(1, -1000, 1000);
 
@@ -1341,7 +1341,8 @@ complex<double> CATS::GetRadialWaveFunction(const unsigned& WhichMomBin, const u
 complex<double> CATS::EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
                                     const bool& DivideByR) const{
     if(NumMomBins<=WhichMomBin || NumCh<=usCh || NumPW[usCh]<=usPW) return 0;
-    return EvalWaveFunctionU(WhichMomBin, Radius*FmToNu, usCh, usPW, DivideByR);
+    cout << "++++++ in EvalRadialWaveFunction +++++" << endl;
+    return EvalWaveFunctionU(WhichMomBin, Radius * FmToNu, usCh, usPW, DivideByR);
 }
 
 double CATS::EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh){
@@ -2028,7 +2029,10 @@ void CATS::ComputeWaveFunction(){
 
             double MaxDeltaRad;
             double MinDeltaRad;
-
+            if (DEBUGCOMPLEX)
+            {
+                cout << "+++++++++ INITIALIZATION +++++++++" << endl;
+            }
             PropagatingFunction(PropFunWithoutSI[0], PropFunVal[0], StartRad, Momentum, usPW, usCh);
             MinDeltaRad = sqrt(fabs(EpsilonProp/(PropFunVal[0]+1e-64)));
             MaxDeltaRad = sqrt(EpsilonProp/(Momentum*Momentum));
@@ -2050,34 +2054,34 @@ void CATS::ComputeWaveFunction(){
             Rho[kOld] = Momentum*PosRad[kOld];
             DeltaRad[kOld] = MinDeltaRad;
             DeltaRad2[kOld] = DeltaRad[kOld]*DeltaRad[kOld];
-            PropagatingFunction(PropFunWithoutSI[kOld], PropFunVal[kOld], PosRad[kOld], Momentum, usPW, usCh);
-            if (DEBUGCOMPLEX = true)
+            if (DEBUGCOMPLEX)
             {
-                printf("  PosRad[kOld]=%.15e\n", PosRad[kOld]);
-                printf("  Momentum=%.15e\n", Momentum);
-                printf("  PropFunWithoutSI[%i]=%.15e\n", kOld, PropFunWithoutSI[kOld]);
-                printf("  PropFunVal[%i]=%.15e\n", kOld, PropFunVal[kOld]);
+                cout << "+++++++++ OLD +++++++++" << endl;
             }
-
+            PropagatingFunction(PropFunWithoutSI[kOld], PropFunVal[kOld], PosRad[kOld], Momentum, usPW, usCh);
             PosRad[kCurrent] = PosRad[kOld]+DeltaRad[kOld];
             Rho[kCurrent] = Momentum*PosRad[kCurrent];
             DeltaRad[kCurrent] = MinDeltaRad;
             DeltaRad2[kCurrent] = DeltaRad[kCurrent]*DeltaRad[kCurrent];
-            PropagatingFunction(PropFunWithoutSI[kCurrent], PropFunVal[kCurrent], PosRad[kCurrent], Momentum, usPW, usCh);
-            if (DEBUGCOMPLEX = true)
+            if (DEBUGCOMPLEX)
             {
-                printf("  PosRad[kCurrent]=%.15e\n", PosRad[kCurrent]);
-                printf("  Momentum=%.15e\n", Momentum);
-                printf("  PropFunWithoutSI[%i]=%.15e\n", kCurrent, PropFunWithoutSI[kCurrent]);
-                printf("  PropFunVal[%i]=%.15e\n", kCurrent, PropFunVal[kCurrent]);
+                cout << "+++++++++ CURRENT +++++++++" << endl;
             }
-
+            PropagatingFunction(PropFunWithoutSI[kCurrent], PropFunVal[kCurrent], PosRad[kCurrent], Momentum, usPW, usCh);
             //the initial values for the wave function are set based on the solution without the strong potential.
             //this will of course lead to a wrong normalization in the asymptotic region, but this will be corrected for later on,
             //at this stage it is only important that the algorithm gets a meaningful guess so that we do not encounter
             //overflow problems during the calculation.
             WaveFun[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
             WaveFun[kCurrent] = ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2);
+
+            if (DEBUGCOMPLEX = true)
+            {
+                cout << "**************************************" << endl;
+                printf("  WaveFun[kOld=%i]=%.15e\n", kOld, WaveFun[kOld]);
+                printf("  WaveFun[kCurrent=%i]=%.15e\n", kCurrent, WaveFun[kCurrent]);
+                cout << "**************************************" << endl;
+            }
 
             bool Convergence = false;
             bool Converged = false;
@@ -2164,6 +2168,10 @@ else{
     {
     DEBUG=-1;
     }
+}
+if (DEBUGCOMPLEX)
+{
+    cout << "+++++++++ NEW +++++++++" << endl;
 }
                 PropagatingFunction(PropFunWithoutSI[kNew], PropFunVal[kNew], PosRad[kNew], Momentum, usPW, usCh);
 
@@ -2650,9 +2658,11 @@ void CATS::ComputeComplexWaveFunction(){
             
             double MaxDeltaRad;
             double MinDeltaRad;
-
+            if(DEBUGCOMPLEX){
+                cout << "++++++ INITIALITATION ++++++++++++" << endl;
+            }
             PropagatingComplexFunction(PropFunWithoutSI[0], PropFunVal[0], StartRad, Momentum, usPW, usCh);
-            MinDeltaRad = sqrt(fabs(EpsilonProp / (abs(PropFunVal[0]) + 1e-64))); /// real or abs
+            MinDeltaRad = sqrt(fabs(EpsilonProp / (real(PropFunVal[0]) + 1e-64))); /// real to have 1-to-1 comparison to real case for now
             MaxDeltaRad = sqrt(EpsilonProp / (Momentum * Momentum));
 
             if (MinDeltaRad > MaxDeltaRad){
@@ -2674,27 +2684,34 @@ void CATS::ComputeComplexWaveFunction(){
             Rho[kOld] = Momentum * PosRad[kOld];
             DeltaRad[kOld] = MinDeltaRad;
             DeltaRad2[kOld] = DeltaRad[kOld] * DeltaRad[kOld];
+            if (DEBUGCOMPLEX)
+            {
+                cout << "++++++ OLD ++++++++++++" << endl;
+            }
             PropagatingComplexFunction(PropFunWithoutSI[kOld], PropFunVal[kOld], PosRad[kOld], Momentum, usPW, usCh);
             if (DEBUGCOMPLEX = true)
             {
                 printf("  PosRad[kOld]=%.15e\n", PosRad[kOld]);
+                printf("  DeltaRad[kOld]=%.15e\n", DeltaRad[kOld]);
                 printf("  Momentum=%.15e\n", Momentum);
-                printf("  PropFunWithoutSI[%i]=%.15e\n", kOld, PropFunWithoutSI[kOld]);
-                printf("  PropFunVal[%i]=%.15e\n", kOld, PropFunVal[kOld]);
+                printf("  PropFunVal[%i]=%.15e %.15e\n", kOld, PropFunVal[kOld]);
             }
 
             PosRad[kCurrent] = PosRad[kOld] + DeltaRad[kOld];
             Rho[kCurrent] = Momentum * PosRad[kCurrent];
             DeltaRad[kCurrent] = MinDeltaRad;
             DeltaRad2[kCurrent] = DeltaRad[kCurrent] * DeltaRad[kCurrent];
+            if (DEBUGCOMPLEX)
+            {
+                cout << "++++++ CURRENT ++++++++++++" << endl;
+            }
             PropagatingComplexFunction(PropFunWithoutSI[kCurrent], PropFunVal[kCurrent], PosRad[kCurrent], Momentum, usPW, usCh);
 
             if (DEBUGCOMPLEX = true)
             {
                 printf("  PosRad[kCurrent]=%.15e\n", PosRad[kCurrent]);
                 printf("  Momentum=%.15e\n", Momentum);
-                printf("  PropFunWithoutSI[%i]=%.15e\n", kCurrent, PropFunWithoutSI[kCurrent]);
-                printf("  PropFunVal[%i]=%.15e\n", kCurrent, PropFunVal[kCurrent]);
+                printf("  PropFunVal[%i]=%.15e %.15e\n", kCurrent, PropFunVal[kCurrent]);
             }
             // the initial values for the wave function are set based on the solution without the strong potential.
             // this will of course lead to a wrong normalization in the asymptotic region, but this will be corrected for later on,
@@ -2702,8 +2719,17 @@ void CATS::ComputeComplexWaveFunction(){
             // overflow problems during the calculation.
 
             // MMMMMM Here is where I think we should make it COMPLEX!!!
-            WaveFun[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
-            WaveFun[kCurrent] = ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2);
+            WaveFun[kOld].real(ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2));
+            WaveFun[kOld].imag(ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2));
+            WaveFun[kCurrent].real(ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2));
+            WaveFun[kCurrent].imag(ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2));
+
+            if (DEBUGCOMPLEX = true)
+            {
+                printf("  ReferencePartialWave =%.15e\n", ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2));
+                printf("  Real WaveFun[kOld=%i]=%.15e %.15e\n", kOld, WaveFun[kOld]);
+                printf("  WaveFun[kCurrent=%i]=%.15e %.15e\n", kCurrent, WaveFun[kCurrent]);
+            }
 
             bool Convergence = false;
             bool Converged = false;
@@ -2761,6 +2787,12 @@ void CATS::ComputeComplexWaveFunction(){
                                 WaveFun[kOld] * DeltaRad[kCurrent] / DeltaRad[kOld] +
                                 PropFunVal[kCurrent] * WaveFun[kCurrent] * DeltaRad2[kCurrent];
 
+                if (DEBUGCOMPLEX = true)
+                {
+                    cout << "---- Converging ----" <<endl;
+                    cout << "kNew = " << kNew << endl;
+                    printf("  WaveFun[kNew=%i]=%.15e %.15e\n", kNew, WaveFun[kNew]);
+                }
                 // if we run out of memory...
                 if (NumComputedPoints >= EstNumRadSteps)
                 {
@@ -2796,9 +2828,13 @@ void CATS::ComputeComplexWaveFunction(){
                         DEBUG = -1;
                     }
                 }
+                if (DEBUGCOMPLEX)
+                {
+                    cout << "++++++ NEW ++++++++++++" << endl;
+                }
                 PropagatingComplexFunction(PropFunWithoutSI[kNew], PropFunVal[kNew], PosRad[kNew], Momentum, usPW, usCh);
 
-                DeltaRad2[kNew] = EpsilonProp / (abs(PropFunVal[kNew]) + 1e-64);
+                DeltaRad2[kNew] = EpsilonProp / (abs(real(PropFunVal[kNew])) + 1e-64);
                 DeltaRad[kNew] = sqrt(DeltaRad2[kNew]);
                 if (DeltaRad[kNew] < MinDeltaRad)
                 {
@@ -2812,18 +2848,19 @@ void CATS::ComputeComplexWaveFunction(){
                 }
 
                 BufferRad[NumComputedPoints] = PosRad[kNew];
-                if (DEBUG == omp_get_thread_num())
+                if (DEBUGCOMPLEX)
                 {
-                    printf("Stuff: \n");
                     printf(" PropFunWithoutSI[%u]=%.15e\n", kNew, PropFunWithoutSI[kNew]);
-                    printf(" PropFunVal[%u]=%.15e\n", kNew, PropFunVal[kNew]);
-                    printf(" BufferRad[%u]=%.15e\n", NumComputedPoints, BufferRad[NumComputedPoints]);
-                    DEBUG = -1;
+                    printf(" PropFunVal[%u]=%.15e %.15e\n", kNew, PropFunVal[kNew]);
                 }
-
-                Convergence = fabs((PropFunWithoutSI[kOld] - real(PropFunVal[kOld])) / (fabs(PropFunWithoutSI[kOld] + real(PropFunVal[kOld])) + 1e-64)) < EpsilonConv &&
-                              fabs((PropFunWithoutSI[kCurrent] - real(PropFunVal[kCurrent])) / (fabs(PropFunWithoutSI[kCurrent] + real(PropFunVal[kCurrent])) + 1e-64)) < EpsilonConv &&
-                              fabs((PropFunWithoutSI[kNew] - real(PropFunVal[kNew])) / (fabs(PropFunWithoutSI[kNew] + real(PropFunVal[kNew])) + 1e-64)) < EpsilonConv;
+                /// MMMMMmmm, here should we add convergence also for the imaginary part???
+                /// real or abs??
+                // Convergence = fabs((PropFunWithoutSI[kOld] - real(PropFunVal[kOld])) / (fabs(PropFunWithoutSI[kOld] + real(PropFunVal[kOld])) + 1e-64)) < EpsilonConv &&
+                //               fabs((PropFunWithoutSI[kCurrent] - real(PropFunVal[kCurrent])) / (fabs(PropFunWithoutSI[kCurrent] + real(PropFunVal[kCurrent])) + 1e-64)) < EpsilonConv &&
+                //               fabs((PropFunWithoutSI[kNew] - real(PropFunVal[kNew])) / (fabs(PropFunWithoutSI[kNew] + real(PropFunVal[kNew])) + 1e-64)) < EpsilonConv;
+                Convergence = fabs((PropFunWithoutSI[kOld] - abs(PropFunVal[kOld])) / (fabs(PropFunWithoutSI[kOld] + abs(PropFunVal[kOld])) + 1e-64)) < EpsilonConv &&
+                              fabs((PropFunWithoutSI[kCurrent] - abs(PropFunVal[kCurrent])) / (fabs(PropFunWithoutSI[kCurrent] + abs(PropFunVal[kCurrent])) + 1e-64)) < EpsilonConv &&
+                              fabs((PropFunWithoutSI[kNew] - abs(PropFunVal[kNew])) / (fabs(PropFunWithoutSI[kNew] + abs(PropFunVal[kNew])) + 1e-64)) < EpsilonConv;
 
                 // in case we have detected a Convergence
                 // 1) make sure the convergence is real and not a local artifact of the potential
@@ -2846,7 +2883,12 @@ void CATS::ComputeComplexWaveFunction(){
                 {
                     Converged = Convergence;
                 }
-
+                if (DEBUGCOMPLEX = true)
+                {
+                    printf("  Reached convergence:\n");
+                    printf("  WaveFun[kNew=%i]=%.15e\n", kNew, WaveFun[kNew].real());
+                    printf("  Imag WaveFun[kNew=%i]=%.15e\n", kNew, WaveFun[kNew].imag());
+                }
                 // this will reset the ConvIntervalSteps in case the convergence is reset
                 ConvIntervalSteps *= Converged;
                 // this will count the number of steps computed after convergence
@@ -3913,16 +3955,20 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     }
 if(DEBUG==true)
 {
-printf("  Basic=%.15e\n",Basic);
-printf("  ShortRangePotential[%u][%u]=%.15e\n",usCh,usPW,ShortRangePotential[usCh][usPW](Parameters));
-printf("  Parameters[0]=%.15e\n",Parameters[0]);
-printf("  Parameters[1]=%.15e\n",Parameters[1]);
-printf("  Parameters[2]=%.15e\n",Parameters[2]);
-printf("  Full=%.15e\n",Full);
+    printf("  Radius=%.15e\n", Radius * NuToFm);
+    printf("  Basic=%.15e\n", Basic);
+    printf("  ShortRangePotential[%u][%u]=%.15e\n", usCh, usPW, ShortRangePotential[usCh][usPW](Parameters));
+    printf("  Parameters[0]=%.15e\n", Parameters[0]);
+    printf("  Parameters[1]=%.15e\n", Parameters[1]);
+    printf("  Parameters[2]=%.15e\n", Parameters[2]);
 }
     //! In principle this should be executed only if ShortRangePotential[usCh][usPW] is defined.
     //! Do note that this function is NEVER called in case this is not true! Make sure that this stays so!
     Full = Basic + 2*RedMass*ShortRangePotential[usCh][usPW](Parameters);
+    if (DEBUG == true)
+    {
+        printf("  Full=%.15e\n", Full);
+    }
 }
 
 // the differential equation for the Schroedinger equation with complex potentials
@@ -3948,18 +3994,24 @@ void CATS::PropagatingComplexFunction(double &Basic, complex<double> &Full,
     }
     if (DEBUGCOMPLEX == true)
     {
-        printf("  Basic=%.15e\n", Basic);
-        printf("  ShortRangeComplexPotential[%u][%u]=%.15e\n", usCh, usPW, ShortRangeComplexPotential[usCh][usPW](Parameters));
-        printf("  Parameters[0]=%.15e\n", Parameters[0]);
-        printf("  Parameters[1]=%.15e\n", Parameters[1]);
-        printf("  Parameters[2]=%.15e\n", Parameters[2]);
-        printf("  Parameters[3]=%.15e\n", Parameters[3]);
-        printf("  Full=%.15e\n", Full);
+        cout <<"**************************************************"<< endl;
+        printf("  Radius (fm) =%.15e\n", Radius*NuToFm);
+        // printf("  Basic=%.15e\n", Basic);
+        // printf("  2 * RedMass=%.15e\n", 2 * RedMass);
+        printf("  ShortRangeComplexPotential[%u][%u]=%.5e %.5e\n", usCh, usPW, ShortRangeComplexPotential[usCh][usPW](Parameters));
+        // printf("  Parameters[0]=%.15e\n", Parameters[0]);
+        // printf("  Parameters[1]=%.15e\n", Parameters[1]);
+        // printf("  Parameters[2]=%.15e\n", Parameters[2]);
+        // printf("  Parameters[3]=%.15e\n", Parameters[3]);
+        // printf("  Parameters[4]=%.15e\n", Parameters[4]);
     }
     //! In principle this should be executed only if ShortRangePotential[usCh][usPW] is defined.
     //! Do note that this function is NEVER called in case this is not true! Make sure that this stays so!
     Full = Basic + 2 * RedMass * ShortRangeComplexPotential[usCh][usPW](Parameters);
-    cout << "real(Full) = " << real(Full) << "-----" << "imag(Full) = " << imag(Full) <<endl;
+    if (DEBUGCOMPLEX == true)
+    {
+        printf("  Full= %.15e %.15e\n", Full);
+    }
 }
 
 double CATS::PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW) const{
@@ -4164,6 +4216,7 @@ unsigned CATS::GetBoxId(double* particle){
 
 complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
                                 const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic) const{
+    cout << "######## in EvalWaveFunctionU ##########" << endl;
 
     double Momentum = GetMomentum(uMomBin);
     if(uMomBin>=NumMomBins){
@@ -4174,12 +4227,16 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
 
     double MultFactor = DivideByR?1./(Radius+1e-64):1;
 
-    unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
+    unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];/// This is filled in the normalization, so this is why we are not entering in the first loop
 
     unsigned RadBin = GetRadBin(Radius, uMomBin, usCh, usPW);
+    cout << "######## Loop 1 EvalWaveFunctionU ##########" << endl;
+    cout << " SWFB = " << SWFB << "RadBin = " << RadBin << endl;
 
     if(RadBin<SWFB && !Asymptotic){
         const complex<double>* WFU = WaveFunctionU[uMomBin][usCh][usPW];
+        cout<< "######## EvalWaveFunctionU ##########" << endl;
+        printf("  WFU[%i]=%.15e %.15e\n", uMomBin, WFU);
         const double* WFR = WaveFunRad[uMomBin][usCh][usPW];
         //the external WF is assumed to be given in fm
         complex<double> Result = EvalBinnedFun(Radius, SWFB, WFR, NULL, WFU);
@@ -4189,9 +4246,12 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
     }
     //below the 1st bin ==> assume zero
     else if(RadBin==SWFB+1){
+        cout << "######## Loop 2 EvalWaveFunctionU ##########" << endl;
         return 0;
     }
     else{
+        cout << "######## Loop 3 EvalWaveFunctionU ##########" << endl;
+
         return ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW, Q1Q2)*MultFactor;
     }
 }

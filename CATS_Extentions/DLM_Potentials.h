@@ -120,5 +120,6 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name);
 ///     [0] -> r; [1] = k; [2]=V0real; [3]=V0imag; [4] = m (m_ρ)
 
 complex<double> ComplexPotLAntiK_mesonexchange(double *Pars);
+double RealPotLAntiK_mesonexchange(double *Pars);
 
 #endif
