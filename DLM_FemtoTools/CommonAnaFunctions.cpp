@@ -498,6 +498,34 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars1D2->SetParameters(PotPars1D2);
     }
+    else if (POT == "AV18_nn")
+    {
+        // #,#,POT_ID,POT_FLAG,t_tot,t1,t2,s,l,j
+        int POT_FLAG = v18_Coupled3P2;
+        if(PotVar==1) POT_FLAG = v18_SingleChannelMagic;
+        double PotPars1S0[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 0, 0, 0};
+        double PotPars1P1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 0, 1, 1};
+        //const int& Spin, const int& AngMom, const int& TotMom
+        double PotPars3S1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 1, 0, 1};
+        double PotPars3P0[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 1, 1, 0};
+        double PotPars3P1[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 1, 1, 1};
+        double PotPars3P2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 1, 1, 2};
+        double PotPars1D2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, -1, -1, 0, 2, 2};
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars1S0->SetParameters(PotPars1S0);
+        cPotPars1P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars1P1->SetParameters(PotPars1P1);
+        cPotPars3S1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3S1->SetParameters(PotPars3S1);
+        cPotPars3P0 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3P0->SetParameters(PotPars3P0);
+        cPotPars3P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3P1->SetParameters(PotPars3P1);
+        cPotPars3P2 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars3P2->SetParameters(PotPars3P2);
+        cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars1D2->SetParameters(PotPars1D2);
+    }
     else if(POT == "pp_AV18_Toy"){
       double PotPars1S0[3] = {0,0,0};
       double PotPars3P0[3] = {1,0,0};
