@@ -641,11 +641,24 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
 
     if(POT == "AV18_pn")
       Kitty.SetQ1Q2(0);
+    else if(POT == "AV18_nn")
+      Kitty.SetQ1Q2(0);
     else
       Kitty.SetQ1Q2(1);
-    Kitty.SetPdgId(2212, 2212);
+
+    if(POT == "AV18_pn")
+      Kitty.SetQuantumStatistics(false);
+    else if(POT == "AV18_nn")
+      Kitty.SetQuantumStatistics(true);
+    else
+      Kitty.SetPdgId(2212, 2212);
+
+
+    
     if(POT == "AV18_pn")
       Kitty.SetRedMass((Mass_p*Mass_n)/(Mass_p+Mass_n));
+    else if(POT == "AV18_nn")
+        Kitty.SetRedMass(0.5 * Mass_n);
     else
       Kitty.SetRedMass(0.5 * Mass_p);
 
