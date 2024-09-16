@@ -6404,12 +6404,15 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
         CleverMcLevyResoTM[8].InitRad(257 * 2, 0, 64);
         CleverMcLevyResoTM[8].InitType(2);
         CleverMcLevyResoTM[8].SetUpReso(0, 0.0);//deuterons
-        CleverMcLevyResoTM[8].SetUpReso(1, 0.682);//pions
+        if(SourceVar%10==1) CleverMcLevyResoTM[8].SetUpReso(1, 0.682*1.1);//pions
+        else if(SourceVar%10==2) CleverMcLevyResoTM[8].SetUpReso(1, 0.682*0.9);//pions
+        else CleverMcLevyResoTM[8].SetUpReso(1, 0.682);//pions
+
         // pure Gauss
 
         // EPOS, 2 is with fixed mass, 3 is with EPOS mass, 4 is 3 body with fixed mass, 5 is 3 body with EPOS mass
         // printf("Hello 2\n");
-        const double k_CutOff = fabs(int(int(SourceVar) / 10) * 10.);
+        const double k_CutOff = fabs( (int(int(SourceVar) / 10))%100 * 10.);
         Float_t k_D;
         Float_t fP1;
         Float_t fP2;
@@ -6474,9 +6477,13 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
           Tau1 = 0;
           //for primoridials (the Xis) we put 0
           Tau2 = 1.50;
+          if(SourceVar/10000==1) Tau2*=1.1;
+          else if(SourceVar/10000==2) Tau2*=0.9;
           //put in the average mass of the resonances (again from SHM or TF)
           //this is the value for pions
           fM2 = 1180;
+          if((SourceVar/1000)%10==1) fM2*=1.1;
+          else if((SourceVar/1000)%10==2) fM2*=0.9;
           //generate a random path length for the propagation of the resonances
           //nothing to change!
           RanVal2 = RanGen.Exponential(fM2/(fP2*Tau2));
@@ -6509,7 +6516,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
         goto CLEAN_SetUpCats_pi_d;
     }
 
-    if (POT == "DG_ER")
+    if(POT == ""){
+
+    }
+    else if (POT == "DG_ER")
     {
         double PotPars_AVG[4] = {0, 1, 0, 1};
         cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
@@ -6541,7 +6551,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
         Kitty.SetChannelWeight(0, 1.);
     }
 
-    Kitty.SetShortRangePotential(0,0,DoubleGaussSum,*cPotPars_AVG);
+    if(cPotPars_AVG)
+        Kitty.SetShortRangePotential(0,0,DoubleGaussSum,*cPotPars_AVG);
 
 CLEAN_SetUpCats_pi_d:;
     if (cPars)
