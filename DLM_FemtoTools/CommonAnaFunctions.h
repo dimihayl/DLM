@@ -90,6 +90,8 @@ public:
     void SetUpCats_pXi0(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_pOmegam(CATS& Kitty, const TString& POT, const TString& SOURCE, const int& PotVar=0, const int& SourceVar=0);
     void SetUpCats_Kd(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar=0, const int &SourceVar=0);
+    void SetUpCats_pi_d(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar=0, const int &SourceVar=0);
+
 
     void SetUpCats_XiKCoulomb(CATS &Kitty, const TString &POT, const TString &SOURCE, const TString &DataSample);
     void SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample);
@@ -144,6 +146,9 @@ public:
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pOmegam();
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pipi();
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_ppic();
+
+    DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_Kd();
+    DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pi_d();
 
 
     DLM_CleverMcLevyResoTM* GaussCoreRsm_LK(const int& SourceVar);
