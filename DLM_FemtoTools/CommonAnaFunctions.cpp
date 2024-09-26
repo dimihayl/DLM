@@ -2045,7 +2045,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pL(CATS &Kitty, const TString &POT, const
         // printf("CUTOFF=%i\n",CUTOFF);
          //printf("TYPE=%i\n",TYPE);
         // original, NLO13 at 600 MeV
-        if(TYPE==0 || TYPE==1){
+        if(TYPE==0 || TYPE==1 || TYPE==-1){
           ExternalWF = Init_pL_Haidenbauer2019(CatsFilesFolder[0] + "/Interaction/Haidenbauer/pLambda_Coupled_SD/",
                                                Kitty, TYPE, CUTOFF);
         }
