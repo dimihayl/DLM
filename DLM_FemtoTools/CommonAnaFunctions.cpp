@@ -898,7 +898,7 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
             {
                 Tau1 = 0;
                 Tau2 = 1.50;
-                fM2 = 1180;
+                fM2 = 1124;
                 if (k_D > k_CutOff)
                     continue;
                 RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
@@ -908,7 +908,7 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
             {
                 Tau1 = 1.65;
                 Tau2 = 0;
-                fM1 = 1180;
+                fM1 = 1124;
                 if (k_D > k_CutOff)
                     continue;
                 RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
@@ -921,7 +921,7 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
                 if (SourceVar % 100 == 2)
                 {
                     fM1 = 1362;
-                    fM2 = 1180;
+                    fM2 = 1124;
                 }
                 if (k_D > k_CutOff)
                     continue;
@@ -6481,7 +6481,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
           else if(SourceVar/10000==2) Tau2*=0.9;
           //put in the average mass of the resonances (again from SHM or TF)
           //this is the value for pions
-          fM2 = 1180;
+          fM2 = 1124;
           if((SourceVar/1000)%10==1) fM2*=1.1;
           else if((SourceVar/1000)%10==2) fM2*=0.9;
           //generate a random path length for the propagation of the resonances

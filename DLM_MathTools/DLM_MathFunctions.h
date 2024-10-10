@@ -34,6 +34,36 @@ double GetPvalFromNsig(const double& nsigma);
 
 double DLM_Baseline(double* xval, double* par);
 
+
+//par[0] = NORM
+//par[1/2] = masses of the daughters
+//par[3] = mass (mother)
+//par[4] = width
+double Sill_IM(double* IM, double* par);
+
+double Sill_kstar(double* IM, double* par);
+//par[0] = Norm
+//par[1] = pT
+//par[2] = Temperature
+double Boltzmann_IM(double* IM, double* par);
+//sill with phase space
+//par[0] = NORM
+//par[1/2] = masses of the daughters
+//par[3] = mass (mother)
+//par[4] = width
+//par[5] = avg pt, if zero no PS
+//par[6] = Temperature, if zero no PS
+double SillBoltzmann_IM(double* IM, double* par);
+double SillBoltzmann_kstar(double* KSTAR, double* par);
+
+//xval = kstar
+//par[0/1] = masses of the daughters
+//par[2] = mass (mother)
+//par[3] = width
+//par[4] = Resonance pT, if zero no PS
+//par[5] = Temperature, if zero no PS
+double SillPhaseSpaceKstar(double* xval, double* par);
+
 std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const unsigned& k);
 
 #endif
