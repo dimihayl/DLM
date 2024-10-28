@@ -47,7 +47,7 @@ double Sill_kstar(double* IM, double* par);
 //par[2] = Temperature
 double Boltzmann_IM(double* IM, double* par);
 //sill with phase space
-//par[0] = NORM
+//par[0] = NORM -> if norm is -1e6, we make some silly auto-norm to have reasonable values of the maximum of around 1
 //par[1/2] = masses of the daughters
 //par[3] = mass (mother)
 //par[4] = width

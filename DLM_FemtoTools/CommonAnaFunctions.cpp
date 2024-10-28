@@ -6290,12 +6290,16 @@ CLEAN_SetUpCats_Kd:;
 //CDE = k_cutoff, with E being actually variation on the amount of resonances, 0 = default, 1 = +10%, 2 = -10%
 //A is Tau variation, 0 = default, 1 = +10%, 2 = -10%
 //B is ResoMass variation, 0 = default, 1 = +10%, 2 = -10%
+//if POT=="Gauss":
+//  a positive PotVar means pi^+ d
+//  a negative means pi^- d
+//  -1 is the -0.037 fm of the real part as taken from Nuclear Physics A 872 (2011) 69–116 
 void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar, const int &SourceVar)
 {
 
     CATSparameters *cPars = NULL;
 
-    CATSparameters *cPotPars_AVG = NULL;
+    CATSparameters *cPotPars = NULL;
 
     DLM_Histo<complex<double>> ***ExternalWF = NULL;
     //unsigned NumChannels = 0;
@@ -6516,24 +6520,29 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
         goto CLEAN_SetUpCats_pi_d;
     }
 
-    if(POT == ""){
+    if(POT==""){
 
     }
-    else if (POT == "DG_ER")
-    {
-        double PotPars_AVG[4] = {0, 1, 0, 1};
-        cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
-        cPotPars_AVG->SetParameters(PotPars_AVG);
+    else if(POT == "Gauss"){
+        double PotPars[2] = {273.0806, 0.3778127};
+        cPotPars = new CATSparameters(CATSparameters::tPotential, 2, true);
+        cPotPars->SetParameters(PotPars);    
     }
-    else if (POT == "DG_FCA")
-    {
-        double PotPars_AVG[4] = {0, 1, 0, 1};
-        cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
-        cPotPars_AVG->SetParameters(PotPars_AVG);    
-    }
+    //else if (POT == "DG_ER")
+    //{
+    //    double PotPars_AVG[4] = {0, 1, 0, 1};
+    //    cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
+    //    cPotPars_AVG->SetParameters(PotPars_AVG);
+    //}
+    //else if (POT == "DG_FCA")
+    //{
+    //    double PotPars_AVG[4] = {0, 1, 0, 1};
+    //    cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
+    //    cPotPars_AVG->SetParameters(PotPars_AVG);    
+    //}
     else
     {
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n", POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing pi_d potential '%s'\n", POT.Data());
         goto CLEAN_SetUpCats_pi_d;
     }
     Kitty.SetMomentumDependentSource(false);
@@ -6551,8 +6560,9 @@ void DLM_CommonAnaFunctions::SetUpCats_pi_d(CATS &Kitty, const TString &POT, con
         Kitty.SetChannelWeight(0, 1.);
     }
 
-    if(cPotPars_AVG)
-        Kitty.SetShortRangePotential(0,0,DoubleGaussSum,*cPotPars_AVG);
+
+    if(cPotPars && POT=="Gauss")
+        Kitty.SetShortRangePotential(0,0,SingleGauss,*cPotPars);
 
 CLEAN_SetUpCats_pi_d:;
     if (cPars)
@@ -6561,10 +6571,10 @@ CLEAN_SetUpCats_pi_d:;
         cPars = NULL;
     }
     // if(CleverLevy){delete CleverLevy; CleverLevy=NULL;}
-    if (cPotPars_AVG)
+    if (cPotPars)
     {
-        delete cPotPars_AVG;
-        cPotPars_AVG = NULL;
+        delete cPotPars;
+        cPotPars = NULL;
     }
 }
 

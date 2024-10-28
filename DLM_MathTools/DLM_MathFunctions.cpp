@@ -380,7 +380,45 @@ double Sill_IM(double* IM, double* par){
   	double arg2 = pow(InvMass * InvMass - mass * mass, 2.);
   	double arg3 = pow(sqrt(InvMass * InvMass - Thresh * Thresh) * Width, 2.);
 	
-	return par[0]*(arg0 * arg1 / (arg2 + arg3));		
+  	double silly_norm = 1;
+  	if(par[0]==-1e6){
+  		double PARS[5];
+  		PARS[0] = 1;
+  		PARS[1] = par[1];
+  		PARS[2] = par[2];
+  		PARS[3] = par[3];
+  		PARS[4] = par[4];
+  		double inmass;
+  		silly_norm = 0;
+  		double temp;
+
+  		inmass = mass;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+   		inmass = mass*0.5;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+  		
+   		inmass = mass*0.25;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+   		inmass = mass*2;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}  	
+
+    	inmass = mass*4;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+  		silly_norm = 1./silly_norm;
+  	}
+  	else{
+  		silly_norm = par[0];
+  	}
+
+	return silly_norm*(arg0 * arg1 / (arg2 + arg3));		
 }
 double Sill_kstar(double* KSTAR, double* par){
 	double& dmass_1 = par[1];
@@ -407,13 +445,42 @@ double Boltzmann_IM(double* IM, double* par){
 	double mass = IM[0];
 	double pT = par[1];
 	double Temperature = par[2];
+
+  	double silly_norm = 1;
+  	if(par[0]==-1e6){
+  		double PARS[3];
+  		PARS[0] = 1;
+  		PARS[1] = par[1];
+  		PARS[2] = par[2];
+  		double inmass;
+  		silly_norm = 0;
+  		double temp;
+
+  		inmass = sqrt(par[1]*par[2]);
+  		temp = Boltzmann_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+   		inmass = sqrt(par[1]*par[2])*0.5;
+  		temp = Boltzmann_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+  		
+   		inmass = sqrt(par[1]*par[2])*2;
+  		temp = Boltzmann_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}  	
+
+  		silly_norm = 1./silly_norm;
+  	}
+  	else{
+  		silly_norm = par[0];
+  	}
+
 	if(pT==0 || Temperature==0) return par[0];
-	return par[0] * (mass / sqrt(mass * mass + pT * pT)) * exp(-sqrt(mass * mass + pT * pT) / Temperature);
+	return silly_norm * (mass / sqrt(mass * mass + pT * pT)) * exp(-sqrt(mass * mass + pT * pT) / Temperature);
 }
 
 
 //sill with phase space
-//par[0] = NORM
+//par[0] = NORM -> if norm is -1e6, we make some silly auto-norm to have reasonable values of the maximum of around 1
 //par[1/2] = masses of the daughters
 //par[3] = mass (mother)
 //par[4] = width
@@ -441,6 +508,7 @@ double SillBoltzmann_kstar(double* KSTAR, double* par){
 	//N.B. to convert f(M(k*)) to f(k*) we just need to multiply the function by dM/dk one time!
 	//we already do this for Sill_kstar, thus the phase space does NOT need to be converted as well!
 	double ps = Boltzmann_IM(&InvMass, BoltzPar);
+
 	return sill * ps;
 }
 
