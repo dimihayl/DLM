@@ -612,8 +612,11 @@ protected:
     void PropagatingComplexFunction(double &Basic, complex<double> &Full,
                                     const double &Radius, const double &Momentum,
                                     const unsigned short &AzQN, const unsigned short &Pol);
+    void PropagatingComplexFunction(double &Basic, double &Full1, double &Full2,
+                                    const double &Radius, const double &Momentum,
+                                    const unsigned short &usPW, const unsigned short &usCh);
 
-    void ComputeWaveFunction();
+        void ComputeWaveFunction();
     void ComputeTotWaveFunction(const bool& ReallocateTotWaveFun);
     // needed for iCATS
     void ComputeComplexWaveFunction();
@@ -704,6 +707,9 @@ protected:
     float*** PhaseShiftF;//in bins of pol/pw/mom, saved only until the end of each k-iteration
     double**** WaveFunRad;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     complex<double>**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
+    complex<double> ****WaveFunctionUR; // in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
+    complex<double> ****WaveFunctionUI; // in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
+
     bool* MomBinConverged;//bins of mom, marked as true in case the num. comp. failed and this bin should not be used
 
     //in bins of momentum, channel, GridPoints
