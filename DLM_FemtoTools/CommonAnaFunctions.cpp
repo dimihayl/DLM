@@ -6232,21 +6232,42 @@ void DLM_CommonAnaFunctions::SetUpCats_Kd(CATS &Kitty, const TString &POT, const
         goto CLEAN_SetUpCats_Kd;
     }
 
+//f_best     -0.4691022467008116 //V1
+//d_best     1.7127749936682812 //V1
+//f_best     -0.4703530995890609//V2
+//d_best     1.7532889758457184    //V2
+//IMPORTANT!!! The sign of d0 was wrong, also in the PRX, now flipped in the V3:
+//f_best     -0.4701902500023152 //V3
+//d_best     -1.7527813610447043 //V3
     if (POT == "DG_ER")
     {
-        double PotPars_AVG[4] = {676.1923588303322, 0.7595548889641572, -44.11395844823363, 1.3254079885988337};
+        //double PotPars_AVG[4] = {676.1923588303322, 0.7595548889641572, -44.11395844823363, 1.3254079885988337};//V1
+        //double PotPars_AVG[4] = {677.6412964551082, 0.7649742727111178, -46.04483165662934, 1.3250780448057782};//V2
+        double PotPars_AVG[4] = {121.19992348368771, 0.2945870040375218, 29.909893773423107, 1.3329202449286048};//V3
+        
         cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars_AVG->SetParameters(PotPars_AVG);
     }
+    //f_best     -0.5399918971499024//V1
+    //d_best     0.02053659406423805//V1
+    //f_best     -0.5400300923056585//V2
+    //d_best     0.003990374220081213//V2
     else if (POT == "DG_FCA")
     {
-        double PotPars_AVG[4] = {369.4094817373952, 0.7847035161927353, -125.73561350111179, 0.7507974357114263};
+        //double PotPars_AVG[4] = {369.4094817373952, 0.7847035161927353, -125.73561350111179, 0.7507974357114263};//V1
+        double PotPars_AVG[4] = {362.7384262781105, 0.7962158970471339, -130.77196423166328, 0.7685517499557406};//V2
         cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars_AVG->SetParameters(PotPars_AVG);    
     }
+    //square well potential,see mail from Johann @ CERN on 27.11.2024
+    else if(POT == "SW_ER"){
+        double PotPars_AVG[2] = {9.70, 2.14};
+        cPotPars_AVG = new CATSparameters(CATSparameters::tPotential, 8, true);
+        cPotPars_AVG->SetParameters(PotPars_AVG);   
+    }
     else
     {
-        printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n", POT.Data());
+        printf("\033[1;31mERROR:\033[0m Non-existing kd potential '%s'\n", POT.Data());
         goto CLEAN_SetUpCats_Kd;
     }
     Kitty.SetMomentumDependentSource(false);
@@ -6264,7 +6285,11 @@ void DLM_CommonAnaFunctions::SetUpCats_Kd(CATS &Kitty, const TString &POT, const
         Kitty.SetChannelWeight(0, 1.);
     }
 
-    Kitty.SetShortRangePotential(0,0,DoubleGaussSum,*cPotPars_AVG);
+    if(POT=="SW_ER"){
+        Kitty.SetShortRangePotential(0,0,SquareWell,*cPotPars_AVG);
+    }
+    else if(POT != "")
+        Kitty.SetShortRangePotential(0,0,DoubleGaussSum,*cPotPars_AVG);
 
 CLEAN_SetUpCats_Kd:;
     if (cPars)
@@ -9103,7 +9128,7 @@ TFile fTest(BaseFileName + "fTEST.root","recreate");
     double* RadBinRange = dlmMtKstarRstar.GetBinRange(CecaStyle?1:2);
     const double rMin = dlmMtKstarRstar.GetLowEdge(CecaStyle?1:2);
     const double rMax = dlmMtKstarRstar.GetLowEdge(CecaStyle?1:2);
-
+//printf("%i %i %i\n",NumKstarBins,NumRadBins,NumMtBins);
     KdpResult = new DLM_Histo<KdpPars> ();
     KdpResult->SetUp(2);
     KdpResult->SetUp(0,NumMtBins,MtBinRange);

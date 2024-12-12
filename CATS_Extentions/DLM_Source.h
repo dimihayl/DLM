@@ -666,6 +666,19 @@ private:
   unsigned DIM;
 };
 
+//a super simple kdp source, where we just evaluate it based on a single set of kdp pars
+//note that this source has no free pars
+class DLM_KdpSource:public CatsSource{
+public:
+    //creates a copy
+    DLM_KdpSource(KdpPars>& input_kdp);
+    ~DLM_KdpSource();
+    double Eval(double* rad);
+    double RootEval(double* x, double* pars);
+
+private:
+  KdpPars source_kdp;
+};
 
 
 /*

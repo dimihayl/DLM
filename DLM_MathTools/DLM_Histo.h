@@ -1453,6 +1453,21 @@ public:
       return EvalError(&xVal);
     }
 
+    Type Eval2D(const double xVal, const double yVal, const bool& EvalTheError=false) const{
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Eval(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
+      double xPars[2];
+      xPars[0] = xVal;
+      xPars[1] = yVal;
+      return Eval(xPars,EvalTheError);
+    }
+    Type EvalError2D(const double xVal, const double yVal) const{
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo EvalError(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
+      double xPars[2];
+      xPars[0] = xVal;
+      xPars[1] = yVal;
+      return EvalError(xPars);
+    }    
+
     //makes this histogram equal in values to other, without re-initialization.
     //This only works if we have the same Dim.
     //Only overlapping bin regions are set equal (using Eval), the rest are zero
