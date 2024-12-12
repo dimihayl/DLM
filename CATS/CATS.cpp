@@ -1542,7 +1542,7 @@ void CATS::SetAnaSource(double (*AS)(double*), double* Pars){
 */
 
 void CATS::SetAnaSource(double (*FS)(void*, double*), void* context, const unsigned& numparameters){
-    if(ForwardedSource==FS&&AnaSourcePar->GetNumPars()==numparameters) return;
+    if(ForwardedSource==FS&&SourceContext==context&&AnaSourcePar->GetNumPars()==numparameters) return;
     delete AnaSourcePar;
     AnaSourcePar = new CATSparameters(CATSparameters::tSource,numparameters,true);
     if(!FS){

@@ -2836,15 +2836,15 @@ DLM_KdpSource::DLM_KdpSource(KdpPars& input_kdp){
 DLM_KdpSource::~DLM_KdpSource(){
 
 }
-double DLM_KdpSource::Eval(double* rad){
-  for(unsigned uP=0; uP<KdpPars::NumDistos-1; uP++){
-    if(source_kdp.wght[uP]<0) source_kdp.wght[uP]=0;
-    if(source_kdp.wght[uP]>1) source_kdp.wght[uP]=1;
-  }
-  return PoissonSum(*rad,source_kdp);
+double DLM_KdpSource::Eval(double* kxc){
+  //for(unsigned uP=0; uP<KdpPars::NumDistos-1; uP++){
+  //  if(source_kdp.wght[uP]<0) source_kdp.wght[uP]=0;
+  //  if(source_kdp.wght[uP]>1) source_kdp.wght[uP]=1;
+  //}
+  return PoissonSum(kxc[1],source_kdp);
 }
 double DLM_KdpSource::RootEval(double* x, double* pars){
-    return DLM_KdpSource::Eval(x);
+    return PoissonSum(*x,source_kdp);
 }
 
 
