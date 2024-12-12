@@ -671,7 +671,7 @@ private:
 class DLM_KdpSource:public CatsSource{
 public:
     //creates a copy
-    DLM_KdpSource(KdpPars>& input_kdp);
+    DLM_KdpSource(KdpPars& input_kdp);
     ~DLM_KdpSource();
     double Eval(double* rad);
     double RootEval(double* x, double* pars);

@@ -2829,7 +2829,7 @@ double* DLM_CecaSource_v0::GetBinCenters(unsigned WhichPar){
 
 
 //creates a copy
-DLM_KdpSource::DLM_KdpSource(KdpPars>& input_kdp){
+DLM_KdpSource::DLM_KdpSource(KdpPars& input_kdp){
     source_kdp = input_kdp;
 }
 
