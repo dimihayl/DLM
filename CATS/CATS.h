@@ -637,9 +637,16 @@ protected:
     double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
     //radial/coulomb partial wave as a solution from the gsl libraries
     double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
-
+    // Regular Solution given by Bessel function j_l
+    double BesselFunction(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
+    // Irregular Solution given by Neumann function n_l
+    double NeumannFunction(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
+    // u^+(r) outgoing plane wave; e^(ikr)=cos(kr)+i sin(kr)= -kr n_0(kr)+i kr j_0(kr)
+    complex <double> OutgoingPlaneWave(const double &Radius, const double &Momentum) const;
+    // u^-(r) incoming plane wave; e^(-ikr)=cos(kr)-i sin(kr)= -kr n_0(kr)-i kr j_0(kr)
+    complex <double> IncomingPlaneWave(const double &Radius, const double &Momentum) const;
     double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
-
+    
     //a numerical root-finder. Very fast and accurate for well-behaved (near to linear) functions
     double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&) const,
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,
@@ -707,8 +714,9 @@ protected:
     float*** PhaseShiftF;//in bins of pol/pw/mom, saved only until the end of each k-iteration
     double**** WaveFunRad;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     complex<double>**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
-    complex<double> ****WaveFunctionUR; // in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
-    complex<double> ****WaveFunctionUI; // in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
+    /// u(r) -> A u^+ + Bu^- where (+) = outgoing and (-) = incoming:
+    complex<double> ***CoeffOutgoing; // in bins of mom/chan/pw, saved only until the end of each k-iteration
+    complex<double> ***CoeffIncoming; // in bins of mom/chan/pw, saved only until the end of each k-iteration
 
     bool* MomBinConverged;//bins of mom, marked as true in case the num. comp. failed and this bin should not be used
 
