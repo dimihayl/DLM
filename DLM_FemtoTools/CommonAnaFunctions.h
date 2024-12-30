@@ -39,6 +39,14 @@ const double Mass_Dch_star = 2010;
 const double Mass_D0_star = 2007;
 const double Mass_eta = 547.862;
 
+const double Mass_Scpp = 2453.97;
+const double Mass_Scp = 2452.65;
+const double Mass_Sc0 = 2453.75;
+const double Mass_Lcp = 2286.46;
+
+const double Mass_Scpp_ex = 2518.41;
+const double Mass_Scp_ex = 2517.4;
+const double Mass_Sc0_ex = 2518.48;
 
 class DLM_CommonAnaFunctions{
 
@@ -95,6 +103,8 @@ public:
 
     void SetUpCats_XiKCoulomb(CATS &Kitty, const TString &POT, const TString &SOURCE, const TString &DataSample);
     void SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample);
+
+    void SetUpCats_Lcp(CATS &Kitty, const TString &SOURCE, const int &CUTOFF);
 
     DLM_Ck* SetUpLednicky_pL(const unsigned& NumMomBins, const double* MomBins,  const TString& POT);
 

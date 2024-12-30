@@ -3971,6 +3971,82 @@ CLEAN_SetUpCats_pApHaide:;
     CleanUpWfHisto(Kitty, ExternalWF);
 }
 
+void DLM_CommonAnaFunctions::SetUpCats_Lcp(CATS &Kitty, const TString &SOURCE, const int &CUTOFF)
+{
+    CATSparameters *cPars = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    unsigned NumChannels = 8;
+
+    double rad1;
+    double rad2;
+    double w_source;
+    double lam_source;
+
+    rad1 = 1.2;
+    ExternalWF = Init_Lcp_Haidenbauer("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Johann/Lc_Proton/", Kitty, CUTOFF);
+
+    if (SOURCE == "Gauss")
+    {
+        cout << "Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, rad1);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "DoubleGauss")
+    {
+        cout << "Double Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 4, true);
+        cPars->SetParameter(0, rad1);
+        cPars->SetParameter(1, rad2);
+        cPars->SetParameter(2, w_source);
+        cPars->SetParameter(3, lam_source);
+        Kitty.SetUseAnalyticSource(true);
+        Kitty.SetAnaSource(NormDoubleGaussSource, *cPars);
+        Kitty.SetAutoNormSource(false);  // MUST ALWAYS BE FALSE!!
+        Kitty.SetNormalizedSource(true); // do not touch the source, set to true so CATS adds (1-λs), if false it changes the distribution
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pApHaide;
+    }
+
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(0);
+    Kitty.SetPdgId(4122, 2212);
+    Kitty.SetRedMass((Mass_Lcp * Mass_p) / (Mass_Lcp + Mass_p));
+
+    Kitty.SetNumChannels(NumChannels);
+
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        if (ExternalWF)
+        {
+            Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+        }
+        else
+        {
+            printf("\033[1;31mERROR:\033[0m SetUpCats_Lcp says that you should NEVER see this message! BIG BUG!\n");
+            goto CLEAN_SetUpCats_pApHaide;
+        }
+
+    } // end of for
+
+CLEAN_SetUpCats_pApHaide:;
+
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    CleanUpWfHisto(Kitty, ExternalWF);
+}
+
 DLM_Ck *DLM_CommonAnaFunctions::SetUpLednicky_pL(const unsigned &NumMomBins, const double *MomBins, const TString &POT)
 {
     double p0, p1, p2, p3;
