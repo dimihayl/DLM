@@ -2724,9 +2724,10 @@ void CATS::ComputeComplexWaveFunction(){
 
             /// Initial conditions for real and imaginary part of wf
             WaveFunR[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
-            WaveFunI[kOld] = (2. * PropFunVal1[kOld] * PropFunVal2[kOld] * WaveFunR[kOld]) / (PropFunVal2[kOld] * PropFunVal2[kOld] - PropFunVal1[kOld] * PropFunVal1[kOld]);
+            WaveFunI[kOld] = -(PropFunVal2[kOld] * WaveFunR[kOld]) / PropFunVal1[kOld];
             WaveFunR[kCurrent] = ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2);
-            WaveFunI[kCurrent] = (2. * PropFunVal1[kCurrent] * PropFunVal2[kCurrent] * WaveFunR[kCurrent]) / (PropFunVal2[kCurrent] * PropFunVal2[kCurrent] - PropFunVal1[kCurrent] * PropFunVal1[kCurrent]);
+            // WaveFunI[kCurrent] = (2. * PropFunVal1[kCurrent] * PropFunVal2[kCurrent] * WaveFunR[kCurrent]) / (PropFunVal2[kCurrent] * PropFunVal2[kCurrent] - PropFunVal1[kCurrent] * PropFunVal1[kCurrent]);
+            WaveFunI[kCurrent] = -(PropFunVal2[kCurrent] * WaveFunR[kCurrent]) / PropFunVal1[kCurrent];
 
             if (DEBUGCOMPLEX)
             {
@@ -2782,6 +2783,9 @@ void CATS::ComputeComplexWaveFunction(){
             BufferWaveFunctionI[0] = WaveFunI[kOld];
             BufferWaveFunctionI[1] = WaveFunI[kCurrent];
 
+            BufferWaveFunction[0] = WaveFunR[kOld] + i * WaveFunI[kOld];
+            BufferWaveFunction[1] = WaveFunR[kCurrent] + i * WaveFunI[kCurrent];
+
             BufferRad = new double[EstNumRadSteps];
 
             BufferRad[0] = PosRad[kOld];
@@ -2796,18 +2800,12 @@ void CATS::ComputeComplexWaveFunction(){
                 PosRad[kNew] = PosRad[kCurrent] + DeltaRad[kCurrent];
                 Rho[kNew] = PosRad[kNew] * Momentum;
                 /// Expressing second derivative on discretized grid via Euler´s method
-                /// Using Finite Difference Method to solve the coupled system
-                WaveFunR[kNew] = DeltaRad2[kCurrent] * (WaveFunR[kCurrent] * PropFunVal1[kCurrent] - WaveFunI[kCurrent] * PropFunVal2[kCurrent]) + 2. * WaveFunR[kCurrent] - WaveFunR[kOld];
-
-                WaveFunI[kNew] = DeltaRad2[kCurrent] * (WaveFunI[kCurrent] * PropFunVal1[kCurrent] + WaveFunR[kCurrent] * PropFunVal2[kCurrent]) + 2. * WaveFunI[kCurrent] - WaveFunI[kOld];
-
                 /// Euler discretazion following Dimitar´s
-                // WaveFunR[kNew] = WaveFunR[kCurrent] * (1. + DeltaRad[kCurrent] / DeltaRad[kOld]) - WaveFunR[kOld] * DeltaRad[kCurrent] / DeltaRad[kOld] +
-                //                  (WaveFunR[kCurrent] * PropFunVal1[kCurrent] - WaveFunI[kCurrent] * PropFunVal2[kCurrent]) * DeltaRad[kCurrent] * DeltaRad[kOld]; ///*DeltaRad[kCurrent] * DeltaRad[kOld];
+                WaveFunR[kNew] = WaveFunR[kCurrent] * (1. + DeltaRad[kCurrent] / DeltaRad[kOld]) - WaveFunR[kOld] * DeltaRad[kCurrent] / DeltaRad[kOld] + (WaveFunR[kCurrent] * PropFunVal1[kCurrent] - WaveFunI[kCurrent] * PropFunVal2[kCurrent]) * DeltaRad2[kCurrent]; 
 
-                // WaveFunI[kNew] = WaveFunI[kCurrent] * (1. + DeltaRad[kCurrent] / DeltaRad[kOld]) -
-                //                  WaveFunI[kOld] * DeltaRad[kCurrent] / DeltaRad[kOld] +
-                //                  (WaveFunI[kCurrent] * PropFunVal1[kCurrent] + WaveFunR[kCurrent] * PropFunVal2[kCurrent]) * DeltaRad[kCurrent] * DeltaRad[kOld]; ///*DeltaRad[kCurrent] * DeltaRad[kOld];
+                WaveFunI[kNew] = WaveFunI[kCurrent] * (1. + DeltaRad[kCurrent] / DeltaRad[kOld]) -
+                                 WaveFunI[kOld] * DeltaRad[kCurrent] / DeltaRad[kOld] +
+                                 (WaveFunI[kCurrent] * PropFunVal1[kCurrent] + WaveFunR[kCurrent] * PropFunVal2[kCurrent]) * DeltaRad2[kCurrent]; 
 
                 WaveFun[kNew] = WaveFunR[kNew] + i * WaveFunI[kNew];
 
@@ -2969,7 +2967,7 @@ void CATS::ComputeComplexWaveFunction(){
                     // if (fabs(MaxConvergedNumWFR)*ConvPointOldWeight<=fabs(WaveFunR[kNew])*ConvPointWeight&&fabs(MaxConvergedNumWFI)*ConvPointOldWeight<=fabs(WaveFunI[kNew])*ConvPointWeight)
                     if (abs(MaxConvergedNumWF) * ConvPointOldWeight <= abs(WaveFun[kNew]) * ConvPointWeight)
                     {
-                        MaxConvergedNumWF = WaveFunR[kNew] + i * WaveFunI[kNew];
+                        MaxConvergedNumWF = WaveFun[kNew];
                         MaxConvergedNumWFR = WaveFunR[kNew];
                         MaxConvergedNumWFI = WaveFunI[kNew];
                         MaxConvRho = Rho[kNew];
@@ -3006,6 +3004,7 @@ void CATS::ComputeComplexWaveFunction(){
             if (StepOfMaxConvergedNumWF == NumComputedPoints - 1)
             {
                 StepOfMaxConvergedNumWF--;
+                MaxConvergedNumWF = BufferWaveFunction[StepOfMaxConvergedNumWF];
                 MaxConvergedNumWFR = BufferWaveFunctionR[StepOfMaxConvergedNumWF];
                 MaxConvergedNumWFI = BufferWaveFunctionI[StepOfMaxConvergedNumWF];
                 MaxConvRho -= DeltaRadAtMaxConvPrev * Momentum;
@@ -3020,7 +3019,7 @@ void CATS::ComputeComplexWaveFunction(){
             // if the maximum wave-function is zero the computation will fail!
             // By design this should not really happen.
 
-            if (!MaxConvergedNumWFR && !MaxConvergedNumWFI && Notifications >= nWarning)
+            if (!(abs(MaxConvergedNumWF)) && Notifications >= nWarning)
             {
                 printf("\033[1;33mWARNING:\033[0m MaxConvergedNumWF is zero, which is not allowed and points to a bug in the code!\n");
                 printf("         Please contact the developers and do not trust your current results!\n");
@@ -3032,51 +3031,54 @@ void CATS::ComputeComplexWaveFunction(){
             // // the individual steps are explained in detail in the official CATS documentation
             if (MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
             {
-                cout << "NumComputedPoints=" << NumComputedPoints << endl;
-                cout << "StepOfMaxConvergedNumWF=" << StepOfMaxConvergedNumWF << endl;
 
-                // unsigned int TestLargePoint = 2500;
-                // unsigned int TestLargePointMinus1 = 2480;
                 unsigned int TestLargePoint = StepOfMaxConvergedNumWF;
-                unsigned int TestLargePointMinus1 = TestLargePoint - 10;
-                ///Insert code to evaluate the coefficient A
+                unsigned int TestLargePointMinus1 = TestLargePoint - 1;
+
                 double LargeRadN = BufferRad[TestLargePoint];
                 double LargeRadNMinus1 = BufferRad[TestLargePointMinus1];
-
-                cout << "LargeRadN (fm)=" << LargeRadN * hbarc << endl;
-                cout << "LargeRadNMinus1 (fm)=" << LargeRadNMinus1 * hbarc << endl;
 
                 if ((!BufferWaveFunctionR[StepOfMaxConvergedNumWF] || !BufferWaveFunctionI[StepOfMaxConvergedNumWF] || !BufferWaveFunctionR[StepOfMaxConvergedNumWF + 1]) || !BufferWaveFunctionI[StepOfMaxConvergedNumWF + 1] && Notifications >= nWarning)
                 {
                     printf("\033[1;33mWARNING:\033[0m BufferWaveFunction is zero, which is not allowed and points to a bug in the code!\n");
                     printf("         Please contact the developers and do not trust your current results!\n");
                 }
-                complex<double> Value_NumSolLargeRadN = BufferWaveFunctionR[TestLargePoint] + i * BufferWaveFunctionI[TestLargePoint];
-                complex<double> Value_NumSolLargeRadNMinus1 = BufferWaveFunctionR[TestLargePointMinus1] + i * BufferWaveFunctionI[TestLargePointMinus1];
 
+                complex<double> Value_NumSolLargeRadN = BufferWaveFunction[TestLargePoint];
+                complex<double> Value_NumSolLargeRadNMinus1 = BufferWaveFunction[TestLargePointMinus1];
+                /// TO BE CHECKED IF THE NORMALIZAZION NEEDS (1/2ik)!!!
                 complex<double> ValueInc_LargeRadN = IncomingPlaneWave(LargeRadN,Momentum);
                 complex<double> ValueInc_LargeRadNMinus1 = IncomingPlaneWave(LargeRadNMinus1, Momentum);
                 complex<double> ValueOut_LargeRadN = OutgoingPlaneWave(LargeRadN, Momentum);
                 complex<double> ValueOut_LargeRadNMinus1 = OutgoingPlaneWave(LargeRadNMinus1, Momentum);
 
-                cout << "Value_NumSolLargeRadN=" << Value_NumSolLargeRadN << endl;
-                cout << "Value_NumSolLargeRadNMinus1=" << Value_NumSolLargeRadNMinus1 << endl;
+                complex<double> CrosscheckNorm =(ValueOut_LargeRadN - ValueInc_LargeRadN) / (Value_NumSolLargeRadN);
 
                 complex<double> Numerator = (Value_NumSolLargeRadN * ValueInc_LargeRadNMinus1 - Value_NumSolLargeRadNMinus1 * ValueInc_LargeRadN);
                 complex<double> Denominator = (ValueOut_LargeRadN * ValueInc_LargeRadNMinus1 - ValueOut_LargeRadNMinus1 * ValueInc_LargeRadN);
                 complex <double> ACoeff = Numerator/Denominator;
 
-                complex<double> BCoeff = (Value_NumSolLargeRadN * ValueOut_LargeRadNMinus1 - Value_NumSolLargeRadNMinus1 * ValueOut_LargeRadN) / (ValueInc_LargeRadN * ValueOut_LargeRadNMinus1 - ValueInc_LargeRadNMinus1 * ValueOut_LargeRadN);
+                complex<double> BCoeff = (-Value_NumSolLargeRadN + ACoeff * ValueOut_LargeRadN) / (ValueInc_LargeRadN);
 
-                complex<double> AsymptSolLargeRadN = (ACoeff * ValueOut_LargeRadN + BCoeff * ValueInc_LargeRadN);
+                // complex<double> AsymptSolLargeRadN = (ACoeff * ValueOut_LargeRadN - BCoeff * ValueInc_LargeRadN);
+                /// TO BE CHECKED Outgoing solution normalized to unity!!
+                complex<double> AsymptSolLargeRadN = (ValueOut_LargeRadN - (BCoeff / ACoeff) * ValueInc_LargeRadN);
+
                 complex<double> NormSol = AsymptSolLargeRadN / Value_NumSolLargeRadN;
 
+                cout << "NumComputedPoints=" << NumComputedPoints << endl;
+                cout << "StepOfMaxConvergedNumWF=" << StepOfMaxConvergedNumWF << endl;
+                cout << "LargeRadN (fm)=" << LargeRadN * hbarc << endl;
+                cout << "LargeRadNMinus1 (fm)=" << LargeRadNMinus1 * hbarc << endl;
+                cout << "Value_NumSolLargeRadN=" << Value_NumSolLargeRadN << endl;
+                cout << "Value_NumSolLargeRadNMinus1=" << Value_NumSolLargeRadNMinus1 << endl;
+                cout << "Crosscheck Normalization=" << CrosscheckNorm << endl;
                 cout << "Numerator=" << Numerator << endl;
                 cout << "Denominator=" << Denominator << endl;
                 cout << "ACoeff=" << ACoeff << endl;
                 cout << "BCoeff=" << BCoeff << endl;
                 cout << "#############################" << endl;
-                cout << "(ACoeff * ValueOut_LargeRadN + BCoeff * ValueInc_LargeRadN) =" << AsymptSolLargeRadN << endl;
+                cout << "AsymptSolLargeRadN =" << AsymptSolLargeRadN << endl;
                 cout << "Value_NumSolLargeRadN = " << Value_NumSolLargeRadN << endl;
                 cout << "NormSol * Value_NumSolLargeRadN = " << NormSol * Value_NumSolLargeRadN << endl;
                 cout << "NormSol=" << NormSol << endl;
@@ -3086,7 +3088,6 @@ void CATS::ComputeComplexWaveFunction(){
                 //// original CATS code
 
                 SavedWaveFunBins[uMomBin][usCh][usPW] = StepOfMaxConvergedNumWF + 1;
-                // SavedWaveFunBins[uMomBin][usCh][usPW] = TestLargePoint + 1;
                 unsigned &SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
 
                 if (WaveFunRad[uMomBin][usCh][usPW])
@@ -3100,13 +3101,12 @@ void CATS::ComputeComplexWaveFunction(){
                 /// Temporary settings, which should be fixed in the normalization part
                 double Norm = 1.;
                 NR_Status = true;
-                CPF[uMomBin] = complex<double>(1., 1.); /// from default CATS setup the imag is 0!!
 
                 for (unsigned uPoint = 0; uPoint < SWFB; uPoint++)
                 {
-                    BufferWaveFunction[uPoint] = BufferWaveFunctionR[uPoint] + i * BufferWaveFunctionI[uPoint];
-                    // WaveFunctionU[uMomBin][usCh][usPW][uPoint] = complex<double>(Norm  * BufferWaveFunctionR[uPoint], Norm * BufferWaveFunctionI[uPoint]);
+
                     WaveFunctionU[uMomBin][usCh][usPW][uPoint] = (NormSol)*BufferWaveFunction[uPoint];
+
                     if(DEBUGCOMPLEX)
                     {
                         cout << "++++++++++++++WaveFunctionU setup++++++++++++++++++++" << endl;
@@ -4222,7 +4222,7 @@ double CATS::NeumannFunction(const double &Radius, const double &Momentum, const
     // and anti-symmetric for odd l, this is implemented here.
     return Rho > 0 ? (Radius)*gsl_sf_bessel_yl(usPW, Rho) : pow(-1, usPW) * (Radius)*gsl_sf_bessel_yl(usPW, -Rho);
 }
-
+/// u^+ =e^(+ikr) OR u^+ =e^(+ikr)/(2ik)
 complex<double> CATS::OutgoingPlaneWave(const double &Radius, const double &Momentum) const
 {
     double Rho = Radius * Momentum;
@@ -4233,8 +4233,9 @@ complex<double> CATS::OutgoingPlaneWave(const double &Radius, const double &Mome
     }
     double j0= BesselFunction(Radius,Momentum,0);
     double n0= NeumannFunction(Radius,Momentum,0);
-    return (-1)*Rho*n0+i*Rho*j0;
+    return ((-1)*Rho*n0+i*Radius*j0);
 }
+/// u^- =e^(-ikr) OR u^- =e^(-ikr)/(2ik)
 complex<double> CATS::IncomingPlaneWave(const double &Radius, const double &Momentum) const
 {
     double Rho = Radius * Momentum;
@@ -4245,7 +4246,7 @@ complex<double> CATS::IncomingPlaneWave(const double &Radius, const double &Mome
     }
     double j0 = BesselFunction(Radius, Momentum, 0);
     double n0 = NeumannFunction(Radius, Momentum, 0);
-    return (-1) * Rho * n0 - i * Rho * j0;
+    return ((-1) * Rho * n0 - i * Radius * j0);
 }
 
 double CATS::AsymptoticRatio(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const{
@@ -4423,7 +4424,8 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
             return ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW, Q1Q2)*MultFactor;
         } else 
         {
-            return (ACoeff * OutgoingPlaneWave(Radius, Momentum) + BCoeff * IncomingPlaneWave(Radius, Momentum))*MultFactor;
+            // return (ACoeff*OutgoingPlaneWave(Radius, Momentum) - BCoeff*IncomingPlaneWave(Radius, Momentum)) * MultFactor;
+            return (OutgoingPlaneWave(Radius, Momentum) - (BCoeff/ACoeff) * IncomingPlaneWave(Radius, Momentum)) * MultFactor;
         }
     }
 }
