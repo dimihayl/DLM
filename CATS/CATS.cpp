@@ -4233,7 +4233,7 @@ complex<double> CATS::OutgoingPlaneWave(const double &Radius, const double &Mome
     }
     double j0= BesselFunction(Radius,Momentum,0);
     double n0= NeumannFunction(Radius,Momentum,0);
-    return ((-1)*Rho*n0+i*Radius*j0);
+    return ((-1) * Rho * n0 + i * Rho * j0);
 }
 /// u^- =e^(-ikr) OR u^- =e^(-ikr)/(2ik)
 complex<double> CATS::IncomingPlaneWave(const double &Radius, const double &Momentum) const
@@ -4246,7 +4246,7 @@ complex<double> CATS::IncomingPlaneWave(const double &Radius, const double &Mome
     }
     double j0 = BesselFunction(Radius, Momentum, 0);
     double n0 = NeumannFunction(Radius, Momentum, 0);
-    return ((-1) * Rho * n0 - i * Radius * j0);
+    return ((-1) * Rho * n0 - i * Rho * j0);
 }
 
 double CATS::AsymptoticRatio(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const{
