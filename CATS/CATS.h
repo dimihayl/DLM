@@ -609,14 +609,11 @@ protected:
                                const double& Radius, const double& Momentum,
                                const unsigned short& AzQN, const unsigned short& Pol);
     // the differential equation for the Schroedinger equation with complex potential iCATS
-    void PropagatingComplexFunction(double &Basic, complex<double> &Full,
-                                    const double &Radius, const double &Momentum,
-                                    const unsigned short &AzQN, const unsigned short &Pol);
     void PropagatingComplexFunction(double &Basic, double &Full1, double &Full2,
                                     const double &Radius, const double &Momentum,
                                     const unsigned short &usPW, const unsigned short &usCh);
 
-        void ComputeWaveFunction();
+    void ComputeWaveFunction();
     void ComputeTotWaveFunction(const bool& ReallocateTotWaveFun);
     // needed for iCATS
     void ComputeComplexWaveFunction();
@@ -637,14 +634,14 @@ protected:
     double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
     //radial/coulomb partial wave as a solution from the gsl libraries
     double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
-    // Regular Solution given by Bessel function j_l
+    // Regular Solution given by Bessel function j_l xradius
     double BesselFunction(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
-    // Irregular Solution given by Neumann function n_l
+    // Irregular Solution given by Neumann function n_l x radius
     double NeumannFunction(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
     // u^+(r) outgoing plane wave; e^(ikr)=cos(kr)+i sin(kr)= -kr n_0(kr)+i kr j_0(kr)
-    complex <double> OutgoingPlaneWave(const double &Radius, const double &Momentum) const;
+    complex<double> OutgoingPlanePartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
     // u^-(r) incoming plane wave; e^(-ikr)=cos(kr)-i sin(kr)= -kr n_0(kr)-i kr j_0(kr)
-    complex <double> IncomingPlaneWave(const double &Radius, const double &Momentum) const;
+    complex<double> IncomingPlanePartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
     double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
     
     //a numerical root-finder. Very fast and accurate for well-behaved (near to linear) functions
@@ -714,7 +711,7 @@ protected:
     float*** PhaseShiftF;//in bins of pol/pw/mom, saved only until the end of each k-iteration
     double**** WaveFunRad;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
     complex<double>**** WaveFunctionU;//in bins of mom/pol/pw/rad, saved only until the end of each k-iteration
-    /// u(r) -> A u^+ + Bu^- where (+) = outgoing and (-) = incoming:
+    /// u(r) -> A u^+ - Bu^- where (+) = outgoing and (-) = incoming:
     complex<double> ***CoeffOutgoing; // in bins of mom/chan/pw, saved only until the end of each k-iteration
     complex<double> ***CoeffIncoming; // in bins of mom/chan/pw, saved only until the end of each k-iteration
 
