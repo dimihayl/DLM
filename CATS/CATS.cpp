@@ -95,6 +95,9 @@ CATS::CATS() : NumPotPars(2), NumSourcePars(3)
     WaveFunctionU = NULL;
     CoeffOutgoing = NULL;
     CoeffIncoming = NULL;
+    ScatteringMatrix = NULL;
+    ScatteringMatrixF = NULL;
+    ScatteringAmplitudeF = NULL;
     MomBinConverged = NULL;
     InputFileName = NULL;
     RelativeMomentum = NULL;
@@ -126,6 +129,7 @@ CATS::CATS() : NumPotPars(2), NumSourcePars(3)
     AnaSourcePar = NULL;
     // AnaSourceParArray = NULL;
     // ForwardedSourcePar = new CATSparameters(CATSparameters::tSource,0,true);
+    ComplexScatPars = NULL;
 
     ExternalWF = NULL;
     ExternalPS = NULL;
@@ -225,6 +229,11 @@ CATS::~CATS()
         delete[] PotPar;
         PotPar = NULL;
     }
+    if (ComplexScatPars)
+    {
+        delete[] ComplexScatPars;
+        ComplexScatPars = NULL;
+    }
     if (ExternalWF)
     {
         delete[] ExternalWF;
@@ -297,6 +306,7 @@ void CATS::DelMomChPw()
                 delete[] WaveFunctionU[uMomBin][usCh];
                 delete[] CoeffIncoming[uMomBin][usCh];
                 delete[] CoeffOutgoing[uMomBin][usCh];
+                delete[] ScatteringMatrix[uMomBin][usCh];
             }
             delete[] SavedWaveFunBins[uMomBin];
             delete[] PhaseShift[uMomBin];
@@ -304,6 +314,7 @@ void CATS::DelMomChPw()
             delete[] WaveFunctionU[uMomBin];
             delete[] CoeffIncoming[uMomBin];
             delete[] CoeffOutgoing[uMomBin];
+            delete[] ScatteringMatrix[uMomBin];
         }
 
         for (unsigned short usCh = 0; usCh < NumCh; usCh++)
@@ -311,8 +322,12 @@ void CATS::DelMomChPw()
             for (unsigned short usPW = 0; usPW < NumPW[usCh]; usPW++)
             {
                 delete[] PhaseShiftF[usCh][usPW];
+                delete[] ScatteringMatrixF[usCh][usPW];
+                delete[] ScatteringAmplitudeF[usCh][usPW];
             }
             delete[] PhaseShiftF[usCh];
+            delete[] ScatteringMatrixF[usCh];
+            delete[] ScatteringAmplitudeF[usCh];
         }
 
         delete[] SavedWaveFunBins;
@@ -329,6 +344,12 @@ void CATS::DelMomChPw()
         CoeffIncoming = NULL;
         delete[] CoeffOutgoing;
         CoeffOutgoing = NULL;
+        delete[] ScatteringMatrix;
+        ScatteringMatrix = NULL;
+        delete[] ScatteringMatrixF;
+        ScatteringMatrixF = NULL;
+        delete[] ScatteringAmplitudeF;
+        ScatteringAmplitudeF = NULL;
     }
     // if(ExternalWF){
     //     for(unsigned short usCh=0; usCh<NumCh; usCh++){
@@ -460,6 +481,11 @@ void CATS::DelPotPw(const unsigned short &usCh, const unsigned short &usPW)
         delete PotPar[usCh][usPW];
         PotPar[usCh][usPW] = NULL;
     }
+    if (ComplexScatPars && ComplexScatPars[usCh] && ComplexScatPars[usCh][usPW])
+    {
+        delete ComplexScatPars[usCh][usPW];
+        ComplexScatPars[usCh][usPW] = NULL;
+    }
     if (ExternalWF && ExternalWF[usCh] && ExternalWF[usCh][usPW])
     {
         delete ExternalWF[usCh][usPW];
@@ -506,6 +532,11 @@ void CATS::DelPotCh(const unsigned short &usCh)
     {
         delete[] PotPar[usCh];
         PotPar[usCh] = NULL;
+    }
+    if (ComplexScatPars && ComplexScatPars[usCh])
+    {
+        delete[] ComplexScatPars[usCh];
+        ComplexScatPars[usCh] = NULL;
     }
     if (ExternalWF && ExternalWF[usCh])
     {
@@ -679,6 +710,7 @@ void CATS::SetNumChannels(const unsigned short &numCh)
     WfType = new char *[numCh];
     Sw_Pars = new double **[numCh];
     PotPar = new CATSparameters **[numCh];
+    ComplexScatPars = new CATSparameters **[numCh];
     ExternalWF = new DLM_Histo<complex<double>> **[numCh];
     ExternalPS = new DLM_Histo<complex<double>> **[numCh];
 
@@ -689,6 +721,7 @@ void CATS::SetNumChannels(const unsigned short &numCh)
         WfType[usCh] = NULL;
         Sw_Pars[usCh] = NULL;
         PotPar[usCh] = NULL;
+        ComplexScatPars[usCh] = NULL;
         ExternalWF[usCh] = NULL;
         ExternalPS[usCh] = NULL;
     }
@@ -756,6 +789,7 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
     WfType[usCh] = new char[numPW];
     Sw_Pars[usCh] = new double *[numPW];
     PotPar[usCh] = new CATSparameters *[numPW];
+    ComplexScatPars[usCh] = new CATSparameters *[numPW];
     ExternalWF[usCh] = new DLM_Histo<complex<double>> *[numPW];
     ExternalPS[usCh] = new DLM_Histo<complex<double>> *[numPW];
     for (unsigned short usPW = 0; usPW < numPW; usPW++)
@@ -767,6 +801,7 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
         Sw_Pars[usCh][usPW][0] = 0;
         Sw_Pars[usCh][usPW][1] = 0;
         PotPar[usCh][usPW] = NULL;
+        ComplexScatPars[usCh][usPW] = NULL;
         ExternalWF[usCh][usPW] = NULL;
         ExternalPS[usCh][usPW] = NULL;
     }
@@ -778,6 +813,7 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
     WaveFunctionU = new complex<double> ***[NumMomBins];
     CoeffIncoming = new complex<double> **[NumMomBins];
     CoeffOutgoing = new complex<double> **[NumMomBins];
+    ScatteringMatrix=new complex<double> **[NumMomBins];
     // ExternalWF = new const complex<double>*** [NumMomBins];
     // NumExtWfRadBins = new unsigned** [NumMomBins];
     // ExtWfRadBins = new const double*** [NumMomBins];
@@ -789,6 +825,7 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
         WaveFunctionU[uMomBin] = new complex<double> **[NumCh];
         CoeffIncoming[uMomBin] = new complex<double> *[NumCh];
         CoeffOutgoing[uMomBin] = new complex<double> *[NumCh];
+        ScatteringMatrix[uMomBin]=new complex<double> *[NumCh];
         // ExternalWF[uMomBin] = new const complex<double>** [NumCh];
         // NumExtWfRadBins[uMomBin] = new unsigned* [NumCh];
         // ExtWfRadBins[uMomBin] = new const double** [NumCh];
@@ -800,6 +837,7 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
             WaveFunctionU[uMomBin][usCh] = new complex<double> *[NumPW[usCh]];
             CoeffIncoming[uMomBin][usCh] = new complex<double>[NumPW[usCh]];
             CoeffOutgoing[uMomBin][usCh] = new complex<double>[NumPW[usCh]];
+            ScatteringMatrix[uMomBin][usCh] = new complex<double>[NumPW[usCh]];
             // ExternalWF[uMomBin][usCh] = new const complex<double>* [NumPW[usCh]];
             // NumExtWfRadBins[uMomBin][usCh] = new unsigned [NumPW[usCh]];
             // ExtWfRadBins[uMomBin][usCh] = new const double* [NumPW[usCh]];
@@ -811,6 +849,7 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
                 WaveFunctionU[uMomBin][usCh][usPW] = NULL;
                 CoeffIncoming[uMomBin][usCh][usPW] = 0;
                 CoeffOutgoing[uMomBin][usCh][usPW] = 0;
+                ScatteringMatrix[uMomBin][usCh][usPW] = 0;
                 // ExternalWF[uMomBin][usCh][usPW] = NULL;
                 // NumExtWfRadBins[uMomBin][usCh][usPW] = 0;
                 // ExtWfRadBins[uMomBin][usCh][usPW] = NULL;
@@ -818,15 +857,23 @@ void CATS::SetNumPW(const unsigned short &usCh, const unsigned short &numPW)
         }
     }
     PhaseShiftF = new float **[NumCh];
+    ScatteringMatrixF = new complex<double> **[NumCh];
+    ScatteringAmplitudeF = new complex<double> **[NumCh];
     for (unsigned short usCh = 0; usCh < NumCh; usCh++)
     {
         PhaseShiftF[usCh] = new float *[NumPW[usCh]];
+        ScatteringMatrixF[usCh] = new complex<double> *[NumPW[usCh]];
+        ScatteringAmplitudeF[usCh] = new complex<double> *[NumPW[usCh]];
         for (unsigned short usPW = 0; usPW < NumPW[usCh]; usPW++)
         {
             PhaseShiftF[usCh][usPW] = new float[NumMomBins];
+            ScatteringMatrixF[usCh][usPW] = new complex<double> [NumMomBins];
+            ScatteringAmplitudeF[usCh][usPW] = new complex<double>[NumMomBins];
             for (unsigned uMomBin = 0; uMomBin < NumMomBins; uMomBin++)
             {
                 PhaseShiftF[usCh][usPW][uMomBin] = 0;
+                ScatteringMatrixF[usCh][usPW][uMomBin] = 0;
+                ScatteringAmplitudeF[usCh][usPW][uMomBin] = 0;
             }
         }
     }
@@ -1858,6 +1905,136 @@ complex<double> CATS::EvalReferenceRadialWF(const unsigned &WhichMomBin, const u
         return 0;
     double MultFactor = DivideByR ? 1. / (Radius * FmToNu + 1e-64) : 1;
     return ReferencePartialWave(Radius * FmToNu, GetMomentum(WhichMomBin), usPW, Q1Q2) * MultFactor;
+}
+
+/// Functions for iCATS
+/// Getting the scattering matrix S= -conj(A)/conj(B)
+/// TO BE CHECKED IF IT IS THE CORRECT WAY OR WE NEED TO SOLVE SE WITH ORIGINAL V POTENTIAL (NOT HERMITIAN CONJ.)
+complex<double> CATS::GetScatteringMatrix(const unsigned &WhichMomBin, const unsigned short &usCh, const unsigned short &usPW) const
+{
+    if (NumMomBins <= WhichMomBin || NumCh <= usCh || NumPW[usCh] <= usPW)
+        return 0;
+
+    return ScatteringMatrix[WhichMomBin][usCh][usPW];
+}
+
+complex<double> CATS::EvalScatteringMatrix(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const 
+{
+    if (NumCh <= usCh || NumPW[usCh] <= usPW)
+        return 0;
+    return EvalBinnedFun(Momentum, NumMomBins, MomBin, MomBinCenter, ScatteringMatrixF[usCh][usPW]);
+}
+
+complex<double> CATS::EvalScatteringAmplitude(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const
+{
+    if (Momentum == 0. || NumCh <= usCh || NumPW[usCh] <= usPW)
+        return 0;
+    complex<double> Result = (EvalScatteringMatrix(Momentum,usCh,usPW) -1.)/(2.*i*Momentum);
+    // cout << "----------------------------" << endl;
+    // cout << " In EvalScatteringAmplitude" << endl;
+    // cout << "Momentum = " << Momentum << "-- Result = " << Result << endl;
+    // cout << "----------------------------" << endl;
+    return Result;
+}
+
+array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const
+{
+    if (!ScatteringAmplitudeF)
+    {
+        return {0,0};
+    }
+    if (usCh >= NumCh)
+    {
+        if (Notifications >= nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::EvaluateComplexScatPars(...)\n");
+        return {0, 0};
+    }
+    if (usPW >= NumPW[usCh])
+    {
+        if (Notifications >= nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::EvaluateComplexScatPars(...)\n");
+        return {0, 0};
+    }
+    if (!ScatteringMatrixF[usCh])
+    {
+        return {0, 0};
+    }
+    if (!ScatteringMatrixF[usCh][usPW])
+    {
+        return {0, 0};
+    }
+    /// Choosing three values of momentum
+    /// cannot be MomBin[0] since it is zero -> f(0) = 0.!!!
+    double k_1 = MomBin[1];//i-1
+    double k_2 = MomBin[2];//i
+    double k_3 = MomBin[3];//i=1
+
+    double Delta_k = k_1;
+
+    // double k_1 = 0.1;
+    // double k_2 = 0.5;
+    // double k_3 = 1.;
+
+    cout << "k_1 = " << k_1 << "-- k_2 = " << k_2 << "-- k_3 = " << k_3 << endl;
+
+    complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
+    complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
+    complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
+    complex<double> ScatLen12;
+    complex<double> EffRan12;
+    complex<double> ScatLen23;
+    complex<double> EffRan23;
+    complex<double> ScatLen13;
+    complex<double> EffRan13;
+
+    cout << "f_k1 = " << f_k1 << "-- f_k2 = " << f_k2 << "-- f_k3 = " << f_k3 << endl;
+    cout << "f_(0.1 MeV) = " << EvalScatteringAmplitude(0.1, usCh, usPW) << "-- f_(0.5)= " << EvalScatteringAmplitude(0.5, usCh, usPW) << "-- f_(1) = " << EvalScatteringAmplitude(1., usCh, usPW) << endl;
+
+    EffRan12 = ((1./f_k1 -1./f_k2)+i*(k_1-k_2))/(0.5*(k_1*k_1-k_2*k_2));
+    ScatLen12 = 1./(1./f_k1 - 0.5*EffRan12*k_1*k_1 + i*k_1);
+    EffRan23 = ((1. / f_k2 - 1. / f_k3) + i * (k_2 - k_3)) / (0.5 * (k_2 * k_2 - k_3 * k_3));
+    ScatLen23 = 1. / (1. / f_k2 - 0.5 * EffRan23 * k_2 * k_2 + i * k_2);
+    EffRan13 = ((1. / f_k1 - 1. / f_k3) + i * (k_1 - k_3)) / (0.5 * (k_1 * k_1 - k_3 * k_3));
+    ScatLen13 = 1. / (1. / f_k1 - 0.5 * EffRan13 * k_1 * k_1 + i * k_1);
+
+    cout << "ScatLen12 = " << ScatLen12 * hbarc << "-- ScatLen23 = " << ScatLen23 * hbarc << "-- ScatLen13 = " << ScatLen13 * hbarc << endl;
+    cout << "EffRan12 = " << EffRan12 * hbarc << "-- EffRan23 = " << EffRan23 * hbarc << "-- EffRan13 = " << EffRan13 * hbarc << endl;
+
+    complex<double> ScatLen;
+    complex<double> EffRan;
+
+    /// Implement better the condition here!!!
+    if (abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) < EpsilonConv && abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((ScatLen12 - ScatLen13) / (ScatLen12 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) < EpsilonConv && abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)))
+    {
+        ScatLen = ScatLen12 * hbarc;
+        EffRan = EffRan12 * hbarc;
+    } else 
+    {
+        ScatLen = 0.;
+        EffRan = 0.;
+        cerr << "Warning: Scattering length and effective range did not converge, set both to zero!" << endl;
+    }
+
+    cout << "abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) = " << abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) << endl;
+    cout << "abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) = " << abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) << endl;
+    cout << "-----------------------------------" << endl;
+    cout << "abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) = " << abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) << endl;
+    cout << "abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) = " << abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) << endl;
+    cout <<"abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)) = " << abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)) << endl;
+    cout << "-----------------------------"<< endl;
+
+    complex<double> a_0 = +f_k1; /// but this is assuming that f(E) = (-1./a0 +... )?????
+    cout << "Scattering length (a_0) = " << a_0 * hbarc << " fm" << endl;
+    complex<double> d_0 = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
+    cout << "Eff. Range (d_0) = " << d_0 * hbarc << " fm" << endl;
+
+    /// YOU ARE NOT DELETING SOMETHING PROPERLY!!!
+    // ComplexScatPars[usCh][usPW]->SetVariabreal(ScatLen), true);
+    // ComplexScatPars[usCh][usPW]->SetVariabimag(ScatLen), true);
+    // ComplexScatPars[usCh][usPW]->SetVariabreal(EffRan), true);
+    // ComplexScatPars[usCh][usPW]->SetVariabimag(EffRan), true);
+    // double *Parameters = ComplexScatPars[usPW]->GetParameters();
+    return {ScatLen, EffRan};
 }
 
 double CATS::GetMomentum(const unsigned &WhichMomBin) const
@@ -3658,8 +3835,12 @@ void CATS::ComputeComplexWaveFunction()
 
                 CoeffOutgoing[uMomBin][usCh][usPW] = ACoeff;
                 CoeffIncoming[uMomBin][usCh][usPW] = BCoeff;
-                //// original CATS code
 
+                ScatteringMatrix[uMomBin][usCh][usPW] = conj(BCoeff) / conj(ACoeff);
+                ScatteringMatrixF[usCh][usPW][uMomBin] = conj(BCoeff) / conj(ACoeff);
+                ScatteringAmplitudeF[usCh][usPW][uMomBin] = (ScatteringMatrixF[usCh][usPW][uMomBin] - 1.) / (2. * i * static_cast<double>(uMomBin));
+
+                //// original CATS code
                 SavedWaveFunBins[uMomBin][usCh][usPW] = StepOfMaxConvergedNumWF + 1;
                 unsigned &SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
 
@@ -5576,6 +5757,7 @@ complex<double> CATS::EvaluateTheComplexPotential(const unsigned short &usCh, co
     double *Parameters = PotPar[usCh][usPW]->GetParameters();
     return ShortRangeComplexPotential[usCh][usPW](Parameters);
 }
+
 double CATS::EvaluateCoulombPotential(const double &Radius) const
 {
     if (Q1Q2 == 0)

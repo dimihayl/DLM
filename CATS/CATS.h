@@ -249,8 +249,7 @@ public:
 
     unsigned GetNumRadialWFpts(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW) const;
     complex<double> GetRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const unsigned& WhichRadBin) const;
-    complex<double> EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,
-                                  const bool& DivideByR=true) const;
+    complex<double> EvalRadialWaveFunction(const unsigned& WhichMomBin, const unsigned short& usCh, const unsigned short& usPW, const double& Radius,const bool& DivideByR=true) const;
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EvalWaveFun2(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh);
 
@@ -258,6 +257,14 @@ public:
                                   const bool& DivideByR=true);
     complex<double> EvalReferenceRadialWF(const unsigned& WhichMomBin,const unsigned short& usPW, const double& Radius, const bool& DivideByR=true);
 
+    /// Functions for iCATS
+    /// Getting the scattering matrix S= -conj(A)/conj(B)
+    /// TO BE CHECKED IF IT IS THE CORRECT WAY OR WE NEED TO SOLVE SE WITH ORIGINAL V POTENTIAL (NOT HERMITIAN CONJ.)
+    complex<double> GetScatteringMatrix(const unsigned &WhichMomBin, const unsigned short &usCh, const unsigned short &usPW) const;
+    complex<double> EvalScatteringMatrix(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
+
+    complex<double> EvalScatteringAmplitude(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
+    array<complex<double>,2> EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const;
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin) const;
     double GetMomBinLowEdge(const unsigned& WhichMomBin) const;
@@ -590,6 +597,7 @@ protected:
     CATSparameters* AnaSourcePar;
     //double* AnaSourceParArray;
     //CATSparameters* ForwardedSourcePar;
+    CATSparameters*** ComplexScatPars;
 
     //!------------------------------------------------
 
@@ -714,6 +722,9 @@ protected:
     /// u(r) -> A u^+ - Bu^- where (+) = outgoing and (-) = incoming:
     complex<double> ***CoeffOutgoing; // in bins of mom/chan/pw, saved only until the end of each k-iteration
     complex<double> ***CoeffIncoming; // in bins of mom/chan/pw, saved only until the end of each k-iteration
+    complex<double> ***ScatteringMatrix; // in bins of mom/chan/pw, saved only until the end of each k-iteration
+    complex<double> ***ScatteringMatrixF; // in bins of pol/pw/mom, saved only until the end of each k-iteration
+    complex<double> ***ScatteringAmplitudeF; // in bins of pol/pw/mom, saved only until the end of each k-iteration
 
     bool* MomBinConverged;//bins of mom, marked as true in case the num. comp. failed and this bin should not be used
 
