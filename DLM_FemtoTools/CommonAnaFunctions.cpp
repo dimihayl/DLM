@@ -3971,7 +3971,7 @@ CLEAN_SetUpCats_pApHaide:;
     CleanUpWfHisto(Kitty, ExternalWF);
 }
 
-void DLM_CommonAnaFunctions::SetUpCats_Lcp(CATS &Kitty, const TString &SOURCE, const int &CUTOFF)
+void DLM_CommonAnaFunctions::SetUpCats_Lcp_LQCDe(CATS &Kitty, const TString &SOURCE, const int &CUTOFF)
 {
     CATSparameters *cPars = NULL;
 
