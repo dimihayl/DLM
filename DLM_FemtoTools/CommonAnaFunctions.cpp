@@ -4017,7 +4017,7 @@ void DLM_CommonAnaFunctions::SetUpCats_Lcp_LQCDe(CATS &Kitty, const TString &SOU
     Kitty.SetThetaDependentSource(false);
     Kitty.SetExcludeFailedBins(false);
 
-    Kitty.SetQ1Q2(0);
+    Kitty.SetQ1Q2(1);
     Kitty.SetPdgId(4122, 2212);
     Kitty.SetRedMass((Mass_Lcp * Mass_p) / (Mass_Lcp + Mass_p));
 
