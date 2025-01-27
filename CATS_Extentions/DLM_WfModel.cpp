@@ -2878,7 +2878,7 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
     {
         strcat(InputFileName[f1S0], "CE61s0.data");
         strcat(InputFileName[f3S1], "CE63s1.data");
-        strcat(InputFileName[f1S0SC], "SE51s0.data");
+        strcat(InputFileName[f1S0SC], "SE61s0.data");
         strcat(InputFileName[f3S1SC], "SE63s1.data");
     }
     else
