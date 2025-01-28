@@ -1975,58 +1975,50 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
     // double k_2 = 0.5;
     // double k_3 = 1.;
 
-    cout << "k_1 = " << k_1 << "-- k_2 = " << k_2 << "-- k_3 = " << k_3 << endl;
+    // cout << "k_1 = " << k_1 << "-- k_2 = " << k_2 << "-- k_3 = " << k_3 << endl;
 
     complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
     complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
     complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-    complex<double> ScatLen12;
-    complex<double> EffRan12;
-    complex<double> ScatLen23;
-    complex<double> EffRan23;
-    complex<double> ScatLen13;
-    complex<double> EffRan13;
+    // complex<double> ScatLen12;
+    // complex<double> EffRan12;
+    // complex<double> ScatLen23;
+    // complex<double> EffRan23;
+    // complex<double> ScatLen13;
+    // complex<double> EffRan13;
 
-    cout << "f_k1 = " << f_k1 << "-- f_k2 = " << f_k2 << "-- f_k3 = " << f_k3 << endl;
-    cout << "f_(0.1 MeV) = " << EvalScatteringAmplitude(0.1, usCh, usPW) << "-- f_(0.5)= " << EvalScatteringAmplitude(0.5, usCh, usPW) << "-- f_(1) = " << EvalScatteringAmplitude(1., usCh, usPW) << endl;
+    // cout << "f_k1 = " << f_k1 << "-- f_k2 = " << f_k2 << "-- f_k3 = " << f_k3 << endl;
+    // cout << "f_(0.1 MeV) = " << EvalScatteringAmplitude(0.1, usCh, usPW) << "-- f_(0.5)= " << EvalScatteringAmplitude(0.5, usCh, usPW) << "-- f_(1) = " << EvalScatteringAmplitude(1., usCh, usPW) << endl;
 
-    EffRan12 = ((1./f_k1 -1./f_k2)+i*(k_1-k_2))/(0.5*(k_1*k_1-k_2*k_2));
-    ScatLen12 = 1./(1./f_k1 - 0.5*EffRan12*k_1*k_1 + i*k_1);
-    EffRan23 = ((1. / f_k2 - 1. / f_k3) + i * (k_2 - k_3)) / (0.5 * (k_2 * k_2 - k_3 * k_3));
-    ScatLen23 = 1. / (1. / f_k2 - 0.5 * EffRan23 * k_2 * k_2 + i * k_2);
-    EffRan13 = ((1. / f_k1 - 1. / f_k3) + i * (k_1 - k_3)) / (0.5 * (k_1 * k_1 - k_3 * k_3));
-    ScatLen13 = 1. / (1. / f_k1 - 0.5 * EffRan13 * k_1 * k_1 + i * k_1);
+    // EffRan12 = ((1./f_k1 -1./f_k2)+i*(k_1-k_2))/(0.5*(k_1*k_1-k_2*k_2));
+    // ScatLen12 = 1./(1./f_k1 - 0.5*EffRan12*k_1*k_1 + i*k_1);
+    // EffRan23 = ((1. / f_k2 - 1. / f_k3) + i * (k_2 - k_3)) / (0.5 * (k_2 * k_2 - k_3 * k_3));
+    // ScatLen23 = 1. / (1. / f_k2 - 0.5 * EffRan23 * k_2 * k_2 + i * k_2);
+    // EffRan13 = ((1. / f_k1 - 1. / f_k3) + i * (k_1 - k_3)) / (0.5 * (k_1 * k_1 - k_3 * k_3));
+    // ScatLen13 = 1. / (1. / f_k1 - 0.5 * EffRan13 * k_1 * k_1 + i * k_1);
 
-    cout << "ScatLen12 = " << ScatLen12 * hbarc << "-- ScatLen23 = " << ScatLen23 * hbarc << "-- ScatLen13 = " << ScatLen13 * hbarc << endl;
-    cout << "EffRan12 = " << EffRan12 * hbarc << "-- EffRan23 = " << EffRan23 * hbarc << "-- EffRan13 = " << EffRan13 * hbarc << endl;
+    // cout << "ScatLen12 = " << ScatLen12 * hbarc << "-- ScatLen23 = " << ScatLen23 * hbarc << "-- ScatLen13 = " << ScatLen13 * hbarc << endl;
+    // cout << "EffRan12 = " << EffRan12 * hbarc << "-- EffRan23 = " << EffRan23 * hbarc << "-- EffRan13 = " << EffRan13 * hbarc << endl;
 
-    complex<double> ScatLen;
-    complex<double> EffRan;
+    // complex<double> ScatLen;
+    // complex<double> EffRan;
 
-    /// Implement better the condition here!!!
-    if (abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) < EpsilonConv && abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((ScatLen12 - ScatLen13) / (ScatLen12 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) < EpsilonConv && abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)))
-    {
-        ScatLen = ScatLen12 * hbarc;
-        EffRan = EffRan12 * hbarc;
-    } else 
-    {
-        ScatLen = 0.;
-        EffRan = 0.;
-        cerr << "Warning: Scattering length and effective range did not converge, set both to zero!" << endl;
-    }
+    // /// Implement better the condition here!!!
+    // if (abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) < EpsilonConv && abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((ScatLen12 - ScatLen13) / (ScatLen12 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) < EpsilonConv && abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)))
+    // {
+    //     ScatLen = ScatLen12 * hbarc;
+    //     EffRan = EffRan12 * hbarc;
+    // } else 
+    // {
+    //     ScatLen = 0.;
+    //     EffRan = 0.;
+    //     cerr << "Warning: Scattering length and effective range did not converge, set both to zero!" << endl;
+    // }
 
-    cout << "abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) = " << abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) << endl;
-    cout << "abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) = " << abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) << endl;
-    cout << "-----------------------------------" << endl;
-    cout << "abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) = " << abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) << endl;
-    cout << "abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) = " << abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) << endl;
-    cout <<"abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)) = " << abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)) << endl;
-    cout << "-----------------------------"<< endl;
-
-    complex<double> a_0 = +f_k1; /// but this is assuming that f(E) = (-1./a0 +... )?????
-    cout << "Scattering length (a_0) = " << a_0 * hbarc << " fm" << endl;
-    complex<double> d_0 = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
-    cout << "Eff. Range (d_0) = " << d_0 * hbarc << " fm" << endl;
+    complex<double> ScatLen = +f_k1; /// but this is assuming that f(E) = (-1./a0 +... )?????
+    // cout << "Scattering length  = " << ScatLen * hbarc << " fm" << endl;
+    complex<double> EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
+    // cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
 
     /// YOU ARE NOT DELETING SOMETHING PROPERLY!!!
     // ComplexScatPars[usCh][usPW]->SetVariabreal(ScatLen), true);
@@ -2034,7 +2026,7 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
     // ComplexScatPars[usCh][usPW]->SetVariabreal(EffRan), true);
     // ComplexScatPars[usCh][usPW]->SetVariabimag(EffRan), true);
     // double *Parameters = ComplexScatPars[usPW]->GetParameters();
-    return {ScatLen, EffRan};
+    return {ScatLen * hbarc, EffRan * hbarc};
 }
 
 double CATS::GetMomentum(const unsigned &WhichMomBin) const
