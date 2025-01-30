@@ -2923,3 +2923,62 @@ double DLM_MtKstar_KdpSource::RootEval(double* rstar, double* pars){
     }
     return Eval(PARS);
 }
+
+
+DLM_MultiKdpSource::DLM_MultiKdpSource(DLM_Histo<KdpPars>& kdp_source, const int WhereIsKstar, const int WhereIsCosTheta):
+inlcude_kstar(WhereIsKstar),include_costh(WhereIsCosTheta){
+    kdp_histogram = NULL;
+    NumPars = kdp_source.GetDim()-(WhereIsKstar>=0)-(WhereIsCosTheta>=0);
+    if(NumPars<0){
+        printf("\033[1;31mERROR:\033[0m Bad number of parameters in DLM_MultiKdpSource::DLM_MultiKdpSource(...)\n");
+        return;
+    }
+    if(WhereIsKstar==WhereIsCosTheta && WhereIsKstar>=0){
+        printf("\033[1;31mERROR:\033[0m Bad input in DLM_MultiKdpSource::DLM_MultiKdpSource(...): WhereIsKstar==WhereIsCosTheta\n");
+        return;        
+    }
+    kdp_histogram = &kdp_source;
+    eval_at = NULL;
+}
+DLM_MultiKdpSource::~DLM_MultiKdpSource(){
+    kdp_histogram = NULL;
+    if(eval_at){
+        delete [] eval_at;
+        eval_at = NULL;
+    }
+}
+
+double DLM_MultiKdpSource::Eval(double* kxc){
+    if(NumPars<0){
+        return 0;
+    }
+    double& kstar = kxc[0];
+    double& rstar = kxc[1];
+    double& costh = kxc[2];
+    if(!eval_at) eval_at = new double [kdp_histogram->GetDim()];
+    if(inlcude_kstar>=0){
+        eval_at[inlcude_kstar] = kstar;
+    }
+    if(include_costh>=0){
+        eval_at[include_costh] = costh;
+    }
+
+    //int iDim = kdp_histogram->GetDim()-1;
+    int iEval=0;
+    for(int iDim=0; iDim<kdp_histogram->GetDim(); iDim++){
+        if(iDim!=inlcude_kstar && iDim!=include_costh){
+            eval_at[iDim] = kxc[2+iEval];
+            iEval++;
+        }
+    }
+
+    KdpPars current_kdp = kdp_histogram->Eval(eval_at);
+    return PoissonSum(rstar,current_kdp);
+}
+double DLM_MultiKdpSource::RootEval(double* x, double* pars){
+    if(NumPars<0){
+        return 0;
+    }
+}
+
+

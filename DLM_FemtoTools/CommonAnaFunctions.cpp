@@ -788,11 +788,15 @@ CLEAN_SetUpCats_pp:;
 // DG_pip_d (double gauss potential, p_pi+ with non-zero effective range)
 // DG_pim_d0 (double gauss potential, p_pi- with zero effective range)
 // DG_pim_d (double gauss potential, p_pi- with non-zero effective range)
+//if the SourceVar last digit is zero, we use EPOS, last digit 1 we use CECA (for the ang disto)
+//if the number is negative -> a Lambda instead of proton (using though the same ang. distos)
 void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, const TString &SOURCE, const int &PotVar, const int &SourceVar)
 {
 
     CATSparameters *cPars = NULL;
     CATSparameters *cPotPars = NULL;
+
+    double RED_MASS;
 
     Kitty.SetThetaDependentSource(false);
 
@@ -826,14 +830,24 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
             CleverMcLevyResoTM[6].InitStability(1, 2 - 1e-6, 2 + 1e-6);
         else
             CleverMcLevyResoTM[6].InitStability(21, 1, 2);
-        CleverMcLevyResoTM[6].InitScale(38, 0.15, 2.0);
-        CleverMcLevyResoTM[6].InitRad(257 * 2, 0, 64);
-        CleverMcLevyResoTM[6].InitType(2);
-        CleverMcLevyResoTM[6].SetUpReso(0, 0.6422);
-        CleverMcLevyResoTM[6].SetUpReso(1, 0.682);
+        if(SourceVar>=0){
+            CleverMcLevyResoTM[6].InitScale(38, 0.15, 2.0);
+            CleverMcLevyResoTM[6].InitRad(257 * 2, 0, 64);
+            CleverMcLevyResoTM[6].InitType(2);
+            CleverMcLevyResoTM[6].SetUpReso(0, 0.6422);
+            CleverMcLevyResoTM[6].SetUpReso(1, 0.682);
+        }
+        else{
+            CleverMcLevyResoTM[6].InitScale(38, 0.15, 2.0);
+            CleverMcLevyResoTM[6].InitRad(257 * 2, 0, 64);
+            CleverMcLevyResoTM[6].InitType(2);
+            CleverMcLevyResoTM[6].SetUpReso(0, 0.6438);
+            CleverMcLevyResoTM[6].SetUpReso(1, 0.682);            
+        }
 
-        const double k_CutOff = int(int(SourceVar) / 10) * 10.;
-        const int SVAR = SourceVar % 10;
+
+        const double k_CutOff = int(int(fabs(SourceVar)) / 10) * 10.;
+        const int SVAR = fabs(SourceVar % 10);
         int PPid, PRid, RPid, RRid;
         // EPOS
         if (SVAR == 0)
@@ -887,6 +901,7 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
         T_EposDisto_p_pi->SetBranchAddress("AngleRcP2", &AngleRcP2);
         T_EposDisto_p_pi->SetBranchAddress("AngleP1P2", &AngleP1P2);
 
+
         for (unsigned uEntry = 0; uEntry < T_EposDisto_p_pi->GetEntries(); uEntry++)
         {
             T_EposDisto_p_pi->GetEntry(uEntry);
@@ -906,9 +921,9 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
             }
             else if (Type == PRid)
             {
-                Tau1 = 1.65;
+                Tau1 = SourceVar>=0?1.65:4.69;
                 Tau2 = 0;
-                fM1 = 1124;
+                fM1 = SourceVar>=0?1362:1462;//this was wrong all along for the ppic, had the pionReso mass instead of the protonReso
                 if (k_D > k_CutOff)
                     continue;
                 RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
@@ -916,11 +931,11 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
             }
             else if (Type == RRid)
             {
-                Tau1 = 1.65;
+                Tau1 = SourceVar>=0?1.65:4.69;;
                 Tau2 = 1.50;
-                if (SourceVar % 100 == 2)
+                if (fabs(SourceVar % 100) == 2)
                 {
-                    fM1 = 1362;
+                    fM1 = SourceVar>=0?1362:1462;
                     fM2 = 1124;
                 }
                 if (k_D > k_CutOff)
@@ -951,7 +966,10 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
         goto CLEAN_SetUpCats_ppic;
     }
 
-    if (POT == "DG_pip_d0")
+    if(POT == ""){
+        cPotPars = NULL;
+    }
+    else if (POT == "DG_pip_d0")
     {
         // f0 = 0.118 fm
         // d0 = -0.02 fm
@@ -1002,7 +1020,9 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
     Kitty.SetQ1Q2(POT.Contains("pip") ? 1 : POT.Contains("pim") ? -1
                                                                 : 0);
     Kitty.SetQuantumStatistics(false);
-    Kitty.SetRedMass((Mass_p * Mass_pic) / (Mass_p + Mass_pic));
+    RED_MASS = Mass_p * Mass_pic / (Mass_p + Mass_pic);
+    if(SourceVar<0) RED_MASS = Mass_L * Mass_pic / (Mass_L + Mass_pic);
+    Kitty.SetRedMass(RED_MASS);
 
     Kitty.SetNumChannels(1);
     Kitty.SetNumPW(0, 1);
