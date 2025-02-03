@@ -264,7 +264,7 @@ public:
     complex<double> EvalScatteringMatrix(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
 
     complex<double> EvalScatteringAmplitude(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
-    array<complex<double>,2> EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const;
+    array<complex<double>, 2> EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const;
     //The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned& WhichMomBin) const;
     double GetMomBinLowEdge(const unsigned& WhichMomBin) const;
@@ -642,16 +642,26 @@ protected:
     double CoulombPartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
     //radial/coulomb partial wave as a solution from the gsl libraries
     double ReferencePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
-    // Regular Solution given by Bessel function j_l xradius
+    // Regular Solution given by Bessel function j_l x radius
     double BesselFunction(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
     // Irregular Solution given by Neumann function n_l x radius
     double NeumannFunction(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
+    /// Outgoing and Incoming partial wave without Coulomb
     // u^+(r) outgoing plane wave; e^(ikr)=cos(kr)+i sin(kr)= -kr n_0(kr)+i kr j_0(kr)
     complex<double> OutgoingPlanePartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
     // u^-(r) incoming plane wave; e^(-ikr)=cos(kr)-i sin(kr)= -kr n_0(kr)-i kr j_0(kr)
     complex<double> IncomingPlanePartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW) const;
-    double AsymptoticRatio(const double& Radius, const double& Momentum, const unsigned short& usPW, const int& q1q2) const;
-    
+    /// Outgoing and Incoming partial wave with Coulomb in terms of F and G from gsl libraries
+    complex<double> OutgoingCoulombPartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const;
+    complex<double> IncomingCoulombPartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const;
+
+    /// Total outgoing/incoming partial wave in which we just select whether we are dealing with a charged or neutral system
+    complex<double> OutgoingAsymptoticWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const;
+    // u^-(r) incoming plane wave; e^(-ikr)=cos(kr)-i sin(kr)= -kr n_0(kr)-i kr j_0(kr)
+    complex<double> IncomingAsymptoticWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const;
+
+    double AsymptoticRatio(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const;
+
     //a numerical root-finder. Very fast and accurate for well-behaved (near to linear) functions
     double NewtonRapson(double (CATS::*Function)(const double&, const double&, const unsigned short&, const int&) const,
                         const double& EpsilonX, const unsigned short& usPW, const double& Momentum, const int& q1q2,

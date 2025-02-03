@@ -10,6 +10,7 @@
 #include "gsl_sf_coulomb.h"
 #include "gsl_sf_bessel.h"
 #include "gsl_sf_legendre.h"
+#include "gsl_sf_gamma.h"
 
 #include "DLM_CppTools.h"
 #include "DLM_Histo.h"
@@ -1963,63 +1964,109 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
     {
         return {0, 0};
     }
+
     /// Choosing three values of momentum
     /// cannot be MomBin[0] since it is zero -> f(0) = 0.!!!
     double k_1 = MomBin[1];//i-1
     double k_2 = MomBin[2];//i
     double k_3 = MomBin[3];//i=1
-
+    cout << "k_1  = " << k_1 << endl;
     double Delta_k = k_1;
 
-    // double k_1 = 0.1;
-    // double k_2 = 0.5;
-    // double k_3 = 1.;
+    complex<double> ScatLen;
+    complex<double> EffRan;
+    if (Q1Q2)
+    {
+        cout << " Delivering scattering parameters with Coulomb" << endl;
+        double Eta_1 = RedMass * double(Q1Q2) * AlphaFS / k_1;
+        double Eta_2 = RedMass * double(Q1Q2) * AlphaFS / k_2;
+        double Eta_3 = RedMass * double(Q1Q2) * AlphaFS / k_3;
+        cout << "Eta_1  = " << Eta_1 << " fm" << endl;
 
-    // cout << "k_1 = " << k_1 << "-- k_2 = " << k_2 << "-- k_3 = " << k_3 << endl;
+        // Compute Coulomb penetration factors
+        double C2_1 = 2.0 * M_PI * Eta_1 / (exp(2.0 * M_PI * Eta_1) - 1.0);
+        double C2_2 = 2.0 * M_PI * Eta_2 / (exp(2.0 * M_PI * Eta_2) - 1.0);
+        double C2_3 = 2.0 * M_PI * Eta_3 / (exp(2.0 * M_PI * Eta_3) - 1.0);
+        cout << "C2_1  = " << C2_1 << " fm" << endl;
 
-    complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
-    complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
-    complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-    // complex<double> ScatLen12;
-    // complex<double> EffRan12;
-    // complex<double> ScatLen23;
-    // complex<double> EffRan23;
-    // complex<double> ScatLen13;
-    // complex<double> EffRan13;
+        // Compute Coulomb phase shift functions (approximate)
+        double Phi_1 = Eta_1 * (log(1.0 + 1.78 * Eta_1) + 0.5772);
+        double Phi_2 = Eta_2 * (log(1.0 + 1.78 * Eta_2) + 0.5772);
+        double Phi_3 = Eta_3 * (log(1.0 + 1.78 * Eta_3) + 0.5772);
 
-    // cout << "f_k1 = " << f_k1 << "-- f_k2 = " << f_k2 << "-- f_k3 = " << f_k3 << endl;
-    // cout << "f_(0.1 MeV) = " << EvalScatteringAmplitude(0.1, usCh, usPW) << "-- f_(0.5)= " << EvalScatteringAmplitude(0.5, usCh, usPW) << "-- f_(1) = " << EvalScatteringAmplitude(1., usCh, usPW) << endl;
+        // Compute Coulomb-modified scattering amplitudes
+        // complex<double> fC_k1 = 1.0 / (C2_1 * (1.0 / f_k1) - k_1 * (Phi_1 - i));
+        // complex<double> fC_k2 = 1.0 / (C2_2 * (1.0 / f_k2) - k_2 * (Phi_2 - i));
+        // complex<double> fC_k3 = 1.0 / (C2_3 * (1.0 / f_k3) - k_3 * (Phi_3 - i));
+        complex<double> fC_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
+        complex<double> fC_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
+        complex<double> fC_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
+        cout << "fC_k1  = " << fC_k1 << " fm" << endl;
 
-    // EffRan12 = ((1./f_k1 -1./f_k2)+i*(k_1-k_2))/(0.5*(k_1*k_1-k_2*k_2));
-    // ScatLen12 = 1./(1./f_k1 - 0.5*EffRan12*k_1*k_1 + i*k_1);
-    // EffRan23 = ((1. / f_k2 - 1. / f_k3) + i * (k_2 - k_3)) / (0.5 * (k_2 * k_2 - k_3 * k_3));
-    // ScatLen23 = 1. / (1. / f_k2 - 0.5 * EffRan23 * k_2 * k_2 + i * k_2);
-    // EffRan13 = ((1. / f_k1 - 1. / f_k3) + i * (k_1 - k_3)) / (0.5 * (k_1 * k_1 - k_3 * k_3));
-    // ScatLen13 = 1. / (1. / f_k1 - 0.5 * EffRan13 * k_1 * k_1 + i * k_1);
+        // Compute Coulomb-modified scattering length
+        complex<double> ScatLenC = fC_k1/C2_1;
+        cout << "Scattering length Coulomb  = " << ScatLenC * C2_1 * hbarc << " fm" << endl;
+        ScatLen = C2_1 * ScatLenC;
+        cout << "Scattering length  = " << ScatLen * hbarc << " fm" << endl;
+        // Compute Coulomb-modified effective range
+        ///NEED TO DO THE EULERO DISCRET FOR HE CORRECT FORMULA
+        complex<double> EffRanC = (1. / fC_k3) * (1. / (Delta_k * Delta_k)) - (1. / (fC_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / fC_k1) * (1. / (Delta_k * Delta_k));
+        // complex<double> EffRanC = (1.0 / fC_k3) * (1.0 / (Delta_k * Delta_k)) - (1.0 / (fC_k2 * Delta_k)) * (1.0 + Delta_k / Delta_k) + (1.0 / fC_k1) * (1.0 / (Delta_k * Delta_k));
+        cout << "Eff. Range  Coulomb= " << EffRanC * C2_1 * hbarc << " fm" << endl;
+        /// Extracting the true scattering parameters due to the strong interaction
+        EffRan = EffRanC * C2_1;
+        // EffRan = EffRanC - (2.0 / (C2_1 * k_1)) * Eta_1 * log(2.0 * k_1);
+        cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
+        }
+        else
+        {
+            complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
+            complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
+            complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
+            cout << "f_k1  = " << f_k1 << endl;
+            cout << "f_k2  = " << f_k2 << endl;
+            cout << "f_k3  = " << f_k3 << endl;
+            cout << " Delivering scattering parameters w/o Coulomb" << endl;
+            ScatLen = +f_k1; /// but this is assuming that f(E) = (+1./a0 +... )?????
+            cout << "Scattering length = " << ScatLen * hbarc << " fm" << endl;
+            EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
+            cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
+    }
 
-    // cout << "ScatLen12 = " << ScatLen12 * hbarc << "-- ScatLen23 = " << ScatLen23 * hbarc << "-- ScatLen13 = " << ScatLen13 * hbarc << endl;
-    // cout << "EffRan12 = " << EffRan12 * hbarc << "-- EffRan23 = " << EffRan23 * hbarc << "-- EffRan13 = " << EffRan13 * hbarc << endl;
+        // complex<double> ScatLen12;
+        // complex<double> EffRan12;
+        // complex<double> ScatLen23;
+        // complex<double> EffRan23;
+        // complex<double> ScatLen13;
+        // complex<double> EffRan13;
 
-    // complex<double> ScatLen;
-    // complex<double> EffRan;
+        // cout << "f_k1 = " << f_k1 << "-- f_k2 = " << f_k2 << "-- f_k3 = " << f_k3 << endl;
+        // cout << "f_(0.1 MeV) = " << EvalScatteringAmplitude(0.1, usCh, usPW) << "-- f_(0.5)= " << EvalScatteringAmplitude(0.5, usCh, usPW) << "-- f_(1) = " << EvalScatteringAmplitude(1., usCh, usPW) << endl;
 
-    // /// Implement better the condition here!!!
-    // if (abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) < EpsilonConv && abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((ScatLen12 - ScatLen13) / (ScatLen12 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) < EpsilonConv && abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)))
-    // {
-    //     ScatLen = ScatLen12 * hbarc;
-    //     EffRan = EffRan12 * hbarc;
-    // } else 
-    // {
-    //     ScatLen = 0.;
-    //     EffRan = 0.;
-    //     cerr << "Warning: Scattering length and effective range did not converge, set both to zero!" << endl;
-    // }
+        // EffRan12 = ((1./f_k1 -1./f_k2)+i*(k_1-k_2))/(0.5*(k_1*k_1-k_2*k_2));
+        // ScatLen12 = 1./(1./f_k1 - 0.5*EffRan12*k_1*k_1 + i*k_1);
+        // EffRan23 = ((1. / f_k2 - 1. / f_k3) + i * (k_2 - k_3)) / (0.5 * (k_2 * k_2 - k_3 * k_3));
+        // ScatLen23 = 1. / (1. / f_k2 - 0.5 * EffRan23 * k_2 * k_2 + i * k_2);
+        // EffRan13 = ((1. / f_k1 - 1. / f_k3) + i * (k_1 - k_3)) / (0.5 * (k_1 * k_1 - k_3 * k_3));
+        // ScatLen13 = 1. / (1. / f_k1 - 0.5 * EffRan13 * k_1 * k_1 + i * k_1);
 
-    complex<double> ScatLen = +f_k1; /// but this is assuming that f(E) = (-1./a0 +... )?????
-    // cout << "Scattering length  = " << ScatLen * hbarc << " fm" << endl;
-    complex<double> EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
-    // cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
+        // cout << "ScatLen12 = " << ScatLen12 * hbarc << "-- ScatLen23 = " << ScatLen23 * hbarc << "-- ScatLen13 = " << ScatLen13 * hbarc << endl;
+        // cout << "EffRan12 = " << EffRan12 * hbarc << "-- EffRan23 = " << EffRan23 * hbarc << "-- EffRan13 = " << EffRan13 * hbarc << endl;
 
+        // complex<double> ScatLen;
+        // complex<double> EffRan;
+
+        // /// Implement better the condition here!!!
+        // if (abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) < EpsilonConv && abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((ScatLen12 - ScatLen13) / (ScatLen12 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) < EpsilonConv && abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)))
+        // {
+        //     ScatLen = ScatLen12 * hbarc;
+        //     EffRan = EffRan12 * hbarc;
+        // } else
+        // {
+        //     ScatLen = 0.;
+        //     EffRan = 0.;
+        //     cerr << "Warning: Scattering length and effective range did not converge, set both to zero!" << endl;
+        // }
     /// YOU ARE NOT DELETING SOMETHING PROPERLY!!!
     // ComplexScatPars[usCh][usPW]->SetVariabreal(ScatLen), true);
     // ComplexScatPars[usCh][usPW]->SetVariabimag(ScatLen), true);
@@ -3813,10 +3860,15 @@ void CATS::ComputeComplexWaveFunction()
                 /// u^- is the incoming wave
                 /// Due to normalization of the outgoing wave, the asymptotic solution must be:
                 /// u -> (u^+ -B/A u^-)
-                complex<double> IncomingPW_Rad_N = IncomingPlanePartialWave(Rad_N, Momentum, usPW);
-                complex<double> IncomingPW_Rad_NMin1 = IncomingPlanePartialWave(Rad_NMin1, Momentum, usPW);
-                complex<double> OutgoingPW_Rad_N = OutgoingPlanePartialWave(Rad_N, Momentum, usPW);
-                complex<double> OutgoingPW_Rad_NMin1 = OutgoingPlanePartialWave(Rad_NMin1, Momentum, usPW);
+                // complex<double> IncomingPW_Rad_N = IncomingPlanePartialWave(Rad_N, Momentum, usPW);
+                // complex<double> IncomingPW_Rad_NMin1 = IncomingPlanePartialWave(Rad_NMin1, Momentum, usPW);
+                // complex<double> OutgoingPW_Rad_N = OutgoingPlanePartialWave(Rad_N, Momentum, usPW);
+                // complex<double> OutgoingPW_Rad_NMin1 = OutgoingPlanePartialWave(Rad_NMin1, Momentum, usPW);
+
+                complex<double> IncomingPW_Rad_N = IncomingAsymptoticWave(Rad_N, Momentum, usPW, q1q2);
+                complex<double> IncomingPW_Rad_NMin1 = IncomingAsymptoticWave(Rad_NMin1, Momentum, usPW, q1q2);
+                complex<double> OutgoingPW_Rad_N = OutgoingAsymptoticWave(Rad_N, Momentum, usPW,q1q2);
+                complex<double> OutgoingPW_Rad_NMin1 = OutgoingAsymptoticWave(Rad_NMin1, Momentum, usPW,q1q2);
 
                 complex<double> ACoeff = (u_Rad_N * IncomingPW_Rad_NMin1 - u_Rad_NMin1 * IncomingPW_Rad_N) / (OutgoingPW_Rad_N * IncomingPW_Rad_NMin1 - OutgoingPW_Rad_NMin1 * IncomingPW_Rad_N);
 
@@ -5105,6 +5157,76 @@ complex<double> CATS::IncomingPlanePartialWave(const double &Radius, const doubl
     }
     return Rho > 0 ? 0.5 * (Radius) * (- gsl_sf_bessel_jl(usPW, Rho) + i * gsl_sf_bessel_yl(usPW, Rho)) : 0.5 * (Radius)*pow(-1, usPW) * (- gsl_sf_bessel_jl(usPW, Rho) + i * (-1.) * gsl_sf_bessel_yl(usPW, Rho));
 }
+/// u^+ = H^+/(2ik)= (1/2ik)(G+iF) = (1/2k)(F-iG)
+/// F and G function: int gsl_sf_coulomb_wave_FG_array(double L_min, int kmax, double eta, double x, double fc_array[], double gc_array[], double *F_exponent, double *G_exponent)
+complex<double> CATS::OutgoingCoulombPartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const
+{
+    double Eta = RedMass * double(q1q2) * AlphaFS / Momentum;
+    double Rho = Radius * Momentum;
+    double OverflowF = 0.;
+    double OverflowG = 0.;
+    double ResultF;
+    double ResultG;
+    complex<double> Result;
+
+    if (Rho == 0)
+    {
+        return 0;
+    }
+
+    gsl_sf_coulomb_wave_FG_array(usPW, 0, Eta, fabs(Rho), &ResultF,&ResultG, &OverflowF,&OverflowG);
+
+    Result = 0.5*(1./Momentum)*(ResultF -i* ResultG);
+
+    // N.B. gsl_sf_coulomb_wave_F_array are defined for Rho>0, but in principle the Coulomb functions are symmetric for odd l
+    // and anti-symmetric for even l. However here I assume that Momentum>0, and if rho is negative so is the Momentum. Thus
+    // the final result for u_l should be symmetric for even l and antisymmetric for odd l. This is implemented here.
+    if (Rho < 0 && usPW % 2 == 1)
+    {
+        Result = -Result;
+    }
+    return Result;
+}
+
+/// u^- = H^-/(2ik)= (1/2ik)(G-iF) = -(1/2k)(F+iG)
+/// F and G function: int gsl_sf_coulomb_wave_FG_array(double L_min, int kmax, double eta, double x, double fc_array[], double gc_array[], double *F_exponent, double *G_exponent)
+complex<double> CATS::IncomingCoulombPartialWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const
+{
+    double Eta = RedMass * double(q1q2) * AlphaFS / Momentum;
+    double Rho = Radius * Momentum;
+    double OverflowF = 0.;
+    double OverflowG = 0.;
+    double ResultF;
+    double ResultG;
+    complex<double> Result;
+    if (Rho == 0)
+    {
+        return 0;
+    }
+
+    gsl_sf_coulomb_wave_FG_array(usPW, 0, Eta, fabs(Rho), &ResultF,&ResultG, &OverflowF,&OverflowG);
+
+    Result = -0.5*(1./Momentum)* (ResultF + i*ResultG);
+
+    // N.B. gsl_sf_coulomb_wave_F_array are defined for Rho>0, but in principle the Coulomb functions are symmetric for odd l
+    // and anti-symmetric for even l. However here I assume that Momentum>0, and if rho is negative so is the Momentum. Thus
+    // the final result for u_l should be symmetric for even l and antisymmetric for odd l. This is implemented here.
+    if (Rho < 0 && usPW % 2 == 1)
+    {
+        Result = -Result;
+    }
+    return Result;
+}
+
+/// Total Outgoing in which, based on q1q2, we have coulomb or plane waves outgoing/incoming waves in the asymptotic regime
+complex<double> CATS::OutgoingAsymptoticWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const
+{
+    return q1q2 ? OutgoingCoulombPartialWave(Radius,Momentum,usPW,q1q2) : OutgoingPlanePartialWave(Radius,Momentum,usPW);      
+}
+complex<double> CATS::IncomingAsymptoticWave(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const
+{
+    return q1q2 ? IncomingCoulombPartialWave(Radius,Momentum,usPW,q1q2) : IncomingPlanePartialWave(Radius,Momentum,usPW);      
+}
 
 double CATS::AsymptoticRatio(const double &Radius, const double &Momentum, const unsigned short &usPW, const int &q1q2) const
 {
@@ -5322,8 +5444,7 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned &uMomBin, const double &R
         }
         else
         {
-            // return (ACoeff*OutgoingPlaneWave(Radius, Momentum) - BCoeff*IncomingPlaneWave(Radius, Momentum)) * MultFactor;
-            return (OutgoingPlanePartialWave(Radius, Momentum, usPW) - (BCoeff / ACoeff) * IncomingPlanePartialWave(Radius, Momentum, usPW)) * MultFactor;
+            return (OutgoingAsymptoticWave(Radius, Momentum, usPW, Q1Q2) - (BCoeff / ACoeff) * IncomingAsymptoticWave(Radius, Momentum, usPW, Q1Q2)) * MultFactor;
         }
     }
 }
