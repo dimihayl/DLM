@@ -1975,51 +1975,86 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
 
     complex<double> ScatLen;
     complex<double> EffRan;
+    complex<double> PhaseShiftPar1;
+    complex<double> PhaseShiftPar2;
+    complex<double> PhaseShiftPar3;
+
     if (Q1Q2)
     {
-        cout << " Delivering scattering parameters with Coulomb" << endl;
-        double Eta_1 = RedMass * double(Q1Q2) * AlphaFS / k_1;
-        double Eta_2 = RedMass * double(Q1Q2) * AlphaFS / k_2;
-        double Eta_3 = RedMass * double(Q1Q2) * AlphaFS / k_3;
-        cout << "Eta_1  = " << Eta_1 << " fm" << endl;
-
-        // Compute Coulomb penetration factors
-        double C2_1 = 2.0 * M_PI * Eta_1 / (exp(2.0 * M_PI * Eta_1) - 1.0);
-        double C2_2 = 2.0 * M_PI * Eta_2 / (exp(2.0 * M_PI * Eta_2) - 1.0);
-        double C2_3 = 2.0 * M_PI * Eta_3 / (exp(2.0 * M_PI * Eta_3) - 1.0);
-        cout << "C2_1  = " << C2_1 << " fm" << endl;
-
-        // Compute Coulomb phase shift functions (approximate)
-        double Phi_1 = Eta_1 * (log(1.0 + 1.78 * Eta_1) + 0.5772);
-        double Phi_2 = Eta_2 * (log(1.0 + 1.78 * Eta_2) + 0.5772);
-        double Phi_3 = Eta_3 * (log(1.0 + 1.78 * Eta_3) + 0.5772);
-
         // Compute Coulomb-modified scattering amplitudes
-        // complex<double> fC_k1 = 1.0 / (C2_1 * (1.0 / f_k1) - k_1 * (Phi_1 - i));
-        // complex<double> fC_k2 = 1.0 / (C2_2 * (1.0 / f_k2) - k_2 * (Phi_2 - i));
-        // complex<double> fC_k3 = 1.0 / (C2_3 * (1.0 / f_k3) - k_3 * (Phi_3 - i));
         complex<double> fC_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
         complex<double> fC_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
         complex<double> fC_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-        cout << "fC_k1  = " << fC_k1 << " fm" << endl;
+        cout << "fC_k1  = " << fC_k1 << endl;
+        /// Expressing the ctgδ as a function of the scattering amplitude numerically evaluated
+        complex<double> F1 = (1. / (k_1 * fC_k1)) * (1. + i * k_1 * fC_k1);
+        complex<double> F2 = (1. / (k_2 * fC_k2)) * (1. + i * k_2 * fC_k2);
+        complex<double> F3 = (1. / (k_3 * fC_k3)) * (1. + i * k_3 * fC_k3);
+        cout << "F1  = ctgδ =" << F1 << endl;
 
+        // PhaseShiftPar1 = 0.5 * arg(EvalScatteringMatrix(k_1, usCh, usPW));
+        // PhaseShiftPar2 = 0.5 * arg(EvalScatteringMatrix(k_2, usCh, usPW));
+        // PhaseShiftPar3 = 0.5 * arg(EvalScatteringMatrix(k_3, usCh, usPW));
+        // cout << "δ = " << PhaseShiftPar1 << "ctgδ =" << cos(PhaseShiftPar1)/sin(PhaseShiftPar1) << endl;
+
+        double Eta_1 = RedMass * double(Q1Q2) * AlphaFS / k_1;
+        double Eta_2 = RedMass * double(Q1Q2) * AlphaFS / k_2;
+        double Eta_3 = RedMass * double(Q1Q2) * AlphaFS / k_3;
+        cout << "Eta_1 =" << Eta_1 << endl;
+
+        double C2_1 = (2 * Pi * Eta_1) / (exp(2 * Pi * Eta_1) - 1.);
+        double C2_2 = (2 * Pi * Eta_2) / (exp(2 * Pi * Eta_2) - 1.);
+        double C2_3 = (2 * Pi * Eta_3) / (exp(2 * Pi * Eta_3) - 1.);
+        cout << "C2_1 =" << C2_1 << endl;
+
+        double gamma_1 = Eta_1 * 2 * k_1;///MeV
+        double gamma_2 = Eta_2 * 2 * k_2;
+        double gamma_3 = Eta_3 * 2 * k_3;
+
+        cout << "gamma_1 =" << gamma_1 << endl;
+
+        double ndigamma_1 = log(abs(Eta_1))-(1./(2*Eta_1*Eta_1))-EulerConst;///Adim
+        double ndigamma_2 = log(abs(Eta_2)) - (1. / (2 * Eta_2 * Eta_2)) - EulerConst;
+        double ndigamma_3 = log(abs(Eta_3)) - (1. / (2 * Eta_3 * Eta_3)) - EulerConst;
+
+        cout << "ndigamma_1 =" << ndigamma_1 << endl;
+
+        double h1 = ndigamma_1 - log(abs(Eta_1));///Adim
+        double h2 = ndigamma_2 - log(abs(Eta_2));
+        double h3 = ndigamma_3 - log(abs(Eta_3));
+
+        cout << "h1 =" << h1 << endl;
+
+        complex<double> effF_1 = k_1 * C2_1 * F1 + gamma_1 * h1;///MeV
+        complex<double> effF_2 = k_2 * C2_2 * F2 + gamma_2 * h2;
+        complex<double> effF_3 = k_3 * C2_3 * F3 + gamma_3 * h3;
+        cout << "effF_1  = " << effF_1 << endl;
+        ///Implementing the usual relation between scatt. ampl and scatt. pars
+        complex<double> TildeF_1 = 1./(C2_1*((1./fC_k1)+(gamma_1*h1)/C2_1)); 
+        complex<double> TildeF_2 = 1. / (C2_2 * ((1. / fC_k2) + (gamma_2 * h2) / C2_2)); 
+        complex<double> TildeF_3 = 1. / (C2_3 * ((1. / fC_k3) + (gamma_3 * h3) / C2_3));
+        cout << "effFTildeF_1_1  = " << TildeF_1 << endl;
+
+        cout << " Delivering scattering parameters with Coulomb" << endl;
         // Compute Coulomb-modified scattering length
-        complex<double> ScatLenC = fC_k1/C2_1;
-        cout << "Scattering length Coulomb  = " << ScatLenC * C2_1 * hbarc << " fm" << endl;
-        ScatLen = C2_1 * ScatLenC;
+        complex<double> ScatLenC = 1./ effF_1;
+        // complex<double> ScatLenC = TildeF_1;
+
+        cout << "Scattering length Coulomb  = " << ScatLenC * hbarc << " fm" << endl;
+        ScatLen = ScatLenC;
         cout << "Scattering length  = " << ScatLen * hbarc << " fm" << endl;
         // Compute Coulomb-modified effective range
         ///NEED TO DO THE EULERO DISCRET FOR HE CORRECT FORMULA
-        complex<double> EffRanC = (1. / fC_k3) * (1. / (Delta_k * Delta_k)) - (1. / (fC_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / fC_k1) * (1. / (Delta_k * Delta_k));
-        // complex<double> EffRanC = (1.0 / fC_k3) * (1.0 / (Delta_k * Delta_k)) - (1.0 / (fC_k2 * Delta_k)) * (1.0 + Delta_k / Delta_k) + (1.0 / fC_k1) * (1.0 / (Delta_k * Delta_k));
-        cout << "Eff. Range  Coulomb= " << EffRanC * C2_1 * hbarc << " fm" << endl;
+        complex<double> EffRanC = effF_3 * (1. / (Delta_k * Delta_k)) - (effF_2 / (Delta_k * Delta_k)) * (1. + Delta_k / Delta_k) + (effF_1) * (1. / (Delta_k * Delta_k));
+        // complex<double> EffRanC = (1./TildeF_3) * (1. / (Delta_k * Delta_k)) - (1. / (TildeF_2 * Delta_k * Delta_k)) * (1. + Delta_k / Delta_k) + (1./TildeF_1) * (1. / (Delta_k * Delta_k));
+        cout << "Eff. Range  Coulomb= " << EffRanC * hbarc << " fm" << endl;
         /// Extracting the true scattering parameters due to the strong interaction
-        EffRan = EffRanC * C2_1;
-        // EffRan = EffRanC - (2.0 / (C2_1 * k_1)) * Eta_1 * log(2.0 * k_1);
+        EffRan = EffRanC;
         cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
         }
         else
         {
+            PhaseShiftPar1 = 0.5 * arg(EvalScatteringMatrix(k_1, usCh, usPW));
             complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
             complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
             complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
@@ -2029,7 +2064,7 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
             cout << " Delivering scattering parameters w/o Coulomb" << endl;
             ScatLen = +f_k1; /// but this is assuming that f(E) = (+1./a0 +... )?????
             cout << "Scattering length = " << ScatLen * hbarc << " fm" << endl;
-            EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
+            EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k* Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
             cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
     }
 
@@ -3854,16 +3889,13 @@ void CATS::ComputeComplexWaveFunction()
                 complex<double> u_Rad_N = BufferWaveFunction[Point_N];
                 complex<double> u_Rad_NMin1 = BufferWaveFunction[Point_NMin1];
 
+
                 /// USING NORMALIZATION OF PLANE WAVES u^+/u^- with (1/2ik)!!!
                 /// Contributions to the asymptotic behaviour: u_asy = (A u^+ - B u^-)
                 /// where u^+ is outgoing wave, which has to be normalized to unity
                 /// u^- is the incoming wave
                 /// Due to normalization of the outgoing wave, the asymptotic solution must be:
                 /// u -> (u^+ -B/A u^-)
-                // complex<double> IncomingPW_Rad_N = IncomingPlanePartialWave(Rad_N, Momentum, usPW);
-                // complex<double> IncomingPW_Rad_NMin1 = IncomingPlanePartialWave(Rad_NMin1, Momentum, usPW);
-                // complex<double> OutgoingPW_Rad_N = OutgoingPlanePartialWave(Rad_N, Momentum, usPW);
-                // complex<double> OutgoingPW_Rad_NMin1 = OutgoingPlanePartialWave(Rad_NMin1, Momentum, usPW);
 
                 complex<double> IncomingPW_Rad_N = IncomingAsymptoticWave(Rad_N, Momentum, usPW, q1q2);
                 complex<double> IncomingPW_Rad_NMin1 = IncomingAsymptoticWave(Rad_NMin1, Momentum, usPW, q1q2);
@@ -3915,6 +3947,9 @@ void CATS::ComputeComplexWaveFunction()
                 // the very last point we simply set as the double distance between the last bin-limit and the last radius value
                 WaveFunRad[uMomBin][usCh][usPW][SWFB] = 2 * BufferRad[SWFB - 1] - WaveFunRad[uMomBin][usCh][usPW][SWFB - 1];
 
+                /// Implementing Newton-Rapson TO BE DONE
+                // double Rad_Node;
+                
             } // if(MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
 
             // in case the method failed to converge, the whole momentum bin is marked as unreliable and no
