@@ -293,6 +293,8 @@ bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFi
 //          N.B. IF YOU INCLUDE COULOMB, THE PHASE SHIFTS ARE EVALUATED WITH RESPECT TO COULOMB.
 //          This is very rare in theory, even if you are investigating charged-charged pair.
 bool PotentialDesignerEngine(char* BaseFileName);
+// Tailored for iCATS
+bool PotentialDesignerImEngine(char *BaseFileName);
 
 //fits the kdp parameters of a source
 TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2);

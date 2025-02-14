@@ -1897,6 +1897,17 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name){
     if(potflag!=0 && strcmp(name,"Unknown potential")){strcat(name, "^{(");strcat(name,Buffer);strcat(name,")}");}
 }
 
+complex<double> ComplexGaussian(double *Pars)
+{
+    // Pars[0] Radius in fm
+    // Pars[1] Momentum in MeV/c
+    // Pars[2] V0real in MeV
+    // Pars[3] V0imag in MeV
+    // Pars[4] mass meson exchange in MeV
+    // This function returns a complex Gaussian-type potential of the form (V0r + i* V0i) * exp(- m^2 r^2)
+    return (Pars[2] + i * Pars[3]) * exp(-(pow(Pars[4] / hbarc, 2)) * Pars[0] * Pars[0]);
+}
+
 complex<double> ComplexPotLAntiK_mesonexchange(double *Pars)
 {
     // Pars[0] Radius in fm

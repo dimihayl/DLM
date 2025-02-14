@@ -118,6 +118,7 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name);
 ///     V(r) = V0 * exp(-m^2 r^2), with V0 complex and m = m_ρ
 ///     V0 = V0R + i V0i = -1547-i*589 MeV
 ///     [0] -> r; [1] = k; [2]=V0real; [3]=V0imag; [4] = m (m_ρ)
+complex<double> ComplexGaussian(double *Pars);
 
 complex<double> ComplexPotLAntiK_mesonexchange(double *Pars);
 double RealPotLAntiK_mesonexchange(double *Pars);
