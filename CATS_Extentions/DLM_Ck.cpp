@@ -222,6 +222,7 @@ void DLM_Ck::SetPotPar(const unsigned& WhichPar, const double& Value){
                 Kitty->SetShortRangePotential(usCh,usPw,WhichPar,Value);
             }
         }
+        PotPar[WhichPar] = Value;
         PotUpToDate = Kitty->PotentialStatus();
     }
     else{
