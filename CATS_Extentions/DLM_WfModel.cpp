@@ -538,6 +538,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
     MomentumBins[0] = 0;
     while(!feof(InFile)){
         if(!fgets(cdummy, 511, InFile)) continue;
+
         if((CurrentLine)%int(NumRadBins)==0){
             sscanf(cdummy, "%f",&fMomentum);
             Momentum[NumMomBins] = fMomentum;
@@ -711,12 +712,12 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS&
 
                 //HistoWF[uFile].SetBinContent(WhichBin,(fReWf_LNLN_DS+i*fImWf_LNLN_DS)*fRadius);
                 //HistoWF[uFile+2].SetBinContent(WhichBin,(fReWf_SNLN_DS+i*fImWf_SNLN_DS)*fRadius);
-//&fReWf_LNLN_DS,&fImWf_LNLN_DS,&fReWf_SNLN_DS,&fImWf_SNLN_DS
+                //&fReWf_LNLN_DS,&fImWf_LNLN_DS,&fReWf_SNLN_DS,&fImWf_SNLN_DS
 
-//if(fMomentum>280 && fMomentum<290){
-//printf("uFile=%u; fMomentum=%.1f; fReWf=%.4f(%.4f); fImWf=%.4f(%.4f)\n",uFile,fMomentum,
-//       fReWf_LNLN_SS,fReWf_SNLN_SS,fImWf_LNLN_SS,fImWf_SNLN_SS);
-//}
+                //if(fMomentum>280 && fMomentum<290){
+                //printf("uFile=%u; fMomentum=%.1f; fReWf=%.4f(%.4f); fImWf=%.4f(%.4f)\n",uFile,fMomentum,
+                //       fReWf_LNLN_SS,fReWf_SNLN_SS,fImWf_LNLN_SS,fImWf_SNLN_SS);
+                //}
                 HistoPS[uFile][0].SetBinContent(WhichBin,0);
                 HistoPS[uFile+2][0].SetBinContent(WhichBin,0);
             }
@@ -2769,22 +2770,418 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* InputFolder, C
     return Init_pL_Haidenbauer2023(InputFolder,*Kitty,Singlet,Triplet);
 }
 
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS &Kitty, const int &CUTOFF)
+{
+    double RadiusStepSize;
+    double RadiusMinimum;
+    double RadiusMaximum;
 
+    if (CUTOFF != 500 && CUTOFF != 600)
+    {
+        printf("Problem with the CUTOFF in Init_pL_Haidenbauer\n");
+        return NULL;
+    }
 
+    unsigned short NumChannels;
+    unsigned short NumPwPerCh;
+    // unsigned short NumFiles;
+    unsigned NumMomBins = 0;
+    unsigned short NumFiles = 4; // (to cover all s,p,d, waves)
+    bool *TakeThisFile = new bool[NumFiles];
 
+    RadiusStepSize = 0.02;
+    RadiusMinimum = 0.02;
+    RadiusMaximum = 10.;
+    NumChannels = 8;
+    NumPwPerCh = 1;//only s-wave
+    NumFiles = 4; // For each cutoff: 2 CE for only Lcp->Lcp, 2 SE for Scp->Lcp
+    int LcPdgId = 4122;
+    int ScppPdgId = 4222;
+    int ScpPdgId = 4212;
 
+    Kitty.SetQ1Q2(0); // Coulomb already included
+    Kitty.SetPdgId(LcPdgId, 2212);
+    const double Mass_Lc = 2286.46;
+    const double Mass_p = 938.272;
+    Kitty.SetRedMass((Mass_Lc * Mass_p) / (Mass_Lc + Mass_p));
+    // Channels are:
+    //[0] is 1S0 Lcp->Lcp
+    //[1] is 3S1 Lcp->Lcp
+    //[2] is 1S0 Sc+p->Lcp
+    //[3] is 3S1-3S1 Sc+p->Lcp
+    //[4] is 1S0 Sc++n->Lcp
+    //[5] is 3S1-3S1 Sc++n->Lcp
+    //[6] is 3D1-3S1 Sc+p->Lcp
+    //[7] is 3D1-3S1 Sc++n->Lcp
+    Kitty.SetNumChannels(NumChannels);
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        Kitty.SetNumPW(uCh, NumPwPerCh);
+        Kitty.SetChannelWeight(uCh, uCh % 2 == 0 ? 0.25 : 0.75);
+        Kitty.SetSpin(uCh, uCh % 2 == 0 ? 0 : 1);
+        if(uCh==6 || uCh==7)
+        {
+            Kitty.SetChannelWeight(uCh, 0.75);///0.33??
+            Kitty.SetSpin(uCh,1.);
+        }
+    }
 
+    for (unsigned short uCh = 2; uCh < NumChannels; uCh++)
+    {
+        Kitty.SetOnlyNumericalPw(uCh, true);
+    }
 
+    const unsigned NumRadBins = round((RadiusMaximum - RadiusMinimum) / RadiusStepSize) + 1 + 1;
+    double *RadBins = new double[NumRadBins + 1];
+    bool *RadBinLoaded = new bool[NumRadBins + 1];
+    for (unsigned uRad = 1; uRad <= NumRadBins; uRad++)
+    {
+        // uRad-1 as we have special treatment of the zeroth bin
+        // the -0.5*RadiusStepSize comes from the fact, that else we compute the bin center, while we would like
+        // to define the bin edges
+        RadBins[uRad] = RadiusMinimum + double(uRad) * RadiusStepSize - 0.5 * RadiusStepSize;
+        RadBinLoaded[uRad] = false;
+    }
+    // we want to have the very first bin (center) exactly at zero!
+    RadBins[0] = -RadBins[1];
+    RadBinLoaded[0] = false;
+    // Channels are:
+    //[0] is 1S0 Lcp->Lcp
+    //[1] is 3S1 Lcp->Lcp
+    //[2] is 1S0 Sc+p->Lcp
+    //[3] is 3S1-3S1 Sc+p->Lcp
+    //[4] is 1S0 Sc++n->Lcp
+    //[5] is 3S1-3S1 Sc++n->Lcp
+    //[6] is 3D1-3S1 Sc+p->Lcp
+    //[7] is 3D1-3S1 Sc++n->Lcp
+    enum HaideFiles
+    {
+        f1S0,
+        f3S1,
+        f1S0SC,
+        f3S1SC
+    };
+    char **InputFileName = new char *[NumFiles];
+    for (unsigned uFile = 0; uFile < NumFiles; uFile++)
+    {
+        InputFileName[uFile] = new char[256];
+        strcpy(InputFileName[uFile], InputFolder);
+    }
+    if(CUTOFF==500)
+    {
+        strcat(InputFileName[f1S0], "CE51s0.data");
+        strcat(InputFileName[f3S1], "CE53s1.data");
+        strcat(InputFileName[f1S0SC], "SE51s0.data");
+        strcat(InputFileName[f3S1SC], "SE53s1.data");
+    }
+    else if (CUTOFF == 600)
+    {
+        strcat(InputFileName[f1S0], "CE61s0.data");
+        strcat(InputFileName[f3S1], "CE63s1.data");
+        strcat(InputFileName[f1S0SC], "SE61s0.data");
+        strcat(InputFileName[f3S1SC], "SE63s1.data");
+    }
+    else
+    {
+        printf("YOU BROKE SOMETHING in Init_Lcp_Haidenbauer\n");
+    }
 
+    FILE *InFile;
+    InFile = fopen(InputFileName[0], "r");
+    if (!InFile)
+    {
+        printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[0]);
+        return NULL;
+    }
+    int CurrentLine = 0;
+    // unsigned WhichMomBin;
 
+    const unsigned MaxNumMomBins = 256;
+    double *MomentumBins = new double[MaxNumMomBins + 1];
+    double *Momentum = new double[MaxNumMomBins];
 
+    char *cdummy = new char[1024];
+    float fMomentum;
 
+    MomentumBins[0] = 0;
+    while (!feof(InFile))
+    {
+        if (!fgets(cdummy, 511, InFile))
+            continue;
+        if ((CurrentLine) % int(NumRadBins) == 0)
+        {
+            sscanf(cdummy, "%f", &fMomentum);
+            Momentum[NumMomBins] = fMomentum;
+            if (NumMomBins)
+            {
+                // set the bin range in between the last two bin centers
+                MomentumBins[NumMomBins] = 0.5 * (Momentum[NumMomBins] + Momentum[NumMomBins - 1]);
+            }
+            NumMomBins++;
+        }
+        CurrentLine++;
+    }
+    fclose(InFile);
 
+    // set the upper edge of the last bin, where we just add the bin width of the last bin
+    // i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
+    MomentumBins[NumMomBins] = 2. * Momentum[NumMomBins - 1] - MomentumBins[NumMomBins - 1];
+    const unsigned NumDLM_Histos = NumChannels;
+    // the first one is WF, second is PS
+    DLM_Histo<complex<double>> ***Histo = new DLM_Histo<complex<double>> **[2];
 
+    DLM_Histo<complex<double>> **&HistoWF = Histo[0];
+    DLM_Histo<complex<double>> **&HistoPS = Histo[1];
+    // DLM_Histo<complex<double>> HistoWF[NumChannels];
+    HistoWF = new DLM_Histo<complex<double>> *[NumDLM_Histos];
+    for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++)
+    {
+        HistoWF[uHist] = new DLM_Histo<complex<double>>[NumPwPerCh];
+        for (unsigned uPw = 0; uPw < NumPwPerCh; uPw++)
+        {
+            HistoWF[uHist][uPw].SetUp(2);
+            HistoWF[uHist][uPw].SetUp(0, NumMomBins, MomentumBins);
+            HistoWF[uHist][uPw].SetUp(1, NumRadBins, RadBins);
+            HistoWF[uHist][uPw].Initialize();
+        }
+    }
+    HistoPS = new DLM_Histo<complex<double>> *[NumDLM_Histos];
+    for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++)
+    {
+        HistoPS[uHist] = new DLM_Histo<complex<double>>[NumPwPerCh];
+        for (unsigned uPw = 0; uPw < NumPwPerCh; uPw++)
+        {
+            HistoPS[uHist][uPw].SetUp(1);
+            HistoPS[uHist][uPw].SetUp(0, NumMomBins, MomentumBins);
+            HistoPS[uHist][uPw].Initialize();
+        }
+    }
 
+    /// Reading and storing
+    for (unsigned uFile = 0; uFile < NumFiles; uFile++)
+    {
+        int WhichMomBin = -1;
+        InFile = fopen(InputFileName[uFile], "r");
 
+        if (!InFile)
+        {
+            printf("\033[1;31mERROR:\033[0m The file\033[0m %s cannot be opened!\n", InputFileName[uFile]);
+            return Histo;
+        }
+        fseek(InFile, 0, SEEK_END);
+        fseek(InFile, 0, SEEK_SET);
 
+        if (feof(InFile))
+        {
+            printf("\033[1;31mERROR:\033[0m Trying to read past end of file %s\n", InputFileName[uFile]);
+            return Histo;
+        }
+        float fRadius;
+        //[0] is 1S0 Lcp->Lcp
+        //[1] is 3S1 Lcp->Lcp
+        float fReWf_1s0;
+        float fImWf_1s0;
+        float fReWf_3s1;
+        float fImWf_3s1;
+        //[2] is 1S0 Sc+p->Lcp
+        //[3] is 3S1-3S1 Sc+p->Lcp
+        float fReWf_Scp_1s0;
+        float fImWf_Scp_1s0;
+        float fReWf_Scp_3s1;
+        float fImWf_Scp_3s1;
+        //[4] is 1S0 Sc++n->Lcp
+        //[5] is 3S1-3S1 Sc++n->Lcp
+        float fReWf_Scpp_1s0;
+        float fImWf_Scpp_1s0;
+        float fReWf_Scpp_3s1;
+        float fImWf_Scpp_3s1;
+        //[6] is 3D1-3S1 Sc+p->Lcp
+        float fReWf_Scp_3d13s1;
+        float fImWf_Scp_3d13s1;
+        //[7] is 3D1-3S1 Sc++n->Lcp
+        float fReWf_Scpp_3d13s1;
+        float fImWf_Scpp_3d13s1;
 
+        float fDummy;
+        float fPhaseShift;
+        float fDummy1;
+        float fDummy2;
+        float fDummy3;
+        float fDummy4;
+
+        float ClebschGordan_Scp = -sqrt(3.);
+        float ClebschGordan_Scpp = -sqrt(3. / 2.);
+
+        int RadBin = -1;
+        //!---Iteration over all events---
+        while (!feof(InFile))
+        {
+            if (!fgets(cdummy, 511, InFile))
+                continue;
+            if (WhichMomBin >= int(NumMomBins))
+            {
+                printf("\033[1;31mERROR:\033[0m Trying to read more momentum bins than set up (%u)!\n", NumMomBins);
+                printf(" Buffer reads: %s\n", cdummy);
+                break;
+            }
+            // the first line contains info about the momentum
+            if (RadBin == -1)
+            {
+                sscanf(cdummy, "%f", &fMomentum);
+                RadBin++;
+                WhichMomBin++;
+                continue;
+            }
+            // enum HaideFiles
+            // {
+            //     f1S0,
+            //     f3S1,
+            //     f1S0SC,
+            //     f3S1SC
+            // };
+            if(uFile==0) 
+            {
+                sscanf(cdummy, " %f %f %f %f %f %f %f %f",
+                       &fRadius, &fDummy, &fReWf_1s0, &fImWf_1s0, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                // fDummy1 =0;
+                // fDummy2 = 0;
+                // fDummy3 = 0;
+                // fDummy4 = 0;
+            } else if(uFile==1)
+            {
+                sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
+                       &fRadius, &fDummy, &fReWf_3s1, &fImWf_3s1, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                // fDummy1 = 0;
+                // fDummy2 = 0;
+                // fDummy3 = 0;
+                // fDummy4 = 0;
+            }
+            else if (uFile == 2)
+            {
+                sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
+                       &fRadius, &fDummy, &fDummy1, &fDummy2, &fReWf_Scp_1s0, &fImWf_Scp_1s0, &fReWf_Scpp_1s0, &fImWf_Scpp_1s0);
+                // fDummy1 = 0;
+                // fDummy2 = 0;
+                // fDummy3 = 0;
+                // fDummy4 = 0;
+            }
+            else if (uFile == 3)
+            {
+                sscanf(cdummy, "  %f %f %f %f %f %f %f %f %f %f %f %f",
+                       &fRadius, &fDummy, &fDummy1, &fDummy2, &fReWf_Scp_3d13s1, &fImWf_Scp_3d13s1, &fReWf_Scp_3s1, &fImWf_Scp_3s1, &fReWf_Scpp_3d13s1, &fImWf_Scpp_3d13s1, &fReWf_Scpp_3s1, &fImWf_Scpp_3s1);
+                // fDummy1 = 0;
+                // fDummy2 = 0;
+                // fDummy3 = 0;
+                // fDummy4 = 0;
+            }
+            else
+            {
+                printf("Oh man... something wrong in scanning files in Init_Lcp_Haidenbauer.\n");
+            }
+
+            if (WhichMomBin < 0)
+            {
+                printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
+                continue;
+            }
+
+            unsigned WhichBin[2];
+            WhichBin[0] = unsigned(WhichMomBin);
+            // we fill up the radius bins with and offset of 1, due to the special zeroth bin
+            WhichBin[1] = RadBin + 1;
+            if (WhichMomBin < 0)
+            {
+                printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
+                continue;
+            }
+            // Channels are:
+            //[0] is 1S0 Lcp->Lcp
+            //[1] is 3S1 Lcp->Lcp
+            //[2] is 1S0 Sc+p->Lcp
+            //[3] is 3S1-3S1 Sc+p->Lcp
+            //[4] is 1S0 Sc++n->Lcp
+            //[5] is 3S1-3S1 Sc++n->Lcp
+            //[6] is 3D1-3S1 Sc+p->Lcp
+            //[7] is 3D1-3S1 Sc++n->Lcp
+            if(uFile==0)
+            {
+                ///Ch. 0: Lcp->Lcp 1S0
+                HistoWF[0][0].SetBinContent(WhichBin, (fReWf_1s0 +fi * fImWf_1s0) * fRadius);
+                HistoPS[0][0].SetBinContent(WhichBin, 0.);
+            }
+            else if (uFile == 1)
+            {
+                /// Ch. 1: Lcp->Lcp 3S1
+                HistoWF[1][0].SetBinContent(WhichBin, (fReWf_3s1 + fi * fImWf_3s1) * fRadius);
+                HistoPS[1][0].SetBinContent(WhichBin, 0.);
+            }
+            else if (uFile == 2)
+            {
+                /// Ch. 2 1S0 Sc+p->Lcp
+                /// Ch. 4 1S0 Sc++n->Lcp
+                HistoWF[2][0].SetBinContent(WhichBin, ClebschGordan_Scp*(fReWf_Scp_1s0 + fi * fImWf_Scp_1s0) * fRadius);
+                HistoPS[2][0].SetBinContent(WhichBin, 0.);
+
+                HistoWF[4][0].SetBinContent(WhichBin, ClebschGordan_Scpp*(fReWf_Scpp_1s0 + fi * fImWf_Scpp_1s0) * fRadius);
+                HistoPS[4][0].SetBinContent(WhichBin, 0.);
+            }
+            else if (uFile == 3)
+            {
+                /// Ch.[3] is 3S1-3S1 Sc+p->Lcp
+                /// Ch.[5] is 3S1-3S1 Sc++n->Lcp
+                HistoWF[3][0].SetBinContent(WhichBin, ClebschGordan_Scp*(fReWf_Scp_3s1 + fi * fImWf_Scp_3s1) * fRadius);
+                HistoPS[3][0].SetBinContent(WhichBin, 0.);
+
+                HistoWF[5][0].SetBinContent(WhichBin, ClebschGordan_Scpp*(fReWf_Scpp_3s1 + fi * fImWf_Scpp_3s1) * fRadius);
+                HistoPS[5][0].SetBinContent(WhichBin, 0.);
+
+                /// Ch.[6] is 3D1-3S1 Sc+p->Lcp
+                /// Ch.[7] is 3D1-3S1 Sc++n->Lcp
+                HistoWF[6][0].SetBinContent(WhichBin, ClebschGordan_Scp*(fReWf_Scp_3d13s1 + fi * fImWf_Scp_3d13s1) * fRadius);
+                HistoPS[6][0].SetBinContent(WhichBin, 0.);
+
+                HistoWF[7][0].SetBinContent(WhichBin, ClebschGordan_Scpp*(fReWf_Scpp_3d13s1 + fi * fImWf_Scpp_3d13s1) * fRadius);
+                HistoPS[7][0].SetBinContent(WhichBin, 0.);
+            }
+            else
+            {
+
+            }
+
+            RadBin++;
+            // if we have are passed the last radius bin in this momentum bin => we start over.
+            // the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
+            if (RadBin == int(NumRadBins) - 1)
+            {
+                RadBin = -1;
+            }
+        }///while
+        fclose(InFile);
+
+        if (WhichMomBin + 1 != int(NumMomBins))
+        {
+            printf("\033[1;31mERROR:\033[0m WhichMomBin!=NumMomBins (%u vs %u)\n", WhichMomBin, NumMomBins);
+        }
+
+    } /// uFile
+
+    delete[] RadBinLoaded;
+    delete[] MomentumBins;
+    delete[] Momentum;
+    delete[] cdummy;
+    delete[] RadBins;
+    delete[] TakeThisFile;
+
+    return Histo;
+}
+
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS *Kitty, const int &CUTOFF)
+{
+    return Init_Lcp_Haidenbauer(InputFolder, *Kitty, CUTOFF);
+}
+
+//TYPE 0 is the one Johann originally provided, TYPE 1 is the one Johann provided to Benedict. 
+//it turned out they are identical up to numerical fluctuations.
 DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE){
     Init_pSigmaPlus_Haidenbauer(InputFolder,*Kitty,TYPE);
 }
@@ -2821,7 +3218,7 @@ DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolde
     Kitty.SetSpin(0,0);
     Kitty.SetSpin(1,1);
 
-    Kitty.SetQ1Q2(0);
+    Kitty.SetQ1Q2(1);
     Kitty.SetQuantumStatistics(false);
     const double Mass_p = 938.272;
     const double Mass_Sch = 1189.37;
@@ -2851,16 +3248,21 @@ DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolde
     for(unsigned uFile=0; uFile<NumFiles; uFile++){
         InputFileName[uFile] = new char[256];
         strcpy(InputFileName[uFile],InputFolder);
-        strcat(InputFileName[uFile],"Spp");
+        //strcat(InputFileName[uFile],"Spp");
     }
 
     //different types, if we introduce them later (TYPE)
-    if(true){
+    if(TYPE==0){
         char strCutOff[16];
-        strcat(InputFileName[f1S0], "1s0C.data");
-        strcat(InputFileName[f3S1], "3s1C.data");
+        strcat(InputFileName[f1S0], "Spp1s0C.data");
+        strcat(InputFileName[f3S1], "Spp3s1C.data");
     }
-    
+    else if(TYPE==1){
+        char strCutOff[16];
+        strcat(InputFileName[f1S0], "Haidenbauer_NLO19_SigmaPlusProton_Singlet.data");
+        strcat(InputFileName[f3S1], "Haidenbauer_NLO19_SigmaPlusProton_Triplet.data");
+    }
+
     else{
         printf("YOU BROKE SOMETHING in Init_pSigmaPlus_Haidenbauer\n");
         return NULL;
@@ -3000,6 +3402,7 @@ DLM_Histo<complex<double>>*** Init_pSigmaPlus_Haidenbauer(const char* InputFolde
             if(uFile==f1S0){
                 sscanf(cdummy, " %f %f %f %f %f %f %f %f",&fRadius,&fDummy,&fReWf1,&fImWf1,&fDummy,&fDummy,&fDummy,&fDummy);
                 HistoWF[0][0].SetBinContent(WhichBin,(fReWf1+fi*fImWf1)*fRadius);
+                //printf("%f %f %f\n",fRadius,fReWf1,fImWf1);
                 HistoPS[0][0].SetBinContent(WhichBin,0);
             }
             else if(uFile==f3S1){

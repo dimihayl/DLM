@@ -2068,12 +2068,13 @@ double DLM_CleverMcLevyResoTM::RootEvalNorm(double* x, double* Pars){
     return Pars[2]*Eval(PARS);
 }
 double DLM_CleverMcLevyResoTM::Eval(double* Pars){
-//printf("Hello\n");
     if(!Histo) {Init();}
     if(!Histo) {return -1; printf("Possible problem in DLM_CleverMcLevyResoTM::Eval\n");}
     double& Radius = Pars[1];
     double& Scale = Pars[3];
     double& Stability = Pars[4];
+//if(Scale)
+//printf("Scale = %f\n",Scale);
     const double RSS[3] = {Radius,Scale,Stability};
     //int RadBin = Histo->GetBin(0,Radius);
     int ScaleBin = Histo->GetBin(1,Scale);
@@ -2204,10 +2205,12 @@ double DLM_CleverMcLevyResoTM::Eval(double* Pars){
 //static double RAD_avg=0;
 //RAD_avg+=RAD;
 
+//if(Scale)
+//printf("Scale = %f\n",Scale);
 //printf("r_star = %.1f (%.1f)\n",RAD,RAD_avg/double(counter));
 //printf(" sqrt(%.1f^2 + %.3f^2 + %.3f^2 - 2*%.1f*%.3f*%.3f + 2*%.1f*%.3f*%.3f - 2*%.3f*%.3f*%.3f)\n",
 //rad,BGT[0],BGT[1],rad,BGT[0],CosRcP0,rad,BGT[1],CosRcP1,BGT[0],BGT[1],CosP0P1);
-//usleep(25e3);
+//usleep(5e3);
                     WhichBin[0] = Histo->GetBin(0,RAD);
                     TotBin = Histo->GetTotBin(WhichBin);
                     BinSize = Histo->GetBinSize(0,WhichBin[0]);
@@ -2263,14 +2266,14 @@ void DLM_CleverMcLevyResoTM::Init(){
 }
 
 
-DLM_HistoSource::DLM_HistoSource(DLM_Histo<float>* histo):MyOwnHisto(true){
+DLM_HistoSource::DLM_HistoSource(DLM_Histo<float>* histo):MyOwnHisto(false){
   if(histo->GetDim()>2){
     Histo=NULL;
     printf("\033[1;31mERROR:\033[0m DLM_HistoSource is broken (bad input)\n");
   }
   Histo = histo;
 }
-DLM_HistoSource::DLM_HistoSource(DLM_Histo<float>& histo):MyOwnHisto(false){
+DLM_HistoSource::DLM_HistoSource(DLM_Histo<float>& histo):MyOwnHisto(true){
   if(histo.GetDim()>2){
     Histo=NULL;
     printf("\033[1;31mERROR:\033[0m DLM_HistoSource is broken (bad input)\n");
@@ -2825,10 +2828,30 @@ double* DLM_CecaSource_v0::GetBinCenters(unsigned WhichPar){
 }
 
 
+//creates a copy
+DLM_KdpSource::DLM_KdpSource(KdpPars& input_kdp){
+    source_kdp = input_kdp;
+}
+
+DLM_KdpSource::~DLM_KdpSource(){
+
+}
+double DLM_KdpSource::Eval(double* kxc){
+  //for(unsigned uP=0; uP<KdpPars::NumDistos-1; uP++){
+  //  if(source_kdp.wght[uP]<0) source_kdp.wght[uP]=0;
+  //  if(source_kdp.wght[uP]>1) source_kdp.wght[uP]=1;
+  //}
+  return PoissonSum(kxc[1],source_kdp);
+}
+double DLM_KdpSource::RootEval(double* x, double* pars){
+    return PoissonSum(*x,source_kdp);
+}
+
 
 DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>& InputHisto){
     MyOwnCopy = true;
     dlmSource = new DLM_Histo<KdpPars> (InputHisto);
+    DIM = dlmSource->GetDim();
 }
 DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>* InputHisto){
     dlmSource = NULL;
@@ -2837,11 +2860,13 @@ DLM_MtKstar_KdpSource::DLM_MtKstar_KdpSource(DLM_Histo<KdpPars>* InputHisto){
         printf("\033[1;31mERROR:\033[0m  NULL pointer in the constructor of DLM_MtKstar_KdpSource\n");
         return;
     }
-    if(InputHisto->GetDim()!=2){
+    if(InputHisto->GetDim()<2){
         printf("\033[1;31mERROR:\033[0m  Bad input in the constructor of DLM_MtKstar_KdpSource\n");
         return;
     }
     dlmSource = InputHisto;
+    DIM = dlmSource->GetDim();
+    printf("%p\n",dlmSource);
 }
 
 DLM_MtKstar_KdpSource::~DLM_MtKstar_KdpSource(){
@@ -2852,29 +2877,108 @@ DLM_MtKstar_KdpSource::~DLM_MtKstar_KdpSource(){
 //[1] = rstar
 //[2] = empty
 //[3] = mt
+//[4...] = extra patameters
 double DLM_MtKstar_KdpSource::Eval(double* pars){
     double& kstar = pars[0];
     double& rstar = pars[1];
     double& Mt = pars[3];
-    double EvalAt[3];
+    double* EvalAt = new double [DIM];
     EvalAt[0] = Mt;
     EvalAt[1] = kstar;
-    if(!dlmSource) {printf("ZERO\n"); return 0;}
+    for(unsigned uPar=2; uPar<DIM; uPar++){
+        EvalAt[uPar] = pars[4+uPar-2];
+    }
+
+    //printf("EvalAt: ");
+    //for(unsigned uPar=0; uPar<DIM; uPar++){
+    //    printf("%.2f ", EvalAt[uPar]);
+    //}
+    //printf("\n");
+    
+    //double EvalAt[3];
+    //EvalAt[0] = Mt;
+    //EvalAt[1] = kstar;
+    if(!dlmSource) {printf("ZERO %p\n",dlmSource); return 0;}
     KdpPars SrcPars = dlmSource->Eval(EvalAt);
     double Result = PoissonSum(rstar,SrcPars);
     //if(Result){
         //printf("Result(%.3f) = %.3e\n",rstar,Result);
     //}
+    delete [] EvalAt;
     return Result;
 }
 
 //pars[0] = mt
 //pars[1] = kstar
 double DLM_MtKstar_KdpSource::RootEval(double* rstar, double* pars){
-    double PARS[4];
-    PARS[0] = pars[1];
+    //3 reserved for the variables
+    //the rest depend on the DIM, however the kstar counts as var, thus the -1
+    double PARS[3+DIM-1];
+    PARS[0] = pars[1];//kstar
     PARS[1] = *rstar;
     PARS[2] = 0;
-    PARS[3] = pars[0];
+    PARS[3] = pars[0];//mt
+    for(unsigned uPar=2; uPar<DIM; uPar++){
+        PARS[4+uPar-2] = pars[uPar];
+    }
     return Eval(PARS);
 }
+
+
+DLM_MultiKdpSource::DLM_MultiKdpSource(DLM_Histo<KdpPars>& kdp_source, const int WhereIsKstar, const int WhereIsCosTheta):
+inlcude_kstar(WhereIsKstar),include_costh(WhereIsCosTheta){
+    kdp_histogram = NULL;
+    NumPars = kdp_source.GetDim()-(WhereIsKstar>=0)-(WhereIsCosTheta>=0);
+    if(NumPars<0){
+        printf("\033[1;31mERROR:\033[0m Bad number of parameters in DLM_MultiKdpSource::DLM_MultiKdpSource(...)\n");
+        return;
+    }
+    if(WhereIsKstar==WhereIsCosTheta && WhereIsKstar>=0){
+        printf("\033[1;31mERROR:\033[0m Bad input in DLM_MultiKdpSource::DLM_MultiKdpSource(...): WhereIsKstar==WhereIsCosTheta\n");
+        return;        
+    }
+    kdp_histogram = &kdp_source;
+    eval_at = NULL;
+}
+DLM_MultiKdpSource::~DLM_MultiKdpSource(){
+    kdp_histogram = NULL;
+    if(eval_at){
+        delete [] eval_at;
+        eval_at = NULL;
+    }
+}
+
+double DLM_MultiKdpSource::Eval(double* kxc){
+    if(NumPars<0){
+        return 0;
+    }
+    double& kstar = kxc[0];
+    double& rstar = kxc[1];
+    double& costh = kxc[2];
+    if(!eval_at) eval_at = new double [kdp_histogram->GetDim()];
+    if(inlcude_kstar>=0){
+        eval_at[inlcude_kstar] = kstar;
+    }
+    if(include_costh>=0){
+        eval_at[include_costh] = costh;
+    }
+
+    //int iDim = kdp_histogram->GetDim()-1;
+    int iEval=0;
+    for(int iDim=0; iDim<kdp_histogram->GetDim(); iDim++){
+        if(iDim!=inlcude_kstar && iDim!=include_costh){
+            eval_at[iDim] = kxc[2+iEval];
+            iEval++;
+        }
+    }
+
+    KdpPars current_kdp = kdp_histogram->Eval(eval_at);
+    return PoissonSum(rstar,current_kdp);
+}
+double DLM_MultiKdpSource::RootEval(double* x, double* pars){
+    if(NumPars<0){
+        return 0;
+    }
+}
+
+

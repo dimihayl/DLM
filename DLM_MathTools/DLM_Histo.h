@@ -414,6 +414,10 @@ public:
         Initialized = false;
         CumUpdated = false;
     }
+    //sets up the sDim in the same way as the sDim_other of other
+    void SetUp(const unsigned short& sDim, const DLM_Histo<Type>& other, const unsigned short& sDim_other){
+        SetUp(sDim, other.GetNbins(sDim_other), other.BinRange[sDim_other]);
+    }
     bool Initialize(const bool& ZeroElements=true){
 //printf("Initialize 1: %i\n",Initialized);
         if(!Dim||!NumBins||!BinRange||!BinCenter) return false;
@@ -1449,6 +1453,59 @@ public:
       return EvalError(&xVal);
     }
 
+    Type Eval2D(const double xVal, const double yVal, const bool& EvalTheError=false) const{
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Eval(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
+      double xPars[2];
+      xPars[0] = xVal;
+      xPars[1] = yVal;
+      return Eval(xPars,EvalTheError);
+    }
+    Type EvalError2D(const double xVal, const double yVal) const{
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo EvalError(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
+      double xPars[2];
+      xPars[0] = xVal;
+      xPars[1] = yVal;
+      return EvalError(xPars);
+    }    
+
+    //makes this histogram equal in values to other, without re-initialization.
+    //This only works if we have the same Dim.
+    //Only overlapping bin regions are set equal (using Eval), the rest are zero
+    bool SetEqualTo(const DLM_Histo& other){
+        if(Dim!=other.Dim){
+            printf("\033[1;33mWARNING:\033[0m DLM_Histo::SetEqualTo function failed, this set up works only for histos with the same Dim.\n");
+            return false;
+        }
+
+        for(unsigned uBin=0; uBin<TotNumBins; uBin++){
+            //printf("uBin %u\n",uBin);
+            unsigned* WhichTotBin = new unsigned[Dim];
+            GetBinCoordinates(uBin, WhichTotBin);
+            Type* xVal = new Type [Dim];
+            bool InRange = true;
+            for(unsigned short sDim=0; sDim<Dim; sDim++){
+                xVal[sDim] = BinCenter[sDim][WhichTotBin[sDim]];
+                if(xVal[sDim]<other.GetLowEdge(sDim) || xVal[sDim]>other.GetUpEdge(sDim)){
+                    InRange = false;
+                    break;
+                }
+            }
+            //printf("uBin=%u(%u) %i; xVal[0]=%.3f\n",uBin,TotNumBins,uBin>=TotNumBins,xVal[0]);
+            if(InRange){
+                BinValue[uBin] = other.Eval(xVal);
+                BinError[uBin] = other.EvalError(xVal);
+            }
+            else{
+                BinValue[uBin] = 0;
+                BinError[uBin] = 0;  
+            }
+
+            delete [] WhichTotBin;
+            delete [] xVal;
+        }
+        return true;
+    }
+
     bool operator=(const DLM_Histo& other){
 //printf("operator=\n");
         //if(!Initialized) {InitWarning(); return false;}
@@ -1476,6 +1533,20 @@ public:
         BinValue[TotNumBins] = other.BinValue[TotNumBins];
         BinValue[TotNumBins+1] = other.BinValue[TotNumBins+1];
         CumUpdated = false;
+        return true;
+    }
+    bool operator==(const DLM_Histo& other){
+        if(!SameStructure(other)) return false;
+        for(unsigned uBin=0; uBin<TotNumBins+2; uBin++){
+            if(BinValue[uBin]!=other.BinValue[uBin]) return false;
+            if(uBin<TotNumBins){
+                if(BinError[uBin]!=other.BinError[uBin]) return false;
+                if(BinCenter[uBin]!=other.BinCenter[uBin]) return false;
+            }
+            if(uBin<TotNumBins+1){
+                if(BinRange[uBin]!=other.BinRange[uBin]) return false;
+            }
+        }
         return true;
     }
 //! FOR DIVISION/MULT:

@@ -1637,6 +1637,7 @@ complex<double> GamowCorrection(const double& Momentum, const double& RedMass, c
 }
 
 //pLab to pCm, Mass2 is the mass of the particle at rest
+//essentially this is pLab -> kstar conversion
 double pLab_pCm(const double& pLab, const double& Mass1, const double& Mass2){
     return sqrt(pow(Mass2*pLab,2)/(pow(Mass2,2)+pow(Mass1,2)+2*Mass2*sqrt(pow(Mass1,2)+pow(pLab,2))));
 }
@@ -1652,4 +1653,11 @@ double pCm_pLab(const double& pCm, const double& Mass1, const double& Mass2){
 
 double pCm_tLab(const double& pCm, const double& Mass1, const double& Mass2){
     return sqrt(Mass1*Mass1+pow(pCm_pLab(pCm, Mass1, Mass2),2))-Mass1;
+}
+
+double IM_to_kstar(const double IM, const double Mass1, const double Mass2){
+    double D2 = IM*IM - Mass1*Mass1 - Mass2*Mass2;
+    double kstar2 = (D2*D2-4.*Mass1*Mass1*Mass2*Mass2)/(4.*IM*IM);
+    if(kstar2<0) sqrt(-kstar2);
+    return sqrt(kstar2);
 }

@@ -519,7 +519,7 @@ struct KdpPars { // This structure is named "myDataType"
 
 
   void Print(){
-    for(short sn=0; sn<10; sn++){
+    for(short sn=0; sn<NumDistos; sn++){
       printf("mean_%i   = %.3e\n",sn,mean[sn]);
       printf(" stdv_%i  = %.3e\n",sn,stdv[sn]);
       printf("  wght_%i = %.3e\n",sn,wght[sn]);
@@ -625,7 +625,6 @@ public:
     double* GetBinRange(unsigned WhichPar);
     double* GetBinCenters(unsigned WhichPar);
 
-
 private:
   //Cigar or Pancake, i.e. d,ht,hz or d,ht,tau
   const std::string AnaVersion;
@@ -647,6 +646,9 @@ private:
 //i.e. this is only used for extrapolation purposes.
 //the kdp is used to fit fixed Mt and Kstar bins
 //InputHisto is a 2D histo, in Mt and Kstar
+//it can have more dimensions, in which case any extra dims are treated as extra parameters.
+//THE NUMBER OF PARAMETERS FOR CATS WILL BE DIM-1, i.e. the mt and any other pars
+//in CATS: Par0 is mt, and than Par1,2,3 ... are all extra pars
 class DLM_MtKstar_KdpSource:public CatsSource{
 public:
     //creates a copy
@@ -661,9 +663,54 @@ private:
   //2D, in Mt and Kstar, the 3rd DIM comes from the rstar dependence
   DLM_Histo<KdpPars>* dlmSource;
   bool MyOwnCopy;
+  unsigned DIM;
 };
 
+//a super simple kdp source, where we just evaluate it based on a single set of kdp pars
+//note that this source has no free pars
+class DLM_KdpSource:public CatsSource{
+public:
+    //creates a copy
+    DLM_KdpSource(KdpPars& input_kdp);
+    ~DLM_KdpSource();
+    double Eval(double* rad);
+    double RootEval(double* x, double* pars);
 
+private:
+  KdpPars source_kdp;
+};
+
+//multi-dimensional KDP source, to be used when explorig a whole range of parameters
+//N.B. when you set it up, you need to provide information on the number of parameters,
+//as well as if you have kstar or costheta dependence.
+//The dimensions parameter includes ALL parameters, including kstar and costheta if they have to be accounted for
+//THE CONVNTION IS: IF KSTAR AND COSTHETA ARE INCLUDED, THEY HAVE TO BE THE LAST TWO ELEMENTS IN THAT ORDER
+class DLM_MultiKdpSource:public CatsSource{
+public:
+    //gives as an input the KdpPars histogram, that already needs to be set up. We will use a pointer to it!!
+    //the WhereIs parameters tell us the position (as dimension) within the DLM_Histo, which corresponds to 
+    //kstar or cos_theta. If the number if negative, it means that those component are NOT inlcuded.
+    DLM_MultiKdpSource(DLM_Histo<KdpPars>& kdp_source, const int WhereIsKstar=-1, const int WhereIsCosTheta=-1);
+    ~DLM_MultiKdpSource();
+
+    //here the parameters are a bit tricky. Essentially the kstar and cos_theta are part of the kxc[0/2], 
+    //while the rest are the parameters of the source. What this means, is that the interface with CATS might be
+    //confusing when using the SetAnaSource(which_par...) function, as you will count the parameters in their 
+    //defined order, skipping kstar and cos_th regarless where they are. To make things clean please always 
+    //define kstar and cos_th either at the beginning or at the end of your histogram. Best at the end, as this 
+    //will make the mapping of the element number in the histo to you CATS parameter number 1:1, if you put it
+    //at the beginning there will be the "standard" shift of 2 parameters.
+    double Eval(double* kxc);
+    //the pars correspond 1:1 to the dimenisions of the input histogram
+    double RootEval(double* x, double* pars);
+
+private:
+  const int inlcude_kstar;
+  const int include_costh;
+  int NumPars;
+  DLM_Histo<KdpPars>* kdp_histogram;
+  double* eval_at;
+};
 
 /*
 //use DLM_CleverMcLevyReso as the baseline for a differential analysis

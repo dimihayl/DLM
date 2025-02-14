@@ -46,6 +46,9 @@ DLM_Histo<complex<double>>*** Init_pd_Sebastian(const char* InputFolder, CATS& K
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE=0);
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE=0);
 
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS &Kitty, const int &CUTOFF = 500);
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS *Kitty, const int &CUTOFF = 500);
+
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo);
 void CleanUpWfHisto(const CATS& Kitty, DLM_Histo<complex<double>>***& Histo);
 #endif

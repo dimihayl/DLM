@@ -304,13 +304,13 @@ std::vector<std::vector<unsigned>> BinomialPermutations(const unsigned& N, const
 
 //par[0] is an overall normalization
 //than we have a pol4 = p0*(1+p1*k+p2*k^2+p3*k^3+p4*k^4), which has 3 free arguments and the following properties
-//par4!=0 (pol4 flat at 0)
+//par4!=-1e6 (pol4 flat at 0)
 //	par1,par2 the two extrema, par3 is the p4, par4 is dummy
-//par4==0&&par3!=0 (pol3)
+//par4==-1e6&&par3!=-1e6 (pol3)
 //	par1,par2 the two extrema, par3 is p3
-//par4==0&&par3==0&&par2!=0 (pol2)
+//par4==-1e6&&par3==-1e6&&par2!=-1e6 (pol2)
 //	par1 is the extrema, par2 is p2
-//par4==0&&par3==0&&par2==0&&par1!=0 (pol1)
+//par4==-1e6&&par3==-1e6&&par2==-1e6 (pol1)
 //	par1 is p1
 //to avoid problems with a starting parameter of zero, to switch the order of the par we use -1e6 as a value
 //a Mathematica computation of the equations is in your Femto folder
@@ -351,3 +351,240 @@ double DLM_Baseline(double* xval, double* par){
     return p0*(1.+p1*k+p2*pow(k,2)+p3*pow(k,3)+p4*pow(k,4));
 
 }
+
+//par[0] = NORM
+//par[1/2] = masses of the daughters
+//par[3] = mass (mother)
+//par[4] = width
+double Sill_IM(double* IM, double* par){
+	double& dmass_1 = par[1];
+	double& dmass_2 = par[2];
+
+	double& mass = par[3];
+	double& gamma = par[4];
+	double& InvMass = IM[0];
+
+	double Thresh = dmass_1 + dmass_2;
+  	if (InvMass < Thresh)
+    	return 0;
+
+
+    double D2 = InvMass*InvMass - dmass_1*dmass_1 - dmass_2*dmass_2;
+    double kstar2 = (D2*D2-4.*dmass_1*dmass_1*dmass_2*dmass_2)/(4.*InvMass*InvMass);
+    if(kstar2<0) sqrt(-kstar2);
+    double kstar = sqrt(kstar2);
+
+   	double Width = gamma * mass / sqrt(mass * mass - Thresh * Thresh);
+  	double arg0 = 2 * InvMass / Pi;
+  	double arg1 = sqrt(InvMass * InvMass - Thresh * Thresh) * Width;
+  	double arg2 = pow(InvMass * InvMass - mass * mass, 2.);
+  	double arg3 = pow(sqrt(InvMass * InvMass - Thresh * Thresh) * Width, 2.);
+	
+  	double silly_norm = 1;
+  	if(par[0]==-1e6){
+  		double PARS[5];
+  		PARS[0] = 1;
+  		PARS[1] = par[1];
+  		PARS[2] = par[2];
+  		PARS[3] = par[3];
+  		PARS[4] = par[4];
+  		double inmass;
+  		silly_norm = 0;
+  		double temp;
+
+  		inmass = mass;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+   		inmass = mass*0.5;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+  		
+   		inmass = mass*0.25;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+   		inmass = mass*2;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}  	
+
+    	inmass = mass*4;
+  		temp = Sill_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+  		silly_norm = 1./silly_norm;
+  	}
+  	else{
+  		silly_norm = par[0];
+  	}
+
+	return silly_norm*(arg0 * arg1 / (arg2 + arg3));		
+}
+double Sill_kstar(double* KSTAR, double* par){
+	double& dmass_1 = par[1];
+	double& dmass_2 = par[2];
+
+	double& mass = par[3];
+	double& gamma = par[4];
+	double& kstar = KSTAR[0];
+	double InvMass = sqrt(kstar * kstar + dmass_1 * dmass_1) + sqrt(kstar * kstar + dmass_2 * dmass_2);
+
+	double Thresh = dmass_1 + dmass_2;
+  	if (InvMass < Thresh)
+    	return 0;
+
+	double Derivative_dM_dkStar = kstar / sqrt(kstar * kstar + dmass_1 * dmass_1) + kstar / sqrt(kstar * kstar + dmass_2 * dmass_2);
+
+	return Sill_IM(&InvMass, par)*Derivative_dM_dkStar;
+}
+
+//par[0] = NORM
+//par[1] = pT, if zero no PS
+//par[2] = Temperature, if zero no PS
+double Boltzmann_IM(double* IM, double* par){
+	double mass = IM[0];
+	double pT = par[1];
+	double Temperature = par[2];
+
+  	double silly_norm = 1;
+  	if(par[0]==-1e6){
+  		double PARS[3];
+  		PARS[0] = 1;
+  		PARS[1] = par[1];
+  		PARS[2] = par[2];
+  		double inmass;
+  		silly_norm = 0;
+  		double temp;
+
+  		inmass = sqrt(par[1]*par[2]);
+  		temp = Boltzmann_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+
+   		inmass = sqrt(par[1]*par[2])*0.5;
+  		temp = Boltzmann_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}
+  		
+   		inmass = sqrt(par[1]*par[2])*2;
+  		temp = Boltzmann_IM(&inmass, PARS);
+  		if(temp>silly_norm){silly_norm = temp;}  	
+
+  		silly_norm = 1./silly_norm;
+  	}
+  	else{
+  		silly_norm = par[0];
+  	}
+
+	if(pT==0 || Temperature==0) return par[0];
+	return silly_norm * (mass / sqrt(mass * mass + pT * pT)) * exp(-sqrt(mass * mass + pT * pT) / Temperature);
+}
+
+
+//sill with phase space
+//par[0] = NORM -> if norm is -1e6, we make some silly auto-norm to have reasonable values of the maximum of around 1
+//par[1/2] = masses of the daughters
+//par[3] = mass (mother)
+//par[4] = width
+//par[5] = avg pt, if zero no PS
+//par[6] = Temperature, if zero no PS
+double SillBoltzmann_IM(double* IM, double* par){
+	double sill = Sill_IM(IM, par);
+	double BoltzPar[3];
+	BoltzPar[0] = par[0];
+	BoltzPar[1] = par[5];
+	BoltzPar[2] = par[6];
+	double ps = Boltzmann_IM(IM, BoltzPar);
+	return sill * ps;
+}
+double SillBoltzmann_kstar(double* KSTAR, double* par){
+	double sill = Sill_kstar(KSTAR, par);
+	double BoltzPar[3];
+	BoltzPar[0] = par[0];
+	BoltzPar[1] = par[5];
+	BoltzPar[2] = par[6];
+	double& kstar = KSTAR[0];
+	double& dmass_1 = par[1];
+	double& dmass_2 = par[2];
+	double InvMass = sqrt(kstar * kstar + dmass_1 * dmass_1) + sqrt(kstar * kstar + dmass_2 * dmass_2);
+	//N.B. to convert f(M(k*)) to f(k*) we just need to multiply the function by dM/dk one time!
+	//we already do this for Sill_kstar, thus the phase space does NOT need to be converted as well!
+	double ps = Boltzmann_IM(&InvMass, BoltzPar);
+
+	return sill * ps;
+}
+
+
+//xval = kstar
+//par[0] = NORM
+//par[1/2] = masses of the daughters
+//par[3] = mass (mother)
+//par[4] = width
+//par[5] = Resonance pT, if zero no PS
+//par[6] = Temperature, if zero no PS
+double SillPhaseSpaceKstar(double* xval, double* par){
+	double& dmass_1 = par[1];
+	double& dmass_2 = par[2];
+
+	double& mass = par[3];
+	double& gamma = par[4];
+	double& kstar = xval[0];
+
+
+  if (kstar < 0)
+    return 0;
+  double Thresh = dmass_1 + dmass_2;
+  double MotherMass = sqrt(kstar * kstar + dmass_1 * dmass_1) + sqrt(kstar * kstar + dmass_2 * dmass_2);
+  if (MotherMass < Thresh)
+    return 0;
+  double Width = gamma * mass / sqrt(mass * mass - Thresh * Thresh);
+  double arg0 = 2 * MotherMass / Pi;
+  double arg1 = sqrt(MotherMass * MotherMass - Thresh * Thresh) * Width;
+  double arg2 = pow(MotherMass * MotherMass - mass * mass, 2.);
+  double arg3 = pow(sqrt(MotherMass * MotherMass - Thresh * Thresh) * Width, 2.);
+  //used to convert f(M) to f(kstar)
+  double Derivative_dM_dkStar = kstar / sqrt(kstar * kstar + dmass_1 * dmass_1) + kstar / sqrt(kstar * kstar + dmass_2 * dmass_2);
+
+  double ResonancePt = par[5];
+  double Temperature = par[6]; // orignal paper 160
+  double PhaseSpace = ResonancePt*Temperature==0?1:
+  		(MotherMass / sqrt(MotherMass * MotherMass + ResonancePt * ResonancePt)) * exp(-sqrt(MotherMass * MotherMass + ResonancePt * ResonancePt) / Temperature);
+  double PhaseSpaceNorm = ResonancePt*Temperature==0?1:
+  		exp(-sqrt(Thresh * Thresh + ResonancePt * ResonancePt) / Temperature);
+
+  return par[0]*(arg0 * arg1 / (arg2 + arg3)) * PhaseSpace / (PhaseSpaceNorm) * fabs(Derivative_dM_dkStar);	
+}
+
+/*
+//xval = kstar
+//par[0/1] = masses of the daughters
+//par[2] = mass (mother)
+//par[3] = width
+//par[4] = Resonance pT, if zero no PS
+//par[5] = Temperature, if zero no PS
+double SillPhaseSpaceKstar(double* xval, double* par){
+  //a silly norm to make the dist a bit more visible.
+  //essentially, approximate the integral with very few steps
+  double approx_integral = 0;
+  double mass_diff = par[2]-par[1]-par[0];
+  //double int_range = mass_diff*160;
+  //double int_delta = mass_diff*0.01;
+  //int steps = 0;
+  //for(double kint=int_delta*0.5; kint<int_range; kint+=int_delta){
+  //	approx_integral += SillPhaseSpaceKstar_basic(&kint,par);
+  //	steps++;
+  //}
+  //approx_integral *= double(steps);
+  //approx_integral /= (int_range);
+
+  //double diff = 2.*(par[2]-par[0]-par[1]);
+  //double DLM_NORM = SillPhaseSpaceKstar_basic(&diff,par);
+  //double DLM_NORM = approx_integral;
+  //printf("%f\n",mass_diff);
+  double kpar = mass_diff*1.8;
+  double DLM_NORM = SillPhaseSpaceKstar_basic(&kpar,par)*par[3]*2;
+  double RESULT = SillPhaseSpaceKstar_basic(xval,par);
+  if(DLM_NORM != 0){
+  	return RESULT/DLM_NORM;
+  }
+  return RESULT;
+}
+*/

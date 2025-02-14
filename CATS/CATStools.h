@@ -431,5 +431,8 @@ double pLab_pCm(const double& pLab, const double& Mass1, const double& Mass2);
 double tLab_pCm(const double& tLab, const double& Mass1, const double& Mass2);
 double pCm_pLab(const double& pCm, const double& Mass1, const double& Mass2);
 double pCm_tLab(const double& pCm, const double& Mass1, const double& Mass2);
+double IM_to_kstar(const double IM, const double Mass1, const double Mass2);
+
+
 
 #endif // CATSTOOLS_H
