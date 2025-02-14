@@ -24,52 +24,6 @@ par4_range = [0, 0]
 par5_range = [0, 0]
 par6_range = [0, 0]
 
-
-#evalates the phase shift at a given k*, given the scattering parameters and q1q2*RedMass of the pair
-#par[0] are the number of pars in the ERE
-#par[1] is the q1q2*RedMass (0 if no Coulomb)
-#par[2...] the parameters of the effective range expansion
-def fit_scattering_pars(x, par):
-    #print('fcall')
-    MOM = x[0]
-    Npars = round(par[0])
-    q1q2rm = par[1]
-    #print(Npars)
-    if Npars==0:
-        return 0
-    ERE = 0
-    if Npars>=1:
-        ERE += 1./(par[2]*FmToNu)
-    if Npars>=2:
-        ERE += 0.5*MOM*MOM*par[3]*FmToNu
-    if Npars>=3:
-        for iPar in range(2,Npars):
-            ERE += par[iPar+2] * (FmToNu**(iPar*2-1)) * (MOM**(iPar*2))
-
-    if q1q2rm!=0:
-        PreFactor = 1
-        AddFactor = 0       
-        AlphaFS = 0.0072973525664
-        EulerConst = 0.57721566490153
-        Eta = AlphaFS*q1q2rm/MOM
-        hgam = -EulerConst - math.log(Eta)
-        PreFactor = (math.exp(2.*math.pi*Eta)-1.)/2.*math.pi*Eta
-        AddFactor = -2.*MOM*Eta*hgam
-        precision = 1
-        eps = 0.0001
-        nstep = 1
-        while precision>eps and nstep<32:
-            dh = Eta*Eta/(nstep*(nstep*nstep+Eta*Eta));
-            hgam += dh
-            #this says we have to take at least the first two terms of the sum
-            if nstep>1:
-                precision = abs(dh/hgam);
-            nstep += 1
-        ERE += AddFactor
-        ERE *= PreFactor
-    #print('fend')
-    return math.atan(MOM/ERE)
-
 # Target function to be optimized by Optuna
 def target_function(trial):
     # Sample the parameters within the specified ranges
@@ -134,28 +88,28 @@ def main():
             single_line = line.strip()
             line_split = single_line.split()
             #print(line_split)
-            if line_split[0].lower()=='fRe_goal':
+            if line_split[0].lower()=='fre_goal':
                 if len(line_split)!=2:
                     sys.exit('Wrong set up of fRe_goal')
                 try:
                     fRe_goal = float(line_split[1])  # Try converting the string to a float
                 except ValueError:
                     sys.exit("Error: fRe_goal must be a number.")
-            if line_split[0].lower()=='fRe_err':
+            if line_split[0].lower()=='fre_err':
                 if len(line_split)!=2:
                     sys.exit('Wrong set up of fRe_err')
                 try:
                     fRe_err = float(line_split[1])  # Try converting the string to a float
                 except ValueError:
                     sys.exit("Error: fRe_err must be a number.")
-            if line_split[0].lower()=='fIm_goal':
+            if line_split[0].lower()=='fim_goal':
                 if len(line_split)!=2:
                     sys.exit('Wrong set up of fIm_goal')
                 try:
                     fIm_goal = float(line_split[1])  # Try converting the string to a float
                 except ValueError:
                     sys.exit("Error: fIm_goal must be a number.")
-            if line_split[0].lower()=='fIm_err':
+            if line_split[0].lower()=='fim_err':
                 if len(line_split)!=2:
                     sys.exit('Wrong set up of fIm_err')
                 try:
@@ -524,8 +478,14 @@ def main():
                             Best_par5 = CurrentPar5[iCPU]
                             Best_par6 = CurrentPar6[iCPU]                            
 
+                            Best_fRe = Current_fRe
+                            Best_fIm = Current_fIm
+                            
                             fRe_err_current = abs(Best_fRe-fRe_goal)
                             fIm_err_current = abs(Best_fIm-fIm_goal)
+                            #print("fRe_err_current = ",fRe_err_current,"\n")
+                            #print("fIm_err_current = ",fIm_err_current,"\n")
+
                             if fRe_err_current==0:
                                 Progress_fRe = 1
                             else:

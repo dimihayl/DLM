@@ -313,6 +313,7 @@ public:
     //has no information of the length of this array, it is the responsibility of the user to make source there is
     //no segmentation violation!!!
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value);
+
     //For complex potential:
     void SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, complex<double> (*pot)(double *Pars), CATSparameters &Pars);
     // void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, double (*pot)(double* Pars), double* Pars);

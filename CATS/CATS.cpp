@@ -2324,7 +2324,7 @@ void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, co
 
     if (GetPotPar(usCh, usPW, WhichPar) == Value)
         return;
-    if (!ShortRangePotential[usCh][usPW])
+    if (!ShortRangePotential[usCh][usPW] || !ShortRangeComplexPotential[usCh][usPW])
         return;
 
     if (PotPar[usCh][usPW])
