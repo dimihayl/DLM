@@ -1284,11 +1284,12 @@ FragCorr = 1;
         //note, that in c++ we will have actally 01
         double mu12 = m1*m2/(m1+m2);
         double alpha_m = 4*m3*m3/pow(m3+m1,2.) + 4*m3*m3/pow(m3+m2,2.) + 4;
-        double beta_m = 4*m3*mtot/(m1+m2)*(m2/pow(m2+m3,2.)-m1/pow(m1+m3,2.));
-        double gamma_m = 4*pow(mtot/(m1+m2),2.)*(pow(m1/(m1+m3),2.)+pow(m2/(m2+m3),2.));
-        double m3_12 = m3*(m1+m2)/mtot;
+        //double beta_m = 4*m3*mtot/(m1+m2)*(m2/pow(m2+m3,2.)-m1/pow(m1+m3,2.));
+        //double gamma_m = 4*pow(mtot/(m1+m2),2.)*(pow(m1/(m1+m3),2.)+pow(m2/(m2+m3),2.));
+        double mu3_12 = m3*(m1+m2)/mtot;
         //arbitrary mass. For identical particles this definition
         //works out to 3x mass of the particle
+        //this is the definition that leads to Q==Q3
         double Malpha = mu12*alpha_m;
         
         //CatsLorentzVector clv12 = *prt_cm[0].Cats() - *prt_cm[1].Cats();
@@ -1301,34 +1302,65 @@ FragCorr = 1;
         std::vector<double> v_p2 = {prt_cm[1].Cats()->GetPx(), prt_cm[1].Cats()->GetPy(), prt_cm[1].Cats()->GetPz()};
         std::vector<double> v_p3 = {prt_cm[2].Cats()->GetPx(), prt_cm[2].Cats()->GetPy(), prt_cm[2].Cats()->GetPz()};
 
-
-        double r12 = 0;
-        for(unsigned uv=0; uv<3; uv++) r12 += pow(v_r1.at(uv) - v_r2.at(uv), 2.);
-        r12 = sqrt(r12);
-
-        double r3_12 = 0;
+        std::vector<double> v_r12;
+        std::vector<double> v_k12;
         for(unsigned uv=0; uv<3; uv++){
-          r3_12 += pow(v_r3.at(uv) - (m1*v_r1.at(uv)+m2*v_r2.at(uv))/(m1+m2), 2.);
+          v_r12.push_back(v_r1[uv]-v_r2[uv]);
+          v_k12.push_back((m2*v_p1[uv]-m1*v_p2[uv])/(m1+m2));
         }
-        r3_12 = sqrt(r3_12);
-
-        double k12 = 0;
-        for(unsigned uv=0; uv<3; uv++) k12 += pow(m2*v_p1.at(uv) - m1*v_p2.at(uv), 2.);
-        k12 = sqrt(k12)/(m1+m2);
-
-        double k3_12 = 0;
+        std::vector<double> v_r3_12; 
+        std::vector<double> v_k3_12; 
         for(unsigned uv=0; uv<3; uv++){
-          k3_12 += pow((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)), 2.);
+          v_r3_12.push_back(v_r3[uv]-m1/(m1+m2)*v_r1[uv]-m2/(m1+m2)*v_r2[uv]);
+          v_k3_12.push_back(((m1+m2)*v_p3[uv]-m3*(v_p1[uv]+v_p2[uv]))/(m1+m2+m3));
         }
-        k3_12 = sqrt(k3_12)/mtot;
-
-        double dot_k12_k3_12 = 0;
+        //hyperradius
+        std::vector<double> v_rho;
+        std::vector<double> v_Q3;
         for(unsigned uv=0; uv<3; uv++){
-          dot_k12_k3_12 += (m2*v_p1.at(uv) - m1*v_p2.at(uv))/(m1+m2) * ((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)))/mtot;
+          v_rho.push_back(sqrt(mu12/Malpha)*v_r12[uv]);
+          v_Q3.push_back(sqrt(Malpha/mu12)*v_k12[uv]);
         }
+        for(unsigned uv=3; uv<6; uv++){
+          v_rho.push_back(sqrt(mu3_12/Malpha)*v_r3_12[uv]);
+          v_Q3.push_back(sqrt(Malpha/mu3_12)*v_k3_12[uv]);  
+        }
+            
+        //double r12 = 0;
+        //for(unsigned uv=0; uv<3; uv++) r12 += pow(v_r1.at(uv) - v_r2.at(uv), 2.);
+        //r12 = sqrt(r12);
 
-        double hyp_rad = sqrt(mu12/Malpha*r12*r12 + m3_12/Malpha*r3_12*r3_12);
-        double Q3 = sqrt(alpha_m*k12*k12 + 2*beta_m*dot_k12_k3_12 + gamma_m*k3_12*k3_12);
+        //double r3_12 = 0;
+        //for(unsigned uv=0; uv<3; uv++){
+        //  r3_12 += pow(v_r3.at(uv) - (m1*v_r1.at(uv)+m2*v_r2.at(uv))/(m1+m2), 2.);
+        //}
+        //r3_12 = sqrt(r3_12);
+
+        //double k12 = 0;
+        //for(unsigned uv=0; uv<3; uv++) k12 += pow(m2*v_p1.at(uv) - m1*v_p2.at(uv), 2.);
+        //k12 = sqrt(k12)/(m1+m2);
+
+        //double k3_12 = 0;
+        //for(unsigned uv=0; uv<3; uv++){
+        //  k3_12 += pow((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)), 2.);
+        //}
+        //k3_12 = sqrt(k3_12)/mtot;
+
+        //double dot_k12_k3_12 = 0;
+        //for(unsigned uv=0; uv<3; uv++){
+        //  dot_k12_k3_12 += (m2*v_p1.at(uv) - m1*v_p2.at(uv))/(m1+m2) * ((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)))/mtot;
+        //}
+
+        //double hyp_rad = sqrt(mu12/Malpha*r12*r12 + mu3_12/Malpha*r3_12*r3_12);
+        //double Q3 = sqrt(alpha_m*k12*k12 + 2*beta_m*dot_k12_k3_12 + gamma_m*k3_12*k3_12);
+        double hyp_rad = 0;
+        double Q3 = 0;
+        for(unsigned uv=0; uv<6; uv++){
+          hyp_rad+=v_rho[uv]*v_rho[uv];
+          Q3+=v_Q3[uv]*v_rho[uv];
+        }
+        hyp_rad = sqrt(hyp_rad);
+        Q3 = sqrt(Q3);
 
         if(Q3<FemtoLimit){
           FemtoPermutations++;
