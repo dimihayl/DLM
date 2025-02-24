@@ -1970,7 +1970,7 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
     double k_1 = MomBin[1];//i-1
     double k_2 = MomBin[2];//i
     double k_3 = MomBin[3];//i=1
-    cout << "k_1  = " << k_1 << endl;
+    // cout << "k_1  = " << k_1 << endl;
     double Delta_k = k_1;
 
     complex<double> ScatLen;
@@ -1985,12 +1985,12 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
         complex<double> fC_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
         complex<double> fC_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
         complex<double> fC_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-        cout << "fC_k1  = " << fC_k1 << endl;
+        // cout << "fC_k1  = " << fC_k1 << endl;
         /// Expressing the ctgδ as a function of the scattering amplitude numerically evaluated
         complex<double> F1 = (1. / (k_1 * fC_k1)) * (1. + i * k_1 * fC_k1);
         complex<double> F2 = (1. / (k_2 * fC_k2)) * (1. + i * k_2 * fC_k2);
         complex<double> F3 = (1. / (k_3 * fC_k3)) * (1. + i * k_3 * fC_k3);
-        cout << "F1  = ctgδ =" << F1 << endl;
+        // cout << "F1  = ctgδ =" << F1 << endl;
 
         // PhaseShiftPar1 = 0.5 * arg(EvalScatteringMatrix(k_1, usCh, usPW));
         // PhaseShiftPar2 = 0.5 * arg(EvalScatteringMatrix(k_2, usCh, usPW));
@@ -2000,40 +2000,40 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
         double Eta_1 = RedMass * double(Q1Q2) * AlphaFS / k_1;
         double Eta_2 = RedMass * double(Q1Q2) * AlphaFS / k_2;
         double Eta_3 = RedMass * double(Q1Q2) * AlphaFS / k_3;
-        cout << "Eta_1 =" << Eta_1 << endl;
+        // cout << "Eta_1 =" << Eta_1 << endl;
 
         double C2_1 = (2 * Pi * Eta_1) / (exp(2 * Pi * Eta_1) - 1.);
         double C2_2 = (2 * Pi * Eta_2) / (exp(2 * Pi * Eta_2) - 1.);
         double C2_3 = (2 * Pi * Eta_3) / (exp(2 * Pi * Eta_3) - 1.);
-        cout << "C2_1 =" << C2_1 << endl;
+        // cout << "C2_1 =" << C2_1 << endl;
 
         double gamma_1 = Eta_1 * 2 * k_1;///MeV
         double gamma_2 = Eta_2 * 2 * k_2;
         double gamma_3 = Eta_3 * 2 * k_3;
 
-        cout << "gamma_1 =" << gamma_1 << endl;
+        // cout << "gamma_1 =" << gamma_1 << endl;
 
         double ndigamma_1 = log(abs(Eta_1))-(1./(2*Eta_1*Eta_1))-EulerConst;///Adim
         double ndigamma_2 = log(abs(Eta_2)) - (1. / (2 * Eta_2 * Eta_2)) - EulerConst;
         double ndigamma_3 = log(abs(Eta_3)) - (1. / (2 * Eta_3 * Eta_3)) - EulerConst;
 
-        cout << "ndigamma_1 =" << ndigamma_1 << endl;
+        // cout << "ndigamma_1 =" << ndigamma_1 << endl;
 
         double h1 = ndigamma_1 - log(abs(Eta_1));///Adim
         double h2 = ndigamma_2 - log(abs(Eta_2));
         double h3 = ndigamma_3 - log(abs(Eta_3));
 
-        cout << "h1 =" << h1 << endl;
+        // cout << "h1 =" << h1 << endl;
 
         complex<double> effF_1 = k_1 * C2_1 * F1 + gamma_1 * h1;///MeV
         complex<double> effF_2 = k_2 * C2_2 * F2 + gamma_2 * h2;
         complex<double> effF_3 = k_3 * C2_3 * F3 + gamma_3 * h3;
-        cout << "effF_1  = " << effF_1 << endl;
+        // cout << "effF_1  = " << effF_1 << endl;
         ///Implementing the usual relation between scatt. ampl and scatt. pars
         complex<double> TildeF_1 = 1./(C2_1*((1./fC_k1)+(gamma_1*h1)/C2_1)); 
         complex<double> TildeF_2 = 1. / (C2_2 * ((1. / fC_k2) + (gamma_2 * h2) / C2_2)); 
         complex<double> TildeF_3 = 1. / (C2_3 * ((1. / fC_k3) + (gamma_3 * h3) / C2_3));
-        cout << "effFTildeF_1_1  = " << TildeF_1 << endl;
+        // cout << "effFTildeF_1_1  = " << TildeF_1 << endl;
 
         cout << " Delivering scattering parameters with Coulomb" << endl;
         // Compute Coulomb-modified scattering length
@@ -2058,9 +2058,9 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
             complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
             complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
             complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-            cout << "f_k1  = " << f_k1 << endl;
-            cout << "f_k2  = " << f_k2 << endl;
-            cout << "f_k3  = " << f_k3 << endl;
+            // cout << "f_k1  = " << f_k1 << endl;
+            // cout << "f_k2  = " << f_k2 << endl;
+            // cout << "f_k3  = " << f_k3 << endl;
             cout << " Delivering scattering parameters w/o Coulomb" << endl;
             ScatLen = +f_k1; /// but this is assuming that f(E) = (+1./a0 +... )?????
             cout << "Scattering length = " << ScatLen * hbarc << " fm" << endl;
@@ -2324,7 +2324,7 @@ void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, co
 
     if (GetPotPar(usCh, usPW, WhichPar) == Value)
         return;
-    if (!ShortRangePotential[usCh][usPW] || !ShortRangeComplexPotential[usCh][usPW])
+    if (!ShortRangePotential[usCh][usPW] && !ShortRangeComplexPotential[usCh][usPW])
         return;
 
     if (PotPar[usCh][usPW])

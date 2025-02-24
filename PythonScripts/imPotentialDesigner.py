@@ -8,15 +8,15 @@ import time
 import shutil
 
 #!! this executable needs to be compiled. It should read the files produced by this file, and spit out a ROOT file
-#containing the result for the scattering length given specific settings
+# containing the result for the scattering length given specific settings
 script_name = "/Users/sartozza/Software/cats/CatsSource/bin/imPotentialDesigner"
 
 FmToNu = 5.067731237e-3
 
-#studyR = optuna.create_study(direction='minimize', sampler=optuna.samplers.RandomSampler())
+# studyR = optuna.create_study(direction='minimize', sampler=optuna.samplers.RandomSampler())
 studyT = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler())
 
-#these are the ranges of the potential parameters, which we would like to study
+# these are the ranges of the potential parameters, which we would like to study
 par1_range = [0, 0]
 par2_range = [0, 0]
 par3_range = [0, 0]
@@ -59,12 +59,14 @@ def main():
 
     BaseFileName = sys.argv[1]
     filename_arg = BaseFileName+'.txt'
-    #ROOT_FILE_NAME = sys.argv[1]+'.root'
+    # ROOT_FILE_NAME = sys.argv[1]+'.root'
 
     fRe_goal = 0
     fRe_err = 0
     fIm_goal = 0
     fIm_err = 0
+    # d0Re_goal = 0
+    # d0Re_err = 0
     pot = ""
     M1 = 0
     M2 = 0
@@ -87,7 +89,7 @@ def main():
         for line in file:
             single_line = line.strip()
             line_split = single_line.split()
-            #print(line_split)
+            # print(line_split)
             if line_split[0].lower()=='fre_goal':
                 if len(line_split)!=2:
                     sys.exit('Wrong set up of fRe_goal')
@@ -116,6 +118,20 @@ def main():
                     fIm_err = float(line_split[1])  # Try converting the string to a float
                 except ValueError:
                     sys.exit("Error: fIm_err must be a number.")
+            # if line_split[0].lower()=='d0re_goal':
+            #     if len(line_split)!=2:
+            #         sys.exit('Wrong set up of d0Re_goal')
+            #     try:
+            #         d0Re_goal = float(line_split[1])  # Try converting the string to a float
+            #     except ValueError:
+            #         sys.exit("Error: d0Re_goal must be a number.")
+            # if line_split[0].lower()=='d0re_err':
+            #     if len(line_split)!=2:
+            #         sys.exit('Wrong set up of d0Re_err')
+            #     try:
+            #         d0Re_err = float(line_split[1])  # Try converting the string to a float
+            #     except ValueError:
+            #         sys.exit("Error: d0Re_err must be a number.")         
             if line_split[0].lower()=='par1':
                 if len(line_split)!=2 and len(line_split)!=3:
                     sys.exit('Wrong set up of par1')
@@ -329,8 +345,8 @@ def main():
             sys.exit('Error: par6 minimum value is larger than the maximum.')
 
         #!! YOU CAN MAKE SOME SAFETY FEATURES HERE, OR REMOVE THOSE IF THEY MAKE NO SENSE
-        #if par2_range[0] <= 0:
-            #sys.exit('par2 is the width of the potential and should be non-zero and positive.')
+        # if par2_range[0] <= 0:
+        # sys.exit('par2 is the width of the potential and should be non-zero and positive.')
 
         if pot not in ["ComplexGaussian"]:
             sys.exit("Error: pot should be selected from 'ComplexGaussian'")
@@ -359,13 +375,20 @@ def main():
             fIm_err = abs(0.01*fIm_goal)
             if fIm_err < 0.01:
                 fIm_err = 0.01
+        # if d0Re_err==0:
+        #     d0Re_err = abs(0.01*d0Re_goal)
+        #     if d0Re_err < 0.01:
+        #         d0Re_err = 0.01
 
         fRe_err_current = fRe_err*10
         fIm_err_current = fIm_err*10
+        # d0Re_err_current = d0Re_err*10
+        
         UniqueID = 0
         BestEstimator = 1e64
         Best_fRe = 1e64
         Best_fIm = 1e64
+        # Best_d0Re = 1e64
         Best_par1 = 0
         Best_par2 = 0
         Best_par3 = 0
@@ -374,10 +397,10 @@ def main():
         Best_par6 = 0
         Progress_fRe = 0
         Progress_fIm = 0
-
+        Progress_d0Re = 0        
         TotExeTime = 0
         StartTime = time.time()/60.
-        #we re-iterate until we reach our convergence criteria
+        # we re-iterate until we reach our convergence criteria
         while (fRe_err_current>fRe_err or fIm_err_current>fIm_err) and TotExeTime<TIMEOUT:
             TrialsCPU = []
             FilesIn = []
@@ -397,7 +420,7 @@ def main():
                 fileNameOut = fileBaseJob+".root"
                 FilesIn.append(fileNameIn)
                 FilesOut.append(fileNameOut)
-                #EstimatorsCPU.append(0)
+                # EstimatorsCPU.append(0)
 
                 trial = studyT.ask()
                 TrialsCPU.append(trial)
@@ -435,9 +458,9 @@ def main():
                     CurrentPar6.append(trial.params['v_par6'])
 
                 run_script(fileBaseJob)
-            #for iCPU in range(0,CPU)
+            # for iCPU in range(0,CPU)
 
-            #wait for all jobs to finish
+            # wait for all jobs to finish
             StartWaitTime = time.time()/60.
             NumRunningJobs = CPU
             while NumRunningJobs>0 and (time.time()/60.-StartWaitTime)<FIT_TIMEOUT:
@@ -452,7 +475,7 @@ def main():
             time.sleep(0.5)
             if NumRunningJobs>0:
                 print('WARNING: Some jobs have failed')
-            #after all jobs are done, we collect the output
+            # after all jobs are done, we collect the output
             for iCPU in range(0,CPU):
                 if os.path.exists(FilesOut[iCPU]):
                     try:
@@ -465,8 +488,10 @@ def main():
                         Estimator = 0.0
                         Current_fRe = hScattPars.GetBinContent(1)
                         Current_fIm = hScattPars.GetBinContent(2)
+                        # Current_d0Re = hScattPars.GetBinContent(3)
                         Estimator += ( (Current_fRe-fRe_goal)/fRe_err )**2
                         Estimator += ( (Current_fIm-fIm_goal)/fIm_err )**2
+                        # Estimator += ( (Current_d0Re-d0Re_goal)/d0Re_err )**2
 
                         if BestEstimator>Estimator:
 
@@ -480,11 +505,13 @@ def main():
 
                             Best_fRe = Current_fRe
                             Best_fIm = Current_fIm
+                            # Best_d0Re = Current_d0Re
                             
                             fRe_err_current = abs(Best_fRe-fRe_goal)
                             fIm_err_current = abs(Best_fIm-fIm_goal)
-                            #print("fRe_err_current = ",fRe_err_current,"\n")
-                            #print("fIm_err_current = ",fIm_err_current,"\n")
+                            # d0Re_err_current = abs(Best_d0Re-d0Re_goal)
+                            # print("fRe_err_current = ",fRe_err_current,"\n")
+                            # print("fIm_err_current = ",fIm_err_current,"\n")
 
                             if fRe_err_current==0:
                                 Progress_fRe = 1
@@ -494,13 +521,21 @@ def main():
                                 Progress_fIm = 1
                             else:
                                 Progress_fIm = fIm_err/fIm_err_current
+                                
+                            # if d0Re_err_current==0:
+                            #     Progress_d0Re = 1
+                            # else:
+                            #     Progress_d0Re = d0Re_err/d0Re_err_current
+
                             # The message you want to update
                             if Progress_fRe>1:
                                 Progress_fRe = 1
                             if Progress_fIm>1:
                                 Progress_fIm = 1
-                            print(f"Progress: fRe({Progress_fRe*100:.1f} %) = {Best_fRe:.3f} fm     fIm({Progress_fIm*100:.1f} %) = {Best_fIm:.3f} fm        ", end="\r")
-                                
+                            # if Progress_d0Re>1:
+                            #     Progress_d0Re = 1
+                            print(f"Progress: fRe({Progress_fRe*100:.1f} %) = {Best_fRe:.3f} fm     fIm({Progress_fIm*100:.1f} %) = {Best_fIm:.3f} fm", end="\r")
+
                             best_file = ROOT.TFile.Open(BaseFileName+"_BestSolution.root","recreate")
                             hScattPars.Write()
                             hPotentialReal.Write()
@@ -511,17 +546,18 @@ def main():
                             with open(BaseFileName+"_BestSolution.txt", 'a') as fupdate:
                                 fupdate.write( "fRe_best     "+str(Best_fRe)+"\n")
                                 fupdate.write( "fIm_best     "+str(Best_fIm)+"\n")
+                                # fupdate.write( "d0Re_best     "+str(Best_d0Re)+"\n")
 
                         studyT.tell(TrialsCPU[iCPU],Estimator)
                         root_file.Close()
-                        #clean up
+                        # clean up
                         os.remove(FilesOut[iCPU])
                         os.remove(FilesIn[iCPU])
                     except OSError:
                         pass
-            #for iCPU in range(0,CPU)
+            # for iCPU in range(0,CPU)
             TotExeTime = time.time()/60.-StartTime
-        #while f_err_current>f_err or d_err_current>d_err
+        # while f_err_current>f_err or d_err_current>d_err
 
         print("\nSUMMARY:")
         if fRe_err_current<=fRe_err and fIm_err_current<=fIm_err:
@@ -530,6 +566,7 @@ def main():
             print(" - The script terminated due to timeout!")
         print(f" - Obtained fRe = {Best_fRe:.3f} fm")
         print(f" - Obtained fIm = {Best_fIm:.3f} fm")
+        # print(f" - Obtained d0Re = {Best_d0Re:.3f} fm")
         print(" - The potential was "+pot)
         print(f"   par1 = {Best_par1:.2f}")
         print(f"   par2 = {Best_par2:.5f}")
