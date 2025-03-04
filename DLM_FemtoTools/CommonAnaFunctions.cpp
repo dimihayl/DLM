@@ -9139,7 +9139,435 @@ bool PotentialDesignerEngine(char* BaseFileName){
   return true;
 }
 
+bool PotentialDesignerImEngine(char *BaseFileName)
+{
+    TString RootFileName = TString(BaseFileName) + ".root"; // output (WILL BE REWRITEN!!!!)
+    TString TextFileName = TString(BaseFileName) + ".fit";  // input
+
+    double Mass1 = 0;
+    double Mass2 = 0;
+    unsigned short usPW = 0;
+    int Q1Q2 = 0;
+
+    double kMin = 0;          // min momentum for the fit to the PS (0)
+    double kMax = 100;        // max momentum for the fit to the PS (100)
+    unsigned kBin = 50;       // num mommentum bins for the fit to the PS (50)
+    unsigned nPar = 3;        // number of parameters for the effective range expansion when fitting the PS (3)
+    double eps = 1e-8;        // the numerical precision parameter (1e-8)
+    bool out = true;          // do we save the fit in the .root output file, allowed values are 0 and 1 (default is yes = 1)
+    char *pot = new char[64]; // Gauss, DoubleGauss (default), Yukawa, YukawaDLM (modified to have some repulsive core to avoid singulartities)
+    strcpy(pot, "ComplexGaussian");
+    char *pw = new char[4]; // in which partial wave should we place the potential. Possible values are s,p,d,f , s is the default
+    strcpy(pw, "s");
+    unsigned short NumPW;
+    int coulomb = 0; // do we include the coulomb in the evaluation (give q1*q2). By default 0 (no).
+    double par1 = 0;
+    double par2 = 0.5;
+    double par3 = 0;
+    double par4 = 0.5;
+    double par5 = 0;
+    double par6 = 0.5;
+
+    double rMin = 0;
+    double rMax = 8;
+    unsigned rBin = 1024;
+
+    // this is for the output
+    TH1F *hPhaseShifts = NULL;
+    TH1F *hScattPars = NULL;
+    TH1F *hPotentialReal = NULL;
+    TH1F *hPotentialImag = NULL;
+
+    CATSparameters *pPars = NULL;
+    CATSparameters cPars(CATSparameters::tSource, 1, true);
+    CATS Kitty;
+
+    FILE *InFile;
+    InFile = fopen(TextFileName.Data(), "r");
+    if (InFile == nullptr)
+    {
+        printf("\033[1;31mERROR:\033[0m Cannot open the file %s!\n", TextFileName.Data());
+        delete[] pw;
+        delete[] pot;
+        return false;
+    }
+
+    char *ch_dummy_1 = new char[128];
+    char *ch_dummy_2 = new char[128];
+
+    while (!feof(InFile))
+    {
+        if (!fscanf(InFile, "%s %s", ch_dummy_1, ch_dummy_2))
+        {
+            printf("\033[1;33mWARNING (1)!\033[0m Possible bad input-file, error when reading from %s!\n", TextFileName.Data());
+        }
+
+        // Consume remaining characters on the line
+        int chr;
+        // std::cout << "XXX\n";
+        do
+        {
+            chr = fgetc(InFile);
+            // std::cout << chr;
+        } while (chr != EOF && chr != '\n');
+        // std::cout << "\n";
+
+        printf("%s %s\n", ch_dummy_1, ch_dummy_2);
+
+        // convert to only lower letters
+        for (int ich = 0; ich < strlen(ch_dummy_1); ich++)
+        {
+            ch_dummy_1[ich] = tolower(ch_dummy_1[ich]);
+        }
+        for (int ich = 0; ich < strlen(ch_dummy_2); ich++)
+        {
+            ch_dummy_2[ich] = tolower(ch_dummy_2[ich]);
+        }
+
+        if (strcmp(ch_dummy_1, "m1") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic m1 value!\n", TextFileName.Data());
+            }
+            else
+            {
+                Mass1 = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "m2") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic m2 value!\n", TextFileName.Data());
+            }
+            else
+            {
+                Mass2 = atof(ch_dummy_2);
+            }
+        }
+        /*
+        if(strcmp(ch_dummy_1,"f_goal")==0){
+          if(!isNumber(ch_dummy_2)){
+            printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic scattering length!\n",TextFileName.Data());
+          }
+          else{
+            f_goal = atof(ch_dummy_2);
+          }
+        }
+        if(strcmp(ch_dummy_1,"f_err")==0){
+          if(!isNumber(ch_dummy_2)){
+            printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic error of the scattering length!\n",TextFileName.Data());
+          }
+          else{
+            f_err = atof(ch_dummy_2);
+          }
+        }
+        if(strcmp(ch_dummy_1,"d_goal")==0){
+          if(!isNumber(ch_dummy_2)){
+            printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic effective range!\n",TextFileName.Data());
+          }
+          else{
+            d_goal = atof(ch_dummy_2);
+          }
+        }
+        if(strcmp(ch_dummy_1,"d_err")==0){
+          if(!isNumber(ch_dummy_2)){
+            printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic error of the error of the effective range!\n",TextFileName.Data());
+          }
+          else{
+            d_err = atof(ch_dummy_2);
+          }
+        }
+        */
+        if (strcmp(ch_dummy_1, "kmin") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic value for kMin!\n", TextFileName.Data());
+            }
+            else
+            {
+                kMin = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "kmax") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic value for kMin!\n", TextFileName.Data());
+            }
+            else
+            {
+                kMax = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "kbin") == 0)
+        {
+            if (!isInteger(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-integer value for kBin!\n", TextFileName.Data());
+            }
+            else
+            {
+                kBin = atoi(ch_dummy_2);
+            }
+        }
+        // if(strcmp(ch_dummy_1,"npar")==0){
+        //   if(!isInteger(ch_dummy_2)){
+        //     printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-integer value for nPar!\n",TextFileName.Data());
+        //   }
+        //   else{
+        //     nPar = atoi(ch_dummy_2);
+        //   }
+        // }
+        if (strcmp(ch_dummy_1, "eps") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numberic value for eps!\n", TextFileName.Data());
+            }
+            else
+            {
+                eps = atof(ch_dummy_2);
+            }
+        }
+        // if(strcmp(ch_dummy_1,"out")==0){
+        //   if(!isInteger(ch_dummy_2)){
+        //     printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-integer value for 'out'!\n",TextFileName.Data());
+        //   }
+        //   else{
+        //     out = bool(atoi(ch_dummy_2));
+        //   }
+        // }
+        if (strcmp(ch_dummy_1, "pot") == 0)
+        {
+            if (strcmp(ch_dummy_2, "complexgaussian"))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set an unknown potential %s!\n", TextFileName.Data(), ch_dummy_2);
+            }
+            else
+            {
+                strcpy(pot, ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "pw") == 0)
+        {
+            if (strcmp(ch_dummy_2, "s") && strcmp(ch_dummy_2, "p") && strcmp(ch_dummy_2, "d") && strcmp(ch_dummy_2, "f"))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set an unknown partial wave %s!\n", TextFileName.Data(), ch_dummy_2);
+            }
+            else
+            {
+                strcpy(pw, ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "coulomb") == 0)
+        {
+            if (!isInteger(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-integer value for Q1*Q2 (Coulomb)!\n", TextFileName.Data());
+            }
+            else
+            {
+                coulomb = atoi(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "v_par1") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numerical value for par1!\n", TextFileName.Data());
+            }
+            else
+            {
+                par1 = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "v_par2") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numerical value for par2!\n", TextFileName.Data());
+            }
+            else
+            {
+                par2 = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "v_par3") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numerical value for par3!\n", TextFileName.Data());
+            }
+            else
+            {
+                par3 = atof(ch_dummy_2);
+                
+            }
+        }
+        if (strcmp(ch_dummy_1, "v_par4") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numerical value for par4!\n", TextFileName.Data());
+            }
+            else
+            {
+                par4 = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "v_par5") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numerical value for par5!\n", TextFileName.Data());
+            }
+            else
+            {
+                par5 = atof(ch_dummy_2);
+            }
+        }
+        if (strcmp(ch_dummy_1, "v_par6") == 0)
+        {
+            if (!isNumber(ch_dummy_2))
+            {
+                printf("\033[1;33mWARNING!\033[0m Possible bad input-file (%s), trying to set a non-numerical value for par6!\n", TextFileName.Data());
+            }
+            else
+            {
+                par6 = atof(ch_dummy_2);
+            }
+        }
+    }
+    fclose(InFile);
+
+    if (Mass1 <= 0 || Mass2 <= 0)
+    {
+        printf("\033[1;31mERROR:\033[0m The mass had to be positive and non-zero!\n");
+        delete[] ch_dummy_1;
+        delete[] ch_dummy_2;
+        delete[] pw;
+        delete[] pot;
+        return false;
+    }
+    if (strcmp(pw, "s") == 0)
+        NumPW = 1;
+    if (strcmp(pw, "p") == 0)
+        NumPW = 2;
+    if (strcmp(pw, "d") == 0)
+        NumPW = 3;
+    if (strcmp(pw, "f") == 0)
+        NumPW = 4;
+
+    // if(f_goal && f_err==0){
+    //   f_err = 0.01*fabs(f_goal);
+    // }
+    // if(d_goal && d_err==0){
+    //   d_err = 0.01*fabs(d_goal);
+    // }
+    // if(f_goal && d_goal==0 && d_err==0){
+    //   d_err = 0.05;
+    // }
+
+    Kitty.SetMomBins(kBin, kMin, kMax);
+    Kitty.SetThetaDependentSource(false);
+    cPars.SetParameter(0, 1.0);
+    Kitty.SetAnaSource(GaussSource, cPars);
+    Kitty.SetAutoNormSource(false);
+    Kitty.SetUseAnalyticSource(true);
+    Kitty.SetMomentumDependentSource(false);
+
+    Kitty.SetExcludeFailedBins(false);
+    Kitty.SetQ1Q2(coulomb);
+    Kitty.SetQuantumStatistics(false);
+    Kitty.SetRedMass((Mass1 * Mass2) / (Mass1 + Mass2));
+    Kitty.SetNumChannels(1);
+    Kitty.SetNumPW(0, NumPW);
+    Kitty.SetChannelWeight(0, 1);
+    Kitty.SetUsingiCATS(true);
+    if (strcmp(pot, "complexgaussian") == 0)
+    {
+        pPars = new CATSparameters(CATSparameters::tPotential, 3, true);
+        pPars->SetParameter(0, par1);
+        pPars->SetParameter(1, par2);
+        pPars->SetParameter(2, par3);/// MUST BE SETTED otherwise BUG!!
+        Kitty.SetShortRangePotential(0, NumPW - 1, ComplexGaussian, *pPars);
+        Kitty.SetShortRangePotential(0, NumPW - 1, 0, par1);
+        Kitty.SetShortRangePotential(0, NumPW - 1, 1, par2);
+        Kitty.SetShortRangePotential(0, NumPW - 1, 2, par3);
+        // cout << "Inside Engine" <<endl;
+        // printf("p1 = %f\n",par1);
+        // printf("p2 = %f\n",par2);
+        // printf("p3 = %f\n",par3);
+    }
+    Kitty.SetEpsilonConv(eps);
+    Kitty.SetEpsilonProp(eps);
+
+    Kitty.SetNotifications(CATS::nWarning);
+    Kitty.KillTheCat();
+
+    array<complex<double>, 2> ScattPars = Kitty.EvalComplexScatPars(0, NumPW - 1);
+    complex<double> ScattLen = ScattPars[0];
+    complex<double> EffRan = ScattPars[1];
+
+    cout << "Inside Engine getting Scatt Pars" << endl;
+    cout << "ScattLen" << ScattLen << endl;
+    cout << "EffRan" << EffRan << endl;
+
+    hScattPars = new TH1F("hScattPars", "hScattPars", 4, 0.5, 4.5);
+    hScattPars->SetBinContent(1, real(ScattPars[0]));
+    hScattPars->SetBinContent(2, imag(ScattPars[0]));
+    hScattPars->SetBinContent(3, real(ScattPars[1]));
+    hScattPars->SetBinContent(4, imag(ScattPars[1]));
+
+    hPotentialReal = new TH1F("hPotentialReal", "hPotentialReal", rBin, rMin, rMax);
+    hPotentialImag = new TH1F("hPotentialImag", "hPotentialImag", rBin, rMin, rMax);
+    for (unsigned uRad = 0; uRad < rBin; uRad++)
+    {
+        double RAD = hPotentialReal->GetBinCenter(uRad + 1);
+        hPotentialReal->SetBinContent(uRad + 1, real(Kitty.EvaluateTheComplexPotential(0, NumPW - 1, 0.5 * (kMin + kMax), RAD)));
+        hPotentialImag->SetBinContent(uRad + 1, imag(Kitty.EvaluateTheComplexPotential(0, NumPW - 1, 0.5 * (kMin + kMax), RAD)));
+    }
+
+    TFile fOutput(RootFileName, "recreate");
+    hScattPars->Write();
+    hPotentialReal->Write();
+    hPotentialImag->Write();
+
+    delete[] ch_dummy_1;
+    delete[] ch_dummy_2;
+    if (hPhaseShifts)
+    {
+        delete hPhaseShifts;
+        hPhaseShifts = NULL;
+    }
+    if (hScattPars)
+    {
+        delete hScattPars;
+        hScattPars = NULL;
+    }
+    if (hPotentialReal)
+    {
+        delete hPotentialReal;
+        hPotentialReal = NULL;
+    }
+    if (hPotentialImag)
+    {
+        delete hPotentialImag;
+        hPotentialImag = NULL;
+    }
+    if (pPars)
+    {
+        delete pPars;
+        pPars = NULL;
+    }
+    return true;
+}
+
 TF1* fit_source_kdp(TH1F* hSrc, KdpPars& SrcPar, double& Chi2, double Chi2_Limit, double KdpFitMax, int KdpMode){
+
   double lowerlimit, upperlimit;
   GetCentralInterval(*hSrc, 0.98, lowerlimit, upperlimit, true);
   //if(lowerlimit>5) lowerlimit = 5;

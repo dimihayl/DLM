@@ -135,10 +135,10 @@ void DLM_Ck::DefaultConstructor(){
     SourcePar = NULL;
     PotPar = NULL;
     CutOff = BinRange[0][NumBins[0]];
-    if(CkFunction){
+    // if(CkFunction){
         if(NumSourcePar) SourcePar = new double [NumSourcePar];
         if(NumPotPar) PotPar = new double [NumPotPar];
-    }
+    // }
     SourceUpToDate = false;
     PotUpToDate = false;
     CutOff = 1e6;
