@@ -1208,6 +1208,7 @@ FragCorr = 1;
       unsigned char ud=0;
       std::vector<float> cos_th;
       for(unsigned ID : pid){
+        //printf("ud = %u\n",ud);
         boost_v = boost_v+*(Primary.at(ID)->Cats());//
         prt_cm[ud] = *Primary.at(ID);
         prt_lab[ud] = *Primary.at(ID); 
@@ -1276,6 +1277,7 @@ FragCorr = 1;
 //WHAT HE MEANS IS A REF FRAME WHERE ALL PARTICLES ARE APPROX NON RELATIVISTIC
       //Definitions relevant for 3-body studies
       if(SDIM==3){
+        //printf("hello\n");
         double m1 = prt_cm[0].Cats()->GetMass();
         double m2 = prt_cm[1].Cats()->GetMass();
         double m3 = prt_cm[2].Cats()->GetMass();
@@ -1297,6 +1299,9 @@ FragCorr = 1;
         std::vector<double> v_r1 = {prt_cm[0].Cats()->GetX(), prt_cm[0].Cats()->GetY(), prt_cm[0].Cats()->GetZ()};
         std::vector<double> v_r2 = {prt_cm[1].Cats()->GetX(), prt_cm[1].Cats()->GetY(), prt_cm[1].Cats()->GetZ()};
         std::vector<double> v_r3 = {prt_cm[2].Cats()->GetX(), prt_cm[2].Cats()->GetY(), prt_cm[2].Cats()->GetZ()};
+        //the pCM is zero, but clearcly not the rCM. The def below I got from ChatGPT
+        std::vector<double> v_rCM;
+        
 
         std::vector<double> v_p1 = {prt_cm[0].Cats()->GetPx(), prt_cm[0].Cats()->GetPy(), prt_cm[0].Cats()->GetPz()};
         std::vector<double> v_p2 = {prt_cm[1].Cats()->GetPx(), prt_cm[1].Cats()->GetPy(), prt_cm[1].Cats()->GetPz()};
@@ -1307,7 +1312,11 @@ FragCorr = 1;
         for(unsigned uv=0; uv<3; uv++){
           v_r12.push_back(v_r1[uv]-v_r2[uv]);
           v_k12.push_back((m2*v_p1[uv]-m1*v_p2[uv])/(m1+m2));
+          v_rCM.push_back((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
         }
+        //printf("v_rCM = %.3f %.3f %.3f\n", v_rCM[0], v_rCM[1], v_rCM[2]);
+        //printf("mu12/Malpha = %.3f; mu3_12/Malpha = %.3f; Malpha = %.3f\n",mu12/Malpha, mu3_12/Malpha, Malpha);
+
         std::vector<double> v_r3_12; 
         std::vector<double> v_k3_12; 
         for(unsigned uv=0; uv<3; uv++){
@@ -1325,6 +1334,15 @@ FragCorr = 1;
           v_rho.push_back(sqrt(mu3_12/Malpha)*v_r3_12[uv]);
           v_Q3.push_back(sqrt(Malpha/mu3_12)*v_k3_12[uv]);  
         }
+
+        //chat gpt style
+        double rho_val = 0;
+        for (size_t i = 0; i < 3; ++i) {
+          rho_val += m1 * pow(v_r1[i] - v_rCM[i], 2);
+          rho_val += m2 * pow(v_r2[i] - v_rCM[i], 2);
+          rho_val += m3 * pow(v_r3[i] - v_rCM[i], 2);
+         }      
+         rho_val = sqrt(rho_val/mtot);  
             
         //double r12 = 0;
         //for(unsigned uv=0; uv<3; uv++) r12 += pow(v_r1.at(uv) - v_r2.at(uv), 2.);
@@ -1355,12 +1373,15 @@ FragCorr = 1;
         //double Q3 = sqrt(alpha_m*k12*k12 + 2*beta_m*dot_k12_k3_12 + gamma_m*k3_12*k3_12);
         double hyp_rad = 0;
         double Q3 = 0;
+        //averaged per particle
+        double mT = boost_v.GetMt()/3.;
         for(unsigned uv=0; uv<6; uv++){
           hyp_rad+=v_rho[uv]*v_rho[uv];
-          Q3+=v_Q3[uv]*v_rho[uv];
+          Q3+=v_Q3[uv]*v_Q3[uv];
         }
         hyp_rad = sqrt(hyp_rad);
         Q3 = sqrt(Q3);
+        //printf("hyp_rad, rho_val, ratio, Q3, mT = %.3f %.3f %.3f %.3f %.3f\n",hyp_rad,rho_val,rho_val/hyp_rad,Q3,mT);
 
         if(Q3<FemtoLimit){
           FemtoPermutations++;
@@ -1368,7 +1389,12 @@ FragCorr = 1;
 
         #pragma omp critical
         {
-        Ghetto_kstar_rstar->Fill(Q3,hyp_rad);
+        Ghetto_kstar_rstar->Fill(Q3,rho_val);
+        Ghetto_kstar_rstar_mT->Fill(Q3,rho_val,mT);
+        if(Q3<FemtoLimit){
+          GhettoFemto_mT_rstar->Fill(mT,rho_val);
+        }
+        
         }
         
 /*
