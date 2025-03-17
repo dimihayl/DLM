@@ -46,8 +46,12 @@ DLM_Histo<complex<double>>*** Init_pd_Sebastian(const char* InputFolder, CATS& K
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE=0);
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE=0);
 
-DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS &Kitty, const int &CUTOFF = 500);
-DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS *Kitty, const int &CUTOFF = 500);
+/// TYPE selects the different models implemented in Eur.Phys.J.A 56 (2020) 7, 184
+/// TYPE = 0 -> LQCDe (CUTOFF=500,CUTOFF=600)
+/// TYPE = 1 -> Model A (CV) most attractive
+/// TYPE = 2 -> CTNN-d (OKA) bound state
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS &Kitty, const int &TYPE, const int &CUTOFF = 500);
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS *Kitty, const int &TYPE, const int &CUTOFF = 500);
 
 void CleanUpWfHisto(const unsigned short& NumChannels, DLM_Histo<complex<double>>***& Histo);
 void CleanUpWfHisto(const CATS& Kitty, DLM_Histo<complex<double>>***& Histo);

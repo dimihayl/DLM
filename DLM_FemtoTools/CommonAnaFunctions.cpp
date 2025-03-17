@@ -3991,12 +3991,12 @@ CLEAN_SetUpCats_pApHaide:;
     CleanUpWfHisto(Kitty, ExternalWF);
 }
 
-void DLM_CommonAnaFunctions::SetUpCats_Lcp_LQCDe(CATS &Kitty, const TString &SOURCE, const int &CUTOFF)
+void DLM_CommonAnaFunctions::SetUpCats_Lcp(CATS &Kitty, const TString &SOURCE, const int &TYPE, const int &CUTOFF)
 {
     CATSparameters *cPars = NULL;
 
     DLM_Histo<complex<double>> ***ExternalWF = NULL;
-    unsigned NumChannels = 8;
+    unsigned NumChannels = 0;
 
     double rad1;
     double rad2;
@@ -4004,7 +4004,7 @@ void DLM_CommonAnaFunctions::SetUpCats_Lcp_LQCDe(CATS &Kitty, const TString &SOU
     double lam_source;
 
     rad1 = 1.2;
-    ExternalWF = Init_Lcp_Haidenbauer("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Johann/Lc_Proton/", Kitty, CUTOFF);
+    ExternalWF = Init_Lcp_Haidenbauer("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Johann/Lc_Proton/", Kitty, TYPE, CUTOFF);
 
     if (SOURCE == "Gauss")
     {
@@ -4032,7 +4032,17 @@ void DLM_CommonAnaFunctions::SetUpCats_Lcp_LQCDe(CATS &Kitty, const TString &SOU
         printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
         goto CLEAN_SetUpCats_pApHaide;
     }
-
+    if(TYPE==0)
+    {
+        NumChannels=8;
+    }else if(TYPE==1)
+    {
+        NumChannels=2;
+    }
+    else if (TYPE == 2)
+    {
+        NumChannels = 2;
+    }
     Kitty.SetMomentumDependentSource(false);
     Kitty.SetThetaDependentSource(false);
     Kitty.SetExcludeFailedBins(false);
