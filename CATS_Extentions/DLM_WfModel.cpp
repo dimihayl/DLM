@@ -2770,7 +2770,7 @@ DLM_Histo<complex<double>>*** Init_pL_Haidenbauer2023(const char* InputFolder, C
     return Init_pL_Haidenbauer2023(InputFolder,*Kitty,Singlet,Triplet);
 }
 
-DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS &Kitty, const int &CUTOFF)
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS &Kitty, const int &TYPE, const int &CUTOFF)
 {
     double RadiusStepSize;
     double RadiusMinimum;
@@ -2792,9 +2792,23 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
     RadiusStepSize = 0.02;
     RadiusMinimum = 0.02;
     RadiusMaximum = 10.;
-    NumChannels = 8;
-    NumPwPerCh = 1;//only s-wave
-    NumFiles = 4; // For each cutoff: 2 CE for only Lcp->Lcp, 2 SE for Scp->Lcp
+
+    NumPwPerCh = 1; // only s-wave
+
+    if(TYPE==0)//LQCDe
+    {
+        NumChannels = 8;
+        NumFiles = 4; // For each cutoff: 2 CE for only Lcp->Lcp, 2 SE for Scp->Lcp
+    }if(TYPE==1)
+    {
+        NumChannels = 2;
+        NumFiles = 2; // 1S0,3S1 no ScN
+    }else if(TYPE==2)
+    {
+        NumChannels = 2;
+        NumFiles = 2; // 1S0,3S1 no ScN
+    }
+
     int LcPdgId = 4122;
     int ScppPdgId = 4222;
     int ScpPdgId = 4212;
@@ -2804,33 +2818,53 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
     const double Mass_Lc = 2286.46;
     const double Mass_p = 938.272;
     Kitty.SetRedMass((Mass_Lc * Mass_p) / (Mass_Lc + Mass_p));
-    // Channels are:
-    //[0] is 1S0 Lcp->Lcp
-    //[1] is 3S1 Lcp->Lcp
-    //[2] is 1S0 Sc+p->Lcp
-    //[3] is 3S1-3S1 Sc+p->Lcp
-    //[4] is 1S0 Sc++n->Lcp
-    //[5] is 3S1-3S1 Sc++n->Lcp
-    //[6] is 3D1-3S1 Sc+p->Lcp
-    //[7] is 3D1-3S1 Sc++n->Lcp
+
     Kitty.SetNumChannels(NumChannels);
-    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    if(TYPE==0)
     {
-        Kitty.SetNumPW(uCh, NumPwPerCh);
-        Kitty.SetChannelWeight(uCh, uCh % 2 == 0 ? 0.25 : 0.75);
-        Kitty.SetSpin(uCh, uCh % 2 == 0 ? 0 : 1);
-        if(uCh==6 || uCh==7)
+        // Channels are:
+        //[0] is 1S0 Lcp->Lcp
+        //[1] is 3S1 Lcp->Lcp
+        //[2] is 1S0 Sc+p->Lcp
+        //[3] is 3S1-3S1 Sc+p->Lcp
+        //[4] is 1S0 Sc++n->Lcp
+        //[5] is 3S1-3S1 Sc++n->Lcp
+        //[6] is 3D1-3S1 Sc+p->Lcp
+        //[7] is 3D1-3S1 Sc++n->Lcp
+        for (unsigned uCh = 0; uCh < NumChannels; uCh++)
         {
-            Kitty.SetChannelWeight(uCh, 0.75);///0.33??
-            Kitty.SetSpin(uCh,1.);
+            Kitty.SetNumPW(uCh, NumPwPerCh);
+            Kitty.SetChannelWeight(uCh, uCh % 2 == 0 ? 0.25 : 0.75);
+            Kitty.SetSpin(uCh, uCh % 2 == 0 ? 0 : 1);
+            if (uCh == 6 || uCh == 7)
+            {
+                Kitty.SetChannelWeight(uCh, 0.75); /// 0.33??
+                Kitty.SetSpin(uCh, 1.);
+            }
         }
-    }
 
-    for (unsigned short uCh = 2; uCh < NumChannels; uCh++)
-    {
-        Kitty.SetOnlyNumericalPw(uCh, true);
+        for (unsigned short uCh = 2; uCh < NumChannels; uCh++)
+        {
+            Kitty.SetOnlyNumericalPw(uCh, true);
+        }
+    }else if(TYPE==1)
+    { // Channels are:
+        //[0] is 1S0 Lcp->Lcp
+        //[1] is 3S1 Lcp->Lcp
+        Kitty.SetNumPW(0, 1);
+        Kitty.SetNumPW(1, 1);
+        Kitty.SetChannelWeight(0, 0.25);
+        Kitty.SetChannelWeight(1, 0.75);
     }
-
+    else if (TYPE == 2)
+    { // Channels are:
+        //[0] is 1S0 Lcp->Lcp
+        //[1] is 3S1 Lcp->Lcp
+        Kitty.SetNumPW(0, 1);
+        Kitty.SetNumPW(1, 1);
+        Kitty.SetChannelWeight(0, 0.25);
+        Kitty.SetChannelWeight(1, 0.75);
+    }
     const unsigned NumRadBins = round((RadiusMaximum - RadiusMinimum) / RadiusStepSize) + 1 + 1;
     double *RadBins = new double[NumRadBins + 1];
     bool *RadBinLoaded = new bool[NumRadBins + 1];
@@ -2867,25 +2901,35 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
         InputFileName[uFile] = new char[256];
         strcpy(InputFileName[uFile], InputFolder);
     }
-    if(CUTOFF==500)
+    if(TYPE==0){
+        if (CUTOFF == 500)
+        {
+            strcat(InputFileName[f1S0], "CE51s0.data");
+            strcat(InputFileName[f3S1], "CE53s1.data");
+            strcat(InputFileName[f1S0SC], "SE51s0.data");
+            strcat(InputFileName[f3S1SC], "SE53s1.data");
+        }
+        else if (CUTOFF == 600)
+        {
+            strcat(InputFileName[f1S0], "CE61s0.data");
+            strcat(InputFileName[f3S1], "CE63s1.data");
+            strcat(InputFileName[f1S0SC], "SE61s0.data");
+            strcat(InputFileName[f3S1SC], "SE63s1.data");
+        }
+        else
+        {
+            printf("YOU BROKE SOMETHING in Init_Lcp_Haidenbauer\n");
+        }
+    }else if(TYPE==1)
     {
-        strcat(InputFileName[f1S0], "CE51s0.data");
-        strcat(InputFileName[f3S1], "CE53s1.data");
-        strcat(InputFileName[f1S0SC], "SE51s0.data");
-        strcat(InputFileName[f3S1SC], "SE53s1.data");
+        strcat(InputFileName[f1S0], "CV1s0.data");
+        strcat(InputFileName[f3S1], "CV3s1.data");
     }
-    else if (CUTOFF == 600)
+    else if (TYPE == 2)
     {
-        strcat(InputFileName[f1S0], "CE61s0.data");
-        strcat(InputFileName[f3S1], "CE63s1.data");
-        strcat(InputFileName[f1S0SC], "SE61s0.data");
-        strcat(InputFileName[f3S1SC], "SE63s1.data");
+        strcat(InputFileName[f1S0], "COKA1s0.data");
+        strcat(InputFileName[f3S1], "COKA3s1.data");
     }
-    else
-    {
-        printf("YOU BROKE SOMETHING in Init_Lcp_Haidenbauer\n");
-    }
-
     FILE *InFile;
     InFile = fopen(InputFileName[0], "r");
     if (!InFile)
@@ -3039,46 +3083,90 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
             //     f1S0SC,
             //     f3S1SC
             // };
-            if(uFile==0) 
+            if(TYPE==0)
             {
-                sscanf(cdummy, " %f %f %f %f %f %f %f %f",
-                       &fRadius, &fDummy, &fReWf_1s0, &fImWf_1s0, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
-                // fDummy1 =0;
-                // fDummy2 = 0;
-                // fDummy3 = 0;
-                // fDummy4 = 0;
-            } else if(uFile==1)
+                if (uFile == 0)
+                {
+                    sscanf(cdummy, " %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fReWf_1s0, &fImWf_1s0, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                    // fDummy1 =0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
+                else if (uFile == 1)
+                {
+                    sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fReWf_3s1, &fImWf_3s1, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                    // fDummy1 = 0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
+                else if (uFile == 2)
+                {
+                    sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fDummy1, &fDummy2, &fReWf_Scp_1s0, &fImWf_Scp_1s0, &fReWf_Scpp_1s0, &fImWf_Scpp_1s0);
+                    // fDummy1 = 0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
+                else if (uFile == 3)
+                {
+                    sscanf(cdummy, "  %f %f %f %f %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fDummy1, &fDummy2, &fReWf_Scp_3d13s1, &fImWf_Scp_3d13s1, &fReWf_Scp_3s1, &fImWf_Scp_3s1, &fReWf_Scpp_3d13s1, &fImWf_Scpp_3d13s1, &fReWf_Scpp_3s1, &fImWf_Scpp_3s1);
+                    // fDummy1 = 0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
+                else
+                {
+                    printf("Oh man... something wrong in scanning files in Init_Lcp_Haidenbauer.\n");
+                }
+            }else if(TYPE==1)
             {
-                sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
-                       &fRadius, &fDummy, &fReWf_3s1, &fImWf_3s1, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
-                // fDummy1 = 0;
-                // fDummy2 = 0;
-                // fDummy3 = 0;
-                // fDummy4 = 0;
+                if (uFile == 0)
+                {
+                    sscanf(cdummy, " %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fReWf_1s0, &fImWf_1s0, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                    // fDummy1 =0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
+                else if (uFile == 1)
+                {
+                    sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fReWf_3s1, &fImWf_3s1, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                    // fDummy1 = 0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
             }
-            else if (uFile == 2)
+            else if (TYPE == 2)
             {
-                sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
-                       &fRadius, &fDummy, &fDummy1, &fDummy2, &fReWf_Scp_1s0, &fImWf_Scp_1s0, &fReWf_Scpp_1s0, &fImWf_Scpp_1s0);
-                // fDummy1 = 0;
-                // fDummy2 = 0;
-                // fDummy3 = 0;
-                // fDummy4 = 0;
+                if (uFile == 0)
+                {
+                    sscanf(cdummy, " %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fReWf_1s0, &fImWf_1s0, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                    // fDummy1 =0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
+                else if (uFile == 1)
+                {
+                    sscanf(cdummy, "  %f %f %f %f %f %f %f %f",
+                           &fRadius, &fDummy, &fReWf_3s1, &fImWf_3s1, &fDummy1, &fDummy2, &fDummy3, &fDummy4);
+                    // fDummy1 = 0;
+                    // fDummy2 = 0;
+                    // fDummy3 = 0;
+                    // fDummy4 = 0;
+                }
             }
-            else if (uFile == 3)
-            {
-                sscanf(cdummy, "  %f %f %f %f %f %f %f %f %f %f %f %f",
-                       &fRadius, &fDummy, &fDummy1, &fDummy2, &fReWf_Scp_3d13s1, &fImWf_Scp_3d13s1, &fReWf_Scp_3s1, &fImWf_Scp_3s1, &fReWf_Scpp_3d13s1, &fImWf_Scpp_3d13s1, &fReWf_Scpp_3s1, &fImWf_Scpp_3s1);
-                // fDummy1 = 0;
-                // fDummy2 = 0;
-                // fDummy3 = 0;
-                // fDummy4 = 0;
-            }
-            else
-            {
-                printf("Oh man... something wrong in scanning files in Init_Lcp_Haidenbauer.\n");
-            }
-
             if (WhichMomBin < 0)
             {
                 printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
@@ -3094,60 +3182,99 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
                 printf("\033[1;33mWARNING:\033[0m WhichMomBin==-1, possible bug, please contact the developers!\n");
                 continue;
             }
-            // Channels are:
-            //[0] is 1S0 Lcp->Lcp
-            //[1] is 3S1 Lcp->Lcp
-            //[2] is 1S0 Sc+p->Lcp
-            //[3] is 3S1-3S1 Sc+p->Lcp
-            //[4] is 1S0 Sc++n->Lcp
-            //[5] is 3S1-3S1 Sc++n->Lcp
-            //[6] is 3D1-3S1 Sc+p->Lcp
-            //[7] is 3D1-3S1 Sc++n->Lcp
-            if(uFile==0)
+            if(TYPE==0)
             {
-                ///Ch. 0: Lcp->Lcp 1S0
-                HistoWF[0][0].SetBinContent(WhichBin, (fReWf_1s0 +fi * fImWf_1s0) * fRadius);
-                HistoPS[0][0].SetBinContent(WhichBin, 0.);
-            }
-            else if (uFile == 1)
+                // Channels are:
+                //[0] is 1S0 Lcp->Lcp
+                //[1] is 3S1 Lcp->Lcp
+                //[2] is 1S0 Sc+p->Lcp
+                //[3] is 3S1-3S1 Sc+p->Lcp
+                //[4] is 1S0 Sc++n->Lcp
+                //[5] is 3S1-3S1 Sc++n->Lcp
+                //[6] is 3D1-3S1 Sc+p->Lcp
+                //[7] is 3D1-3S1 Sc++n->Lcp
+                if (uFile == 0)
+                {
+                    /// Ch. 0: Lcp->Lcp 1S0
+                    HistoWF[0][0].SetBinContent(WhichBin, (fReWf_1s0 + fi * fImWf_1s0) * fRadius);
+                    HistoPS[0][0].SetBinContent(WhichBin, 0.);
+                }
+                else if (uFile == 1)
+                {
+                    /// Ch. 1: Lcp->Lcp 3S1
+                    HistoWF[1][0].SetBinContent(WhichBin, (fReWf_3s1 + fi * fImWf_3s1) * fRadius);
+                    HistoPS[1][0].SetBinContent(WhichBin, 0.);
+                }
+                else if (uFile == 2)
+                {
+                    /// Ch. 2 1S0 Sc+p->Lcp
+                    /// Ch. 4 1S0 Sc++n->Lcp
+                    HistoWF[2][0].SetBinContent(WhichBin, ClebschGordan_Scp * (fReWf_Scp_1s0 + fi * fImWf_Scp_1s0) * fRadius);
+                    HistoPS[2][0].SetBinContent(WhichBin, 0.);
+
+                    HistoWF[4][0].SetBinContent(WhichBin, ClebschGordan_Scpp * (fReWf_Scpp_1s0 + fi * fImWf_Scpp_1s0) * fRadius);
+                    HistoPS[4][0].SetBinContent(WhichBin, 0.);
+                }
+                else if (uFile == 3)
+                {
+                    /// Ch.[3] is 3S1-3S1 Sc+p->Lcp
+                    /// Ch.[5] is 3S1-3S1 Sc++n->Lcp
+                    HistoWF[3][0].SetBinContent(WhichBin, ClebschGordan_Scp * (fReWf_Scp_3s1 + fi * fImWf_Scp_3s1) * fRadius);
+                    HistoPS[3][0].SetBinContent(WhichBin, 0.);
+
+                    HistoWF[5][0].SetBinContent(WhichBin, ClebschGordan_Scpp * (fReWf_Scpp_3s1 + fi * fImWf_Scpp_3s1) * fRadius);
+                    HistoPS[5][0].SetBinContent(WhichBin, 0.);
+
+                    /// Ch.[6] is 3D1-3S1 Sc+p->Lcp
+                    /// Ch.[7] is 3D1-3S1 Sc++n->Lcp
+                    HistoWF[6][0].SetBinContent(WhichBin, ClebschGordan_Scp * (fReWf_Scp_3d13s1 + fi * fImWf_Scp_3d13s1) * fRadius);
+                    HistoPS[6][0].SetBinContent(WhichBin, 0.);
+
+                    HistoWF[7][0].SetBinContent(WhichBin, ClebschGordan_Scpp * (fReWf_Scpp_3d13s1 + fi * fImWf_Scpp_3d13s1) * fRadius);
+                    HistoPS[7][0].SetBinContent(WhichBin, 0.);
+                }
+                else
+                {
+                    printf("Oh man... something wrong in filling HistoWF LQCDe in Init_Lcp_Haidenbauer.\n");
+                }
+            }else if(TYPE==1)
             {
-                /// Ch. 1: Lcp->Lcp 3S1
-                HistoWF[1][0].SetBinContent(WhichBin, (fReWf_3s1 + fi * fImWf_3s1) * fRadius);
-                HistoPS[1][0].SetBinContent(WhichBin, 0.);
+                if (uFile == 0)
+                {
+                    /// Ch. 0: Lcp->Lcp 1S0
+                    HistoWF[0][0].SetBinContent(WhichBin, (fReWf_1s0 + fi * fImWf_1s0) * fRadius);
+                    HistoPS[0][0].SetBinContent(WhichBin, 0.);
+                }
+                else if (uFile == 1)
+                {
+                    /// Ch. 1: Lcp->Lcp 3S1
+                    HistoWF[1][0].SetBinContent(WhichBin, (fReWf_3s1 + fi * fImWf_3s1) * fRadius);
+                    HistoPS[1][0].SetBinContent(WhichBin, 0.);
+                }
+                else
+                {
+                    printf("Oh man... something wrong in filling HistoWF Model-a in Init_Lcp_Haidenbauer.\n");
+                }
             }
-            else if (uFile == 2)
+            else if (TYPE == 2)
             {
-                /// Ch. 2 1S0 Sc+p->Lcp
-                /// Ch. 4 1S0 Sc++n->Lcp
-                HistoWF[2][0].SetBinContent(WhichBin, ClebschGordan_Scp*(fReWf_Scp_1s0 + fi * fImWf_Scp_1s0) * fRadius);
-                HistoPS[2][0].SetBinContent(WhichBin, 0.);
-
-                HistoWF[4][0].SetBinContent(WhichBin, ClebschGordan_Scpp*(fReWf_Scpp_1s0 + fi * fImWf_Scpp_1s0) * fRadius);
-                HistoPS[4][0].SetBinContent(WhichBin, 0.);
+                if (uFile == 0)
+                {
+                    /// Ch. 0: Lcp->Lcp 1S0
+                    HistoWF[0][0].SetBinContent(WhichBin, (fReWf_1s0 + fi * fImWf_1s0) * fRadius);
+                    HistoPS[0][0].SetBinContent(WhichBin, 0.);
+                }
+                else if (uFile == 1)
+                {
+                    /// Ch. 1: Lcp->Lcp 3S1
+                    HistoWF[1][0].SetBinContent(WhichBin, (fReWf_3s1 + fi * fImWf_3s1) * fRadius);
+                    HistoPS[1][0].SetBinContent(WhichBin, 0.);
+                }
+                else
+                {
+                    printf("Oh man... something wrong in filling HistoWF Model-a in Init_Lcp_Haidenbauer.\n");
+                }
             }
-            else if (uFile == 3)
-            {
-                /// Ch.[3] is 3S1-3S1 Sc+p->Lcp
-                /// Ch.[5] is 3S1-3S1 Sc++n->Lcp
-                HistoWF[3][0].SetBinContent(WhichBin, ClebschGordan_Scp*(fReWf_Scp_3s1 + fi * fImWf_Scp_3s1) * fRadius);
-                HistoPS[3][0].SetBinContent(WhichBin, 0.);
-
-                HistoWF[5][0].SetBinContent(WhichBin, ClebschGordan_Scpp*(fReWf_Scpp_3s1 + fi * fImWf_Scpp_3s1) * fRadius);
-                HistoPS[5][0].SetBinContent(WhichBin, 0.);
-
-                /// Ch.[6] is 3D1-3S1 Sc+p->Lcp
-                /// Ch.[7] is 3D1-3S1 Sc++n->Lcp
-                HistoWF[6][0].SetBinContent(WhichBin, ClebschGordan_Scp*(fReWf_Scp_3d13s1 + fi * fImWf_Scp_3d13s1) * fRadius);
-                HistoPS[6][0].SetBinContent(WhichBin, 0.);
-
-                HistoWF[7][0].SetBinContent(WhichBin, ClebschGordan_Scpp*(fReWf_Scpp_3d13s1 + fi * fImWf_Scpp_3d13s1) * fRadius);
-                HistoPS[7][0].SetBinContent(WhichBin, 0.);
-            }
-            else
-            {
-
-            }
-
             RadBin++;
             // if we have are passed the last radius bin in this momentum bin => we start over.
             // the -1 is due to the special case of the zeroth bin (which we do NOT read from the file)
@@ -3175,9 +3302,9 @@ DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS
     return Histo;
 }
 
-DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS *Kitty, const int &CUTOFF)
+DLM_Histo<complex<double>> ***Init_Lcp_Haidenbauer(const char *InputFolder, CATS *Kitty, const int &TYPE, const int &CUTOFF)
 {
-    return Init_Lcp_Haidenbauer(InputFolder, *Kitty, CUTOFF);
+    return Init_Lcp_Haidenbauer(InputFolder, *Kitty, TYPE, CUTOFF);
 }
 
 //TYPE 0 is the one Johann originally provided, TYPE 1 is the one Johann provided to Benedict. 

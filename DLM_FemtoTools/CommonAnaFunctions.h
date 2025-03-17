@@ -104,7 +104,7 @@ public:
     void SetUpCats_XiKCoulomb(CATS &Kitty, const TString &POT, const TString &SOURCE, const TString &DataSample);
     void SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample);
 
-    void SetUpCats_Lcp_LQCDe(CATS &Kitty, const TString &SOURCE, const int &CUTOFF);
+    void SetUpCats_Lcp(CATS &Kitty, const TString &SOURCE, const int &TYPE, const int &CUTOFF);
 
     DLM_Ck* SetUpLednicky_pL(const unsigned& NumMomBins, const double* MomBins,  const TString& POT);
 
