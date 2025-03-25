@@ -1908,6 +1908,19 @@ complex<double> ComplexGaussian(double *Pars)
     return (Pars[2] + i * Pars[3]) * exp(-(pow(Pars[4] / hbarc, 2)) * Pars[0] * Pars[0]);
 }
 
+complex<double> ComplexGaussian_Ranges(double *Pars)
+{
+    // Pars[0] Radius in fm
+    // Pars[1] Momentum in MeV/c
+    // Pars[2] V0real in MeV
+    // Pars[3] V0imag in MeV
+    // Pars[4] mass meson exchange in MeV for real
+    // Pars[5] mass meson exchange in MeV for imag
+
+    // This function returns a complex Gaussian-type potential of the form (V0r + i* V0i) * exp(- m^2 r^2)
+    return (Pars[2] * exp(-(pow(Pars[4] / hbarc, 2)) * Pars[0] * Pars[0])) + (i * Pars[3] * exp(-(pow(Pars[5] / hbarc, 2)) * Pars[0] * Pars[0]));
+}
+
 complex<double> ComplexPotLAntiK_mesonexchange(double *Pars)
 {
     // Pars[0] Radius in fm
@@ -1929,4 +1942,56 @@ double RealPotLAntiK_mesonexchange(double *Pars)
     // This function returns a complex Gaussian-type potential of the form (V0r + i* V0i) * exp(- m^2 r^2
     Pars[3] = 0.;
     return (Pars[2] + Pars[3]) * exp(-(pow(Pars[4] / hbarc, 2)) * Pars[0] * Pars[0]);
+}
+
+double NPhi_HALCQD_S32(double *Pars)
+{
+    ///Parametrization for t/a = 12
+    // Pars[0] Radius in fm
+    // Pars[1] Momentum in MeV/c
+    double radius = Pars[0];
+    double momentum = Pars[1];
+    /// Pars of the sum of two gaussians
+    double a1 = Pars[2];///MeV
+    double b1 = Pars[3];///fm
+    double a2 = Pars[4];
+    double b2 = Pars[5];
+    double a3mpi4 = Pars[6];
+    double b3 = Pars[7];
+    double MassPi = Pars[8] / hbarc;///given input in MeV
+
+    double gauss1 = a1 * exp(-pow(radius / b1, 2.));
+    double gauss2 = a2 * exp(-pow(radius / b2, 2.));
+    double ArgFF = (1. - exp(-pow(radius / b3, 2.))) * (1. - exp(-pow(radius / b3, 2.)));
+    double TPE = a3mpi4 * ArgFF * exp(-2 * (MassPi) * radius) / (radius * radius);
+
+    return gauss1 + gauss2 + TPE;
+}
+
+complex<double> NPhi_HALCQD_S12(double *Pars)
+{
+    /// Parametrization for t/a = 12
+    // Pars[0] Radius in fm
+    // Pars[1] Momentum in MeV/c
+    double radius = Pars[0];
+    double momentum = Pars[1];
+    /// Pars of the sum of two gaussians
+    double a1 = Pars[2]; /// MeV
+    double b1 = Pars[3]; /// fm
+    double a2 = Pars[4];
+    double b2 = Pars[5];
+    double a3mpi4 = Pars[6];
+    double b3 = Pars[7];
+    double MassPi = Pars[8] / hbarc; /// MeV
+    double gamma = Pars[9]; /// MeV
+    double MassK = Pars[10] / hbarc; /// MeV
+    double beta = Pars[11]; /// MeV
+
+    double gauss1 = a1 * exp(-pow(radius / b1, 2.));
+    double gauss2 = a2 * exp(-pow(radius / b2, 2.));
+    double ArgFF = (1. - exp(-pow(radius / b3, 2.))) * (1. - exp(-pow(radius / b3, 2.)));
+    double TPE = a3mpi4 * ArgFF * exp(-2 * (MassPi) * radius) / (radius * radius);
+    complex<double> Vim = ArgFF * exp(-2 * (MassK) * radius) / (MassK* radius * radius);
+
+    return beta* (gauss1 + gauss2 + TPE) + i * gamma * Vim;
 }

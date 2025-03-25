@@ -120,7 +120,12 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name);
 ///     [0] -> r; [1] = k; [2]=V0real; [3]=V0imag; [4] = m (m_ρ)
 complex<double> ComplexGaussian(double *Pars);
 
+complex<double> ComplexGaussian_Ranges(double *Pars);
+complex<double> NPhi_HALCQD_S12(double *Pars);
+double NPhi_HALCQD_S32(double *Pars);
+
 complex<double> ComplexPotLAntiK_mesonexchange(double *Pars);
 double RealPotLAntiK_mesonexchange(double *Pars);
+
 
 #endif

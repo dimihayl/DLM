@@ -3631,16 +3631,6 @@ void CATS::ComputeComplexWaveFunction()
             DeltaRad2[kCurrent] = DeltaRad[kCurrent] * DeltaRad[kCurrent];
             PropagatingComplexFunction(PropFunWithoutSI[kCurrent], PropFunVal1[kCurrent], PropFunVal2[kCurrent], PosRad[kCurrent], Momentum, usPW, usCh);
 
-            // the initial values for the wave function are set based on the solution without the strong potential.
-            // this will of course lead to a wrong normalization in the asymptotic region, but this will be corrected for later on,
-            // at this stage it is only important that the algorithm gets a meaningful guess so that we do not encounter
-            // overflow problems during the calculation.
-
-            // WaveFunR[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
-            // WaveFunI[kOld] = -(PropFunVal2[kOld] * WaveFunR[kOld]) / PropFunVal1[kOld];
-            // WaveFunR[kCurrent] = ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2);
-            // WaveFunI[kCurrent] = -(PropFunVal2[kCurrent] * WaveFunR[kCurrent]) / PropFunVal1[kCurrent];
-
             WaveFunR[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
             WaveFunI[kOld] = ReferencePartialWave(PosRad[kOld], Momentum, usPW, q1q2);
             WaveFunR[kCurrent] = ReferencePartialWave(PosRad[kCurrent], Momentum, usPW, q1q2);
@@ -3684,6 +3674,7 @@ void CATS::ComputeComplexWaveFunction()
             BufferWaveFunction = new complex<double>[EstNumRadSteps];
             BufferWaveFunctionR = new double[EstNumRadSteps];
             BufferWaveFunctionI = new double[EstNumRadSteps];
+            BufferRad = new double[EstNumRadSteps];
 
             BufferWaveFunctionR[0] = WaveFunR[kOld];
             BufferWaveFunctionR[1] = WaveFunR[kCurrent];
@@ -3693,7 +3684,6 @@ void CATS::ComputeComplexWaveFunction()
             BufferWaveFunction[0] = WaveFunR[kOld] + i * WaveFunI[kOld];
             BufferWaveFunction[1] = WaveFunR[kCurrent] + i * WaveFunI[kCurrent];
 
-            BufferRad = new double[EstNumRadSteps];
 
             BufferRad[0] = PosRad[kOld];
             BufferRad[1] = PosRad[kCurrent];
