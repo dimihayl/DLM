@@ -8794,6 +8794,242 @@ bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFi
   delete fitSP2; delete fitSP4; fitSP=fitSP6; delete[]MomBins; return true;
 }
 
+bool GetComplexScattParameters(CATS &KittyComplex, complex<double> &ScatLen, complex<double> &EffRan, TH1F *&hFitR, TH1F *&hFitI, TF1 *&fitSPR, TF1 *&fitSPI, const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh, const unsigned short usPW)
+{
+    KittyComplex.KillTheCat();
+    double ScatLenR = ScatLen.real();
+    double ScatLenI = ScatLen.imag();
+    double EffRanR = EffRan.real();
+    double EffRanI = EffRan.imag();
+    double* MomBins = KittyComplex.CopyMomBin();
+    hFitR = new TH1F("hFit52351R", "hFit52351R", KittyComplex.GetNumMomBins(), MomBins);
+    hFitI = new TH1F("hFit52351I", "hFit52351I", KittyComplex.GetNumMomBins(), MomBins);
+
+    double LAST_POINT_R, LAST_POINT_I;
+    double CURRENT_POINT_R, CURRENT_POINT_I;
+    for (unsigned uMom = 0; uMom < KittyComplex.GetNumMomBins(); uMom++)
+    {
+        double PhaseShiftR = 0.5 * arg(KittyComplex.EvalScatteringMatrix(KittyComplex.GetMomentum(uMom), usCh, usPW));
+        /// putting a - sign to ensure that we always have a positive imaginary phase shift as notation suggests
+        double PhaseShiftI = - 0.5 * log(abs(KittyComplex.EvalScatteringMatrix(KittyComplex.GetMomentum(uMom), usCh, usPW)));
+        CURRENT_POINT_R = KittyComplex.GetMomentum(uMom) / tan(PhaseShiftR);
+        CURRENT_POINT_I = KittyComplex.GetMomentum(uMom) / tan(PhaseShiftI);
+        if (uMom)
+        {
+            if (CURRENT_POINT_R * LAST_POINT_R < 0 && fabs(CURRENT_POINT_R - LAST_POINT_R) > 1000 && KittyComplex.GetMomentum(uMom) < 120)
+            {
+                fitSPR = NULL;
+                delete[] MomBins;
+                return false;
+            }
+            if (CURRENT_POINT_I * LAST_POINT_I < 0 && fabs(CURRENT_POINT_I - LAST_POINT_I) > 1000 && KittyComplex.GetMomentum(uMom) < 120)
+            {
+                fitSPI = NULL;
+                delete[] MomBins;
+                return false;
+            }
+        }
+        hFitR->SetBinContent(uMom + 1, CURRENT_POINT_R);
+        hFitR->SetBinError(uMom + 1, 1.);
+        LAST_POINT_R = CURRENT_POINT_R;
+        hFitI->SetBinContent(uMom + 1, CURRENT_POINT_I);
+        hFitI->SetBinError(uMom + 1, 1.);
+        LAST_POINT_I = CURRENT_POINT_I;
+    }
+    TF1 *fitSP2;
+    TF1 *fitSP4;
+    TF1 *fitSP6;
+    fitSP2 = new TF1("fitSP2", EffRangeExp, 10, 90, 5);
+    fitSP2->FixParameter(3, 0);
+    fitSP2->FixParameter(4, 0);
+    fitSP4 = new TF1("fitSP2", EffRangeExp, 10, 90, 5);
+    fitSP4->FixParameter(4, 0);
+    fitSP6 = new TF1("fitSP2", EffRangeExp, 10, 90, 5);
+    fitSP2->FixParameter(0, KittyComplex.GetQ1Q2() * KittyComplex.GetRedMass());
+    fitSP4->FixParameter(0, KittyComplex.GetQ1Q2() * KittyComplex.GetRedMass());
+    fitSP6->FixParameter(0, KittyComplex.GetQ1Q2() * KittyComplex.GetRedMass());
+
+    TF1 *fitSP2I;
+    TF1 *fitSP4I;
+    TF1 *fitSP6I;
+    fitSP2I = new TF1("fitSP2I", EffRangeExp, 10, 90, 5);
+    fitSP2I->FixParameter(3, 0);
+    fitSP2I->FixParameter(4, 0);
+    fitSP4I = new TF1("fitSP2I", EffRangeExp, 10, 90, 5);
+    fitSP4I->FixParameter(4, 0);
+    fitSP6I = new TF1("fitSP2I", EffRangeExp, 10, 90, 5);
+    fitSP2I->FixParameter(0, KittyComplex.GetQ1Q2() * KittyComplex.GetRedMass());
+    fitSP4I->FixParameter(0, KittyComplex.GetQ1Q2() * KittyComplex.GetRedMass());
+    fitSP6I->FixParameter(0, KittyComplex.GetQ1Q2() * KittyComplex.GetRedMass());
+
+    double inv_f0R = ScatLenR == 0 ? 0 : 1. / ScatLenR;
+    double inv_f0I = ScatLenI == 0 ? 0 : 1. / ScatLenI;
+
+    if (Fixf0)
+    {
+        fitSP2->FixParameter(1, inv_f0R);
+        fitSP4->FixParameter(1, inv_f0R);
+        fitSP6->FixParameter(1, inv_f0R);
+
+        fitSP2I->FixParameter(1, inv_f0I);
+        fitSP4I->FixParameter(1, inv_f0I);
+        fitSP6I->FixParameter(1, inv_f0I);
+    }
+    else
+    {
+        fitSP2->SetParameter(1, inv_f0R);
+        fitSP2->SetParLimits(1, -100, 100);
+        fitSP4->SetParameter(1, inv_f0R);
+        fitSP4->SetParLimits(1, -100, 100);
+        fitSP6->SetParameter(1, inv_f0R);
+        fitSP6->SetParLimits(1, -100, 100);
+
+        fitSP2I->SetParameter(1, inv_f0I);
+        fitSP2I->SetParLimits(1, 0., 100);
+        fitSP4I->SetParameter(1, inv_f0I);
+        fitSP4I->SetParLimits(1, 0, 100);
+        fitSP6I->SetParameter(1, inv_f0I);
+        fitSP6I->SetParLimits(1, 0, 100);
+    }
+    if (Fixd0)
+    {
+        fitSP2->FixParameter(2, EffRanR);
+        fitSP4->FixParameter(2, EffRanR);
+        fitSP6->FixParameter(2, EffRanR);
+
+        fitSP2I->FixParameter(2, EffRanI);
+        fitSP4I->FixParameter(2, EffRanI);
+        fitSP6I->FixParameter(2, EffRanI);
+    }
+    else
+    {
+        fitSP2->SetParameter(2, EffRanR);
+        fitSP2->SetParLimits(2, -50, 50);
+        fitSP4->SetParameter(2, EffRanR);
+        fitSP4->SetParLimits(2, -50, 50);
+        fitSP6->SetParameter(2, EffRanR);
+        fitSP6->SetParLimits(2, -50, 50);
+
+        fitSP2I->SetParameter(2, EffRanI);
+        fitSP2I->SetParLimits(2, 0., 50);
+        fitSP4I->SetParameter(2, EffRanI);
+        fitSP4I->SetParLimits(2, 0, 50);
+        fitSP6I->SetParameter(2, EffRanI);
+        fitSP6I->SetParLimits(2, 0, 50);
+    }
+    fitSP4->SetParameter(3, 0);
+    fitSP6->SetParameter(3, 0);
+    fitSP6->SetParameter(4, 0);
+    fitSP4I->SetParameter(3, 0);
+    fitSP6I->SetParameter(3, 0);
+    fitSP6I->SetParameter(4, 0);
+
+    double Chi2_Old = 1e64;
+    ROOT::Math::MinimizerOptions MinOpt;
+    MinOpt.SetMinimizerType("Minuit2");
+    MinOpt.SetPrintLevel(0);
+    DLM_FitHisto(hFitR, fitSP2, "Q, S, N, R, M", "", &MinOpt);
+    ScatLenR = 1. / fitSP2->GetParameter(1);
+    EffRanR = fitSP2->GetParameter(2);
+    // printf("f0 (R)= %f\n", ScatLenR);
+    // printf("d0 (R)= %f\n", EffRanR);
+
+    DLM_FitHisto(hFitI, fitSP2I, "Q, S, N, R, M", "", &MinOpt);
+    ScatLenI = 1. / fitSP2I->GetParameter(1);
+    EffRanI = fitSP2I->GetParameter(2);
+    // printf("f0 (I)= %f\n", ScatLenI);
+    // printf("d0 (I)= %f\n", EffRanI);
+    // printf("ChiRed = %f\n", fitSP2->GetChisquare() / fitSP2->GetNDF());
+    // printf("ChiRed = %f\n", fitSP2I->GetChisquare() / fitSP2I->GetNDF());
+    ScatLen = complex<double>(ScatLenR, ScatLenI);
+    EffRan = complex<double>(EffRanR, EffRanI);
+
+    if (Nterms <= 2)
+    {
+        delete fitSP4;
+        delete fitSP6;
+        delete fitSP4I;
+        delete fitSP6I;
+        fitSPR = fitSP2;
+        fitSPI = fitSP2I;
+        delete[] MomBins;
+        return true;
+    }
+
+    DLM_FitHisto(hFitR, fitSP4, "Q, S, N, R, M", "", &MinOpt);
+    if (fitSP4->GetChisquare() / fitSP2->GetChisquare() > 0.8)
+    {
+        delete fitSP4;
+        delete fitSP6;
+        fitSPR = fitSP2;
+        delete[] MomBins;
+        return true;
+    }
+    ScatLenR = 1. / fitSP4->GetParameter(1);
+    EffRanR = fitSP4->GetParameter(2);
+    // printf("f0 (R)= %f\n", ScatLenR);
+    // printf("d0 (R)= %f\n", EffRanR);
+
+    DLM_FitHisto(hFitI, fitSP2I, "Q, S, N, R, M", "", &MinOpt);
+    if (fitSP4I->GetChisquare() / fitSP2I->GetChisquare() > 0.8)
+    {
+        delete fitSP4I;
+        delete fitSP6I;
+        fitSPI = fitSP2I;
+        delete[] MomBins;
+        return true;
+    }
+    ScatLenI = 1. / fitSP2I->GetParameter(1);
+    EffRanI = fitSP2I->GetParameter(2);
+    // printf("f0 (I)= %f\n", ScatLenI);
+    // printf("d0 (I)= %f\n", EffRanI);
+
+    ScatLen = complex<double>(ScatLenR, ScatLenI);
+    EffRan = complex<double>(EffRanR, EffRanI);
+    if (Nterms <= 3)
+    {
+        delete fitSP2;
+        delete fitSP6;
+        delete fitSP2I;
+        delete fitSP6I;
+        fitSPI = fitSP4I;
+        delete[] MomBins;
+        return true;
+    }
+
+    // hFit->Fit(fitSP6, "Q, S, N, R, M");
+    DLM_FitHisto(hFitR, fitSP6, "Q, S, N, R, M", "", &MinOpt);
+    if (fitSP6->GetChisquare() / fitSP4->GetChisquare() > 0.8)
+    {
+        delete fitSP2;
+        delete fitSP6;
+        fitSPR = fitSP4;
+        delete[] MomBins;
+        return true;
+    }
+    ScatLenR = 1. / fitSP6->GetParameter(1);
+    EffRanR = fitSP6->GetParameter(2);
+    DLM_FitHisto(hFitI, fitSP6I, "Q, S, N, R, M", "", &MinOpt);
+    if (fitSP6I->GetChisquare() / fitSP4I->GetChisquare() > 0.8)
+    {
+        delete fitSP2I;
+        delete fitSP6I;
+        fitSPI = fitSP4I;
+        delete[] MomBins;
+        return true;
+    }
+    ScatLenI = 1. / fitSP6I->GetParameter(1);
+    EffRanI = fitSP6I->GetParameter(2);
+
+    ScatLen = complex<double>(ScatLenR, ScatLenI);
+    EffRan = complex<double>(EffRanR, EffRanI);
+
+    delete fitSP2;
+    delete fitSP4;
+    fitSPR = fitSP6;
+    delete[] MomBins;
+    return true;
+}
 
 bool PotentialDesignerEngine(char* BaseFileName){
   TString RootFileName = TString(BaseFileName)+".root";//output (WILL BE REWRITEN!!!!)

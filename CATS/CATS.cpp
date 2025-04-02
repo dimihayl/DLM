@@ -1937,7 +1937,6 @@ complex<double> CATS::EvalScatteringAmplitude(const double &Momentum, const unsi
     // cout << "----------------------------" << endl;
     return Result;
 }
-
 array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const
 {
     if (!ScatteringAmplitudeF)
@@ -1967,11 +1966,21 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
 
     /// Choosing three values of momentum
     /// cannot be MomBin[0] since it is zero -> f(0) = 0.!!!
+    int N = 5;
+    vector<double> k_val(N);
+    std::vector<std::complex<double>> f_inv(N);
+    std::vector<std::complex<double>> f(N);
+
+    for(int i= 0;i< N; i++)
+    {
+        k_val[i] = MomBin[i + 1];
+        f[i] = EvalScatteringAmplitude(k_val[i], usCh, usPW);
+        f_inv[i] = 1. / f[i];    }
+
     double k_1 = MomBin[1];//i-1
     double k_2 = MomBin[2];//i
     double k_3 = MomBin[3];//i=1
-    // cout << "k_1  = " << k_1 << endl;
-    double Delta_k = k_1;
+    double Delta_k = k_2-k_1;
 
     complex<double> ScatLen;
     complex<double> EffRan;
@@ -2051,20 +2060,39 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
         /// Extracting the true scattering parameters due to the strong interaction
         EffRan = EffRanC;
         cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
-        }
-        else
-        {
+    }
+    else
+    {
             PhaseShiftPar1 = 0.5 * arg(EvalScatteringMatrix(k_1, usCh, usPW));
             complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
             complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
             complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-            // cout << "f_k1  = " << f_k1 << endl;
+
+            complex<double> invf_k1 = 1./f_k1;
+            complex<double> invf_k2 = 1./f_k2;
+            complex<double> invf_k3 = 1./f_k3;
+            // cout << "f_k1  = " << invf_k1 << endl;
             // cout << "f_k2  = " << f_k2 << endl;
             // cout << "f_k3  = " << f_k3 << endl;
             cout << " Delivering scattering parameters w/o Coulomb" << endl;
-            ScatLen = +f_k1; /// but this is assuming that f(E) = (+1./a0 +... )?????
+            ScatLen = + f_k1; /// but this is assuming that f(E) = (+1./a0 +... )?????
             cout << "Scattering length = " << ScatLen * hbarc << " fm" << endl;
-            EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k* Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
+            double r_0_real = 0.;
+            double r_0_imag = 0.;
+            for (int i = 1; i < N - 1; i++)
+            {
+                double d2f_inv_real = (real(f_inv[i + 1]) - 2.0 * real(f_inv[i]) + real(f_inv[i - 1])) / (Delta_k * Delta_k);
+
+                double d2f_inv_imag = (imag(f_inv[i + 1]) - 2.0 * imag(f_inv[i]) + imag(f_inv[i - 1])) / (Delta_k * Delta_k);
+
+                r_0_real += d2f_inv_real;
+                r_0_imag += d2f_inv_imag;
+            }
+            r_0_real /= (N - 2);
+            r_0_imag /= (N - 2);
+
+            EffRan = complex<double>(r_0_real,r_0_imag);// Average over all computed values
+            // EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k* Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
             cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
     }
 

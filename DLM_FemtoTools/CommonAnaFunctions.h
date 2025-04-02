@@ -2,6 +2,8 @@
 #define COMMONANAFUNCTIONS_H
 
 #include <iostream>
+#include <complex>
+using std::complex;
 
 template <class Type> class DLM_Histo;
 
@@ -287,29 +289,31 @@ double EffRangeExp(double* x, double* par);
 bool GetScattParameters(CATS& Kitty, double& ScatLen, double& EffRan, TH1F*& hFit, TF1*& fitSP,
   const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh);
 
-//a script supposed to be a Python slave, to find a potential by fitting the phase shifts
-//it takes as an input a base file name and a base histo name, where:
-//INPUT FILE NAME = BaseName.root (contains a histogram with the phase shifts)
-//OUTPUT FILE NAME = BaseName.root (we will add the fit)
-//in addition, we should have a BaseName.txt input file for the input arguments. The resulting pot pars will be added to this file
-//The required input is the following:
-//  M1     mass of particle 1
-//  M2     mass of particle 2
-//  par1  potential parameter 1
-//  par2
-//  par3  (optional depending on the potential used)
-//  par4  (optional depending on the potential used)
-//Optional input and default values if missing:
-//  kMin    min momentum for the fit to the PS (0)
-//  kMax    max momentum for the fit to the PS (100)
-//  kBin    num mommentum bins for the fit to the PS (50)
-//  eps     the numerical precision parameter (1e-8)
-//  pot     Gauss, DoubleGauss (default), Yukawa, YukawaDLM (modified to have some repulsive core to avoid singulartities)
-//  pw      in which partial wave should we place the potential. Possible values are s,p,d,f , s is the default
-//  coulomb do we include the coulomb in the evaluation (give q1*q2). By default 0 (no).
-//          N.B. IF YOU INCLUDE COULOMB, THE PHASE SHIFTS ARE EVALUATED WITH RESPECT TO COULOMB.
-//          This is very rare in theory, even if you are investigating charged-charged pair.
-bool PotentialDesignerEngine(char* BaseFileName);
+bool GetComplexScattParameters(CATS &KittyComplex, complex<double> &ScatLen, complex<double> &EffRan, TH1F *&hFitR, TH1F *&hFitI, TF1 *&fitSPR, TF1 *&fitSPI, const int Nterms, const bool Fixf0, const bool Fixd0, const unsigned short usCh, const unsigned short usPW);
+
+// a script supposed to be a Python slave, to find a potential by fitting the phase shifts
+// it takes as an input a base file name and a base histo name, where:
+// INPUT FILE NAME = BaseName.root (contains a histogram with the phase shifts)
+// OUTPUT FILE NAME = BaseName.root (we will add the fit)
+// in addition, we should have a BaseName.txt input file for the input arguments. The resulting pot pars will be added to this file
+// The required input is the following:
+//   M1     mass of particle 1
+//   M2     mass of particle 2
+//   par1  potential parameter 1
+//   par2
+//   par3  (optional depending on the potential used)
+//   par4  (optional depending on the potential used)
+// Optional input and default values if missing:
+//   kMin    min momentum for the fit to the PS (0)
+//   kMax    max momentum for the fit to the PS (100)
+//   kBin    num mommentum bins for the fit to the PS (50)
+//   eps     the numerical precision parameter (1e-8)
+//   pot     Gauss, DoubleGauss (default), Yukawa, YukawaDLM (modified to have some repulsive core to avoid singulartities)
+//   pw      in which partial wave should we place the potential. Possible values are s,p,d,f , s is the default
+//   coulomb do we include the coulomb in the evaluation (give q1*q2). By default 0 (no).
+//           N.B. IF YOU INCLUDE COULOMB, THE PHASE SHIFTS ARE EVALUATED WITH RESPECT TO COULOMB.
+//           This is very rare in theory, even if you are investigating charged-charged pair.
+bool PotentialDesignerEngine(char *BaseFileName);
 // Tailored for iCATS
 bool PotentialDesignerImEngine(char *BaseFileName);
 

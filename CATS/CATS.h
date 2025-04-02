@@ -265,8 +265,8 @@ public:
 
     complex<double> EvalScatteringAmplitude(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
     array<complex<double>, 2> EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const;
-    //The momentum in the WhichMomBin-th bin
-    double GetMomentum(const unsigned& WhichMomBin) const;
+    // The momentum in the WhichMomBin-th bin
+    double GetMomentum(const unsigned &WhichMomBin) const;
     double GetMomBinLowEdge(const unsigned& WhichMomBin) const;
     double GetMomBinUpEdge(const unsigned& WhichMomBin) const;
     //use with care, the memory allocation is not monitored by cats, i.e. the pointer you
