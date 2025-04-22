@@ -1310,12 +1310,29 @@ FragCorr = 1;
         std::vector<double> v_r12;
         std::vector<double> v_k12;
         for(unsigned uv=0; uv<3; uv++){
-          v_r12.push_back(v_r1[uv]-v_r2[uv]);
-          v_k12.push_back((m2*v_p1[uv]-m1*v_p2[uv])/(m1+m2));
           v_rCM.push_back((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
         }
+        //subtract the CM
+        for(unsigned uv=0; uv<3; uv++){
+          v_r1[uv] -= v_rCM[uv];
+          v_r2[uv] -= v_rCM[uv];
+          v_r3[uv] -= v_rCM[uv];
+        }
+        for(unsigned uv=0; uv<3; uv++){
+          v_r12.push_back(v_r1[uv]-v_r2[uv]);
+          v_k12.push_back((m2*v_p1[uv]-m1*v_p2[uv])/(m1+m2));
+          //v_rCM.push_back((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
+        }
+
+        for(unsigned uv=0; uv<3; uv++){
+          v_rCM[uv] = ((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
+        }
+
         //printf("v_rCM = %.3f %.3f %.3f\n", v_rCM[0], v_rCM[1], v_rCM[2]);
         //printf("mu12/Malpha = %.3f; mu3_12/Malpha = %.3f; Malpha = %.3f\n",mu12/Malpha, mu3_12/Malpha, Malpha);
+
+
+
 
         std::vector<double> v_r3_12; 
         std::vector<double> v_k3_12; 
@@ -1389,10 +1406,19 @@ FragCorr = 1;
 
         #pragma omp critical
         {
-        Ghetto_kstar_rstar->Fill(Q3,rho_val);
-        Ghetto_kstar_rstar_mT->Fill(Q3,rho_val,mT);
+        //Ghetto_kstar_rstar->Fill(Q3,rho_val);
+        //Ghetto_kstar_rstar_mT->Fill(Q3,rho_val,mT);
+        int NumPrims = 0;
+        NumPrims += prt_cm[0].IsUsefulProduct();
+        NumPrims += prt_cm[1].IsUsefulProduct();
+        NumPrims += prt_cm[2].IsUsefulProduct();
+        if(NumPrims==3){
+          Ghetto_kstar_rstar->Fill(Q3,hyp_rad);
+          Ghetto_kstar_rstar_mT->Fill(Q3,hyp_rad,mT);
+        }
         if(Q3<FemtoLimit){
-          GhettoFemto_mT_rstar->Fill(mT,rho_val);
+          //GhettoFemto_mT_rstar->Fill(mT,rho_val);
+          GhettoFemto_mT_rstar->Fill(mT,hyp_rad);
         }
         
         }
