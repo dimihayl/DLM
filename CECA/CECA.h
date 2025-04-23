@@ -137,7 +137,10 @@ public:
   //if zero, than by default this is set to Dim*Dim
   void SetEventMult(const unsigned short& emult=0);//done
 
-
+  //flag==0 -> no export
+  //else -> we always write out //kstar, rstar, mT
+  //flag==2 -> //only rd, hT, tau in addition
+  //else -> we print rd, hT as 3D vectors
   void SetExportPairs(int flag, std::string file_name);
   //event-by-event fluctuations of the parameters
   void SetDisplacementEbeX(const float& fwidth=0, const float& flevy=0);//done

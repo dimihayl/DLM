@@ -663,7 +663,7 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     printf("Running GoBabyGo\n");
     printf(" Detected threads: %u\n",NumThreads);
   }
-  if(exp_file_name!=""){
+  if(exp_file_name!="" && exp_file_flag){
     FILE *file_ptr;
     // Open the file in write mode
     file_ptr = fopen(exp_file_name.c_str(), "w");
