@@ -224,6 +224,7 @@ void DLM_Ck::SetPotPar(const unsigned& WhichPar, const double& Value){
         }
         PotPar[WhichPar] = Value;
         PotUpToDate = Kitty->PotentialStatus();
+        // cout << "PotUpToDate = " << PotUpToDate << endl;
     }
     else{
         return;

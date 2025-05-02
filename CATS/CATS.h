@@ -265,6 +265,7 @@ public:
 
     complex<double> EvalScatteringAmplitude(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
     array<complex<double>, 2> EvalComplexScatPars(const unsigned short &usCh, const unsigned short &usPW) const;
+    complex<double> EvalComplexPhaseShifts(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const;
     // The momentum in the WhichMomBin-th bin
     double GetMomentum(const unsigned &WhichMomBin) const;
     double GetMomBinLowEdge(const unsigned& WhichMomBin) const;

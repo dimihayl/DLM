@@ -8809,9 +8809,11 @@ bool GetComplexScattParameters(CATS &KittyComplex, complex<double> &ScatLen, com
     double CURRENT_POINT_R, CURRENT_POINT_I;
     for (unsigned uMom = 0; uMom < KittyComplex.GetNumMomBins(); uMom++)
     {
-        double PhaseShiftR = 0.5 * arg(KittyComplex.EvalScatteringMatrix(KittyComplex.GetMomentum(uMom), usCh, usPW));
-        /// putting a - sign to ensure that we always have a positive imaginary phase shift as notation suggests
-        double PhaseShiftI = - 0.5 * log(abs(KittyComplex.EvalScatteringMatrix(KittyComplex.GetMomentum(uMom), usCh, usPW)));
+        // double PhaseShiftR = 0.5 * arg(KittyComplex.EvalScatteringMatrix(KittyComplex.GetMomentum(uMom), usCh, usPW));
+        // /// putting a - sign to ensure that we always have a positive imaginary phase shift as notation suggests
+        // double PhaseShiftI = - 0.5 * log(abs(KittyComplex.EvalScatteringMatrix(KittyComplex.GetMomentum(uMom), usCh, usPW)));
+        double PhaseShiftR = real(KittyComplex.EvalComplexPhaseShifts(KittyComplex.GetMomentum(uMom), usCh, usPW));
+        double PhaseShiftI = imag(KittyComplex.EvalComplexPhaseShifts(KittyComplex.GetMomentum(uMom), usCh, usPW));
         CURRENT_POINT_R = KittyComplex.GetMomentum(uMom) / tan(PhaseShiftR);
         CURRENT_POINT_I = KittyComplex.GetMomentum(uMom) / tan(PhaseShiftI);
         if (uMom)
@@ -9733,10 +9735,10 @@ bool PotentialDesignerImEngine(char *BaseFileName)
         Kitty.SetShortRangePotential(0, NumPW - 1, 0, par1);
         Kitty.SetShortRangePotential(0, NumPW - 1, 1, par2);
         Kitty.SetShortRangePotential(0, NumPW - 1, 2, par3);
-        // cout << "Inside Engine" <<endl;
-        // printf("p1 = %f\n",par1);
-        // printf("p2 = %f\n",par2);
-        // printf("p3 = %f\n",par3);
+        cout << "Inside Engine" <<endl;
+        printf("p1 = %f\n",par1);
+        printf("p2 = %f\n",par2);
+        printf("p3 = %f\n",par3);
     }
     Kitty.SetEpsilonConv(eps);
     Kitty.SetEpsilonProp(eps);

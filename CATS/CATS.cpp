@@ -1966,21 +1966,26 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
 
     /// Choosing three values of momentum
     /// cannot be MomBin[0] since it is zero -> f(0) = 0.!!!
-    int N = 5;
+    int N = 10;
     vector<double> k_val(N);
     std::vector<std::complex<double>> f_inv(N);
     std::vector<std::complex<double>> f(N);
+    std::vector<std::complex<double>> PS(N);
 
     for(int i= 0;i< N; i++)
     {
         k_val[i] = MomBin[i + 1];
         f[i] = EvalScatteringAmplitude(k_val[i], usCh, usPW);
-        f_inv[i] = 1. / f[i];    }
+        f_inv[i] = 1. / f[i];
+
+        PS[i] = EvalComplexPhaseShifts(k_val[i], usCh, usPW);
+    }
+    double Delta_kval = abs(k_val[0] - k_val[1]);
 
     double k_1 = MomBin[1];//i-1
     double k_2 = MomBin[2];//i
     double k_3 = MomBin[3];//i=1
-    double Delta_k = k_2-k_1;
+    double Delta_k = abs(k_2-k_1);
 
     complex<double> ScatLen;
     complex<double> EffRan;
@@ -2063,80 +2068,60 @@ array<complex<double>, 2> CATS::EvalComplexScatPars(const unsigned short &usCh, 
     }
     else
     {
-            PhaseShiftPar1 = 0.5 * arg(EvalScatteringMatrix(k_1, usCh, usPW));
-            complex<double> f_k1 = EvalScatteringAmplitude(k_1, usCh, usPW);
-            complex<double> f_k2 = EvalScatteringAmplitude(k_2, usCh, usPW);
-            complex<double> f_k3 = EvalScatteringAmplitude(k_3, usCh, usPW);
-
-            complex<double> invf_k1 = 1./f_k1;
-            complex<double> invf_k2 = 1./f_k2;
-            complex<double> invf_k3 = 1./f_k3;
-            // cout << "f_k1  = " << invf_k1 << endl;
-            // cout << "f_k2  = " << f_k2 << endl;
-            // cout << "f_k3  = " << f_k3 << endl;
+            // PhaseShiftPar1 = 0.5 * arg(EvalScatteringMatrix(k_1, usCh, usPW));
             cout << " Delivering scattering parameters w/o Coulomb" << endl;
-            ScatLen = + f_k1; /// but this is assuming that f(E) = (+1./a0 +... )?????
+            ScatLen = + f[0]; /// but this is assuming that f(E) = (+1./a0 +... )?????
             cout << "Scattering length = " << ScatLen * hbarc << " fm" << endl;
             double r_0_real = 0.;
             double r_0_imag = 0.;
-            for (int i = 1; i < N - 1; i++)
+            // for (int i = 1; i < N - 1; i++)
+            // {
+            //     double d2f_inv_real = (real(f_inv[i + 1]) - 2.0 * real(f_inv[i]) + real(f_inv[i - 1])) / (Delta_k * Delta_k);
+
+            //     double d2f_inv_imag = (imag(f_inv[i + 1]) - 2.0 * imag(f_inv[i]) + imag(f_inv[i - 1])) / (Delta_k * Delta_k);
+
+            //     r_0_real += d2f_inv_real;
+            //     r_0_imag += d2f_inv_imag;
+            // }
+            // r_0_real /= (N - 2);
+            // r_0_imag /= (N - 2);
+            int count = 0;
+            for (int i = 2; i < N - 2; i++)
             {
-                double d2f_inv_real = (real(f_inv[i + 1]) - 2.0 * real(f_inv[i]) + real(f_inv[i - 1])) / (Delta_k * Delta_k);
+                double d2f_real = (-real(f_inv[i + 2]) +
+                                   16 * real(f_inv[i + 1]) -
+                                   30 * real(f_inv[i]) +
+                                   16 * real(f_inv[i - 1]) -
+                                   real(f_inv[i - 2])) /
+                                  (12.0 * Delta_kval * Delta_kval);
+                double d2f_imag = (-imag(f_inv[i + 2]) +
+                                   16 * imag(f_inv[i + 1]) -
+                                   30 * imag(f_inv[i]) +
+                                   16 * imag(f_inv[i - 1]) -
+                                   imag(f_inv[i - 2])) /
+                                  (12.0 * Delta_kval * Delta_kval);
 
-                double d2f_inv_imag = (imag(f_inv[i + 1]) - 2.0 * imag(f_inv[i]) + imag(f_inv[i - 1])) / (Delta_k * Delta_k);
-
-                r_0_real += d2f_inv_real;
-                r_0_imag += d2f_inv_imag;
+                r_0_real += d2f_real;
+                r_0_imag += d2f_imag;
+                ++count;
             }
-            r_0_real /= (N - 2);
-            r_0_imag /= (N - 2);
+            r_0_real /= count;
+            r_0_imag /= count;
 
             EffRan = complex<double>(r_0_real,r_0_imag);// Average over all computed values
             // EffRan = (1. / f_k3) * (1. / (Delta_k * Delta_k)) - (1. / (f_k2 * Delta_k* Delta_k)) * (1. + Delta_k / Delta_k) + (1. / f_k1) * (1. / (Delta_k * Delta_k));
             cout << "Eff. Range = " << EffRan * hbarc << " fm" << endl;
     }
 
-        // complex<double> ScatLen12;
-        // complex<double> EffRan12;
-        // complex<double> ScatLen23;
-        // complex<double> EffRan23;
-        // complex<double> ScatLen13;
-        // complex<double> EffRan13;
-
-        // cout << "f_k1 = " << f_k1 << "-- f_k2 = " << f_k2 << "-- f_k3 = " << f_k3 << endl;
-        // cout << "f_(0.1 MeV) = " << EvalScatteringAmplitude(0.1, usCh, usPW) << "-- f_(0.5)= " << EvalScatteringAmplitude(0.5, usCh, usPW) << "-- f_(1) = " << EvalScatteringAmplitude(1., usCh, usPW) << endl;
-
-        // EffRan12 = ((1./f_k1 -1./f_k2)+i*(k_1-k_2))/(0.5*(k_1*k_1-k_2*k_2));
-        // ScatLen12 = 1./(1./f_k1 - 0.5*EffRan12*k_1*k_1 + i*k_1);
-        // EffRan23 = ((1. / f_k2 - 1. / f_k3) + i * (k_2 - k_3)) / (0.5 * (k_2 * k_2 - k_3 * k_3));
-        // ScatLen23 = 1. / (1. / f_k2 - 0.5 * EffRan23 * k_2 * k_2 + i * k_2);
-        // EffRan13 = ((1. / f_k1 - 1. / f_k3) + i * (k_1 - k_3)) / (0.5 * (k_1 * k_1 - k_3 * k_3));
-        // ScatLen13 = 1. / (1. / f_k1 - 0.5 * EffRan13 * k_1 * k_1 + i * k_1);
-
-        // cout << "ScatLen12 = " << ScatLen12 * hbarc << "-- ScatLen23 = " << ScatLen23 * hbarc << "-- ScatLen13 = " << ScatLen13 * hbarc << endl;
-        // cout << "EffRan12 = " << EffRan12 * hbarc << "-- EffRan23 = " << EffRan23 * hbarc << "-- EffRan13 = " << EffRan13 * hbarc << endl;
-
-        // complex<double> ScatLen;
-        // complex<double> EffRan;
-
-        // /// Implement better the condition here!!!
-        // if (abs((ScatLen12 - ScatLen23) / (ScatLen12 + ScatLen23 + 1.e-64)) < EpsilonConv && abs((ScatLen23 - ScatLen13) / (ScatLen23 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((ScatLen12 - ScatLen13) / (ScatLen12 + ScatLen13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan23) / (EffRan12 + EffRan23 + 1.e-64)) < EpsilonConv && abs((EffRan23 - EffRan13) / (EffRan23 + EffRan13 + 1.e-64)) < EpsilonConv && abs((EffRan12 - EffRan13) / (EffRan12 + EffRan13 + 1.e-64)))
-        // {
-        //     ScatLen = ScatLen12 * hbarc;
-        //     EffRan = EffRan12 * hbarc;
-        // } else
-        // {
-        //     ScatLen = 0.;
-        //     EffRan = 0.;
-        //     cerr << "Warning: Scattering length and effective range did not converge, set both to zero!" << endl;
-        // }
-    /// YOU ARE NOT DELETING SOMETHING PROPERLY!!!
-    // ComplexScatPars[usCh][usPW]->SetVariabreal(ScatLen), true);
-    // ComplexScatPars[usCh][usPW]->SetVariabimag(ScatLen), true);
-    // ComplexScatPars[usCh][usPW]->SetVariabreal(EffRan), true);
-    // ComplexScatPars[usCh][usPW]->SetVariabimag(EffRan), true);
-    // double *Parameters = ComplexScatPars[usPW]->GetParameters();
     return {ScatLen * hbarc, EffRan * hbarc};
+}
+
+complex<double> CATS::EvalComplexPhaseShifts(const double &Momentum, const unsigned short &usCh, const unsigned short &usPW) const
+{
+    if (Momentum < MomBin[0] || Momentum > MomBin[NumMomBins] || NumCh <= usCh || NumPW[usCh] <= usPW)
+        return 0;
+    complex<double> PScomplex = 0.5 * arg(EvalScatteringMatrix(Momentum, usCh, usPW)) - i * 0.5 * log(abs(EvalScatteringMatrix(Momentum, usCh, usPW)));
+    return PScomplex;
 }
 
 double CATS::GetMomentum(const unsigned &WhichMomBin) const
@@ -2189,8 +2174,12 @@ void CATS::RemoveShortRangePotential()
     {
         for (unsigned short usPW = 0; usPW < NumPW[usCh]; usPW++)
         {
+            if(ShortRangePotential){
             ShortRangePotential[usCh][usPW] = 0;
-            ShortRangeComplexPotential[usCh][usPW] = 0;
+            }
+            if(ShortRangeComplexPotential){
+                ShortRangeComplexPotential[usCh][usPW] = 0;
+            }
             PotPar[usCh][usPW] = NULL;
             // PotParArray[usCh][usPW] = NULL;
         }
@@ -2213,32 +2202,24 @@ void CATS::RemoveShortRangePotential(const unsigned &usCh, const unsigned &usPW)
             printf("\033[1;31mERROR:\033[0m Bad input in CATS::RemoveShortRangePotential(...)\n");
         return;
     }
+    bool Reset = 0;
     if (ShortRangePotential)
     {
         if (ShortRangePotential[usCh])
         {
             ShortRangePotential[usCh][usPW] = 0;
-        }
-        else
-        {
-            return;
+            Reset = 1;
         }
     }
-    else if (ShortRangeComplexPotential)
+    if (ShortRangeComplexPotential)
     {
         if (ShortRangeComplexPotential[usCh])
         {
             ShortRangeComplexPotential[usCh][usPW] = 0;
-        }
-        else
-        {
-            return;
+            Reset = 1;
         }
     }
-    else
-    {
-        return;
-    }
+    if(!Reset) return;
     if (PotPar[usCh][usPW])
         delete PotPar[usCh][usPW];
     PotPar[usCh][usPW] = NULL;
@@ -2265,7 +2246,7 @@ void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, do
     {
         return;
     }
-    RemoveShortRangePotential();
+    RemoveShortRangePotential(usCh,usPW);///needed if we have at the same time real and complex potentials
     ShortRangePotential[usCh][usPW] = pot;
     if (PotPar[usCh][usPW])
     {
@@ -2296,10 +2277,12 @@ void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, co
     }
     if (ShortRangeComplexPotential[usCh][usPW] == pot && PotPar[usCh][usPW] == &Pars)
     {
+        printf("\033[1;31mERROR:\033[0m ISSUES CATS::SetShortRangePotential(...)\n");
         return;
     }
-    RemoveShortRangePotential();
+    RemoveShortRangePotential(usCh, usPW); /// needed if we have at the same time real and complex potentials
     ShortRangeComplexPotential[usCh][usPW] = pot;
+
     if (PotPar[usCh][usPW])
     {
         delete PotPar[usCh][usPW];
@@ -2337,6 +2320,11 @@ void CATS::SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, do
 */
 void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, const unsigned &WhichPar, const double &Value)
 {
+    // cout << "Hello we are in SetShort" << endl;
+    // cout << "usCh = " << usCh << "-- uPW =" << usPW << "-- WhichPar = " << WhichPar << " -- Val. = " << Value << endl;
+    // cout << "ShortRangeComplexPotential[usCh][usPW] = " << ShortRangeComplexPotential[usCh][usPW] << endl;
+    // cout << "ShortRangePotential[usCh][usPW] = " << ShortRangePotential[usCh][usPW] << endl;
+
     if (usCh >= NumCh)
     {
         if (Notifications >= nError)
@@ -2350,15 +2338,23 @@ void CATS::SetShortRangePotential(const unsigned &usCh, const unsigned &usPW, co
         return;
     }
 
+
     if (GetPotPar(usCh, usPW, WhichPar) == Value)
+    {
+        // cout << "Issue GetPotPar" << endl;
         return;
-    if (!ShortRangePotential[usCh][usPW] && !ShortRangeComplexPotential[usCh][usPW])
+    }
+    if (!ShortRangeComplexPotential[usCh][usPW] && !ShortRangePotential[usCh][usPW])
+    {
+        // cout << "Issue ShortRangeComplexPotential" << endl;
         return;
+    }
 
     if (PotPar[usCh][usPW])
         PotPar[usCh][usPW]->SetParameter(WhichPar, Value, false);
     // else if(PotParArray[usCh][usPW]) PotParArray[usCh][usPW][WhichPar+NumPotPars]=Value;
 
+    // cout << "usCh = " << usCh << "-- uPW =" << usPW << "-- WhichPar = " << WhichPar << " -- Val. = " << Value << endl;
     ComputedWaveFunction = false;
     ComputedCorrFunction = false;
     SetWfType(usCh, usPW, wSchroedinger);
