@@ -1,5 +1,10 @@
+#include <array>
 #include <stdio.h>
 #include "string.h"
+
+#include "TGraph.h"
+#include "TFile.h"
+#include "TH1F.h"
 
 #include "DLM_WfModel.h"
 #include "CATS.h"
@@ -312,6 +317,280 @@ printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
 }
 
 
+DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS *Kitty, const int &TYPE) {
+  if (!Kitty)
+    return NULL;
+  return Init_pp_Epelbaum(CatsFolder, *Kitty, TYPE);
+}
+
+DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS &Kitty, const int &TYPE) {
+  // setup all channels in the cats object
+  const unsigned short NumChannels = 12;
+
+  Kitty.SetNumChannels(NumChannels);
+  Kitty.SetNumPW(0, 3); // L=0,1,2   -> 3 PW
+  Kitty.SetNumPW(1, 4); // L=0,1,2,3 -> 4 PW
+  Kitty.SetNumPW(2, 4);
+  Kitty.SetNumPW(3, 4);
+  Kitty.SetNumPW(4, 4);
+  Kitty.SetNumPW(5, 4);
+  Kitty.SetNumPW(6, 4);
+  Kitty.SetNumPW(7, 4);
+  Kitty.SetNumPW(8, 4);
+  Kitty.SetNumPW(9, 4);
+  // for the coupled channels we only take the integral of the wave function
+  // hence it does not matter if we set the waves to s,p,d or whatever
+  // thus for simplification, everything is saved in the s-wave
+  Kitty.SetNumPW(10, 1); // L=0 -> 1 PW
+  Kitty.SetNumPW(11, 1);
+  Kitty.SetOnlyNumericalPw(10, true);
+  Kitty.SetOnlyNumericalPw(11, true);
+
+  // spin in the first channel is 0, all others are 1
+  Kitty.SetSpin(0, 0);
+  for (unsigned short usCh = 1; usCh < NumChannels; usCh++) {
+    Kitty.SetSpin(usCh, 1);
+  }
+
+  // set channel weights
+  Kitty.SetChannelWeight(0, (1. / 4.));                          // 1S0 + 1D2
+  Kitty.SetChannelWeight(1, (3. / 4.) * (1. / 9.) * (5. / 21.)); // 3P0 + 3F2
+  Kitty.SetChannelWeight(2, (3. / 4.) * (1. / 9.) * (7. / 21.)); // 3P0 + 3F3
+  Kitty.SetChannelWeight(3, (3. / 4.) * (1. / 9.) * (9. / 21.)); // 3P0 + 3F4
+  Kitty.SetChannelWeight(4, (3. / 4.) * (3. / 9.) * (5. / 21.)); // 3P1 + 3F2
+  Kitty.SetChannelWeight(5, (3. / 4.) * (3. / 9.) * (7. / 21.)); // 3P1 + 3F3
+  Kitty.SetChannelWeight(6, (3. / 4.) * (3. / 9.) * (9. / 21.)); // 3P1 + 3F4
+  Kitty.SetChannelWeight(7, (3. / 4.) * (5. / 9.) * (5. / 21.)); // 3P2 + 3F2
+  Kitty.SetChannelWeight(8, (3. / 4.) * (5. / 9.) * (7. / 21.)); // 3P2 + 3F3
+  Kitty.SetChannelWeight(9, (3. / 4.) * (5. / 9.) * (9. / 21.)); // 3P2 + 3F4
+  Kitty.SetChannelWeight(10, (5. / 12.));                        // 3F2 -> 3P2
+  Kitty.SetChannelWeight(11, (5. / 28.));                        // 3P2 -> 3F2
+
+  // set charge and mass
+  // source and other stuff will be set in the setup function
+  Kitty.SetQ1Q2(1);
+  Kitty.SetPdgId(2212, 2212);
+  const double Mass_p = 938.272;
+  Kitty.SetRedMass((Mass_p * Mass_p) / (Mass_p + Mass_p));
+  Kitty.SetQuantumStatistics(1);
+
+  // setup file reading
+  enum EpelFiles {
+    f1S0,
+    f3P0,
+    f3P1,
+    f3P2,
+    f1D2,
+    f3F2,
+    f3F3,
+    f3P2_3F2,
+    f3F2_3P2,
+    fNFiles
+  };
+  // hard code name of the input files in the directory passed to this function
+  std::string path(CatsFolder);
+  std::array<std::string, fNFiles> Dirs{
+      "1S0", "3P0", "3P1", "3P2", "1D2", "3F2", "3F3", "3P2-3F2", "3F2-3P2"};
+  // note that 3F4 is not provided, so it will be set to 0 later
+  // we will set all files which are not given to fNFiles
+  unsigned short **WhichFile = new unsigned short *[NumChannels];
+  for (unsigned short usCh = 0; usCh < NumChannels; usCh++) {
+    WhichFile[usCh] = new unsigned short[Kitty.GetNumPW(usCh)];
+  }
+
+  // now assign which file is read into which channel and partial wave
+  // empty channels are set to fNFiles
+  WhichFile[0][0] = f1S0;    // ch=0 L=0
+  WhichFile[0][1] = fNFiles; // ch=0 L=1
+  WhichFile[0][2] = f1D2;    // ch=0 L=2
+
+  WhichFile[1][0] = fNFiles; // ch=1 L=0
+  WhichFile[1][1] = f3P0;    // ch=1 L=1
+  WhichFile[1][2] = fNFiles; // ch=1 L=2
+  WhichFile[1][4] = f3F2;    // ch=1 L=3
+
+  WhichFile[2][0] = fNFiles; // ch=2 L=0
+  WhichFile[2][1] = f3P0;    // ch=2 L=1
+  WhichFile[2][2] = fNFiles; // ch=2 L=2
+  WhichFile[2][4] = f3F3;    // ch=2 L=3
+
+  WhichFile[3][0] = fNFiles; // ch=3 L=0
+  WhichFile[3][1] = f3P0;    // ch=3 L=1
+  WhichFile[3][2] = fNFiles; // ch=3 L=2
+  WhichFile[3][4] = fNFiles; // ch=3 L=3 (if 3F4 would be provided, it would be here)
+
+  WhichFile[4][0] = fNFiles; // ch=4 L=0
+  WhichFile[4][1] = f3P1;    // ch=4 L=1
+  WhichFile[4][2] = fNFiles; // ch=4 L=2
+  WhichFile[4][4] = f3F2;    // ch=4 L=3
+
+  WhichFile[5][0] = fNFiles; // ch=5 L=0
+  WhichFile[5][1] = f3P1;    // ch=5 L=1
+  WhichFile[5][2] = fNFiles; // ch=5 L=2
+  WhichFile[5][4] = f3F3;    // ch=5 L=3
+
+  WhichFile[6][0] = fNFiles; // ch=6 L=0
+  WhichFile[6][1] = f3P1;    // ch=6 L=1
+  WhichFile[6][2] = fNFiles; // ch=6 L=2
+  WhichFile[6][4] = fNFiles; // ch=6 L=3 (if 3F4 would be provided, it would be here)
+
+  WhichFile[7][0] = fNFiles; // ch=7 L=0
+  WhichFile[7][1] = f3P2;    // ch=7 L=1
+  WhichFile[7][2] = fNFiles; // ch=7 L=2
+  WhichFile[7][4] = f3F2;    // ch=7 L=3
+
+  WhichFile[8][0] = fNFiles; // ch=8 L=0
+  WhichFile[8][1] = f3P2;    // ch=8 L=1
+  WhichFile[8][2] = fNFiles; // ch=8 L=2
+  WhichFile[8][4] = f3F3;    // ch=8 L=3
+
+  WhichFile[9][0] = fNFiles; // ch=9 L=0
+  WhichFile[9][1] = f3P2;    // ch=9 L=1
+  WhichFile[9][2] = fNFiles; // ch=9 L=2
+  WhichFile[9][4] = fNFiles; // ch=9 L=3 (if 3F4 would be provided, it would be here)
+
+  // and the last two where we put everything in s wave, because the partial
+  // wave does not matter here
+  WhichFile[10][0] = f3F2_3P2; // ch=10 L=0
+  WhichFile[11][0] = f3P2_3F2; // ch=11 L=0
+
+  // all files should have the same momentum and radius bins so we just get them
+  // from the 1S0 file, which is the first one in the array of file names
+  std::string FileName = path + std::string("wavefunctions.root");
+  TFile *Input = new TFile(FileName.c_str(), "READ");
+
+  // extract radius and momentum values
+  std::string line;
+  std::vector<double> RadiusBinEdges;
+  std::vector<double> MomentumBinEdges;
+  bool foundFirstRow = false;
+  bool foundFirstLine = false;
+
+  // grab one histogram to get binning for momentum and radius
+  TH1F *HistMomentum = static_cast<TH1F *>(
+      Input->Get("1S0/wave_vs_distance/hist_wf_real_vs_r_p5"));
+  TH1F *HistRadius = static_cast<TH1F *>(
+      Input->Get("1S0/wave_vs_momentum/hist_wf_real_vs_p_r0.000"));
+
+  // for a fixed momentum we get the binning of the radius
+  for (int i = 0; i < HistMomentum->GetNbinsX(); i++) {
+    RadiusBinEdges.push_back(HistMomentum->GetBinLowEdge(i + 1));
+  }
+  // for a fixed radius we get the binning of the momentum
+  for (int i = 0; i < HistRadius->GetNbinsX(); i++) {
+    MomentumBinEdges.push_back(HistRadius->GetBinLowEdge(i + 1));
+  }
+  std::vector<double> Radius;
+  double BinWidth = RadiusBinEdges[1] - RadiusBinEdges[0];
+  for (int i = 0; i < RadiusBinEdges.size(); i++) {
+    Radius.push_back(RadiusBinEdges.at(i) + BinWidth / 2.);
+  }
+  // set first entry explicity since it is actually not exatcly at 0
+  Radius[0] = 1e-4;
+
+  // get wave function values
+  std::vector<std::vector<std::vector<std::complex<double>>>> WaveFunctionAll;
+  for (int i = 0; i < fNFiles; i++) {
+    std::vector<std::vector<std::complex<double>>> WaveFunctionFile;
+    for (int j = 0; j < MomentumBinEdges.size(); j++) {
+      // momentum goes from 5 to 400 in steps of 5
+      int bin = 5 + 5 * j;
+      std::vector<std::complex<double>> WaveFunction;
+
+      TString RName = Form("%s/wave_vs_distance/hist_wf_real_vs_r_p%d",
+                           Dirs[i].c_str(), bin);
+      TH1F *Real = static_cast<TH1F *>(Input->Get(RName));
+      TString IName = Form("%s/wave_vs_distance/hist_wf_imag_vs_r_p%d",
+                           Dirs[i].c_str(), bin);
+      TH1F *Imag = static_cast<TH1F *>(Input->Get(IName));
+      for (int k = 0; k < Real->GetNbinsX(); k++) {
+        WaveFunction.emplace_back(Real->GetBinContent(k + 1) * Radius[k],
+                                  Imag->GetBinContent(k + 1) * Radius[k]);
+      }
+      WaveFunctionFile.push_back(WaveFunction);
+    }
+    WaveFunctionAll.push_back(WaveFunctionFile);
+  }
+
+  // get phase shifts
+  std::vector<std::vector<double>> PhaseShiftAll;
+  for (int i = 0; i < fNFiles; i++) {
+    std::vector<double> PhaseShiftFile;
+    TString PName = Form("%s/%s_PhaseShifts", Dirs[i].c_str(), Dirs[i].c_str());
+    TGraph *Graph = static_cast<TGraph *>(Input->Get(PName));
+    for (int j = 0; j < MomentumBinEdges.size(); j++) {
+      PhaseShiftFile.push_back(Graph->GetPointY(j));
+    }
+    PhaseShiftAll.push_back(PhaseShiftFile);
+  }
+
+  // setup dlm histo objects
+  const unsigned NumDLM_Histos = NumChannels;
+
+  // the first one is WF, second is PS
+  DLM_Histo<complex<double>> ***Histo = new DLM_Histo<complex<double>> **[2];
+  DLM_Histo<complex<double>> **&HistoWF = Histo[0];
+  DLM_Histo<complex<double>> **&HistoPS = Histo[1];
+
+  HistoWF = new DLM_Histo<complex<double>> *[NumDLM_Histos];
+  for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++) {
+    HistoWF[uHist] = new DLM_Histo<complex<double>>[Kitty.GetNumPW(uHist)];
+    for (unsigned uPw = 0; uPw < Kitty.GetNumPW(uHist); uPw++) {
+      if (WhichFile[uHist][uPw] == fNFiles) {
+        continue;
+      }
+      HistoWF[uHist][uPw].SetUp(2);
+      HistoWF[uHist][uPw].SetUp(0, MomentumBinEdges.size() - 1,
+                                MomentumBinEdges.data());
+      HistoWF[uHist][uPw].SetUp(1, RadiusBinEdges.size() - 1,
+                                RadiusBinEdges.data());
+      HistoWF[uHist][uPw].Initialize();
+    }
+  }
+  HistoPS = new DLM_Histo<complex<double>> *[NumDLM_Histos];
+  for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++) {
+    HistoPS[uHist] = new DLM_Histo<complex<double>>[Kitty.GetNumPW(uHist)];
+    for (unsigned uPw = 0; uPw < Kitty.GetNumPW(uHist); uPw++) {
+      if (WhichFile[uHist][uPw] == fNFiles) {
+        continue;
+      }
+      HistoPS[uHist][uPw].SetUp(1);
+      HistoPS[uHist][uPw].SetUp(0, MomentumBinEdges.size() - 1,
+                                MomentumBinEdges.data());
+      HistoPS[uHist][uPw].Initialize();
+    }
+  }
+
+  // now fill the values
+  unsigned WhichBin[2];
+  for (unsigned uHist = 0; uHist < NumDLM_Histos; uHist++) {
+    for (unsigned uPw = 0; uPw < Kitty.GetNumPW(uHist); uPw++) {
+      if (WhichFile[uHist][uPw] == fNFiles) {
+        continue;
+      }
+      for (size_t momBin = 0; momBin < MomentumBinEdges.size() - 1; momBin++) {
+        for (size_t radiusBin = 0; radiusBin < RadiusBinEdges.size() - 1;
+             radiusBin++) {
+          WhichBin[0] = momBin;
+          WhichBin[1] = radiusBin;
+          HistoWF[uHist][uPw].SetBinContent(
+              WhichBin, WaveFunctionAll.at(WhichFile[uHist][uPw])
+                            .at(momBin)
+                            .at(radiusBin));
+        }
+        HistoPS[uHist][uPw].SetBinContent(
+            momBin, PhaseShiftAll.at(WhichFile[uHist][uPw]).at(momBin));
+      }
+    }
+  }
+
+  for (unsigned short usCh = 0; usCh < NumChannels; usCh++) {
+    delete[] WhichFile[usCh];
+  }
+  delete[] WhichFile;
+  Input->Close();
+  return Histo;
+}
 
 
 
