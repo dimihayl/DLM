@@ -1375,6 +1375,13 @@ void CATSelder::Renormalize(){
         printf("         In case its the letter, please contact the developers!\n");
     }
 }
+double CATSelder::GetSourceIntegral(){
+    double Integral=0;
+    for(unsigned uNode=0; uNode<NumEndNodes; uNode++){
+        Integral += EndNode[uNode]->SourceValue;
+    }
+    return Integral;
+}
 
 CATSelder::~CATSelder(){
     delete [] EndNode;
@@ -1409,6 +1416,10 @@ double CATSelder::GetGridError(const unsigned& WhichNode, const bool& Normalized
     if(WhichNode>=NumEndNodes) return 0;
     if(SourceContext) return SourceRenormError/(Normalized?EndNode[WhichNode]->GridSize:1);
     else return pow(double(EndNode[WhichNode]->GetNumOfEl()),-0.5)/(Normalized?EndNode[WhichNode]->GridSize:1);
+}
+double CATSelder::GetGridSize(const unsigned& WhichNode){
+    if(WhichNode>=NumEndNodes) return 0;
+    return EndNode[WhichNode]->GetGridSize();
 }
 
 void CATSelder::GetGridAxis(const unsigned& WhichNode, double* Axis){

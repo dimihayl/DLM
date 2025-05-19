@@ -449,7 +449,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         goto CLEAN_SetUpCats_pp;
     }
 
-    if (POT == "AV18")
+    if (POT == "AV18" || POT == "AV18_s" || POT == "AV18_sp")
     {
         // #,#,POT_ID,POT_FLAG,t_tot,t1,t2,s,l,j
         int POT_FLAG = v18_Coupled3P2;
@@ -461,14 +461,18 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         double PotPars1D2[8] = {NN_AV18, static_cast<double>(POT_FLAG), 1, 1, 1, 0, 2, 2};
         cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars1S0->SetParameters(PotPars1S0);
-        cPotPars3P0 = new CATSparameters(CATSparameters::tPotential, 8, true);
-        cPotPars3P0->SetParameters(PotPars3P0);
-        cPotPars3P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
-        cPotPars3P1->SetParameters(PotPars3P1);
-        cPotPars3P2 = new CATSparameters(CATSparameters::tPotential, 8, true);
-        cPotPars3P2->SetParameters(PotPars3P2);
-        cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
-        cPotPars1D2->SetParameters(PotPars1D2);
+        if(POT == "AV18"|| POT == "AV18_sp"){
+            cPotPars3P0 = new CATSparameters(CATSparameters::tPotential, 8, true);
+            cPotPars3P0->SetParameters(PotPars3P0);
+            cPotPars3P1 = new CATSparameters(CATSparameters::tPotential, 8, true);
+            cPotPars3P1->SetParameters(PotPars3P1);
+            cPotPars3P2 = new CATSparameters(CATSparameters::tPotential, 8, true);
+            cPotPars3P2->SetParameters(PotPars3P2);
+            if(POT == "AV18"){
+                cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
+                cPotPars1D2->SetParameters(PotPars1D2);
+            }
+        }
     }
     else if (POT == "AV18_pn")
     {
@@ -627,6 +631,11 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         cPotPars3P2->SetParameter(2, 312);
         cPotPars1D2->SetParameter(2, 122);
     }
+    else if(POT=="SW_s"){
+        cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 2, true);
+        cPotPars1S0->SetParameter(0, -5);
+        cPotPars1S0->SetParameter(1, 0.5);
+    }
     else if(POT == "Johann"){
         ExternalWF = Init_pp_Haidenbauer(CatsFilesFolder[0],Kitty,PotVar);
     }
@@ -663,19 +672,46 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
       Kitty.SetRedMass(0.5 * Mass_p);
 
     if(!Kitty.GetNumChannels()){
-        Kitty.SetNumChannels(4);
-        Kitty.SetNumPW(0, 3);
-        Kitty.SetNumPW(1, 2);
-        Kitty.SetNumPW(2, 2);
-        Kitty.SetNumPW(3, 2);
-        Kitty.SetSpin(0, 0);
-        Kitty.SetSpin(1, 1);
-        Kitty.SetSpin(2, 1);
-        Kitty.SetSpin(3, 1);
-        Kitty.SetChannelWeight(0, 3. / 12.);
-        Kitty.SetChannelWeight(1, 1. / 12.);
-        Kitty.SetChannelWeight(2, 3. / 12.);
-        Kitty.SetChannelWeight(3, 5. / 12.);
+        if(POT=="AV18_s" || POT=="SW_s"){
+            Kitty.SetNumChannels(2);
+            Kitty.SetNumPW(0, 1);
+            Kitty.SetSpin(0, 0);
+            Kitty.SetSpin(1, 1);
+            Kitty.SetChannelWeight(0, 1. / 4.);
+            Kitty.SetChannelWeight(1, 3. / 4.);
+        }
+        else if(POT=="AV18_sp"){
+            Kitty.SetNumChannels(4);
+            Kitty.SetNumPW(0, 1);
+            Kitty.SetNumPW(1, 2);
+            Kitty.SetNumPW(2, 2);
+            Kitty.SetNumPW(3, 2);
+            Kitty.SetSpin(0, 0);
+            Kitty.SetSpin(1, 1);
+            Kitty.SetSpin(2, 1);
+            Kitty.SetSpin(3, 1);
+            Kitty.SetChannelWeight(0, 3. / 12.);
+            Kitty.SetChannelWeight(1, 1. / 12.);
+            Kitty.SetChannelWeight(2, 3. / 12.);
+            Kitty.SetChannelWeight(3, 5. / 12.);
+    
+        }
+        else{
+            Kitty.SetNumChannels(4);
+            Kitty.SetNumPW(0, 3);
+            Kitty.SetNumPW(1, 2);
+            Kitty.SetNumPW(2, 2);
+            Kitty.SetNumPW(3, 2);
+            Kitty.SetSpin(0, 0);
+            Kitty.SetSpin(1, 1);
+            Kitty.SetSpin(2, 1);
+            Kitty.SetSpin(3, 1);
+            Kitty.SetChannelWeight(0, 3. / 12.);
+            Kitty.SetChannelWeight(1, 1. / 12.);
+            Kitty.SetChannelWeight(2, 3. / 12.);
+            Kitty.SetChannelWeight(3, 5. / 12.);
+    
+        }
     }
 
 
@@ -712,6 +748,29 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
             uCh=2; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
             uCh=3; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
         }
+    }
+    else if(POT == "SW_s"){
+        if (cPotPars1S0)
+            Kitty.SetShortRangePotential(0, 0, SquareWell, *cPotPars1S0);
+        if (cPotPars1P1)
+            Kitty.SetShortRangePotential(3, 1, SquareWell, *cPotPars1P1);
+        if (cPotPars1D2)
+            Kitty.SetShortRangePotential(0, 2, SquareWell, *cPotPars1D2);
+        if (cPotPars3S1){
+          Kitty.SetShortRangePotential(1, 1, SquareWell, *cPotPars3S1);
+          if (cPotPars3P1){
+            Kitty.SetShortRangePotential(2, 1, SquareWell, *cPotPars3S1);
+          }
+          if (cPotPars3P2){
+            Kitty.SetShortRangePotential(3, 1, SquareWell, *cPotPars3P2);
+          }
+        }
+        if (cPotPars3P0)
+            Kitty.SetShortRangePotential(1, 1, SquareWell, *cPotPars3P0);
+        if (cPotPars3P1)
+            Kitty.SetShortRangePotential(2, 1, SquareWell, *cPotPars3P1);
+        if (cPotPars3P2)
+            Kitty.SetShortRangePotential(3, 1, SquareWell, *cPotPars3P2);
     }
     else
     {

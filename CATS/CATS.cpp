@@ -44,6 +44,8 @@ CATS::CATS():
     OnlyNumPw = NULL;
     WfType = NULL;
     Sw_Pars = NULL;
+    //Sofia_Pars = NULL;
+    Sofia_Cutoff = 0;
     //MaxNumThreads = 32767;
     MaxNumThreads = 1;
     ExcludeFailedConvergence = true;
@@ -80,6 +82,9 @@ CATS::CATS():
     LoadedMaxTotPairMom = 1e100;
     UseTotMomCut = false;
     Notifications = nAll;
+    internal_SetWfType = false;
+    use_sofia_model = false;
+    
 
     Spin = NULL;
     NumPW = NULL;
@@ -134,6 +139,7 @@ CATS::CATS():
 
     CPF = NULL;
     TheTrueSource = NULL;
+    compute_true_source = false;
 DEBUG=-1;
     SetIpBins(1, -1000, 1000);
 
@@ -162,6 +168,7 @@ CATS::~CATS(){
     if(PotPar){delete[]PotPar;PotPar=NULL;}
     if(ExternalWF){delete[]ExternalWF;ExternalWF=NULL;}
     if(ExternalPS){delete[]ExternalPS;ExternalPS=NULL;}
+    if(TheTrueSource){delete TheTrueSource;TheTrueSource=NULL;}
 }
 
 //N.B. While those guy seemingly do not depend in NumIpBins directly,
@@ -303,6 +310,10 @@ void CATS::DelPotPw(const unsigned short& usCh, const unsigned short& usPW){
       delete [] Sw_Pars[usCh][usPW];
       Sw_Pars[usCh][usPW] = NULL;
     }
+    //if(Sofia_Pars&&Sw_Pars[usCh]&&Sofia_Pars[usCh][usPW]){
+    //  delete [] Sofia_Pars[usCh][usPW];
+    //  Sofia_Pars[usCh][usPW] = NULL;
+    //}    
     if(PotPar&&PotPar[usCh]&&PotPar[usCh][usPW]){
         delete PotPar[usCh][usPW];
         PotPar[usCh][usPW] = NULL;
@@ -336,6 +347,10 @@ void CATS::DelPotCh(const unsigned short& usCh){
         delete[]Sw_Pars[usCh];
         Sw_Pars[usCh] = NULL;
     }
+    //if(Sofia_Pars&&Sofia_Pars[usCh]){
+    //    delete[]Sofia_Pars[usCh];
+    //    Sofia_Pars[usCh] = NULL;
+    //}
     if(PotPar&&PotPar[usCh]){
         delete[]PotPar[usCh];
         PotPar[usCh] = NULL;
@@ -447,10 +462,12 @@ void CATS::SetNumChannels(const unsigned short& numCh){
     if(ShortRangePotential){delete[]ShortRangePotential;}
     if(WfType){delete[]WfType;}
     if(Sw_Pars){delete[]Sw_Pars;}
+    //if(Sofia_Pars){delete[]Sofia_Pars;}
 
     ShortRangePotential = new CatsPotential* [numCh];
     WfType = new char* [numCh];
     Sw_Pars = new double** [numCh];
+    //Sofia_Pars = new double** [numCh];
     PotPar = new CATSparameters** [numCh];
     ExternalWF = new DLM_Histo<complex<double>>** [numCh];
     ExternalPS = new DLM_Histo<complex<double>>** [numCh];
@@ -459,6 +476,7 @@ void CATS::SetNumChannels(const unsigned short& numCh){
         ShortRangePotential[usCh] = NULL;
         WfType[usCh] = NULL;
         Sw_Pars[usCh] = NULL;
+        //Sofia_Pars[usCh] = NULL;
         PotPar[usCh] = NULL;
         ExternalWF[usCh] = NULL;
         ExternalPS[usCh] = NULL;
@@ -509,6 +527,7 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
     ShortRangePotential[usCh] = new CatsPotential [numPW];
     WfType[usCh] = new char [numPW];
     Sw_Pars[usCh] = new double* [numPW];
+    //Sofia_Pars[usCh] = new double* [numPW];
     PotPar[usCh] = new CATSparameters* [numPW];
     ExternalWF[usCh] = new DLM_Histo<complex<double>>* [numPW];
     ExternalPS[usCh] = new DLM_Histo<complex<double>>* [numPW];
@@ -517,6 +536,8 @@ void CATS::SetNumPW(const unsigned short& usCh, const unsigned short& numPW){
         WfType[usCh][usPW] = 0;
         Sw_Pars[usCh][usPW] = new double [2];
         Sw_Pars[usCh][usPW][0]=0;Sw_Pars[usCh][usPW][1]=0;
+        //Sofia_Pars[usCh][usPW] = new double [2];
+        //Sofia_Pars[usCh][usPW][0]=0;Sofia_Pars[usCh][usPW][1]=0;        
         PotPar[usCh][usPW] = NULL;
         ExternalWF[usCh][usPW] = NULL;
         ExternalPS[usCh][usPW] = NULL;
@@ -1483,18 +1504,43 @@ void CATS::SetShortRangeSquareWell(const unsigned usCh, const unsigned usPW, con
   Sw_Pars[usCh][usPW][1] = width*FmToNu;
   SetWfType(usCh,usPW,wSquareWell);
 }
+void CATS::SetShortRangeSofia(const double& cutoff){
+  //Sofia_Pars[usCh][usPW][0] = depth*FmToNu;
+  //Sofia_Pars[usCh][usPW][1] = width*FmToNu;
+  if(use_sofia_model && cutoff==Sofia_Cutoff) return;
+  Sofia_Cutoff = cutoff;
+  SetWfType(wSofia);
+  ComputedWaveFunction = false;
+  ComputedCorrFunction = false;  
+}
 void CATS::SetWfType(const unsigned usCh, const unsigned usPW, const int type){
   if(NumCh<=usCh || NumPW[usCh]<=usPW){
       if(Notifications>=nError)
           printf("\033[1;31mERROR:\033[0m Bad input in CATS::SetWfType(...)\n");
       return;
   }
-  if(type!=wSchroedinger&&type!=wExternal&&type!=wSquareWell){
+  if(type!=wSchroedinger&&type!=wExternal&&type!=wSquareWell&&type!=wSofia){
       if(Notifications>=nError)
           printf("\033[1;31mERROR:\033[0m Bad type in CATS::SetWfType(...)\n");
       return;
   }
+    if(type==wSofia && internal_SetWfType==false){
+        if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m The Sofia model requires ALL channels and PWs to be evaluated with it! Applying the Sofia model to ALL wave functions!\n");
+        SetWfType(type);
+        return;
+    }
   WfType[usCh][usPW] = type;
+  if(type==wSofia) use_sofia_model = true;
+  else use_sofia_model = false;
+}
+void CATS::SetWfType(const int type){
+    for(unsigned short usCh=0; usCh<NumCh; usCh++){
+        for(unsigned short usPW=0; usPW<NumPW[usCh]; usPW++){
+            internal_SetWfType = true;
+            SetWfType(usCh,usPW,type);
+            internal_SetWfType = false;
+        }
+    }
 }
 
 void CATS::RemoveAnaSource(){
@@ -1834,6 +1880,13 @@ void CATS::ComputeTheRadialWaveFunction(){
 }
 
 void CATS::ComputeWaveFunction(){
+
+    //the sofia model does not require to set the WF, as we will work with a simple
+    //phase shift which will be implemented later when we get the effective WF
+    if(use_sofia_model){
+        ComputedWaveFunction = true;
+        return;
+    }
 
     if(!MomBinConverged){
         MomBinConverged = new bool [NumMomBins];
@@ -2329,7 +2382,7 @@ DEBUG=-1;
         }
         else{
           if(Notifications>=nError)
-              printf("          \033[1;31mERROR:\033[0m Major bug in ComputeWaveFunction \033[0m contact the developers!\n", InputFileName);
+              printf("          \033[1;31mERROR:\033[0m Major bug in ComputeWaveFunction \033[0m contact the developers!\n");
           return;
         }
 
@@ -2903,10 +2956,12 @@ void CATS::FoldSourceAndWF(){
 
     unsigned NumGridPts;
     double SourceVal;
+    double GridPointSize;
     double WaveFunVal;
     double Integrand;
     double SourceInt;
     double SourceIntCut;
+    double LostInSofia;
     unsigned short NumThreads = omp_get_num_procs();
     if(NumThreads>MaxNumThreads) NumThreads = MaxNumThreads;
     unsigned uMomBinSource;
@@ -2918,6 +2973,7 @@ void CATS::FoldSourceAndWF(){
         kCorrFunErr[uMomBin] = 0;
         //N.B. this whole for-looped was stopped to be maintained, there could be issues with 
         //the normalization of the source and the correlation
+        //either way, this does NOT execute at all for Analytic sources
         for(unsigned uIpBin=0; uIpBin<NumIpBins; uIpBin++){
             //perform the k,b analysis only for a data-source which has at least 2 b-bins
             if(UseAnalyticSource || NumIpBins<=1) continue;
@@ -2949,7 +3005,7 @@ void CATS::FoldSourceAndWF(){
                 kbCorrFun[uMomBin][uIpBin] += Integrand;
                 kbCorrFunErr[uMomBin][uIpBin] += pow(Integrand*kbSourceGrid[uMomBinSource][uIpBin]->GetGridError(uGrid),2);
             }//uGrid
-
+            
             //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
             //here this is corrected for
             if(SourceInt>1+1e-4){
@@ -2991,34 +3047,116 @@ void CATS::FoldSourceAndWF(){
                                                     pow(WeightIpError[uIpBin]*kbCorrFun[uMomBin][uIpBin],2) +
                                                     pow(WeightIp[uIpBin]*kbCorrFunErr[uMomBin][uIpBin],2);
             }
+            //printf("SourceInt = %f\n",SourceInt);
         }
 
+
+        //the thing of interest
         if( UseAnalyticSource || NumIpBins<=1 || MixingDepth==1 ){
             if(!kSourceGrid[uMomBinSource]){
                 kCorrFunErr[uMomBin] = 1e6;
             }
+            //this is where I will always end up with an analytic source
             else{
                 NumGridPts = kSourceGrid[uMomBinSource]->GetNumEndNodes();
                 SourceInt = 0;
                 SourceIntCut = 0;
+                LostInSofia = 0;
 //printf("\033[1;36m DEBUG (2):\033[0m NumGridPts=%u\n",NumGridPts);
                 for(unsigned uGrid=0; uGrid<NumGridPts; uGrid++){
                     double Radius = kSourceGrid[uMomBinSource]->GetParValue(uGrid, 0)*FmToNu;
+                    double NextRadius;
+                    if(uGrid<NumGridPts-1)
+                        NextRadius = kSourceGrid[uMomBinSource]->GetParValue(uGrid+1, 0)*FmToNu;
+                    else NextRadius = 1e16;
                     //this should return zero in case of !ThetaDependentSource,
                     //maybe worth doing a QA to make sure
-                    //CosTheta = kSourceGrid[uMomBin]->GetParValue(uGrid, 1);
+                    //if(uMomBinSource==0&&uGrid==0){
+                    //double rad = kSourceGrid[uMomBinSource]->GetParValue(uGrid, 0);
+                    //double cth = ThetaDependentSource?kSourceGrid[uMomBinSource]->GetParValue(uGrid, 1):-100;
+                    //printf("%u r = %.3f; cth = %.5f\n",uGrid,rad,cth);
+                    //usleep(100e3);
+                    //}
                     SourceVal = kSourceGrid[uMomBinSource]->GetGridValue(uGrid);
+                    GridPointSize = kSourceGrid[uMomBinSource]->GetGridSize(uGrid);
+                    if(use_sofia_model && Radius<Sofia_Cutoff*FmToNu){
+                        LostInSofia += SourceVal;
+                        SourceVal = 0;
+                    }
+                    
+                    if(compute_true_source){
+                        double source_box_rad_0 = kSourceGrid[uMomBinSource]->GetParValue(uGrid, 0);
+                        double source_box_rad_1 = kSourceGrid[uMomBinSource]->GetParValue(uGrid+1, 0);
+                        double source_box_rad = (source_box_rad_1+source_box_rad_0)*0.5;
+                        double source_box_cth_0 = kSourceGrid[uMomBinSource]->GetParValue(uGrid, 1);
+                        double source_box_cth_1 = kSourceGrid[uMomBinSource]->GetParValue(uGrid+1, 1);  
+                        double source_box_cth = (source_box_cth_1+source_box_cth_0)*0.5;
+                        //if(uGrid==NumGridPts-1)              
+                        //printf("%f %f %f %f\n",source_box_rad_0,source_box_rad_1,source_box_cth_0,source_box_cth_1);
+                        //usleep(100e3);
+                        unsigned which_ts_bin_rad = TheTrueSource->GetBin(1, source_box_rad);
+                        unsigned which_ts_bin_cth = TheTrueSource->GetBin(2, source_box_cth);
+                        unsigned which_bin[3];
+                        which_bin[0] = uMomBin;
+                        which_bin[1] = which_ts_bin_rad;
+                        which_bin[2] = which_ts_bin_cth;
+                        
+                        //printf("%u(%.2f) %u(%.2f) %u(%.2f) %f\n",uMomBin,MomBinCenter[uMomBin],which_ts_bin_rad,source_box_rad,which_ts_bin_cth,source_box_cth,SourceVal);
+                        //usleep(50e3);
+
+                        if(         ThetaDependentSource &&
+                                    source_box_rad_0<TheTrueSource->GetBinCenter(1,which_ts_bin_rad) && 
+                                    source_box_rad_1>TheTrueSource->GetBinCenter(1,which_ts_bin_rad) &&
+                                    source_box_cth_0<TheTrueSource->GetBinCenter(2,which_ts_bin_rad) &&
+                                    source_box_cth_1<TheTrueSource->GetBinCenter(2,which_ts_bin_rad)){
+                                TheTrueSource->SetBinContent(which_bin, SourceVal/GridPointSize);
+                        }
+                        else if(    !ThetaDependentSource &&
+                                    source_box_rad_0<TheTrueSource->GetBinCenter(1,which_ts_bin_rad) && 
+                                    source_box_rad_1>TheTrueSource->GetBinCenter(1,which_ts_bin_rad)){
+                            for(unsigned uCth=0; uCth<TheTrueSource->GetNbins(2); uCth++){
+                                which_bin[2] = uCth;
+                                TheTrueSource->SetBinContent(which_bin, SourceVal/GridPointSize);
+                            }
+                        }
+                        
+                    }
+//if(use_sofia_model){
+//printf("\033[1;36m  DEBUG (2):\033[0m SourceVal=%.4e\n",SourceVal);
+//}
                     if(!SourceVal) continue;
                     SourceInt += SourceVal;
                     if(Radius<SourceMinRad || Radius>SourceMaxRad) {continue;}
                     SourceIntCut += SourceVal;
-//printf("\033[1;36m  DEBUG (2):\033[0m SourceVal=%.4e\n",SourceVal);
+//
                     WaveFunVal=0;
                     for(unsigned usCh=0; usCh<NumCh; usCh++) WaveFunVal+=(WaveFunction2[uMomBin][uGrid][usCh])*ChannelWeight[usCh];
+
+//if(use_sofia_model){
+//printf("\033[1;36m  DEBUG (2):\033[0m %u SourceVal*WaveFunVal = %.4f * %.4f\n",uMomBin,SourceVal,WaveFunVal);
+//usleep(5e3);
+//}
                     Integrand = SourceVal*WaveFunVal;
                     kCorrFun[uMomBin] += Integrand;
                     kCorrFunErr[uMomBin] += pow(Integrand*kSourceGrid[uMomBinSource]->GetGridError(uGrid),2);
                 }//uGrid
+
+                if(use_sofia_model){
+                    kCorrFun[uMomBin] *= (SourceInt+LostInSofia)/SourceInt;
+                    kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])*(SourceInt+LostInSofia)/SourceInt;
+                    SourceIntCut *= (SourceInt+LostInSofia)/SourceInt;
+                    SourceInt += LostInSofia;
+
+                    if(compute_true_source){
+                        for(unsigned uRad=0; uRad<TheTrueSource->GetNbins(1); uRad++){
+                            for(unsigned uCth=0; uCth<TheTrueSource->GetNbins(2); uCth++){
+                                unsigned tot_bin = TheTrueSource->GetTotBin(uMomBin,uRad,uCth);
+                                TheTrueSource->ScaleBin(tot_bin, (SourceInt+LostInSofia)/SourceInt);
+                            }
+                        }
+                    }
+
+                }
 
                 //ideally this should not happen, but in case it does (i.e. the source is normalized to value above 1)
                 //here this is corrected for
@@ -3034,8 +3172,17 @@ void CATS::FoldSourceAndWF(){
                     kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])/SourceInt;
                     SourceIntCut/=SourceInt;
                     SourceInt=1.;
+
+                    if(compute_true_source){
+                        for(unsigned uRad=0; uRad<TheTrueSource->GetNbins(1); uRad++){
+                            for(unsigned uCth=0; uCth<TheTrueSource->GetNbins(2); uCth++){
+                                unsigned tot_bin = TheTrueSource->GetTotBin(uMomBin,uRad,uCth);
+                                TheTrueSource->ScaleBin(tot_bin, 1./SourceInt);
+                            }
+                        }
+                    }                    
                 }
-//printf("\033[1;36mDEBUG (2):\033[0m Integrated value=%.4e\n",SourceInt);
+
                 //if the source is assumed normalized, any deviation below unity is considered to be an effect of a
                 //long-range tail that is unaccounted for due to the numerical precision. This tail should result in
                 //a flat residual that is added to the correlation
@@ -3059,9 +3206,11 @@ void CATS::FoldSourceAndWF(){
 
                 kCorrFun[uMomBin] *= double(SourceInt)/double(SourceIntCut);
                 kCorrFunErr[uMomBin] = sqrt(kCorrFunErr[uMomBin])*double(SourceInt)/double(SourceIntCut);
-            }
+
+                //printf("\033[1;36mDEBUG (2):\033[0m Integrated value=%.4e <> %.4e kCorrFun[uMomBin]=%.4e\n",SourceInt, SourceIntCut, kCorrFun[uMomBin]);
+            }//if analytic source
         }
-    }
+    }//uMom
     ComputedCorrFunction = true;
 }
 
@@ -3237,6 +3386,19 @@ void CATS::UpdateSourceGrid(){
         }
     }
     SourceUpdated = true;
+}
+
+void CATS::GenerateTrueSourceHisto(){
+    if(TheTrueSource) delete TheTrueSource;
+    TheTrueSource = new DLM_Histo<float> ();
+    TheTrueSource->SetUp(3);
+    
+    TheTrueSource->SetUp(0,NumMomBins,MomBin);
+    TheTrueSource->SetUp(1,int(SourceMaxRad*NuToFm*16),0,SourceMaxRad*NuToFm);
+    TheTrueSource->SetUp(2,64,-1,1);
+
+    TheTrueSource->Initialize();
+
 }
 
 double CATS::CoulombPotential(const double& Radius) const{
@@ -3481,7 +3643,6 @@ unsigned CATS::GetBoxId(double* particle){
 
 complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& Radius,
                                 const unsigned short& usCh, const unsigned short& usPW, const bool& DivideByR, const bool& Asymptotic) const{
-
     double Momentum = GetMomentum(uMomBin);
     if(uMomBin>=NumMomBins){
         if(Notifications>=nError)
@@ -3495,22 +3656,53 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
 
     unsigned RadBin = GetRadBin(Radius, uMomBin, usCh, usPW);
 
-    if(RadBin<SWFB && !Asymptotic){
+    //a dummy thing that makes us go directly to the else statement below
+    if(WfType[usCh][usPW]==wSofia){
+        RadBin = -1;
+        //printf("hello\n");
+    }
+
+/*
+    if(true){
+        const complex<double>* WFU = WaveFunctionU[uMomBin][usCh][usPW];
+        const double* WFR = WaveFunRad[uMomBin][usCh][usPW];
+        //the external WF is assumed to be given in fm
+        complex<double> Result = EvalBinnedFun(Radius, SWFB, WFR, NULL, WFU)*MultFactor;
+        double MultFactorR = DivideByR?1./(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum+1e-64):1;
+        double rpw = ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW, Q1Q2)*MultFactor;
+        double Radius_fm = Radius*NuToFm;
+        if(uMomBin==5 && usCh==0 && usPW==0 && Radius_fm>4 && Radius_fm<4.02){
+            printf("%i k*=%.0f r*=%.2f Re[Result]=%.4f Imag[Result]=%.4f rpw=%.4f ps=%.3f\n", 
+                use_sofia_model, Momentum, Radius_fm, real(Result), imag(Result), rpw, PhaseShift[uMomBin][usCh][usPW]);
+        }
+        
+    }
+*/
+
+    if(!use_sofia_model && RadBin<SWFB && !Asymptotic){
         const complex<double>* WFU = WaveFunctionU[uMomBin][usCh][usPW];
         const double* WFR = WaveFunRad[uMomBin][usCh][usPW];
         //the external WF is assumed to be given in fm
         complex<double> Result = EvalBinnedFun(Radius, SWFB, WFR, NULL, WFU);
         if(Result==1e6 && Notifications>=nWarning)
             printf("\033[1;33mWARNING:\033[0m DeltaRad==0, which might point to a bug! Please contact the developers!\n");
+        //printf("hello %i\n",Asymptotic);
+        //usleep(100e3);
         return Result*MultFactor;
     }
     //below the 1st bin ==> assume zero
-    else if(RadBin==SWFB+1){
+    else if(!use_sofia_model && RadBin==SWFB+1){
         return 0;
     }
     else{
+        //if(use_sofia_model)
+        //    printf("%f + %f / %f\n",Radius,PhaseShift[uMomBin][usCh][usPW],Momentum);
+        //if(uMomBin==5 && usCh==0 && usPW==0){
+        //    printf("%u %.3f %.4f %.4f\n", use_sofia_model, Radius, real(EvalBinnedFun(Radius, SWFB, WFR, NULL, WFU))*MultFactor, ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW, Q1Q2)*MultFactor);
+        //}
         return ReferencePartialWave(Radius+PhaseShift[uMomBin][usCh][usPW]/Momentum, Momentum, usPW, Q1Q2)*MultFactor;
     }
+
 }
 
 double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, const unsigned short& usCh){
@@ -3524,7 +3716,7 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
         //numerical solution, no computation result for zero potential
-        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW])){
+        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW] || use_sofia_model)){
             Result = EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             //Check this!!! Should it be squared?
             //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
@@ -3575,7 +3767,7 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
     for(unsigned short usPW=0; usPW<MaxPw; usPW++){
         //wave function symmetrization
         if( IdenticalParticles && (usPW+Spin[usCh])%2 ) continue;
-        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW])){
+        if(usPW<NumPW[usCh] && (ShortRangePotential[usCh][usPW] || ExternalWF[usCh][usPW] || WfType[usCh][usPW]==wSofia)){
             if(LegPol[usPW]==1e6) LegPol[usPW]=gsl_sf_legendre_Pl(usPW,CosTheta);
             if(SolvedPartWave[usPW]==1e6) SolvedPartWave[usPW]=EvalWaveFunctionU(uMomBin, Radius, usCh, usPW, true);
             Result = double(2*usPW+1)*SolvedPartWave[usPW]*LegPol[usPW];
@@ -3594,7 +3786,8 @@ double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radiu
         TotalResult += Result;
     }
     //!!! There was a factor of x2 missing, no idea from where, could be the angle phi? Check it out!
-    return 2.*pow(abs(TotalResult),2);
+    //I think it was a bad source normalization, the factor of 2x needed to be removed now
+    return pow(abs(TotalResult),2);
 }
 
 double CATS::EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta){
@@ -3781,29 +3974,29 @@ unsigned CATS::GetNumSourcePars() const{
 
 
 void CATS::ComputeTheSource(const bool& yesno){
-    /*
+    
     if(yesno){
-        if(!TheTrueSource){
-            TheTrueSource = new DLM_Histo<float> ();
-            TheTrueSource->SetUp(3);
-            TheTrueSource->SetUp(0,NumMomBins,MomBin);
-            TheTrueSource->SetUp(1,int(MaxRad*16),0,MaxRad);
-            TheTrueSource->SetUp(2,64,-1,1);
-        }        
+        GenerateTrueSourceHisto();
+        compute_true_source = true;      
     }
     else{
         if(TheTrueSource){
             delete TheTrueSource;
             TheTrueSource = NULL;
         }
+        compute_true_source = false;
     }
-    */
 }
-double CATS::ComputedSource(const double& Momentum, const double& Radius, const double& CosTheta) const{
-    //if(!TheTrueSource) {return 0;}
-    //return TheTrueSource->Eval(Momentum,Radius,CosTheta);
+double CATS::ComputedSource(const float Momentum, const float Radius, const float CosTheta) const{
+    if(!TheTrueSource) {return -1;}
+    return TheTrueSource->Eval3D(Momentum,Radius,CosTheta); 
 }
 
+DLM_Histo<float>* CATS::CopyComputedSource(){
+    if(!TheTrueSource) return NULL;
+    DLM_Histo<float>* source_copy = new DLM_Histo<float>(*TheTrueSource);
+    return source_copy;
+}
 
 double CATS::EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const{
     if(!ShortRangePotential){

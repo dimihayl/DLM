@@ -462,6 +462,14 @@ public:
         }
         return TotBin;
     }
+    unsigned GetTotBin(const unsigned& WhichX, const unsigned& WhichY) const{
+        unsigned which_bin[2] = {WhichX, WhichY};
+        return GetTotBin(which_bin);
+    }
+    unsigned GetTotBin(const unsigned& WhichX, const unsigned& WhichY, const unsigned& WhichZ) const{
+        unsigned which_bin[3] = {WhichX, WhichY, WhichZ};
+        return GetTotBin(which_bin);
+    }   
     //BinIdPerAxis[sDim] -> saves for each dim the bin number
     void GetBinCoordinates(const unsigned& WhichTotBin, unsigned* BinIdPerAxis) const{
         if(!Initialized) {InitWarning(); return;}
@@ -1454,19 +1462,36 @@ public:
     }
 
     Type Eval2D(const double xVal, const double yVal, const bool& EvalTheError=false) const{
-      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Eval(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Eval2D(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
       double xPars[2];
       xPars[0] = xVal;
       xPars[1] = yVal;
       return Eval(xPars,EvalTheError);
     }
     Type EvalError2D(const double xVal, const double yVal) const{
-      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo EvalError(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
+      if(Dim!=2) {printf("\033[1;33mWARNING:\033[0m DLM_Histo EvalError2D(xVal) function failed, this set up works only for Dim=2!\n"); return Type(0);}
       double xPars[2];
       xPars[0] = xVal;
       xPars[1] = yVal;
       return EvalError(xPars);
     }    
+
+    Type Eval3D(const double xVal, const double yVal, const double zVal, const bool& EvalTheError=false) const{
+      if(Dim!=3) {printf("\033[1;33mWARNING:\033[0m DLM_Histo Eval3D(xVal) function failed, this set up works only for Dim=3!\n"); return Type(0);}
+      double xPars[3];
+      xPars[0] = xVal;
+      xPars[1] = yVal;
+      xPars[2] = zVal;
+      return Eval(xPars,EvalTheError);
+    }
+    Type EvalError3D(const double xVal, const double yVal, const double zVal) const{
+      if(Dim!=3) {printf("\033[1;33mWARNING:\033[0m DLM_Histo EvalError3D(xVal) function failed, this set up works only for Dim=3!\n"); return Type(0);}
+      double xPars[3];
+      xPars[0] = xVal;
+      xPars[1] = yVal;
+      xPars[2] = zVal;
+      return EvalError(xPars);
+    }   
 
     //makes this histogram equal in values to other, without re-initialization.
     //This only works if we have the same Dim.

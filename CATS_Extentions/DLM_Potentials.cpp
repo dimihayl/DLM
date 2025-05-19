@@ -151,6 +151,27 @@ double YukawaDimiSmooth(double* Pars) {
   return Yuk+RC;
 }
 
+//double last_tmp = 0;
+double ScreenedCoulomb(double* Pars){
+    double& r = Pars[0];
+    double& Q1Q2 = Pars[2];
+    double& cutoff = Pars[3];
+    double slope = Pars[4];
+    if(slope==0){
+        slope = 0.001;
+    }
+    double Coulomb = Q1Q2*AlphaFS/(fabs(r)*FmToNu+1e-64);
+    double Screen = 1./(1.+exp((r-cutoff)/slope));
+    
+    //if(int(last_tmp)!=int(r) && r<60)
+    //if(int(r*10)%10==0 && r<60)
+        //printf("r %.2f C,S %.3f %.3f\n", r, Coulomb, Screen);
+    //last_tmp = r;
+    
+    return Screen*Coulomb;
+}
+
+
 //-V0*exp(-mu*r)/(1.-exp(-mu*r)),
 //where V0 is in MeV and mu is in MeV as well
 double Hulthen(double* Pars) {
@@ -178,6 +199,36 @@ double SquareWell(double* Pars){
   if(r<=width) return depth;
   else return 0;
 }
+
+//like the well, but can be offset. The "width" parameter is only the half-width
+//Pars[2] = p0 = strength
+//Pars[3] = p1 = position
+//Pars[4] = p2 = half-width
+double PotentialBarrier(double* Pars){ 
+  double r = fabs(Pars[0]);
+  double& amplitude = Pars[2];//MeV
+  double& position = Pars[3];//MeV
+  double& width = Pars[4];//fm
+  if(r<position-width) return 0;
+  else if(r>position+width) return 0;
+  else return amplitude;
+}
+
+//gaussians, but not centered at zero
+//pars[0/1] r*/k*
+//pars[2] = p0 = number of gaussians
+//pars[3-5] p1-3 are the amplitude,mean,sigma of the 1st gaussian
+//...etc in groups of 3 for each next gaussian
+double FloatingGaussians(double* Pars){
+    double& rstar = Pars[0];
+    int NumGauss = round(Pars[2]);
+    double potential=0;
+    for(int iGauss=0; iGauss<NumGauss; iGauss++){
+        potential += Pars[3+3*iGauss]*exp(-pow((rstar-Pars[4+3*iGauss])/Pars[5+3*iGauss],2.));
+    }
+    return potential;
+}
+
 
 //i(x) = −exp(−x−0)/(x+g(x))+20h(x)
 /*

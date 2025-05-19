@@ -64,6 +64,8 @@ public:
     double GetPseudoRap() const;
     double GetRapidity() const;
     //returns the angle between the spacial and momentum vector
+    //!!! if you deal with a relative momentum vector, it turns out that the 
+    //cosine of the scattering angle has reversed sign !!! I.e. if you use this function, take the output with a shift of pi (-cos)
     double GetScatAngle() const;
     double GetCosScatAngle() const;
     //get the spacial-spacial, momentum-momentum, or spacial-momentum angle
@@ -375,8 +377,10 @@ public:
     double GetParValue(const unsigned& WhichNode, const short& WhichPar);
     double GetGridValue(const unsigned& WhichNode, const bool& Normalized=false);
     double GetGridError(const unsigned& WhichNode, const bool& Normalized=false);
+    double GetGridSize(const unsigned& WhichNode);
     void GetGridAxis(const unsigned& WhichNode, double* Axis);
     void Renormalize();
+    double GetSourceIntegral();
 
     unsigned GetBoxId(double* particle);
     unsigned FindFirstParticleWithID(const unsigned& gbid);

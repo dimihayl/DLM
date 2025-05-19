@@ -275,8 +275,9 @@ public:
     //consider the renormalization procedures, which may lead to some inaccuracies. By default we do not 
     //save the source to be efficient on memory.
     //THIS IS WORK IN PROGRESS, AND MAY WELL BE SCRAPPED DUE TO SOME DIFFICULTIES
-    void ComputeTheSource(const bool& yesno);
-    double ComputedSource(const double& Momentum, const double& Radius, const double& CosTheta) const;
+    void ComputeTheSource(const bool& yesno=true);
+    double ComputedSource(const float Momentum, const float Radius, const float CosTheta) const;
+    DLM_Histo<float>* CopyComputedSource();
 
     unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
@@ -301,9 +302,11 @@ public:
     //no segmentation violation!!!
     void SetShortRangePotential(const unsigned& usCh, const unsigned& usPW, const unsigned& WhichPar, const double& Value);
     void SetShortRangeSquareWell(const unsigned usCh, const unsigned usPW, const double depth, const double width);
-    //wSchroedinger, wExternal, wSquareWell
+    void SetShortRangeSofia(const double& cutoff);
+    //wSchroedinger, wExternal, wSquareWell, wSofia
     //N.B. SetShortRangePotential, SetShortRangeSquareWell and SetExternalWaveFunction all change the type automatically
     void SetWfType(const unsigned usCh, const unsigned usPW, const int type);
+    void SetWfType(const int type);
 
     void RemoveAnaSource();
 
@@ -371,7 +374,7 @@ void test_ad5(){
     //!------------------------------------------------
     enum KillOptions { kNothingChanged, kSourceChanged, kPotentialChanged, kAllChanged };
     enum NotificationOptions { nSilent, nError, nWarning, nAll };
-    enum WfOptions { wSchroedinger, wExternal, wSquareWell };
+    enum WfOptions { wSchroedinger, wExternal, wSquareWell, wSofia };
 //DLM_Histo<double> SourceHistoTemp;
 protected:
 
@@ -491,6 +494,9 @@ protected:
     char** WfType;
     //[usCh, usPW, depth/width]
     double*** Sw_Pars;
+    //wSofia
+    //[usCh, usPW, cut_off], the cutoff is also applied to the source!!!
+    double Sofia_Cutoff;
 
     bool ExcludeFailedConvergence;
     bool MomDepSource;
@@ -605,6 +611,9 @@ protected:
     float ProgressLoad;
     float ProgressFold;
 
+    bool internal_SetWfType;
+    bool use_sofia_model;
+
     //plane partial wave as a solution from the gsl libraries
     double PlanePartialWave(const double& Radius, const double& Momentum, const unsigned short& usPW) const;
     //coulomb partial wave as a solution from the gsl libraries
@@ -633,6 +642,8 @@ protected:
 
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta, const unsigned short& usCh);
     double EffectiveFunctionTheta(const unsigned& uMomBin, const double& Radius, const double& CosTheta);
+
+    void GenerateTrueSourceHisto();
 
     template <class Type> Type GetBinCenter(const Type* Bins, const unsigned& WhichBin) const;
     template <class Type> Type EvalBinnedFun(const double& xVal, const unsigned& NumBins, const double* Bins, const double* BinCent, const Type* Function) const;
@@ -707,6 +718,7 @@ protected:
     //i.e. with all normalizations etc, as used to evaluate C(k*).
     //It is given as a function of kstar, rstar, costheta
     DLM_Histo<float>* TheTrueSource;
+    bool compute_true_source;
 
     //these are used as buffers when it comes to computing the Reference Partial Waves and the Legendre Polynomials
     //in particular, when we loop over all PWs twice, we actually evaluate the same functions multiple times => save them in an array to save CPU time

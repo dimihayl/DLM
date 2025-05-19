@@ -3,6 +3,7 @@ import re
 import ROOT
 import math
 import optuna
+from optuna.samplers import TPESampler
 import subprocess
 import time
 import shutil
@@ -18,7 +19,12 @@ script_name = script_dir.replace("/PythonScripts", "/install/bin/PotentialDesign
 FmToNu = 5.067731237e-3
 
 #studyR = optuna.create_study(direction='minimize', sampler=optuna.samplers.RandomSampler())
+#orginal:
 studyT = optuna.create_study(direction='minimize', sampler=optuna.samplers.TPESampler())
+#suggest by chatGPT to broaden the search:
+#sampler = TPESampler(n_startup_trials=123, n_ei_candidates=100, multivariate=True, group=True)
+#studyT = optuna.create_study(sampler=sampler, direction="minimize")
+#studyT.optimize(target_function, n_trials=1000)
 
 #these are the ranges of the Gaussian potential parameters, which we would like to study
 par1_range = [0, 0]

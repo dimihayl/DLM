@@ -40,9 +40,19 @@ double YukawaGaussCore(double* Pars);
 double YukawaDimiCore(double* Pars);
 double YukawaDimiSmooth(double* Pars);
 
+double ScreenedCoulomb(double* Pars);
+
 double Hulthen(double* Pars);
 double HulthenSmooth(double* Pars);
 double SquareWell(double* Pars);
+double PotentialBarrier(double* Pars);
+
+//gaussians, but not centered at zero
+//pars[0/1] r*/k*
+//pars[2] = p0 = number of gaussians
+//pars[3-5] p1-3 are the amplitude,mean,sigma of the 1st gaussian
+//...etc in groups of 3 for each next gaussian
+double FloatingGaussians(double* Pars);
 
 void SetUpNorfolk(const char* InputFolder);
 double pp_Norfolk(double* Pars);

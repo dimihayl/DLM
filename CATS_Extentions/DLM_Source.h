@@ -11,6 +11,16 @@ class KdpPars;
 
 double GaussSource(double* Pars);
 double GaussSourceCutOff(double* Pars);
+//this source will not be normalized! However, CATS does a renormalization itself, so it should be fine.
+//[3] = width
+//[4] = cutoff
+//[5] = slope of the cutoff
+double GaussSourceGentleCutOff(double* Pars);
+double GaussSourceGentleCutOffTF1(double* x, double* Pars);
+//[3] = width
+//[4] = shift (of the zero point, its also zero below that value)
+double GaussSourceShifted(double* Pars);
+double GaussSourceShiftedTF1(double* x, double* Pars);
 double GaussSourceTF1(double* x, double* Pars);
 double GaussSourceScaledTF1(double* x, double* Pars);
 

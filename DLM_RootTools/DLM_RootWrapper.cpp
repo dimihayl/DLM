@@ -1,9 +1,10 @@
-
+#include "CATS.h"
 #include "DLM_RootWrapper.h"
 #include "DLM_Histo.h"
 #include "TH2F.h"
 #include "TH1F.h"
 #include "TROOT.h"
+#include "TGraph.h"
 #include <unistd.h>
 
 
@@ -174,4 +175,43 @@ TH1F* Convert_DlmHisto_TH1F(const DLM_Histo<float>* input, const char* name){
         }
     }
     return hROOT;
+}
+
+
+TH1F* GetSourceFromCATS(CATS& kitty, const double kstar, const double costheta, const char* name){
+    if(kitty.ComputedSource(kitty.GetMomentum(0), 0.1, 0) < 0) return NULL;
+    DLM_Histo<float>* source_clone = kitty.CopyComputedSource();
+    if(!source_clone) return NULL;
+    if(kstar<kitty.GetMomBinLowEdge(0) || kstar>kitty.GetMomBinUpEdge(kitty.GetNumMomBins())) return NULL;
+    double* rad_range = source_clone->GetBinRange(1);
+    gROOT->cd();
+    TH1F* hSource = new TH1F(name,name,source_clone->GetNbins(1),rad_range);
+    unsigned bin_mom = source_clone->GetBin(0, kstar);
+    unsigned bin_cth = source_clone->GetBin(2, costheta);
+    for(unsigned uRad=0; uRad<source_clone->GetNbins(1); uRad++){
+        hSource->SetBinContent(uRad+1, source_clone->GetBinContent(bin_mom,uRad,bin_cth));
+    }
+    delete [] rad_range;
+    delete source_clone;
+    return hSource;
+}
+TGraph* GetSourceFromCATS_TGraph(CATS& kitty, const double kstar, const double costheta, const char* name){
+    if(kitty.ComputedSource(kitty.GetMomentum(0), 0.1, 0) < 0) return NULL;
+    DLM_Histo<float>* source_clone = kitty.CopyComputedSource();
+    if(!source_clone) return NULL;
+    if(kstar<kitty.GetMomBinLowEdge(0) || kstar>kitty.GetMomBinUpEdge(kitty.GetNumMomBins())) return NULL;
+    //printf("   %u\n", source_clone->GetNbins(1));
+    gROOT->cd();
+    TGraph* gSource = new TGraph();
+    gSource->SetName(name);
+    unsigned bin_mom = source_clone->GetBin(0, kstar);
+    unsigned bin_cth = source_clone->GetBin(2, costheta);
+    unsigned counter=0;
+    for(unsigned uRad=0; uRad<source_clone->GetNbins(1); uRad++){
+        if(source_clone->GetBinContent(bin_mom,uRad,bin_cth)==0) continue;
+        gSource->SetPoint(counter++, source_clone->GetBinCenter(1,uRad), source_clone->GetBinContent(bin_mom,uRad,bin_cth));
+        //printf("%u %f %f\n",uRad, source_clone->GetBinCenter(1,uRad), source_clone->GetBinContent(bin_mom,uRad,bin_cth));
+    }
+    delete source_clone;
+    return gSource;
 }

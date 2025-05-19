@@ -676,6 +676,10 @@ void CECA::GoBabyGo(const unsigned& num_threads){
       if(exp_file_flag==2){
         fprintf(file_ptr, " kstar\t\trstar\t\tmT\t\trd\t\th\t\ttau\n");
       }
+      //info on the actual coordinates of the pairs. PR is primary or from RESO (0 is prim, 1 is reso)
+      else if(exp_file_flag==10){
+        fprintf(file_ptr, " kstar\t\trstar\t\tcos_th_star\tmT\t\tPR1\t\tPR2\n");
+      }
       else{
         fprintf(file_ptr, " kstar\t\trstar\t\tmT\t\trx\t\try\t\trz\t\thx\t\thy\t\thz\t\ttau\n");
       }
@@ -1473,8 +1477,26 @@ if(prt_cm[0].IsUsefulProduct()&&prt_cm[1].IsUsefulProduct()){
 
 double kstar = 0.5*cm_rel.GetP();
 double rstar = cm_rel.GetR();
+double cos_th_star = -cm_rel.GetCosScatAngle();
+//double th_star = cm_rel.GetScatAngle();
+
+CatsLorentzVector lab_rel = *prt_lab[1].Cats()-*prt_lab[0].Cats();
+double klab = 0.5*lab_rel.GetP();
+double cos_th_lab = cm_rel.GetCosScatAngle();
+if(klab<100){
+  //printf("kstar_10 = (%.2f, %.2f, %.2f) %.2f\n",cm_rel.GetPx()*0.5,cm_rel.GetPy()*0.5,cm_rel.GetPz()*0.5,cm_rel.GetP()*0.5);
+  //printf("k0 = (%.2f, %.2f, %.2f) %.2f\n",prt_cm[0].Cats()->GetPx(),prt_cm[0].Cats()->GetPy(),prt_cm[0].Cats()->GetPz(),prt_cm[0].Cats()->GetP());
+  //printf("k1 = (%.2f, %.2f, %.2f) %.2f\n",prt_cm[1].Cats()->GetPx(),prt_cm[1].Cats()->GetPy(),prt_cm[1].Cats()->GetPz(),prt_cm[1].Cats()->GetP());
+  ////printf("klab = (%.2f, %.2f, %.2f) %.2f\n",lab_rel.GetPx()*0.5,lab_rel.GetPy()*0.5,lab_rel.GetPz()*0.5,lab_rel.GetP()*0.5);
+  //printf("rstar = (%.2f, %.2f, %.2f) %.2f\n",cm_rel.GetX(),cm_rel.GetY(),cm_rel.GetZ(),cm_rel.GetR());
+  //printf("r0 = (%.2f, %.2f, %.2f) %.2f\n",prt_cm[0].Cats()->GetX(),prt_cm[0].Cats()->GetY(),prt_cm[0].Cats()->GetZ(),prt_cm[0].Cats()->GetR());
+  //printf("r1 = (%.2f, %.2f, %.2f) %.2f\n",prt_cm[1].Cats()->GetX(),prt_cm[1].Cats()->GetY(),prt_cm[1].Cats()->GetZ(),prt_cm[1].Cats()->GetR());
+  //printf("cos_th_star = %.3f / %.3f\n",cos_th_star);
+  ////printf("cos_th_lab = %.3f\n",cos_th_lab);
+  
+}
 double rcore = cm_core.GetR();
-double klab = 0.5*boost_v.GetP();
+//double klab = 0.5*boost_v.GetP();
 double kT = 0.5*boost_v.GetPt();
 double m1 = prt_cm[0].Cats()->GetMass();
 double m2 = prt_cm[1].Cats()->GetMass();
@@ -1489,25 +1511,7 @@ double AngleRcP2=0;
 double BGT,BGT1,BGT2;
 if(kstar<FemtoLimit){
 
-  if(exp_file_flag){
-    FILE *file_ptr;
-    // Open the file in append mode
-    file_ptr = fopen(exp_file_name.c_str(), "a");
-    if(exp_file_flag==2){
-      fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n", kstar, rstar, mT, 
-              sqrt(pow(Displacement[0]+disp_ebe[0],2.)+pow(Displacement[1]+disp_ebe[1],2.)+pow(Displacement[2]+disp_ebe[2],2.))/sqrt(3.),
-              sqrt(pow(Hadronization[0]+hadr_ebe[0],2.)+pow(Hadronization[1]+hadr_ebe[1],2.))/sqrt(2.),
-              Tau+tau_ebe);
-    }
-    else{
-      fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n", kstar, rstar, mT, 
-              Displacement[0], Displacement[1], Displacement[2],
-              Hadronization[0], Hadronization[1], Hadronization[2],
-              Tau);
-    }
 
-    fclose(file_ptr);
-  }
 
   if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
     double cosine = cm_core.GetCosAngleRP(prt_cm[0].Cats());
@@ -1761,6 +1765,32 @@ else{
   GhettoFemto_pT1_div_pT->Fill(prt_lab[1].Cats()->GetPt()/boost_v.GetPt());
 }
 //printf("%f, %f\n",prt_cm[0].Cats()->GetPt()/prt_cm[1].Cats()->GetPt(),prt_cm[0].Cats()->GetPz(),prt_lab[0].Cats()->GetPt()/prt_lab[1].Cats()->GetPt());
+
+
+
+if(exp_file_flag){
+  FILE *file_ptr;
+  // Open the file in append mode
+  file_ptr = fopen(exp_file_name.c_str(), "a");
+  if(exp_file_flag==2){
+    fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n", kstar, rstar, mT, 
+            sqrt(pow(Displacement[0]+disp_ebe[0],2.)+pow(Displacement[1]+disp_ebe[1],2.)+pow(Displacement[2]+disp_ebe[2],2.))/sqrt(3.),
+            sqrt(pow(Hadronization[0]+hadr_ebe[0],2.)+pow(Hadronization[1]+hadr_ebe[1],2.))/sqrt(2.),
+            Tau+tau_ebe);
+  }
+  //fprintf(file_ptr, " kstar\t\trstar\t\tcos_th_star\t\tmT\t\tPR1\t\tPR2\n");
+  else if(exp_file_flag==10){
+    fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%i\t%i\n", kstar, rstar, cos_th_star, mT, !prt_cm[0].IsUsefulPrimordial(), !prt_cm[1].IsUsefulPrimordial());
+  }    
+  else{
+    fprintf(file_ptr, "%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\t%.5e\n", kstar, rstar, mT, 
+            Displacement[0], Displacement[1], Displacement[2],
+            Hadronization[0], Hadronization[1], Hadronization[2],
+            Tau);
+  }
+
+  fclose(file_ptr);
+}
 
 
 FemtoPermutations++;

@@ -30,8 +30,9 @@ python3 <PATH>/PotentialDesigner.py <filename>
 
 The <filename> is a settings file, an example of a such is provided below, where
 we read the phase shifts from a TH1F saved within a ROOT file.
+The number on the first line is the desired chi2 to reach
 --------------------------
-PhaseShifts	/home/input_path/random_root_file.root	h_TH1F_object_name
+PhaseShifts	/home/input_path/random_root_file.root	h_TH1F_object_name	1
 M1	938.272
 M2	1115.683
 kMin	0

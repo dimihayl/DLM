@@ -62,6 +62,42 @@ double GaussSourceCutOff(double* Pars){
     return GaussSource(Pars);
 }
 
+//this source will not be normalized! However, CATS does a renormalization itself, so it should be fine.
+//[3] = width
+//[4] = cutoff
+//[5] = slope of the cutoff
+double GaussSourceGentleCutOff(double* Pars){
+    double gaus = GaussSource(Pars);
+    double cutoff = 1. - 1./(1.+exp((Pars[1]-Pars[4])/Pars[5]));
+    return gaus*cutoff;
+}
+double GaussSourceGentleCutOffTF1(double* x, double* Pars){
+    double pars[6];
+    pars[1] = *x;
+    pars[3] = Pars[0];
+    pars[4] = Pars[1];
+    pars[5] = Pars[2];
+    return GaussSourceGentleCutOff(pars);
+}
+//[3] = width
+//[4] = shift (of the zero point, its also zero below that value)
+double GaussSourceShifted(double* Pars){
+    //double& Momentum = Pars[0];
+    double& Shift = Pars[4];
+    double& Size = Pars[3];
+    double Radius = Pars[1] - Shift;
+    if(Radius<0) return 0;
+    return 4.*Pi*Radius*Radius*pow(4.*Pi*Size*Size,-1.5)*exp(-(Radius*Radius)/(4.*Size*Size));
+}
+double GaussSourceShiftedTF1(double* x, double* Pars){
+    double pars[5];
+    pars[1] = *x;
+    pars[3] = Pars[0];
+    pars[4] = Pars[1];
+    return GaussSourceShifted(pars);
+}
+
+
 //same as GaussSource, but we assume that the user calls the function wanting to sample from theta as well.
 //since Integral(dTheta) = 2 for a flat theta distribution and the whole Source function needs to be normalized to 1,
 //in order to preserve this we should divide the whole function by 2
