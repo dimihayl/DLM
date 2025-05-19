@@ -630,6 +630,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     else if(POT == "Johann"){
         ExternalWF = Init_pp_Haidenbauer(CatsFilesFolder[0],Kitty,PotVar);
     }
+
+    else if(POT == "Epelbaum"){
+        ExternalWF = Init_pp_Epelbaum(CatsFilesFolder[0],Kitty,PotVar);
+    }
     else
     {
         printf("\033[1;31mERROR:\033[0m Non-existing pp potential '%s'\n", POT.Data());
@@ -712,6 +716,38 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
             uCh=2; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
             uCh=3; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
         }
+	}
+    else if(POT == "Epelbaum"){
+        //                           ch  pw         wave ch pw          shift ch pw
+        Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]);
+        Kitty.SetExternalWaveFunction(0, 2, ExternalWF[0][0][2], ExternalWF[1][0][2]);
+
+        Kitty.SetExternalWaveFunction(1, 1, ExternalWF[0][1][1], ExternalWF[1][1][1]);
+        Kitty.SetExternalWaveFunction(1, 3, ExternalWF[0][1][3], ExternalWF[1][1][3]);
+
+        Kitty.SetExternalWaveFunction(2, 1, ExternalWF[0][2][1], ExternalWF[1][2][1]);
+        Kitty.SetExternalWaveFunction(2, 3, ExternalWF[0][2][3], ExternalWF[1][2][3]);
+
+        Kitty.SetExternalWaveFunction(3, 1, ExternalWF[0][3][1], ExternalWF[1][3][1]);
+
+        Kitty.SetExternalWaveFunction(4, 1, ExternalWF[0][4][1], ExternalWF[1][4][1]);
+        Kitty.SetExternalWaveFunction(4, 3, ExternalWF[0][4][3], ExternalWF[1][4][3]);
+
+        Kitty.SetExternalWaveFunction(5, 1, ExternalWF[0][5][1], ExternalWF[1][5][1]);
+        Kitty.SetExternalWaveFunction(5, 3, ExternalWF[0][5][3], ExternalWF[1][5][3]);
+
+        Kitty.SetExternalWaveFunction(6, 1, ExternalWF[0][6][1], ExternalWF[1][6][1]);
+
+        Kitty.SetExternalWaveFunction(7, 1, ExternalWF[0][7][1], ExternalWF[1][7][1]);
+        Kitty.SetExternalWaveFunction(7, 3, ExternalWF[0][7][3], ExternalWF[1][7][3]);
+
+        Kitty.SetExternalWaveFunction(8, 1, ExternalWF[0][8][1], ExternalWF[1][8][1]);
+        Kitty.SetExternalWaveFunction(8, 3, ExternalWF[0][8][3], ExternalWF[1][8][3]);
+
+        Kitty.SetExternalWaveFunction(9, 1, ExternalWF[0][9][1], ExternalWF[1][9][1]);
+
+        Kitty.SetExternalWaveFunction(10, 0, ExternalWF[0][10][0], ExternalWF[1][10][0]);
+        Kitty.SetExternalWaveFunction(11, 0, ExternalWF[0][11][0], ExternalWF[1][11][0]);
     }
     else
     {
