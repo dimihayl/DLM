@@ -784,6 +784,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
 
         Kitty.SetExternalWaveFunction(10, 0, ExternalWF[0][10][0], ExternalWF[1][10][0]);
         Kitty.SetExternalWaveFunction(11, 0, ExternalWF[0][11][0], ExternalWF[1][11][0]);
+    
     }
     else if(POT == "SW_s"){
         if (cPotPars1S0)

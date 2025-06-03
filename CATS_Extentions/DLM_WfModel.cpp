@@ -357,6 +357,7 @@ DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS &Kit
   Kitty.SetChannelWeight(1, (3. / 4.) * (1. / 9.) * (5. / 21.)); // 3P0 + 3F2
   Kitty.SetChannelWeight(2, (3. / 4.) * (1. / 9.) * (7. / 21.)); // 3P0 + 3F3
   Kitty.SetChannelWeight(3, (3. / 4.) * (1. / 9.) * (9. / 21.)); // 3P0 + 3F4
+  //Kitty.SetChannelWeight(3,0.75);
   Kitty.SetChannelWeight(4, (3. / 4.) * (3. / 9.) * (5. / 21.)); // 3P1 + 3F2
   Kitty.SetChannelWeight(5, (3. / 4.) * (3. / 9.) * (7. / 21.)); // 3P1 + 3F3
   Kitty.SetChannelWeight(6, (3. / 4.) * (3. / 9.) * (9. / 21.)); // 3P1 + 3F4
@@ -407,47 +408,47 @@ DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS &Kit
   WhichFile[1][0] = fNFiles; // ch=1 L=0
   WhichFile[1][1] = f3P0;    // ch=1 L=1
   WhichFile[1][2] = fNFiles; // ch=1 L=2
-  WhichFile[1][4] = f3F2;    // ch=1 L=3
+  WhichFile[1][3] = f3F2;    // ch=1 L=3
 
   WhichFile[2][0] = fNFiles; // ch=2 L=0
   WhichFile[2][1] = f3P0;    // ch=2 L=1
   WhichFile[2][2] = fNFiles; // ch=2 L=2
-  WhichFile[2][4] = f3F3;    // ch=2 L=3
+  WhichFile[2][3] = f3F3;    // ch=2 L=3
 
   WhichFile[3][0] = fNFiles; // ch=3 L=0
   WhichFile[3][1] = f3P0;    // ch=3 L=1
   WhichFile[3][2] = fNFiles; // ch=3 L=2
-  WhichFile[3][4] = fNFiles; // ch=3 L=3 (if 3F4 would be provided, it would be here)
+  WhichFile[3][3] = fNFiles; // ch=3 L=3 (if 3F4 would be provided, it would be here)
 
   WhichFile[4][0] = fNFiles; // ch=4 L=0
   WhichFile[4][1] = f3P1;    // ch=4 L=1
   WhichFile[4][2] = fNFiles; // ch=4 L=2
-  WhichFile[4][4] = f3F2;    // ch=4 L=3
+  WhichFile[4][3] = f3F2;    // ch=4 L=3
 
   WhichFile[5][0] = fNFiles; // ch=5 L=0
   WhichFile[5][1] = f3P1;    // ch=5 L=1
   WhichFile[5][2] = fNFiles; // ch=5 L=2
-  WhichFile[5][4] = f3F3;    // ch=5 L=3
+  WhichFile[5][3] = f3F3;    // ch=5 L=3
 
   WhichFile[6][0] = fNFiles; // ch=6 L=0
   WhichFile[6][1] = f3P1;    // ch=6 L=1
   WhichFile[6][2] = fNFiles; // ch=6 L=2
-  WhichFile[6][4] = fNFiles; // ch=6 L=3 (if 3F4 would be provided, it would be here)
+  WhichFile[6][3] = fNFiles; // ch=6 L=3 (if 3F4 would be provided, it would be here)
 
   WhichFile[7][0] = fNFiles; // ch=7 L=0
   WhichFile[7][1] = f3P2;    // ch=7 L=1
   WhichFile[7][2] = fNFiles; // ch=7 L=2
-  WhichFile[7][4] = f3F2;    // ch=7 L=3
+  WhichFile[7][3] = f3F2;    // ch=7 L=3
 
   WhichFile[8][0] = fNFiles; // ch=8 L=0
   WhichFile[8][1] = f3P2;    // ch=8 L=1
   WhichFile[8][2] = fNFiles; // ch=8 L=2
-  WhichFile[8][4] = f3F3;    // ch=8 L=3
+  WhichFile[8][3] = f3F3;    // ch=8 L=3
 
   WhichFile[9][0] = fNFiles; // ch=9 L=0
   WhichFile[9][1] = f3P2;    // ch=9 L=1
   WhichFile[9][2] = fNFiles; // ch=9 L=2
-  WhichFile[9][4] = fNFiles; // ch=9 L=3 (if 3F4 would be provided, it would be here)
+  WhichFile[9][3] = fNFiles; // ch=9 L=3 (if 3F4 would be provided, it would be here)
 
   // and the last two where we put everything in s wave, because the partial
   // wave does not matter here
@@ -476,10 +477,14 @@ DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS &Kit
   for (int i = 0; i < HistMomentum->GetNbinsX(); i++) {
     RadiusBinEdges.push_back(HistMomentum->GetBinLowEdge(i + 1));
   }
+  RadiusBinEdges.push_back(HistMomentum->GetXaxis()->GetBinUpEdge(HistMomentum->GetNbinsX()));
   // for a fixed radius we get the binning of the momentum
   for (int i = 0; i < HistRadius->GetNbinsX(); i++) {
     MomentumBinEdges.push_back(HistRadius->GetBinLowEdge(i + 1));
   }
+  MomentumBinEdges.push_back(HistRadius->GetXaxis()->GetBinUpEdge(HistRadius->GetNbinsX()));
+  
+
   std::vector<double> Radius;
   double BinWidth = RadiusBinEdges[1] - RadiusBinEdges[0];
   for (int i = 0; i < RadiusBinEdges.size(); i++) {

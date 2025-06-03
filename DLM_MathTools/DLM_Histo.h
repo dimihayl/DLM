@@ -1169,6 +1169,9 @@ public:
         delete [] WhichBin;
         return BinSize;
     }
+    unsigned FindBin(const unsigned short& sDim, const double& xVal) const{
+        return GetBin(sDim, xVal);
+    }
     unsigned GetBin(const unsigned short& sDim, const double& xVal) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
@@ -1197,6 +1200,20 @@ public:
             }
         }
     }
+/*
+    unsigned FindBin(const double* xVal) const{
+        return GetBin(xVal);
+    }
+    unsigned GetBin(const double* xVal) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        unsigned* WhichBin = new unsigned [Dim];
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            WhichBin[sDim] = GetBin(sDim, xVal[sDim]);
+        }
+        delete [] WhichBin;
+    }
+*/
+
     double* GetBinRange(const unsigned short& sDim) const{
         if(!Initialized) {InitWarning(); return 0;}
         if(sDim>=Dim) return 0;
