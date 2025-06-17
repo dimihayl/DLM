@@ -15,6 +15,7 @@ enum DLMPOT {   NN_AV18, NN_ReidV8, pp_ReidSC, pp_ReidOli, pp_ReidCrab, pp_ReidV
 //extern int DlmPotFlag;
 enum V18FLAG { v18_Default, v18_SingleChannelMagic, v18_Coupled3P2 };
 
+
 void CleanUpV18Pot();
 
 double ZeroPotential(double* Radius);
@@ -122,6 +123,16 @@ double LatticePots(double* Parameters);
 void GetDlmPotName(const int& potid, const int& potflag, char* name);
 
 
+
+//miscellaneous
+
+//this returns the potential strength in the Born approx. 
+//N.B. the units are arbitrary, and the comparisson is done to compare two potentials within the same system.
+//in principle, if you multiply by the reduced mass, you will get a number (approx scatt len in units inverse of the potential) 
+// useful to compare different systems.
+//One should NOT use this to compare the potential strength within different PWs.
+//keep in mind, this is a crude method to see what happens for low-E scattering
+double ApproxPotStrength(double (*f)(double*), double* Pars, unsigned short usPW);
 
 
 #endif

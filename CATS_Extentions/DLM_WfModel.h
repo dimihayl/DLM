@@ -11,8 +11,27 @@ using namespace std;
 DLM_Histo<complex<double>>*** Init_pp_Haidenbauer(const char* CatsFolder, CATS& Kitty, const int& TYPE);
 DLM_Histo<complex<double>>*** Init_pp_Haidenbauer(const char* CatsFolder, CATS* Kitty, const int& TYPE);
 
-DLM_Histo<complex<double>>*** Init_pp_Epelbaum(const char* CatsFolder, CATS& Kitty, const int& TYPE);
-DLM_Histo<complex<double>>*** Init_pp_Epelbaum(const char* CatsFolder, CATS* Kitty, const int& TYPE);
+void Init_pp_Epelbaum(const char* CatsFolder, CATS& Kitty, const int& TYPE);
+void Init_pp_Epelbaum(const char* CatsFolder, CATS* Kitty, const int& TYPE);
+
+//TYPE = XYZ, where:
+//NV2-XY_EMZ:
+//X = 1 or 2 = fit of scattering pars up to 125 or 200 MeV in TLab
+//Y = 1 or 2 (corresponding to A or B) has different cut off in coordinate space
+//Z = 1 or 2 has different treatment of Coulomb, 2 = takes higher order corrections as well
+//the default settings, in case we get no TYPE or 0, are 212
+//e.g. check here https://arxiv.org/pdf/1412.6446
+//Implementation provided by Matthias Goebel, June 2025
+void Init_pp_Norfolk(const char* CatsFolder, CATS& Kitty, const int& TYPE);
+void Init_pp_Norfolk(const char* CatsFolder, CATS* Kitty, const int& TYPE);
+
+//Implementation provided by Matthias Goebel, June 2025
+void Init_pp_AV18_WF(const char* CatsFolder, CATS& Kitty, const int& TYPE);
+void Init_pp_AV18_WF(const char* CatsFolder, CATS* Kitty, const int& TYPE);
+
+DLM_Histo<complex<double>>*** Init_pp_Epelbaum_OLD(const char* CatsFolder, CATS& Kitty, const int& TYPE);
+DLM_Histo<complex<double>>*** Init_pp_Epelbaum_OLD(const char* CatsFolder, CATS* Kitty, const int& TYPE);
+
 
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE, const int& CUTOFF=600);
 DLM_Histo<complex<double>>*** Init_pL_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE, const int& CUTOFF=600);

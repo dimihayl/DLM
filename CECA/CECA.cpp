@@ -558,6 +558,9 @@ void CECA::SetFemtoRegion(const float& femto, const float& info){
   FemtoLimit = femto;
   UpperLimit = info;
 }
+double CECA::GetFemtoLimit(){
+  return FemtoLimit;
+}
 
 void CECA::SetEventMult(const unsigned short& emult){
   EMULT = emult;

@@ -530,6 +530,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         cPotPars1D2 = new CATSparameters(CATSparameters::tPotential, 8, true);
         cPotPars1D2->SetParameters(PotPars1D2);
     }
+    else if (POT == "AV18_WF")
+    {
+        Init_pp_AV18_WF(CatsFilesFolder[0],Kitty,PotVar);
+    }    
     else if(POT == "pp_AV18_Toy"){
       double PotPars1S0[3] = {0,0,0};
       double PotPars3P0[3] = {1,0,0};
@@ -640,8 +644,14 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
         ExternalWF = Init_pp_Haidenbauer(CatsFilesFolder[0],Kitty,PotVar);
     }
 
+    else if(POT == "Epelbaum_OLD"){
+        ExternalWF = Init_pp_Epelbaum_OLD(CatsFilesFolder[0],Kitty,PotVar);
+    }
     else if(POT == "Epelbaum"){
-        ExternalWF = Init_pp_Epelbaum(CatsFilesFolder[0],Kitty,PotVar);
+        Init_pp_Epelbaum(CatsFilesFolder[0],Kitty,PotVar);
+    }
+    else if(POT == "Norfolk_WF"){
+        Init_pp_Norfolk(CatsFilesFolder[0],Kitty,PotVar);
     }
     else
     {
@@ -753,7 +763,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
             uCh=3; Kitty.SetExternalWaveFunction(uCh, 1, ExternalWF[0][uCh][1], ExternalWF[1][uCh][1]);
         }
 	}
-    else if(POT == "Epelbaum"){
+    else if(POT == "Epelbaum_OLD"){
         //                           ch  pw         wave ch pw          shift ch pw
         Kitty.SetExternalWaveFunction(0, 0, ExternalWF[0][0][0], ExternalWF[1][0][0]);
         Kitty.SetExternalWaveFunction(0, 2, ExternalWF[0][0][2], ExternalWF[1][0][2]);

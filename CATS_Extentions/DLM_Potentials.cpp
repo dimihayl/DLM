@@ -3,6 +3,7 @@
 #include "DLM_StefanoPotentials.h"
 #include "DLM_Histo.h"
 #include "CATSconstants.h"
+#include "DLM_Integration.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -1943,4 +1944,21 @@ void GetDlmPotName(const int& potid, const int& potflag, char* name){
     char Buffer[16];
     sprintf(Buffer, "%i", potflag);
     if(potflag!=0 && strcmp(name,"Unknown potential")){strcat(name, "^{(");strcat(name,Buffer);strcat(name,")}");}
+}
+
+
+unsigned short usPW_H1;
+double (*f_H1)(double* par);
+double APS_helper1(double* Pars){
+    return f_H1(Pars)*pow(Pars[0],2.*usPW_H1+2);
+    //return pow(Pars[0],2.*usPW_H1+2);
+}
+
+double ApproxPotStrength(double (*f)(double*), double* Pars, unsigned short usPW){
+    f_H1 = f;
+    usPW_H1 = usPW;
+    DLM_INT_SetFunction(APS_helper1,Pars,0);
+    return DLM_INT_SimpsonWiki(0.001,16.,2048);
+    //Pars[0] = 1;
+    //return f_H1(Pars);
 }

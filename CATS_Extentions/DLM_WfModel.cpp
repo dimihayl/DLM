@@ -316,14 +316,299 @@ printf("2-- FileAvailable[%u]=%u\n",uFile,FileAvailable[uFile]);
 
 }
 
-
-DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS *Kitty, const int &TYPE) {
+void Init_pp_Epelbaum(const char *CatsFolder, CATS *Kitty, const int &TYPE) {
   if (!Kitty)
-    return NULL;
-  return Init_pp_Epelbaum(CatsFolder, *Kitty, TYPE);
+    return;
+  Init_pp_Epelbaum(CatsFolder, *Kitty, TYPE);
 }
 
-DLM_Histo<complex<double>> ***Init_pp_Epelbaum(const char *CatsFolder, CATS &Kitty, const int &TYPE) {
+void Init_pp_Epelbaum(const char *CatsFolder, CATS &Kitty, const int &TYPE) {
+  // setup all channels in the cats object
+  const unsigned short NumChannels = 12;
+
+  Kitty.SetNumChannels(NumChannels);
+  Kitty.SetNumPW(0, 3); // L=0,1,2   -> 3 PW
+  Kitty.SetNumPW(1, 4); // L=0,1,2,3 -> 4 PW
+  Kitty.SetNumPW(2, 4);
+  Kitty.SetNumPW(3, 2);
+  Kitty.SetNumPW(4, 4);
+  Kitty.SetNumPW(5, 4);
+  Kitty.SetNumPW(6, 2);
+  Kitty.SetNumPW(7, 4);
+  Kitty.SetNumPW(8, 4);
+  Kitty.SetNumPW(9, 2);
+  // for the coupled channels we only take the integral of the wave function
+  // hence it does not matter if we set the waves to s,p,d or whatever
+  // thus for simplification, everything is saved in the s-wave
+  Kitty.SetNumPW(10, 1); // L=0 -> 1 PW
+  Kitty.SetNumPW(11, 1);
+  Kitty.SetOnlyNumericalPw(10, true);
+  Kitty.SetOnlyNumericalPw(11, true);
+
+  // spin in the first channel is 0, all others are 1
+  Kitty.SetSpin(0, 0);
+  for (unsigned short usCh = 1; usCh < NumChannels; usCh++) {
+    Kitty.SetSpin(usCh, 1);
+  }
+
+  // set channel weights
+  Kitty.SetChannelWeight(0, (1. / 4.));                          // 1S0 + 1D2
+  Kitty.SetChannelWeight(1, (3. / 4.) * (1. / 9.) * (5. / 21.)); // 3P0 + 3F2
+  Kitty.SetChannelWeight(2, (3. / 4.) * (1. / 9.) * (7. / 21.)); // 3P0 + 3F3
+  Kitty.SetChannelWeight(3, (3. / 4.) * (1. / 9.) * (9. / 21.)); // 3P0 + 3F4
+  //Kitty.SetChannelWeight(3,0.75);
+  Kitty.SetChannelWeight(4, (3. / 4.) * (3. / 9.) * (5. / 21.)); // 3P1 + 3F2
+  Kitty.SetChannelWeight(5, (3. / 4.) * (3. / 9.) * (7. / 21.)); // 3P1 + 3F3
+  Kitty.SetChannelWeight(6, (3. / 4.) * (3. / 9.) * (9. / 21.)); // 3P1 + 3F4
+  Kitty.SetChannelWeight(7, (3. / 4.) * (5. / 9.) * (5. / 21.)); // 3P2 + 3F2
+  Kitty.SetChannelWeight(8, (3. / 4.) * (5. / 9.) * (7. / 21.)); // 3P2 + 3F3
+  Kitty.SetChannelWeight(9, (3. / 4.) * (5. / 9.) * (9. / 21.)); // 3P2 + 3F4
+  Kitty.SetChannelWeight(10, (5. / 12.));                        // 3F2 -> 3P2
+  Kitty.SetChannelWeight(11, (5. / 28.));                        // 3P2 -> 3F2
+
+  // set charge and mass
+  // source and other stuff will be set in the setup function
+  Kitty.SetQ1Q2(1);
+  Kitty.SetPdgId(2212, 2212);
+  const double Mass_p = 938.272;
+  Kitty.SetRedMass((Mass_p * Mass_p) / (Mass_p + Mass_p));
+  Kitty.SetQuantumStatistics(1);
+
+  for(short unsigned usCh=0; usCh<NumChannels; usCh++){
+    for(short unsigned usPw=0; usPw<Kitty.GetNumPW(usCh); usPw++){
+        if(usCh==0 && usPw%2==1) continue;
+        if((usCh>=1&&usCh<=9) && usPw%2==0) continue;
+        char* wf_file_name = new char [256];
+        sprintf (wf_file_name, "%s/Interaction/pp/Epelbaum_2025-06/wf_epel_usCh%u_usPw%u.dlm", CatsFolder, usCh, usPw);
+        DLM_Histo<complex<double>> wf_histo;
+        wf_histo.QuickLoad(wf_file_name);
+        char* ps_file_name = new char [256];
+        sprintf (ps_file_name, "%s/Interaction/pp/Epelbaum_2025-06/ps_epel_usCh%u_usPw%u.dlm", CatsFolder, usCh, usPw);
+        DLM_Histo<complex<double>> ps_histo;
+        ps_histo.QuickLoad(ps_file_name);
+        
+        Kitty.SetExternalWaveFunction(usCh,usPw,wf_histo,ps_histo);
+        
+        delete [] wf_file_name;
+        delete [] ps_file_name;
+    }
+  }
+  
+}
+
+void Init_pp_Norfolk(const char* CatsFolder, CATS* Kitty, const int& TYPE){
+    Init_pp_Norfolk(CatsFolder, *Kitty, TYPE);
+}
+
+void Init_pp_Norfolk(const char *CatsFolder, CATS &Kitty, const int& TYPE) {
+  // setup all channels in the cats object
+  const unsigned short NumChannels = 13;
+
+  char norfolk_type[16];
+
+  if(TYPE==112){
+    strcpy(norfolk_type, "NV2-IA_EM2");
+  }
+  else if(TYPE==122){
+    strcpy(norfolk_type, "NV2-IB_EM2");
+  }
+  else if(TYPE==211){
+    strcpy(norfolk_type, "NV2-IIA_EM1");
+  }
+  else if(TYPE==212){
+    strcpy(norfolk_type, "NV2-IIA_EM2");
+  }
+  else if(TYPE==221){
+    strcpy(norfolk_type, "NV2-IIB_EM1");
+  }
+  else if(TYPE==222){
+    strcpy(norfolk_type, "NV2-IIB_EM2");
+  }
+  else{
+    //printf("\033[1;33mWARNING:\033[0m The Norfolk potential TYPE\033[0m %s does not exist! Reverting to default type NV2-IIA_EM2\n", TYPE);
+    strcpy(norfolk_type, "NV2-IIA_EM2");
+  }
+
+  //int norfolk_type = TYPE;
+
+
+  Kitty.SetNumChannels(NumChannels);
+  Kitty.SetNumPW(0, 3); // L=0,1,2   -> 3 PW
+  Kitty.SetNumPW(1, 4); // L=0,1,2,3 -> 4 PW
+  Kitty.SetNumPW(2, 4);
+  Kitty.SetNumPW(3, 4);
+  Kitty.SetNumPW(4, 4);
+  Kitty.SetNumPW(5, 4);
+  Kitty.SetNumPW(6, 4);
+  Kitty.SetNumPW(7, 4);
+  Kitty.SetNumPW(8, 4);
+  Kitty.SetNumPW(9, 4);
+  // for the coupled channels we only take the integral of the wave function
+  // hence it does not matter if we set the waves to s,p,d or whatever
+  // thus for simplification, everything is saved in the s-wave
+  Kitty.SetNumPW(10, 1); // L=0 -> 1 PW
+  Kitty.SetNumPW(11, 1);
+  Kitty.SetNumPW(12, 1);
+  Kitty.SetOnlyNumericalPw(10, true);
+  Kitty.SetOnlyNumericalPw(11, true);
+  Kitty.SetOnlyNumericalPw(12, true);
+
+  // spin in the first channel is 0, all others are 1
+  Kitty.SetSpin(0, 0);
+  for (unsigned short usCh = 1; usCh < NumChannels; usCh++) {
+    Kitty.SetSpin(usCh, 1);
+  }
+
+  // set channel weights
+  Kitty.SetChannelWeight(0, (1. / 4.));                          // 1S0 + 1D2
+  Kitty.SetChannelWeight(1, (3. / 4.) * (1. / 9.) * (5. / 21.)); // 3P0 + 3F2
+  Kitty.SetChannelWeight(2, (3. / 4.) * (1. / 9.) * (7. / 21.)); // 3P0 + 3F3
+  Kitty.SetChannelWeight(3, (3. / 4.) * (1. / 9.) * (9. / 21.)); // 3P0 + 3F4
+  //Kitty.SetChannelWeight(3,0.75);
+  Kitty.SetChannelWeight(4, (3. / 4.) * (3. / 9.) * (5. / 21.)); // 3P1 + 3F2
+  Kitty.SetChannelWeight(5, (3. / 4.) * (3. / 9.) * (7. / 21.)); // 3P1 + 3F3
+  Kitty.SetChannelWeight(6, (3. / 4.) * (3. / 9.) * (9. / 21.)); // 3P1 + 3F4
+  Kitty.SetChannelWeight(7, (3. / 4.) * (5. / 9.) * (5. / 21.)); // 3P2 + 3F2
+  Kitty.SetChannelWeight(8, (3. / 4.) * (5. / 9.) * (7. / 21.)); // 3P2 + 3F3
+  Kitty.SetChannelWeight(9, (3. / 4.) * (5. / 9.) * (9. / 21.)); // 3P2 + 3F4
+  Kitty.SetChannelWeight(10, (5. / 12.));                        // 3F2 -> 3P2
+  Kitty.SetChannelWeight(11, (5. / 28.));                        // 3P2 -> 3F2
+  Kitty.SetChannelWeight(12, (9. / 28.));                        // 3H4 -> 3F4
+
+  // set charge and mass
+  // source and other stuff will be set in the setup function
+  Kitty.SetQ1Q2(1);
+  Kitty.SetPdgId(2212, 2212);
+  const double Mass_p = 938.272;
+  Kitty.SetRedMass((Mass_p * Mass_p) / (Mass_p + Mass_p));
+  Kitty.SetQuantumStatistics(1);
+
+  for(short unsigned usCh=0; usCh<NumChannels; usCh++){
+    for(short unsigned usPw=0; usPw<Kitty.GetNumPW(usCh); usPw++){
+        if(usCh==0 && usPw%2==1) continue;
+        if((usCh>=1&&usCh<=9) && usPw%2==0) continue;
+        char* wf_file_name = new char [256];
+        sprintf (wf_file_name, "%s/Interaction/pp/Norfolk_2025-06/%s/wf_norfolk_usCh%u_usPw%u.dlm", CatsFolder, norfolk_type, usCh, usPw);
+        DLM_Histo<complex<double>> wf_histo;
+        wf_histo.QuickLoad(wf_file_name);
+        char* ps_file_name = new char [256];
+        sprintf (ps_file_name, "%s/Interaction/pp/Norfolk_2025-06/%s/ps_norfolk_usCh%u_usPw%u.dlm", CatsFolder, norfolk_type, usCh, usPw);
+        DLM_Histo<complex<double>> ps_histo;
+        ps_histo.QuickLoad(ps_file_name);
+        
+        Kitty.SetExternalWaveFunction(usCh,usPw,wf_histo,ps_histo);
+        
+        delete [] wf_file_name;
+        delete [] ps_file_name;
+    }
+  }
+  
+}
+
+void Init_pp_AV18_WF(const char* CatsFolder, CATS* Kitty, const int& TYPE){
+    Init_pp_AV18_WF(CatsFolder, *Kitty, TYPE);
+}
+
+void Init_pp_AV18_WF(const char *CatsFolder, CATS &Kitty, const int& TYPE) {
+  // setup all channels in the cats object
+  const unsigned short NumChannels = 13;
+
+  char av18_type[16];
+
+  if(TYPE==1){
+    strcpy(av18_type, "EM1");
+  }
+  else if(TYPE==2){
+    strcpy(av18_type, "EM2");
+  }
+  else{
+    strcpy(av18_type, "EM2");
+  }
+
+  //int av18_type = TYPE;
+
+
+  Kitty.SetNumChannels(NumChannels);
+  Kitty.SetNumPW(0, 3); // L=0,1,2   -> 3 PW
+  Kitty.SetNumPW(1, 4); // L=0,1,2,3 -> 4 PW
+  Kitty.SetNumPW(2, 4);
+  Kitty.SetNumPW(3, 4);
+  Kitty.SetNumPW(4, 4);
+  Kitty.SetNumPW(5, 4);
+  Kitty.SetNumPW(6, 4);
+  Kitty.SetNumPW(7, 4);
+  Kitty.SetNumPW(8, 4);
+  Kitty.SetNumPW(9, 4);
+  // for the coupled channels we only take the integral of the wave function
+  // hence it does not matter if we set the waves to s,p,d or whatever
+  // thus for simplification, everything is saved in the s-wave
+  Kitty.SetNumPW(10, 1); // L=0 -> 1 PW
+  Kitty.SetNumPW(11, 1);
+  Kitty.SetNumPW(12, 1);
+  Kitty.SetOnlyNumericalPw(10, true);
+  Kitty.SetOnlyNumericalPw(11, true);
+  Kitty.SetOnlyNumericalPw(12, true);
+
+  // spin in the first channel is 0, all others are 1
+  Kitty.SetSpin(0, 0);
+  for (unsigned short usCh = 1; usCh < NumChannels; usCh++) {
+    Kitty.SetSpin(usCh, 1);
+  }
+
+  // set channel weights
+  Kitty.SetChannelWeight(0, (1. / 4.));                          // 1S0 + 1D2
+  Kitty.SetChannelWeight(1, (3. / 4.) * (1. / 9.) * (5. / 21.)); // 3P0 + 3F2
+  Kitty.SetChannelWeight(2, (3. / 4.) * (1. / 9.) * (7. / 21.)); // 3P0 + 3F3
+  Kitty.SetChannelWeight(3, (3. / 4.) * (1. / 9.) * (9. / 21.)); // 3P0 + 3F4
+  //Kitty.SetChannelWeight(3,0.75);
+  Kitty.SetChannelWeight(4, (3. / 4.) * (3. / 9.) * (5. / 21.)); // 3P1 + 3F2
+  Kitty.SetChannelWeight(5, (3. / 4.) * (3. / 9.) * (7. / 21.)); // 3P1 + 3F3
+  Kitty.SetChannelWeight(6, (3. / 4.) * (3. / 9.) * (9. / 21.)); // 3P1 + 3F4
+  Kitty.SetChannelWeight(7, (3. / 4.) * (5. / 9.) * (5. / 21.)); // 3P2 + 3F2
+  Kitty.SetChannelWeight(8, (3. / 4.) * (5. / 9.) * (7. / 21.)); // 3P2 + 3F3
+  Kitty.SetChannelWeight(9, (3. / 4.) * (5. / 9.) * (9. / 21.)); // 3P2 + 3F4
+  Kitty.SetChannelWeight(10, (5. / 12.));                        // 3F2 -> 3P2
+  Kitty.SetChannelWeight(11, (5. / 28.));                        // 3P2 -> 3F2
+  Kitty.SetChannelWeight(12, (9. / 28.));                        // 3H4 -> 3F4
+
+  // set charge and mass
+  // source and other stuff will be set in the setup function
+  Kitty.SetQ1Q2(1);
+  Kitty.SetPdgId(2212, 2212);
+  const double Mass_p = 938.272;
+  Kitty.SetRedMass((Mass_p * Mass_p) / (Mass_p + Mass_p));
+  Kitty.SetQuantumStatistics(1);
+
+  for(short unsigned usCh=0; usCh<NumChannels; usCh++){
+    for(short unsigned usPw=0; usPw<Kitty.GetNumPW(usCh); usPw++){
+        if(usCh==0 && usPw%2==1) continue;
+        if((usCh>=1&&usCh<=9) && usPw%2==0) continue;
+        char* wf_file_name = new char [256];
+        sprintf (wf_file_name, "%s/Interaction/pp/AV18_2025-06/%s/wf_av18_usCh%u_usPw%u.dlm", CatsFolder, av18_type, usCh, usPw);
+        DLM_Histo<complex<double>> wf_histo;
+        wf_histo.QuickLoad(wf_file_name);
+        char* ps_file_name = new char [256];
+        sprintf (ps_file_name, "%s/Interaction/pp/AV18_2025-06/%s/ps_av18_usCh%u_usPw%u.dlm", CatsFolder, av18_type, usCh, usPw);
+        DLM_Histo<complex<double>> ps_histo;
+        ps_histo.QuickLoad(ps_file_name);
+        
+        Kitty.SetExternalWaveFunction(usCh,usPw,wf_histo,ps_histo);
+        
+        delete [] wf_file_name;
+        delete [] ps_file_name;
+    }
+  }
+  
+}
+
+
+DLM_Histo<complex<double>> ***Init_pp_Epelbaum_OLD(const char *CatsFolder, CATS *Kitty, const int &TYPE) {
+  if (!Kitty)
+    return NULL;
+  return Init_pp_Epelbaum_OLD(CatsFolder, *Kitty, TYPE);
+}
+
+DLM_Histo<complex<double>> ***Init_pp_Epelbaum_OLD(const char *CatsFolder, CATS &Kitty, const int &TYPE) {
   // setup all channels in the cats object
   const unsigned short NumChannels = 12;
 

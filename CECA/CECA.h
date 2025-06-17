@@ -130,6 +130,7 @@ public:
   //info the upper limit until which information is still saved
   //N.B. the corresponding Q3 etc is automatically evaluated, here its only k*!
   void SetFemtoRegion(const float& femto, const float& info=0);//done
+  double GetFemtoLimit();
   //higher number should make for less CPU time
   //questions about accuracy though, so far no effect seen
   //still, if Mult = Dim is the configuration that will for sure

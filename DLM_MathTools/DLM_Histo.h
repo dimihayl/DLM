@@ -451,6 +451,9 @@ public:
 //printf("Initialize 3\n");
         return true;
     }
+    bool IsInitialized(){
+        return Initialized;
+    }
     unsigned GetTotBin(const unsigned* WhichBin) const{
         if(!Initialized) {InitWarning(); return 0;}
         unsigned TotBin=0;

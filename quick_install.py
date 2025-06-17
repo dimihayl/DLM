@@ -421,7 +421,7 @@ def quick_install(type):
                 IncFile[dir].extend(['DLM_Unfold'])
         if dir=='DLM_RootTools':
             if install_lvl>=1:
-                IncFile[dir] = ['DLM_CRAB_PM','DLM_SubPads','DLM_DrawingTools','DLM_HistoAnalysis','DLM_RootWrapper','DLM_MultiFit','DLM_DecayMatrix','DLM_RootFit']
+                IncFile[dir] = ['DLM_CRAB_PM','DLM_SubPads','DLM_DrawingTools','DLM_FSI_Wrapper','DLM_HistoAnalysis','DLM_RootWrapper','DLM_MultiFit','DLM_DecayMatrix','DLM_RootFit']
         if dir=='DLM_FemtoTools':
             if install_lvl>=2:
                 IncFile[dir] = ['CommonAnaFunctions']
