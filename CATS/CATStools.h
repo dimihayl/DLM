@@ -44,6 +44,7 @@ class CatsLorentzVector{
 friend class CatsParticlePair;
 public:
     CatsLorentzVector();
+    CatsLorentzVector(const CatsLorentzVector& other);
     ~CatsLorentzVector();
 
     void Boost(const CatsLorentzVector& boostVec);
@@ -153,6 +154,8 @@ protected:
 class CatsParticle:public CatsLorentzVector{
 public:
     CatsParticle();
+    //N.B. this thing does NOT copy the DLM_Random!!!
+    CatsParticle(const CatsParticle& other);
     ~CatsParticle();
     void ReadFromOscarFile(FILE *InFile);
     void SetPid(const int& pid);
@@ -173,10 +176,14 @@ public:
     CatsParticle* Decay(const double& mass1, const double& mass2, const bool& propagate=true);
     //for the Nbody decay. NOT DONE YET, WORKS ONLY WITH 2-BODY
     CatsParticle* Decay(const std::vector<double> masses, const bool& propagate=true);
+    //
+    CatsParticle* DecayN(const std::vector<double> masses, const bool& propagate=true);
     CatsParticle* DecaySimple(const std::vector<double> masses, const bool& propagate=true);
     void SetDecayRanGen(DLM_Random* rangen);
     void SetDecayRanGen(DLM_Random& rangen);
+    DLM_Random* GetDecayRanGen();
     void Set_hbarc(const double& HBARC);
+    //N.B. this thing does NOT copy the DLM_Random!!!
     void operator=(const CatsParticle& other);
     void operator=(const CatsLorentzVector& other);
 protected:
@@ -187,6 +194,9 @@ protected:
     double Width;
     DLM_Random* RanGen;
     double hbarc;
+
+    void DecayPropagate(CatsParticle* Daughters, const unsigned NumDaughters);
+    void TwoBodyDecay(CatsParticle& Daughter1, CatsParticle& Daughter2, const double& mass1, const double& mass2);
 };
 
 //contains all info about the particles in their CM system.

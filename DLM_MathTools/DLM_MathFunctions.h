@@ -20,6 +20,7 @@ double atanPhi(const double& y, const double& x);
 double AnglePhi(const double& py, const double& px);
 double AngleTheta(const double& pt, const double& pz);
 double Pseudorapidity(const double& pt, const double& pz);
+double Pseudorapidity(const double& cos_th);
 double Transverse(const double& py, const double& px);
 
 double GetPval(const double& chi2, const double& ndf);

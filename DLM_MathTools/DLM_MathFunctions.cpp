@@ -105,6 +105,11 @@ double Pseudorapidity(const double& pt, const double& pz){
 	else if(pt==0) return 1000;
 	else return asinh(pz/pt);
 }
+double Pseudorapidity(const double& cos_th){
+	if(fabs(cos_th)>1) return 0;
+    //verified that this relation is true
+    return  -0.5*log((1.-cos_th)/(1.+cos_th));
+}
 double Transverse(const double& py, const double& px){
 	return sqrt(py*py+px*px);
 }

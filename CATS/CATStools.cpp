@@ -165,6 +165,10 @@ CatsLorentzVector::CatsLorentzVector(){
     betaZ=0;
     beta=0;
 }
+CatsLorentzVector::CatsLorentzVector(const CatsLorentzVector& other){
+    CatsLorentzVector();
+    *this = other;
+}
 CatsLorentzVector::~CatsLorentzVector(){
 
 }
@@ -539,6 +543,10 @@ CatsParticle::CatsParticle(){
     RanGen = NULL;
     hbarc = 197.3269602;
 }
+CatsParticle::CatsParticle(const CatsParticle& other){
+    CatsParticle();
+    *this = other;
+}
 CatsParticle::~CatsParticle(){
 
 }
@@ -725,6 +733,8 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   //get back to the mother, one should boost with (-) sign.
   Daughters[0].BoostBack(*this);
   Daughters[1].BoostBack(*this);
+
+//at some point I have removed this, however this broke CECA. Why did I remove it? Is it needed here or in some other place?
   //after we boost back to the LAB, we need to set the spacial coordinates
   //of the daughters to be the same of the mother
   Daughters[0].SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
@@ -733,12 +743,228 @@ CatsParticle* CatsParticle::Decay(const double& mass1, const double& mass2, cons
   return Daughters;
 }
 
+
+
+void CatsParticle::DecayPropagate(CatsParticle* Daughters, const unsigned NumDaughters){
+  double DecaySpacePoint[4];
+  DecaySpacePoint[0] = FourSpace[0];
+  DecaySpacePoint[1] = FourSpace[1];
+  DecaySpacePoint[2] = FourSpace[2];
+  DecaySpacePoint[3] = FourSpace[3];
+  float TAU;
+  if(RanGen&&Width>0){
+    TAU = RanGen->Exponential(Width);
+  }
+  else if(Width){
+    TAU = 1./Width;
+  }
+  else{
+    TAU = 0;
+  }
+
+  if(GetMass()){
+    //this is beta*gamma*time, i.e. boost effect accounted for
+    DecaySpacePoint[0] += gamma*TAU*hbarc;
+    DecaySpacePoint[1] += (FourMomentum[1])*TAU/GetMass()*hbarc;
+    DecaySpacePoint[2] += (FourMomentum[2])*TAU/GetMass()*hbarc;
+    DecaySpacePoint[3] += (FourMomentum[3])*TAU/GetMass()*hbarc;
+  }
+
+
+  SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
+  for(unsigned uDaugh=0; uDaugh<NumDaughters; uDaugh++){
+    Daughters[uDaugh].SetTXYZ(DecaySpacePoint[uDaugh],DecaySpacePoint[uDaugh],DecaySpacePoint[uDaugh],DecaySpacePoint[uDaugh]);
+  }
+
+}
+void CatsParticle::TwoBodyDecay(CatsParticle& Daughter1, CatsParticle& Daughter2, const double& mass1, const double& mass2){
+    //printf("TwoBodyDecay\n");
+  if(mass1+mass2>GetMass()){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: The daughters are heavier than the mother!\n");
+    return;
+  }
+  if(mass1<0||mass2<0){
+    printf("\033[1;31mERROR:\033[0m in CatsParticle::Decay: Negative mass!\n");
+    return;
+  }
+
+  //negative Width corresponds to immediate decay
+  if(Width==0){
+    return;
+  }
+
+
+  //printf("A\n");
+
+//what happens with FourSpace[0]
+//-> we shift the time by gamma*time, which is the time that has passed in
+//this frame of reference
+  double DecaySpacePoint[4];
+  DecaySpacePoint[0] = FourSpace[0];
+  DecaySpacePoint[1] = FourSpace[1];
+  DecaySpacePoint[2] = FourSpace[2];
+  DecaySpacePoint[3] = FourSpace[3];
+
+  //printf("B\n");
+
+  //printf("RanGen %p Width %f\n",RanGen,Width);
+  float TAU;
+  if(RanGen&&Width>0){
+    //printf("  RanGen %p Width %f\n",RanGen,Width);
+    DLM_Random rg(1);
+    //printf("  %f\n",rg.Exponential(Width));
+    TAU = RanGen->Exponential(Width);
+    //printf("TAU %f Width %f\n",TAU,Width);
+    //TAU = 1./Width;
+    //MxGAMMA = Mass*Width;//RANDOM
+  }
+  else if(Width){
+    TAU = 1./Width;
+  }
+  else{
+    TAU = 0;
+  }
+
+  //printf("TAU %f\n",TAU);
+
+  if(GetMass()){
+    //this is beta*gamma*time, i.e. boost effect accounted for
+    DecaySpacePoint[0] += gamma*TAU*hbarc;
+    DecaySpacePoint[1] += (FourMomentum[1])*TAU/GetMass()*hbarc;
+    DecaySpacePoint[2] += (FourMomentum[2])*TAU/GetMass()*hbarc;
+    DecaySpacePoint[3] += (FourMomentum[3])*TAU/GetMass()*hbarc;
+  }
+
+
+  //printf("%f %f %f %f\n", DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
+
+  //this section over here is defined in the rest frame of the mother
+  Daughter1.SetMass(mass1);
+  Daughter2.SetMass(mass2);
+
+  const double DecM2 = (GetMass()*GetMass()-mass1*mass1-mass2*mass2);
+  const double kstar = sqrt((0.25*DecM2*DecM2-mass1*mass1*mass2*mass2)/(DecM2+mass1*mass1+mass2*mass2));
+
+  if(!RanGen){
+    Daughter1.SetMomXYZ(0, 0, kstar);
+    Daughter2.SetMomXYZ(0, 0, -kstar);
+  }
+  else{
+    const double cos_th = RanGen->Uniform(-1,1);
+    const double sin_th = sqrt(1.-cos_th*cos_th);
+    const double phi = RanGen->Uniform(0,2.*Pi);
+    Daughter1.SetMomXYZ(kstar*cos(phi)*sin_th, kstar*sin(phi)*sin_th, kstar*cos_th);
+    Daughter2.SetMomXYZ(-kstar*cos(phi)*sin_th, -kstar*sin(phi)*sin_th, -kstar*cos_th);
+  }
+
+  //here we boost to move with the speed of the mother
+  //but since we actually want to 'revert' the boost, i.e.
+  //get back to the mother, one should boost with (-) sign.
+  Daughter1.BoostBack(*this);
+  Daughter2.BoostBack(*this);
+  //after we boost back to the LAB, we need to set the spacial coordinates
+  //of the daughters to be the same of the mother
+  Daughter1.SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]);
+  Daughter2.SetTXYZ(DecaySpacePoint[0],DecaySpacePoint[1],DecaySpacePoint[2],DecaySpacePoint[3]); 
+}
+
+
 CatsParticle* CatsParticle::Decay(const std::vector<double> masses, const bool& propagate){
-  if(masses.size()!=2){
-    printf("CatsParticle::Decay WORKS ONLY FOR 2-BODY SO FAR, UPGRADE!!!!\n");
+    return Decay(masses.at(0),masses.at(1),propagate);
+}
+
+
+CatsParticle* CatsParticle::DecayN(const std::vector<double> masses, const bool& propagate){
+
+  if(masses.size()<2){
+    printf("\033[1;31mERROR:\033[0m CatsParticle::Decay Bad set up!!!\n");
     return NULL;
   }
-  return Decay(masses.at(0),masses.at(1),propagate);
+
+  unsigned nFinalDaughters = 0;
+  CatsParticle* FinalDaughters = NULL;
+  FinalDaughters = new CatsParticle[masses.size()];
+  if(masses.size()==2){
+    TwoBodyDecay(FinalDaughters[nFinalDaughters],FinalDaughters[nFinalDaughters+1],masses.at(0),masses.at(1));
+    nFinalDaughters += 2;
+  }
+  //we split this into a series of 2B decays, where the intermediate states are dummy particles with random properties
+  //at each split we select one true daughter, and make a decay into it and one dummy particle
+  else{
+    if(!RanGen) RanGen = new DLM_Random(0);
+    std::vector<double> masses_reduced = masses;
+    std::vector<int> particles_id;
+    for(unsigned uDaugh=0; uDaugh<masses_reduced.size(); uDaugh++){
+        particles_id.push_back(uDaugh);
+    }
+    double E_tot = GetMass();
+    double m_tot_daughters = 0;
+    for(const double& m : masses) {
+        m_tot_daughters += m;
+    }
+    CatsParticle Mother(*this);
+    Mother.SetDecayRanGen(*RanGen);
+    while(masses_reduced.size()>2){
+        double T_final = E_tot;
+        for(unsigned uDaugh=0; uDaugh<masses_reduced.size(); uDaugh++){
+            T_final -= masses_reduced.at(uDaugh);
+        }
+        if(T_final<0){
+            printf("\033[1;31mERROR:\033[0m CatsParticle::Decay Bad set up, the final state has more mass!\n");
+            return NULL;
+        }
+        //this one is the randomly selected true final daughter
+        int rnd_id = RanGen->Integer(masses_reduced.size());
+        int true_id = particles_id.at(rnd_id);
+
+
+        //printf("%f %i\n",T_final,rnd_id);
+
+        std::vector<double> intermediate_masses;
+        //mass of the particle we keep
+        intermediate_masses.push_back(masses_reduced.at(rnd_id));
+        //remove that mass here
+        masses_reduced.erase(masses_reduced.begin()+rnd_id);
+        particles_id.erase(particles_id.begin()+rnd_id);
+
+        //this would be the mass of the dummy daughter
+        double mass_x = RanGen->Uniform(m_tot_daughters - intermediate_masses.at(0), E_tot - intermediate_masses.at(0));
+        intermediate_masses.push_back(mass_x);
+
+        //printf("mass_x %f\n",mass_x);
+
+        CatsParticle Leftover;
+        //printf(" %u\n",masses_reduced.size());
+        Mother.TwoBodyDecay(FinalDaughters[true_id], Leftover, intermediate_masses.at(0),intermediate_masses.at(1));
+        nFinalDaughters++;
+        //printf("hi\n");
+        Mother = Leftover;
+        Mother.SetWidth(Width);
+        E_tot = Mother.GetMass();
+        Mother.SetDecayRanGen(RanGen);
+    }
+    //at this point we still have 1 decay left
+    //printf(" %f %f -- %u\n",masses_reduced.at(0),masses_reduced.at(1),nFinalDaughters);
+    Mother.TwoBodyDecay(FinalDaughters[particles_id.at(0)], FinalDaughters[particles_id.at(1)], masses_reduced.at(0),masses_reduced.at(1));
+
+    nFinalDaughters += 2;
+
+    //the last leftover should be the last daughter
+    //FinalDaughters[nFinalDaughters++] = Mother;
+    //double totengy=0;
+    //for(unsigned uDaugh=0; uDaugh<nFinalDaughters; uDaugh++){
+    //    printf(" ud%u %f %f\n",uDaugh,FinalDaughters[uDaugh].GetMass(),FinalDaughters[uDaugh].GetE());
+    //    totengy += FinalDaughters[uDaugh].GetE();
+    //}
+    //printf("totengy = %f\n",totengy);
+    
+  }
+
+  if(propagate){
+    DecayPropagate(FinalDaughters, masses.size());
+  }
+
+  return FinalDaughters;
 }
 
 void CatsParticle::SetDecayRanGen(DLM_Random* rangen){
@@ -746,6 +972,9 @@ void CatsParticle::SetDecayRanGen(DLM_Random* rangen){
 }
 void CatsParticle::SetDecayRanGen(DLM_Random& rangen){
   RanGen = &rangen;
+}
+DLM_Random* CatsParticle::GetDecayRanGen(){
+  return RanGen;
 }
 void CatsParticle::Set_hbarc(const double& HBARC){
   hbarc = HBARC;

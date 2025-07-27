@@ -156,49 +156,61 @@ void TreParticle::SetPz(const float& widthZ){
 void TreParticle::SamplePxPyPz(double* axisValues, DLM_Random* RanGen, const bool& UnderOverFlow) const{
   if(!RanGen) RanGen = Database.RanGen;
   if(PtEtaPhi){
-    //N.B. it is assumed that the provided histogram IS a PDF, and NOT integrated YIELD!!!
-    PtEtaPhi->SamplePdf(axisValues,UnderOverFlow,RanGen);
-    double pt = axisValues[0];
-    double eta = axisValues[1];
-    double phi = axisValues[2];
-    double& px = axisValues[0];
-    double& py = axisValues[1];
-    double& pz = axisValues[2];
-    double cos_th,sin_th,cotg_th,ptot;
 
-    bool Auto_eta = true;
-    bool Auto_phi = true;
-    if(PtEtaPhi->GetDim()>1)
-      Auto_eta = false;
-    if(PtEtaPhi->GetDim()>2)
-      Auto_phi = false;
-    //PtEtaPhi->Sample(axisValues,true,RanGen[ThId]);
+    bool InAccepance = false;
+    while(InAccepance==false){
+      //N.B. it is assumed that the provided histogram IS a PDF, and NOT integrated YIELD!!!
+      PtEtaPhi->SamplePdf(axisValues,UnderOverFlow,RanGen);
+      double pt = axisValues[0];
+      double eta = axisValues[1];
+      double phi = axisValues[2];
+      double& px = axisValues[0];
+      double& py = axisValues[1];
+      double& pz = axisValues[2];
+      double cos_th,sin_th,cotg_th,ptot;
 
-    if(Auto_phi){
-      phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
-    }
-    //we actually should generate z
-    if(Auto_eta){
-      if(Pz_Width==0){
-        printf("\033[1;33mWARNING:\033[0m (TreParticle::SamplePxPyPz) Pz=0, did you forgot to use SetPz?\n");
+      bool Auto_eta = true;
+      bool Auto_phi = true;
+      if(PtEtaPhi->GetDim()>1)
+        Auto_eta = false;
+      if(PtEtaPhi->GetDim()>2)
+        Auto_phi = false;
+      //PtEtaPhi->Sample(axisValues,true,RanGen[ThId]);
+
+      if(Auto_phi){
+        phi = RanGen->Uniform(Acceptance_Phi[0],Acceptance_Phi[1]);
       }
-      pz = RanGen->Gauss(0,Pz_Width);
-      ptot = sqrt(pt*pt+pz*pz);
-      cos_th = pz/ptot;
-      cotg_th = pz/pt;
-      sin_th = pt/ptot;
+      //we actually should generate z
+      if(Auto_eta){
+        if(Pz_Width==0){
+          printf("\033[1;33mWARNING:\033[0m (TreParticle::SamplePxPyPz) Pz=0, did you forgot to use SetPz?\n");
+        }
+        pz = RanGen->Gauss(0,Pz_Width);
+        ptot = sqrt(pt*pt+pz*pz);
+        cos_th = pz/ptot;
+        cotg_th = pz/pt;
+        sin_th = pt/ptot;
+      }
+      else{
+        sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
+        cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
+        cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
+        pz = pt*cotg_th;
+        ptot = sqrt(pt*pt+pz*pz);
+      }
+
+      InAccepance = true;
+      if(pt<Acceptance_pT[0] || pt>Acceptance_pT[1]) InAccepance = false;
+      if(eta<Acceptance_Eta[0] || eta>Acceptance_Eta[1]) InAccepance = false;
+      if(cos_th<Acceptance_CosTh[0] || cos_th>Acceptance_CosTh[1]) InAccepance = false;
+      if(phi<Acceptance_Phi[0] || phi>Acceptance_Phi[1]) InAccepance = false;
+
+      px = ptot*cos(phi)*sin_th;
+      py = ptot*sin(phi)*sin_th;
+    //pT = sqrt(px2+py2) = ptot*|sin_th|
+    //theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
+
     }
-    else{
-      sin_th = 2.*exp(-eta)/(1.+exp(-2.*eta));
-      cotg_th = (1.-exp(-2.*eta))/(2.*exp(-eta));
-      cos_th = (1.-exp(-2.*eta))/(1.+exp(-2.*eta));
-      pz = pt*cotg_th;
-      ptot = sqrt(pt*pt+pz*pz);
-    }
-    px = ptot*cos(phi)*sin_th;
-    py = ptot*sin(phi)*sin_th;
-  //pT = sqrt(px2+py2) = ptot*|sin_th|
-  //theta, phi, pT = pz*tg_th. We can sample pT from a Gauss of mean mu and sigma = sigma0 * tg_th
   }//PtEtaPhi
   else if(PtPzPhi){
     PtPzPhi->SamplePdf(axisValues,UnderOverFlow,RanGen);

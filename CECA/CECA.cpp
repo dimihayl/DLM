@@ -1215,6 +1215,7 @@ FragCorr = 1;
       unsigned char ud=0;
       std::vector<float> cos_th;
       for(unsigned ID : pid){
+        //printf(" %u",ID);
         //printf("ud = %u\n",ud);
         boost_v = boost_v+*(Primary.at(ID)->Cats());//
         prt_cm[ud] = *Primary.at(ID);
@@ -1225,6 +1226,7 @@ FragCorr = 1;
         cos_th.push_back(cos(prt_cm[ud].Cats()->GetTheta()));
         ud++;
       }
+      //printf("\n");
 
       //the starting time of the interaction
       //given by the last particle to form
@@ -1237,6 +1239,7 @@ FragCorr = 1;
           fsi_tau = prt_cm[ud].Cats()->GetT();
         }
       }
+      //printf("fsit %f\n",fsi_tau);
 
       //unify the time of all particles. I.e. in their rest frame, tau should be the same
       //if not, the particles that are formed earlier are propagated along a straight line until
@@ -1266,6 +1269,9 @@ FragCorr = 1;
         crd_x = primary->Cats()->GetX();
         crd_y = primary->Cats()->GetY();
         crd_z = primary->Cats()->GetZ();
+        //printf("crd %f %f %f; p = %f %f %f; %i %i\n",crd_x,crd_y,crd_z,
+        //primary->Cats()->GetPx(),primary->Cats()->GetPy(),primary->Cats()->GetPz(),
+        //primary->IsUsefulPrimordial(),primary->IsUsefulProduct());
         GhettoSP_X->Fill(crd_x);
         GhettoSP_Y->Fill(crd_y);
         GhettoSP_Z->Fill(crd_z);
@@ -1299,7 +1305,7 @@ FragCorr = 1;
         //arbitrary mass. For identical particles this definition
         //works out to 3x mass of the particle
         //this is the definition that leads to Q==Q3
-        double Malpha = mu12*alpha_m;
+        double Malpha = mu12*alpha_m / 6.;
         
         //CatsLorentzVector clv12 = *prt_cm[0].Cats() - *prt_cm[1].Cats();
 
@@ -1355,8 +1361,8 @@ FragCorr = 1;
           v_Q3.push_back(sqrt(Malpha/mu12)*v_k12[uv]);
         }
         for(unsigned uv=3; uv<6; uv++){
-          v_rho.push_back(sqrt(mu3_12/Malpha)*v_r3_12[uv]);
-          v_Q3.push_back(sqrt(Malpha/mu3_12)*v_k3_12[uv]);  
+          v_rho.push_back(sqrt(mu3_12/Malpha)*v_r3_12[uv-3]);
+          v_Q3.push_back(sqrt(Malpha/mu3_12)*v_k3_12[uv-3]);  
         }
 
         //chat gpt style
@@ -1405,7 +1411,18 @@ FragCorr = 1;
         }
         hyp_rad = sqrt(hyp_rad);
         Q3 = sqrt(Q3);
-        //printf("hyp_rad, rho_val, ratio, Q3, mT = %.3f %.3f %.3f %.3f %.3f\n",hyp_rad,rho_val,rho_val/hyp_rad,Q3,mT);
+        if(Q3<1000){
+          //if(hyp_rad<0.1){
+            //printf("hyp_rad, rho_val, ratio, Q3, mT = %.3f %.3f %.3f %.3f %.3f\n",hyp_rad,rho_val,rho_val/hyp_rad,Q3,mT);
+
+              //printf("CM: %f %f %f\n", v_rCM[0], v_rCM[1], v_rCM[2]);
+              //printf("  %f %f %f\n", v_r1[0], v_r1[1], v_r1[2]);
+              //printf("  %f %f %f\n", v_r2[0], v_r2[1], v_r2[2]);
+              //printf("  %f %f %f\n", v_r3[0], v_r3[1], v_r3[2]);
+
+          //}
+
+        }
 
         if(Q3<FemtoLimit){
           FemtoPermutations++;
@@ -1419,15 +1436,20 @@ FragCorr = 1;
         NumPrims += prt_cm[0].IsUsefulProduct();
         NumPrims += prt_cm[1].IsUsefulProduct();
         NumPrims += prt_cm[2].IsUsefulProduct();
-        if(NumPrims==3){
+        static int counter_3 = 0;
+        //if(NumPrims==3){
           Ghetto_kstar_rstar->Fill(Q3,hyp_rad);
           Ghetto_kstar_rstar_mT->Fill(Q3,hyp_rad,mT);
-        }
+          counter_3++;
+        //}
+        static int counter_3f = 0;
         if(Q3<FemtoLimit){
           //GhettoFemto_mT_rstar->Fill(mT,rho_val);
           GhettoFemto_mT_rstar->Fill(mT,hyp_rad);
+          counter_3f++;
         }
-        
+        //if(counter_3%10==0)
+        //  printf("%i %i\n",counter_3,counter_3f);
         }
         
 /*
@@ -1883,6 +1905,7 @@ FemtoPermutations++;
       GhettoFemto_rstar->Fill(rstar);
     }
     GhettoFemto_mT_rstar->Fill(mT,rstar);
+    //printf("FFS 1\n");
     //N.B. without this if statement, we get a different rcore, as it depends on the mass of the particles
     //i.e. the core is not the same for all species, even if the single particle emission IS the same
     if(prt_cm[0].IsUsefulPrimordial()&&prt_cm[1].IsUsefulPrimordial()){
