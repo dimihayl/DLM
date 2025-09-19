@@ -424,7 +424,7 @@ def quick_install(type):
                 IncFile[dir] = ['DLM_CRAB_PM','DLM_SubPads','DLM_DrawingTools','DLM_FSI_Wrapper','DLM_HistoAnalysis','DLM_RootWrapper','DLM_MultiFit','DLM_DecayMatrix','DLM_RootFit']
         if dir=='DLM_FemtoTools':
             if install_lvl>=2:
-                IncFile[dir] = ['CommonAnaFunctions']
+                IncFile[dir] = ['CommonAnaFunctions','Ana_pi_d_RUN2']
         if dir=='CECA':
             if install_lvl>=2:
                 IncFile[dir] = ['CECA','TREPNI']
