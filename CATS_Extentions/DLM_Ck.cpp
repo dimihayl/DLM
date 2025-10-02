@@ -32,6 +32,13 @@ DLM_Ck::DLM_Ck(const DLM_Ck& other, bool FULL):DLM_Histo(other),NumSourcePar(oth
     CutOff = other.CutOff;
     CutOff_kc = other.CutOff_kc;
 }
+DLM_Ck::DLM_Ck(const DLM_Histo<double>& other):DLM_Histo(other),NumSourcePar(0),NumPotPar(0){
+    Kitty = NULL;
+    CkFunction = NULL;
+    DefaultConstructor();
+    SourceUpToDate = true;
+    PotUpToDate = true;
+}
 
 DLM_Ck::DLM_Ck(const unsigned numbins,const double& kmin, const double& kmax):DLM_Histo(),NumSourcePar(0),NumPotPar(0){
     Kitty = NULL;
