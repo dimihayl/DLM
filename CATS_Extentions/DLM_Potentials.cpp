@@ -200,6 +200,17 @@ double SquareWell(double* Pars){
   if(r<=width) return depth;
   else return 0;
 }
+double DoubleSquareWell(double* Pars){
+  double r = fabs(Pars[0]);
+  double& depth1 = Pars[2];//MeV
+  double& width1 = Pars[3];//fm
+  double& depth2 = Pars[4];//MeV
+  double& width2 = Pars[5];//fm
+  double pot = 0;
+  if(r<=width1) pot += depth1;
+  if(r<=width2) pot += depth2;
+  return pot;
+}
 
 //like the well, but can be offset. The "width" parameter is only the half-width
 //Pars[2] = p0 = strength

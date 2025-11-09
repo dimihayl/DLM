@@ -100,9 +100,12 @@ public:
   void SetDelayTau(const float& delay);//done W/O QA !!!
   TreChain* NewDecay();//done W/O QA !!!
   TreChain* GetDecay(const unsigned char& whichone) const;//done W/O QA !!!
+  TreChain* GetDecay() const;
   //a random decay channel based on current BR
   //the current decay chain is also saved within the class
   TreChain* GetRandomDecay(DLM_Random* RanGen=NULL) const;
+  std::vector<TreParticle**> GetFinalState() const;//NOT DONE YET
+  std::vector<TreParticle**> GetRandomFinalState(DLM_Random* RanGen=NULL) const;//NOT DONE YET
   //TreChain* GetCurrentDecay() const;//done
   void Print();
 
@@ -142,6 +145,7 @@ private:
   unsigned char NumDecays;
   //important: the decay chains will be owned by the particle
   TreChain** Decay;
+  short LastDecay;//id of the last sampled decay, random or called
   //TreChain* CurrentDecay;
   float Acceptance_pT[2];
   float Acceptance_Eta[2];

@@ -28,6 +28,7 @@ TreParticle::TreParticle(TREPNI& database):Database(database){
   }
   NumDecays = 0;
   Decay = NULL;
+  LastDecay = -1;
   //CurrentDecay = NULL;
   PtotEtaPhi = NULL;
   PtPzPhi = NULL;
@@ -585,16 +586,47 @@ TreChain* TreParticle::GetDecay(const unsigned char& whichone) const{
   //CurrentDecay = Decay[whichone];
   return Decay[whichone];
 }
+//Gets the last sampled decay
+TreChain* TreParticle::GetDecay() const{
+  if(!Decay) return NULL;
+  if(LastDecay<0) return NULL;
+  //CurrentDecay = Decay[whichone];
+  return Decay[LastDecay];
+}
 TreChain* TreParticle::GetRandomDecay(DLM_Random* RanGen) const{
   if(!RanGen) RanGen = Database.RanGen;
   float rnd = RanGen->Uniform(0,100);
   float cum = 0;
   for(unsigned char uDec=0; uDec<NumDecays; uDec++){
     cum += Decay[uDec]->GetBranching();
-    if(cum>=rnd) return Decay[uDec];
+    if(cum>=rnd){
+    //  LastDecay = uDec;
+      return Decay[uDec];
+    }
   }
   return NULL;
 }
+
+std::vector<TreParticle**> TreParticle::GetFinalState() const{
+
+}
+/*
+//WORK IN PROGRESS,  WE NEED SOMEHOW TO COLLECT IT ALL< STILL NO STRATEGY
+std::vector<TreParticle**> TreParticle::GetRandomFinalState(DLM_Random* RanGen) const{
+  if(!RanGen) RanGen = Database.RanGen;
+  TreChain* decay_step = GetRandomDecay(RanGen);
+  //we have reached the end of the line
+  if(!decay_step){
+    
+    return NULL;
+  }
+
+  decay_step->GetMother()->GetRandomDecay(RanGen);
+
+
+}
+*/
+
 //TreChain* TreParticle::GetCurrentDecay(){
 //  return CurrentDecay;
 //}

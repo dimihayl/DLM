@@ -46,6 +46,7 @@ double ScreenedCoulomb(double* Pars);
 double Hulthen(double* Pars);
 double HulthenSmooth(double* Pars);
 double SquareWell(double* Pars);
+double DoubleSquareWell(double* Pars);
 double PotentialBarrier(double* Pars);
 
 //gaussians, but not centered at zero

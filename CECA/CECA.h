@@ -58,7 +58,9 @@ private:
 //we can create one CECA only with a specific database, that is not allowed to be modified
 class CECA{
 public:
-  //list_of_particles contains the names of the particles separated by commas and/or spaces
+  //list_of_particles contains the names of the particles (from which we want to build multipletes)
+  //the full list of particles, including resonances etc, should be located in the database
+  //The database has to contain at least the list_of_particles
   CECA(const TREPNI& database, const std::vector<std::string>& list_of_particles);
   //CECA(const TREPNI& database);
   ~CECA();
@@ -318,6 +320,7 @@ double GHETTO_DaughterMass[2][2];
 bool GHETTO_EVENT=false;
 private:
   const TREPNI& Database;
+  //list_of_particles contains the names of the particles (from which we want to build multipletes)
   std::vector<std::string> ListOfParticles;
   std::string exp_file_name;
   int exp_file_flag;

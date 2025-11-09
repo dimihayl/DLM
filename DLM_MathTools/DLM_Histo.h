@@ -473,6 +473,22 @@ public:
         unsigned which_bin[3] = {WhichX, WhichY, WhichZ};
         return GetTotBin(which_bin);
     }   
+
+    unsigned FindTotBin(const double* AxisValue) const{
+        if(!Initialized) {InitWarning(); return 0;}
+        unsigned* WhichBin = new unsigned [Dim];
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            WhichBin[sDim] = GetBin(sDim,AxisValue[sDim]);
+        }
+        return GetTotBin(WhichBin);
+    }
+
+    Type& GetBinElement(const unsigned& WhichTotBin){
+        if(!Initialized) {InitWarning(); Type elem(0); return elem;}
+        if(WhichTotBin>=TotNumBins) {Type elem(0); return elem;}
+        return BinValue[WhichTotBin];
+    }
+
     //BinIdPerAxis[sDim] -> saves for each dim the bin number
     void GetBinCoordinates(const unsigned& WhichTotBin, unsigned* BinIdPerAxis) const{
         if(!Initialized) {InitWarning(); return;}

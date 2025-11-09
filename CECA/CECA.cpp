@@ -831,6 +831,7 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
           }
           else{
             //we select a decay chain of this particle
+            //NO decay is done yet though!!!
             Primordial.back()->RandomDecay(RanGen[ThId]);
             for(unsigned uDaught=0; uDaught<Primordial.back()->Decay()->GetNumDaughters(); uDaught++){
               FSP_is_product = ParticleInList(Primordial.back()->Decay()->GetDaughter(uDaught));
@@ -868,6 +869,7 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
       //we are okay, i.e. found all particles of interest
       std::vector<std::string> particle_list = ListOfParticles;
 
+//this is WRONG, as we do not search the full chain. particle_list is only the list with multiplets at final state
       for(int iNeeded=particle_list.size()-1; iNeeded>=0; iNeeded--){
         std::string Needed = particle_list.at(iNeeded).c_str();
         //printf("On the lookout for %s\n",Needed.c_str());
@@ -886,6 +888,8 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
                 //printf(" Found a primary %s\n",particle_list.back().c_str());
                 particle_list.pop_back();
                 FoundIt = true;
+                //when upgrading, be careful here, we may have multiple particles of interest in the final state
+                //also, worth checking if we end up having two identical particles produced from the same decay, these should be taken with care (source will be zero...)
                 break;
               }
             }
