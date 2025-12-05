@@ -68,6 +68,11 @@ DLM_Histo<complex<double>>*** Init_pd_Sebastian(const char* InputFolder, CATS& K
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char* InputFolder, CATS& Kitty, const int& TYPE=0);
 DLM_Histo<complex<double>>*** Init_pDminus_Haidenbauer(const char* InputFolder, CATS* Kitty, const int& TYPE=0);
 
+
+DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, CATS &Kitty, const int &TYPE = 0, const int &CUTOFF = 0);
+DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, CATS *Kitty, const int &TYPE = 0, const int &CUTOFF = 0);
+
+
 /// TYPE selects the different models implemented in Eur.Phys.J.A 56 (2020) 7, 184
 /// TYPE = 0 -> LQCDe (CUTOFF=500,CUTOFF=600)
 /// TYPE = 1 -> Model A (CV) most attractive

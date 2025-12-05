@@ -542,6 +542,7 @@ protected:
     bool SourceGridReady;//i.e. the Particle container is set up properly
     bool SourceUpdated;
     bool ComputedWaveFunction;
+    //bool** ComputedChPwWf;
     bool ComputedCorrFunction;
     bool GamowCorrected;
 
