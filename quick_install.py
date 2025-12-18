@@ -510,7 +510,7 @@ def quick_install(type):
     if install_lvl==0:
         cmakelists.write('target_link_libraries(  CATS -L${GSL_LIB} -lgsl -lgslcblas)\n')
     else:
-        cmakelists.write('target_link_libraries(  CATS -L${GSL_LIB} -lgsl -lgslcblas ${LIBS})\n')
+        cmakelists.write('target_link_libraries(  CATS -L${GSL_LIB} -lgsl -lgslcblas ${LIBS} -lgomp)\n')
 
     for dir in IncDir:
         for file in IncFile[dir]:
