@@ -3358,8 +3358,8 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
     unsigned short NumFiles = 2; // (to cover singlet/triplet)
     bool *TakeThisFile = new bool[NumFiles];
 
-    RadiusStepSize = 0.01;
-    RadiusMinimum = 0.01;
+    RadiusStepSize = 0.02;
+    RadiusMinimum = 0.02;
     RadiusMaximum = 10.;
 
     NumChannels = 9;
@@ -3456,6 +3456,7 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
             {
                 // set the bin range in between the last two bin centers
                 MomentumBins[NumMomBins] = 0.5 * (Momentum[NumMomBins] + Momentum[NumMomBins - 1]);
+                //printf("%u %f\n",NumMomBins,MomentumBins[NumMomBins]);
             }
             NumMomBins++;
             if(NumMomBins>=MaxNumMomBins){
@@ -3470,6 +3471,7 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
     // set the upper edge of the last bin, where we just add the bin width of the last bin
     // i.e. if we have l(low) c(center) u(up), we have that u=c+(c-l)=2c-l
     MomentumBins[NumMomBins] = 2. * Momentum[NumMomBins - 1] - MomentumBins[NumMomBins - 1];
+    //printf("%u %f\n",NumMomBins,MomentumBins[NumMomBins]);
     const unsigned NumDLM_Histos = NumChannels;
     // the first one is WF, second is PS
     DLM_Histo<complex<double>> ***Histo = new DLM_Histo<complex<double>> **[2];
@@ -3488,6 +3490,8 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
             HistoWF[uHist][uPw].SetUp(0, NumMomBins, MomentumBins);
             HistoWF[uHist][uPw].SetUp(1, NumRadBins, RadBins);
             HistoWF[uHist][uPw].Initialize();
+            //printf("%u %u\n",uHist,uPw);
+            //usleep(100e3);
         }
     }
     HistoPS = new DLM_Histo<complex<double>> *[NumDLM_Histos];
@@ -3598,6 +3602,7 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
                 continue;
             }
 
+            
             //0: 1S0 (Xi-p -> Xi-p)
             //1: 3S1 + 3D1 (Xi-p -> Xi-p)
             //2: 1S0 (L-L -> Xi-p)
@@ -3610,38 +3615,48 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
             if (uFile == 0)//1S0
             {
 
+                //printf("0 0\n");
                 HistoWF[0][0].SetBinContent(WhichBin, (fReWf_Xp + fi * fImWf_Xp) * fRadius);
                 HistoPS[0][0].SetBinContent(WhichBin, 0.);
 
+                //printf("2 0\n");
                 HistoWF[2][0].SetBinContent(WhichBin, (fReWf_LL + fi * fImWf_LL) * fRadius);
                 HistoPS[2][0].SetBinContent(WhichBin, 0.);
 
+                //printf("3 0\n");
                 HistoWF[3][0].SetBinContent(WhichBin, (fReWf_X0n + fi * fImWf_X0n) * fRadius);
                 HistoPS[3][0].SetBinContent(WhichBin, 0.);
 
+                //printf("4 0\n");
                 HistoWF[4][0].SetBinContent(WhichBin, (fReWf_LS + fi * fImWf_LS) * fRadius);
                 HistoPS[4][0].SetBinContent(WhichBin, 0.);    
 
             }
             else if (uFile == 1)//3S1
-            {
+            {   
+                //printf("1 0\n");
                 HistoWF[1][0].SetBinContent(WhichBin, (fReWf_Xp + fi * fImWf_Xp) * fRadius);
                 HistoPS[1][0].SetBinContent(WhichBin, 0.);
 
+                //printf("1 2\n");
                 HistoWF[1][2].SetBinContent(WhichBin, (fReWf_d_Xp + fi * fImWf_d_Xp) * fRadius);
                 HistoPS[1][2].SetBinContent(WhichBin, 0.);
 
+                //printf("5 0\n");
                 HistoWF[5][0].SetBinContent(WhichBin, (fReWf_X0n + fi * fImWf_X0n) * fRadius);
                 HistoPS[5][0].SetBinContent(WhichBin, 0.);
                 
+                //printf("6 0\n");
                 HistoWF[6][0].SetBinContent(WhichBin, (fReWf_LS + fi * fImWf_LS) * fRadius);
                 HistoPS[6][0].SetBinContent(WhichBin, 0.);
                 
+                //printf("7 0\n");
                 //it is technically a d-wave, but we do not care, as this whole d-wave is a single channel.
                 //so we might just as well put at at PW=0.
                 HistoWF[7][0].SetBinContent(WhichBin, (fReWf_d_X0n + fi * fImWf_d_X0n) * fRadius);
                 HistoPS[7][0].SetBinContent(WhichBin, 0.);
                 
+                //printf("8 0\n");
                 //it is technically a d-wave, but we do not care, as this whole d-wave is a single channel.
                 //so we might just as well put at at PW=0.
                 HistoWF[8][0].SetBinContent(WhichBin, (fReWf_d_LS + fi * fImWf_d_LS) * fRadius);
@@ -3682,7 +3697,7 @@ DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, 
 
 DLM_Histo<complex<double>> ***Init_pXi_Haidenbauer2025(const char *InputFolder, CATS *Kitty, const int &TYPE, const int &CUTOFF)
 {
-    return Init_Lcp_Haidenbauer(InputFolder, *Kitty, TYPE, CUTOFF);
+    return Init_pXi_Haidenbauer2025(InputFolder, *Kitty, TYPE, CUTOFF);
 }
 
 
