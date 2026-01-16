@@ -281,6 +281,36 @@ double StupidGaussSumTF1(double* x, double* Pars){
   return StupidGaussSum(PARS);
 }
 
+// 3D version of the above "stupid"
+double Stupid3DGaussSum(double *Pars)
+{
+    // double& Mom = Pars[0];
+    double &Rad = Pars[1];
+    if (Rad < 0)
+        return 0;
+    // double& CosTh = Pars[2];
+    unsigned NG = round(Pars[3]);
+    double Result = 0;
+    double WeightSum = 0;
+    double Weight;
+    double sigmaR = 0;
+    for (unsigned uG = 0; uG < NG; uG++)
+    {
+        Weight = (1. - WeightSum) * Pars[4 + uG * 2];
+        static bool ErrorShown = false;
+        if (!ErrorShown && (Weight < 0 || Weight > 1))
+        {
+            printf("\033[1;31mERROR:\033[0m (StupidGaussSum) The weights have unphysical values, possible ERROR in the fit!!!\n");
+            ErrorShown = true;
+        }
+        WeightSum += Weight;
+        sigmaR = Pars[5 + uG * 2];
+        double NormDist = pow(4. * Pi * sigmaR * sigmaR, -1.5) * exp(-0.25 * pow((Rad) / sigmaR, 2.));
+        Result += Weight * 4 * Pi * Rad * Rad * NormDist;
+    }
+    return Result;
+}
+
 //sum of many possions, all weighted such that the total weight is still 1
 //this is achieved by using the weight parameters as the reletive weight with respect the
 //"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work

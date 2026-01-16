@@ -49,6 +49,8 @@ double StupidShiftedGaussSumTF1(double* x, double* Pars);
 double StupidGaussSum(double* Pars);
 double StupidGaussSumTF1(double* x, double* Pars);
 
+double Stupid3DGaussSum(double *Pars);
+
 //sum of many possions, all weighted such that the total weight is still 1
 //this is achieved by using the weight parameters as the reletive weight with respect the
 //"remaining" weight (i.e. 1 - weight of all previous poissons). As long as all weight pars are within 0-1 this will work
