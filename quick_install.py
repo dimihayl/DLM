@@ -549,6 +549,12 @@ def quick_install(type):
     if not yes():
         return
 
+    # Run tests before installing
+    result = subprocess.run(['bash', 'tests/run_tests.sh'])
+    if result.returncode != 0:
+        print("Your code does not compile.")
+        sys.exit(1)
+
     #os.system('cd install/CMake/')
     os.chdir('./install/CMake/')
     print(str(multiprocessing.cpu_count()))
