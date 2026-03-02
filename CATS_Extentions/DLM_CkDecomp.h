@@ -1,3 +1,5 @@
+#include <cstddef>
+
 #ifndef DLM_CKDECOMP_H
 #define DLM_CKDECOMP_H
 
