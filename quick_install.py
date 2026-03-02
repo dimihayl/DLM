@@ -548,6 +548,13 @@ def quick_install(type):
     print(' Proceed? (y/n) ', end = '')
     if not yes():
         return
+    
+    # Dump user-specific files to a small configuration file
+    config_file_path = f"{PATH_CATS_CMAKE}/UserPaths.cmake"
+    with open(config_file_path, "w") as f:
+        f.write(f'set(GSL_INCLUDE "{PATH_GSL_INC}")\n')
+        f.write(f'set(GSL_LIB "{PATH_GSL_LIB}")\n')
+        f.write(f'set(ROOT_PATH "{PATH_ROOT}")\n')
 
     # Run tests before installing
     result = subprocess.run(['bash', 'tests/run_tests.sh'])

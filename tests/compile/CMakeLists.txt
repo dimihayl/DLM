@@ -32,15 +32,15 @@ foreach(header ${PROJECT_HEADERS})
     list(APPEND HEADER_TEST_SOURCES ${test_file})
 endforeach()
 
-
-
-
 # SET PADLM_OmpToolsTHS #
-SET(DLM_REPO "/home/battidan/ph/sw/cats")
-SET(CATS_INSTALL "/home/battidan/ph/sw/cats/install")
-SET(GSL_INCLUDE "/usr/include/gsl")
-SET(GSL_LIB "/usr/lib64")
-SET(ROOT_PATH "/usr")
+SET(DLM_REPO "${CMAKE_CURRENT_LIST_DIR}/../..")
+SET(CATS_INSTALL "${CMAKE_CURRENT_LIST_DIR}/../../install")
+
+# Include user-provided paths
+include("${CMAKE_SOURCE_DIR}/../../install/CMake/UserPaths.cmake")
+include_directories(${GSL_INCLUDE})
+link_directories(${GSL_LIB})
+link_directories(${ROOT_PATH})
 
 SET(VERSION_MAJOR 3)
 SET(VERSION "${VERSION_MAJOR}")
