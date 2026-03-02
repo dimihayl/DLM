@@ -32,7 +32,6 @@ foreach(header ${PROJECT_HEADERS})
     list(APPEND HEADER_TEST_SOURCES ${test_file})
 endforeach()
 
-# SET PADLM_OmpToolsTHS #
 SET(DLM_REPO "${CMAKE_CURRENT_LIST_DIR}/../..")
 SET(CATS_INSTALL "${CMAKE_CURRENT_LIST_DIR}/../../install")
 
@@ -41,20 +40,6 @@ include("${CMAKE_SOURCE_DIR}/../../install/CMake/UserPaths.cmake")
 include_directories(${GSL_INCLUDE})
 link_directories(${GSL_LIB})
 link_directories(${ROOT_PATH})
-
-SET(VERSION_MAJOR 3)
-SET(VERSION "${VERSION_MAJOR}")
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CATS_INSTALL})
-
-include_directories(${GSL_INCLUDE})
-include_directories(${DLM_REPO}/CATS)
-include_directories(${DLM_REPO}/CATS_Extentions)
-include_directories(${DLM_REPO}/DLM_CppTools)
-include_directories(${DLM_REPO}/DLM_MathTools)
-include_directories(${DLM_REPO}/DLM_RootTools)
-include_directories(${DLM_REPO}/DLM_FemtoTools)
-include_directories(${DLM_REPO}/CECA)
-include_directories(${ROOT_PATH}/include)
 
 add_library(header_self_containment OBJECT
     ${HEADER_TEST_SOURCES}
@@ -79,59 +64,4 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 set_target_properties( header_self_containment PROPERTIES COMPILE_FLAGS ${CFLAGS} ARCHIVE_OUTPUT_DIRECTORY "${CATS_INSTALL}/lib" LIBRARY_OUTPUT_DIRECTORY "${CATS_INSTALL}/lib" RUNTIME_OUTPUT_DIRECTORY "${CATS_INSTALL}/bin")
 target_link_libraries(  header_self_containment -L${GSL_LIB} -lgsl -lgslcblas ${LIBS} -lgomp)
-install (FILES ${DLM_REPO}/CATS/CATS.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS/CATStools.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS/CATSconstants.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_Ck.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_ResponseMatrix.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_CkDecomp.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_Source.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_StefanoPotentials.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_Potentials.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_CkModels.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_WfModel.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_CkDecomposition.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CATS_Extentions/DLM_Fitters.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_CppTools/DLM_CppTools.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_CppTools/DLM_Sort.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_CppTools/DLM_OmpTools.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_Histo.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_Integration.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_Random.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_Bessel.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_MathFunctions.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_Fit.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_RootFinder.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_MathTools/DLM_Unfold.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_CRAB_PM.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_SubPads.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_DrawingTools.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_FSI_Wrapper.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_HistoAnalysis.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_RootWrapper.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_MultiFit.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_DecayMatrix.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_RootTools/DLM_RootFit.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_FemtoTools/CommonAnaFunctions.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/DLM_FemtoTools/Ana_pi_d_RUN2.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CECA/CECA.h DESTINATION ${CATS_INSTALL}/include)
-install (FILES ${DLM_REPO}/CECA/TREPNI.h DESTINATION ${CATS_INSTALL}/include)
-install (PROGRAMS ${DLM_REPO}/bin/cats-config DESTINATION ${CATS_INSTALL}/bin)
-
-file(WRITE ${CATS_INSTALL}/bin/CMakeDLM.txt "${PROJECT_NAME}\n")
-file(APPEND ${CATS_INSTALL}/bin/CMakeDLM.txt "${CATS_INSTALL}\n")
-file(APPEND ${CATS_INSTALL}/bin/CMakeDLM.txt "${ROOT_PATH}\n")
-file(APPEND ${CATS_INSTALL}/bin/CMakeDLM.txt "${GSL_INCLUDE}\n")
-file(APPEND ${CATS_INSTALL}/bin/CMakeDLM.txt "${GSL_LIB}\n")
-
-
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CATS_INSTALL}/bin)
-
-
 target_compile_features(header_self_containment PRIVATE cxx_std_11)
-
-
-# add_executable(PotentialDesigner 
-#                ${DLM_REPO}/DLM_FemtoTools/DLMain_PotentialDesigner.cpp
-# )
-# target_link_libraries(PotentialDesigner CATS -L${GSL_LIB} -lgsl -lgslcblas ${LIBS} -lgomp)
