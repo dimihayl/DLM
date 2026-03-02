@@ -17,6 +17,10 @@ file(GLOB_RECURSE PROJECT_HEADERS
     ${REPO_ROOT}/CATS_Extentions/*.h
     ${REPO_ROOT}/DLM_CppTools/*.h
     ${REPO_ROOT}/DLM_MathTools/*.h
+    ${REPO_ROOT}/CECA/*.h
+    ${REPO_ROOT}/DLM_FemtoTools/*.h
+    ${REPO_ROOT}/DLM_RootTools/*.h
+    ${REPO_ROOT}/CATS_TUTORIAL_2019/*.h
 )
 
 set(HEADER_TEST_SOURCES)
@@ -50,6 +54,10 @@ target_include_directories(header_self_containment PRIVATE
     ${REPO_ROOT}/CATS_Extentions
     ${REPO_ROOT}/DLM_CppTools
     ${REPO_ROOT}/DLM_MathTools
+    ${REPO_ROOT}/CECA
+    ${REPO_ROOT}/DLM_FemtoTools
+    ${REPO_ROOT}/DLM_RootTools
+    ${REPO_ROOT}/CATS_TUTORIAL_2019
 )
 
 execute_process(COMMAND bash -c "${ROOT_PATH}/bin/root-config --cflags" OUTPUT_VARIABLE CFLAGS)
