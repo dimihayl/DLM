@@ -3,6 +3,8 @@
 #ifndef CECA_H
 #define CECA_H
 
+#include <cstddef>
+#include <string>
 #include <vector>
 
 template <class Type> class DLM_Histo;
