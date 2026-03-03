@@ -213,6 +213,7 @@ def load_gsl_include_path():
 
     return PATH_GSL_INC
 
+
 def load_gsl_lib_path():
     #path to the lib of GSL
     PATH_GSL_LIB = ""
@@ -249,9 +250,6 @@ def load_gsl_lib_path():
 
     return PATH_GSL_LIB
 
-
-def load_user_specific_paths():
-    pass
 
 def add_to_bashrc(OS_CMD):
     #print(subprocess.call(OS_CMD))
