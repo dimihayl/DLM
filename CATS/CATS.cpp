@@ -140,7 +140,7 @@ CATS::CATS():
     CPF = NULL;
     TheTrueSource = NULL;
     compute_true_source = false;
-DEBUG=-1;
+    DEBUGFLAG=-1;
     SetIpBins(1, -1000, 1000);
 
 //SourceHistoTemp.SetUp(1);
@@ -2103,12 +2103,12 @@ void CATS::ComputeWaveFunction(){
                 BufferWaveFunction[NumComputedPoints] = WaveFun[kNew];
 if(NumComputedPoints<32 && NumComputedPoints%1==0 && uMomBin==0 && uMPP==0 && false){
 printf("Momentum=%f\n",Momentum);
-DEBUG=omp_get_thread_num();
+DEBUGFLAG=omp_get_thread_num();
 }
 else{
     //#pragma omp critical
     {
-    DEBUG=-1;
+    DEBUGFLAG=-1;
     }
 }
                 PropagatingFunction(PropFunWithoutSI[kNew], PropFunVal[kNew], PosRad[kNew], Momentum, usPW, usCh);
@@ -2125,12 +2125,12 @@ else{
                 }
 
                 BufferRad[NumComputedPoints] = PosRad[kNew];
-if(DEBUG==omp_get_thread_num()){
+if(DEBUGFLAG==omp_get_thread_num()){
 printf("Stuff: \n");
 printf(" PropFunWithoutSI[%u]=%.15e\n",kNew,PropFunWithoutSI[kNew]);
 printf(" PropFunVal[%u]=%.15e\n",kNew,PropFunVal[kNew]);
 printf(" BufferRad[%u]=%.15e\n",NumComputedPoints,BufferRad[NumComputedPoints]);
-DEBUG=-1;
+DEBUGFLAG=-1;
 }
 
                 Convergence =   fabs( (PropFunWithoutSI[kOld]-PropFunVal[kOld])/(fabs(PropFunWithoutSI[kOld]+PropFunVal[kOld])+1e-64) ) < EpsilonConv &&
@@ -3427,7 +3427,7 @@ void CATS::PropagatingFunction(double& Basic, double& Full,
     else{
         return;
     }
-if(DEBUG==true)
+if(DEBUGFLAG==true)
 {
 printf("  Basic=%.15e\n",Basic);
 printf("  ShortRangePotential[%u][%u]=%.15e\n",usCh,usPW,ShortRangePotential[usCh][usPW](Parameters));
