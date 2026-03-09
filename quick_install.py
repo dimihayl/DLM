@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys,os,subprocess,time,multiprocessing,string
+import sys,os,subprocess,time,multiprocessing,string,argparse
 
 
 class bcolors:
@@ -275,18 +275,22 @@ def add_to_bashrc(OS_CMD):
     return True
 
 
-def quick_install(type):
+def quick_install():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('option', nargs='?', default='dev')
+    parser.add_argument("--debug", nargs="?", const=40, default=20, type=int,
+                        help="Debug level. 0: fatal, 10: error, 20: warning, 30: info, 40: debug (default: 20, flag alone: 40)")
+    args = parser.parse_args()
+
     print(bcolors.BOLD+'CATS installer'+bcolors.ENDC)
     print(' To work properly, this files has to be executed from the DLM repository!')
     print(' Type "abort" to terminate the script.')
 
-    SCRIPT_NAME = type[0]
-    SCRIPT_REL_PATH = os.path.dirname(SCRIPT_NAME)
-    SCRIPT_PATH = os.path.abspath(SCRIPT_REL_PATH)
+    SCRIPT_PATH = os.path.abspath(os.path.dirname(__file__))
     os.chdir(SCRIPT_PATH)
 
     allowed_types = ["basic","root","dev","compile","clean"]
-    if len(type)!=2 or type[1] not in allowed_types:
+    if args.option not in allowed_types:
         print('--------------------')
         print('Run this script using '+bcolors.BOLD+bcolors.OKCYAN+'"python3 quick_install.py ARG"'+bcolors.ENDC)
         print('The following options for '+bcolors.BOLD+bcolors.OKCYAN+'"ARG"'+bcolors.ENDC+' are available:')
@@ -301,16 +305,16 @@ def quick_install(type):
         print(bcolors.BOLD+bcolors.OKCYAN+' "clean"'+bcolors.ENDC+':    Deletes the installation.')
         return;
 
-    if type[1]!="compile" and type[1]!="clean":
+    if args.option!="compile" and args.option!="clean":
         print(' Continue? (y/n) ', end = '')
         bashrc_lines = []
         if not yes():
             return
 
-    install_mode = type[1]
+    install_mode = args.option
     #install_mode = 'basic'
     #if len(type)==2:
-    #    install_mode = type[1]
+    #    install_mode = args.option
     #elif len(type)>2:
     #    print(bcolors.FAIL+'Too many input arguments, only one required!'+bcolors.ENDC)
     #    return
@@ -432,7 +436,7 @@ def quick_install(type):
     print('--------------------')
     print(bcolors.BOLD+'Setup the installation folder'+bcolors.ENDC)
 
-    OnlyHeader = ['CATSconstants','DLM_Sort','DLM_Histo']
+    OnlyHeader = ['CATSconstants','DLM_Sort','DLM_Histo', 'DLM_Logger']
 
     IncDir = []
     IncDir.append('CATS')
@@ -578,6 +582,7 @@ def quick_install(type):
 
 
     #target_link_libraries(your_executable CATS)  # Link against the CATS library
+    cmakelists.write(f'target_compile_definitions(CATS PRIVATE DLM_LOG_LEVEL={args.debug})\n')
 
     cmakelists.close()
 
@@ -622,4 +627,6 @@ def quick_install(type):
         for line in bashrc_lines:
             print(' '+line)
 
-quick_install(sys.argv)
+
+if __name__ == '__main__':
+    quick_install()

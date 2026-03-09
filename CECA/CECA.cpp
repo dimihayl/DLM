@@ -8,6 +8,7 @@
 #include "DLM_Source.h"
 #include "DLM_CppTools.h"
 #include "DLM_MathFunctions.h"
+#include "DLM_Logger.h"
 
 #include "omp.h"
 #include <unistd.h>
@@ -662,10 +663,8 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     DynamicThreads = false;
   }
 
-  if(DebugMode){
-    printf("Running GoBabyGo\n");
-    printf(" Detected threads: %u\n",NumThreads);
-  }
+  LOG(DEBUG, "Running CECA on " + to_string(NumThreads) + " threads");
+
   if(exp_file_name!="" && exp_file_flag){
     FILE *file_ptr;
     // Open the file in write mode
@@ -735,6 +734,7 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     //saves permanantly the output that was in the buffer of each thread
     SaveBuffer();
   }
+  LOG(DEBUG, "Reached target yield");
 
   delete [] BufferYield;
 }
@@ -772,6 +772,7 @@ unsigned CECA::GenerateEventTEMP(){
 //generates all particles, propagates and decays into the particles of interest
 //and lastly builds up the
 unsigned CECA::GenerateEvent(const unsigned& ThId){
+  LOG(DEBUG, "New event");
     //unsigned ThId = omp_get_thread_num();
 
     //the event-by-event fluctuations, in absolute value
@@ -1294,7 +1295,7 @@ FragCorr = 1;
 //WHAT HE MEANS IS A REF FRAME WHERE ALL PARTICLES ARE APPROX NON RELATIVISTIC
       //Definitions relevant for 3-body studies
       if(SDIM==3){
-        //printf("hello\n");
+        LOG(DEBUG, "Starting 3B calculations");
         double m1 = prt_cm[0].Cats()->GetMass();
         double m2 = prt_cm[1].Cats()->GetMass();
         double m3 = prt_cm[2].Cats()->GetMass();
