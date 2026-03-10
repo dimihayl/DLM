@@ -239,6 +239,10 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   }
   //NumSystVars = 1;
   ListOfParticles = list_of_particles;
+  if (ListOfParticles.size() < 2) {
+    LOG(FATAL, "At least 2 particles are required in the list_of_particles");
+  }
+
   for(std::string& particle : ListOfParticles){
     if(!Database.GetParticle(particle)){
       printf("\033[1;31mERROR:\033[0m (CECA::CECA) The particle '%s' is not in the database\n",particle.c_str());
