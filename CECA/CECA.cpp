@@ -643,6 +643,14 @@ void CECA::SaveBuffer(){
 }
 
 void CECA::GoBabyGo(const unsigned& num_threads){
+  if (SDIM == 3 && ListOfParticles.size() < 3) {
+    LOG(FATAL, "CECA is not ready: not enough particles in the list_of_particles");
+  }
+
+  if (EMULT < ListOfParticles.size()) {
+    LOG(FATAL, "CECA is not ready: event multiplicity is smaller than the n. of particles in list_of_particles");
+  }
+
   GhettoInit();
   if(!Database.QA()){
       return;
