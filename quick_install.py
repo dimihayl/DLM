@@ -495,7 +495,7 @@ def quick_install():
 
     cmakelists.write('CMAKE_MINIMUM_REQUIRED(VERSION 2.8)\n')
     cmakelists.write('if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")\n')
-    cmakelists.write(' set(CMAKE_CXX_FLAGS "-std=c++1y ${CMAKE_CXX_FLAGS}")\n')
+    cmakelists.write(' set(CMAKE_CXX_FLAGS "-std=c++17 ${CMAKE_CXX_FLAGS}")\n')
     cmakelists.write(' set(CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS "${CMAKE_SHARED_LIBRARY_CREATE_CXX_FLAGS} -undefined dynamic_lookup")\n')
     cmakelists.write('endif()\n')
     cmakelists.write('\n')
@@ -539,11 +539,11 @@ def quick_install():
         cmakelists.write('string(REGEX REPLACE "\n$" "" LIBS "${LIBS}")\n')
 
     if install_lvl==0:
-        cmakelists.write('set(CFLAGS " -O2 -std=c++11 -Wnonnull ")\n')
+        cmakelists.write('set(CFLAGS " -O2 -std=c++17 -Wnonnull ")\n')
     elif install_lvl==1:
-        cmakelists.write('set(CFLAGS " -O2 -std=c++11 -Wnonnull ${CFLAGS}")\n')
+        cmakelists.write('set(CFLAGS " -O2 -std=c++17 -Wnonnull ${CFLAGS}")\n')
     elif install_lvl==2:
-        cmakelists.write('set(CFLAGS " -O2 -lgomp -pthread -fopenmp -std=c++11 -Wnonnull ${CFLAGS}")\n')
+        cmakelists.write('set(CFLAGS " -O2 -lgomp -pthread -fopenmp -std=c++17 -Wnonnull ${CFLAGS}")\n')
 
     if install_lvl>=2:
         cmakelists.write('set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")\n')
