@@ -34,15 +34,19 @@
      : (level) == DEBUG ? "DEBUG"   \
                         : "UNKNOWN")
 
-#define LOG(level, msg)                                                                                        \
-    do {                                                                                                       \
-        if (level <= DLM_LOG_LEVEL) {                                                                          \
-            std::cerr << "[" << DLM_LOG_LEVEL_STRING(level) << "]"                                             \
-                      << "[" << __FILE__ << " -- " << __func__ << ":" << __LINE__ << "] " << msg << std::endl; \
-            if (level == FATAL) {                                                                              \
-                throw std::runtime_error(std::string(msg));                                                    \
-            }                                                                                                  \
-        }                                                                                                      \
+#define LOG(level, msg)                                                                                   \
+    do {                                                                                                  \
+        if (level <= DLM_LOG_LEVEL) {                                                                     \
+            std::ostringstream _dlm_log_stream;                                                           \
+            _dlm_log_stream << msg;                                                                       \
+            std::string _dlm_log_msg = _dlm_log_stream.str();                                             \
+            std::cerr << "[" << DLM_LOG_LEVEL_STRING(level) << "]"                                        \
+                      << "[" << __FILE__ << " -- " << __func__ << ":" << __LINE__ << "] " << _dlm_log_msg \
+                      << std::endl;                                                                       \
+            if (level == FATAL) {                                                                         \
+                throw std::runtime_error(_dlm_log_msg);                                                   \
+            }                                                                                             \
+        }                                                                                                 \
     } while (0)
 
 #endif
