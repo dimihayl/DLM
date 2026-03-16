@@ -49,7 +49,6 @@ private:
   double EpsilonStart;
   unsigned EpsSteps;
   double SillyThreshold;
-  std::vector DaughterMass;
   DLM_Random* RanGen;
   //DLM_Histo<double>* dResult;
 

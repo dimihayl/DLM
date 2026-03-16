@@ -95,6 +95,161 @@ def get_gsl_lib(PATH_GSL_LIB):
     PATH_GSL_LIB = PATH_GSL_LIB.replace('\n','')
     return PATH_GSL_LIB
 
+def load_root_path(install_lvl, bashrc_lines):
+    root_loaded = False
+    PATH_ROOT = "root:"
+    PATH_ROOT_LIST = []
+    if install_lvl>=1:
+        OS_OUT = os.popen('whereis root')
+        OS_READ = OS_OUT.read()
+        OS_SPLIT = OS_READ.split(" ")
+        for string in OS_SPLIT:
+            string = string.rstrip('\n')
+            if string.endswith('root')==True:
+                PATH_ROOT_LIST.append(string)
+        if len(PATH_ROOT_LIST)==0:
+            root_loaded = False
+            print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
+            print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
+            print(' PATH_ROOT = ', end = '')
+            PATH_ROOT = input()
+            if PATH_ROOT=='abort':
+                print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+                return
+            #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
+            #print(OS_CMD)
+            #os.system(OS_CMD)
+            if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
+                PATH_ROOT = "root:"
+            else:
+                root_loaded = True
+                #PATH_ROOT = PATH_ROOT+'/root'
+        #elif len(PATH_ROOT_LIST)==1:
+        #    root_loaded = True
+        #    PATH_ROOT = PATH_ROOT_LIST[0]
+        else:
+            print(bcolors.OKCYAN+' ROOT installations found! '+bcolors.ENDC)
+            print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
+            for id in range(len(PATH_ROOT_LIST)):
+                print('  ({:d}): '.format(id)+PATH_ROOT_LIST[id])
+            print('  ({:d}): '.format(len(PATH_ROOT_LIST))+'Manual input')
+            print(' Desired version: ', end = '')
+            WhichVersion = input_number_range(0,len(PATH_ROOT_LIST))
+            if WhichVersion<0:
+                return
+            if WhichVersion==len(PATH_ROOT_LIST):
+                print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
+                print(' PATH_ROOT = ', end = '')
+                PATH_ROOT = input()
+                if PATH_ROOT=='abort':
+                    print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+                    return
+                #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
+                #print(OS_CMD)
+                #os.system(OS_CMD)
+                if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
+                    PATH_ROOT = "root:"
+                else:
+                    root_loaded = True
+            else:
+                PATH_ROOT = PATH_ROOT_LIST[WhichVersion]
+                #remove the name of the executable from the path
+                PATH_ROOT = PATH_ROOT[0:-4]
+
+            root_loaded = True
+        #print('FINAL VERSION: '+PATH_ROOT)
+        #return
+        if root_loaded:
+            if PATH_ROOT[-1]=="/":
+                PATH_ROOT = PATH_ROOT[0:-1]
+            print(bcolors.OKGREEN+' ROOT location found: '+bcolors.ENDC+PATH_ROOT)
+        else:
+            print(bcolors.WARNING+' ROOT found, but is not loaded in the environment'+bcolors.ENDC)
+            print('  Solution (1): "source $PATH_ROOT/thisroot.sh" before using CATS')
+            print('  Solution (2): Add the above command in your ~/.bashrc')
+            bashrc_lines.append('source '+PATH_ROOT+'/thisroot.sh')
+            #print('   Do you want to apply (2) automatically? (y/n) ', end = '')
+            #if yes():
+            #    add_to_bashrc('source '+PATH_ROOT+'/thisroot.sh')
+
+    #ROOT
+        #remove the /bin
+        PATH_ROOT = PATH_ROOT[0:-4]
+    return PATH_ROOT
+
+
+def load_gsl_include_path():
+    #path to the includes of GSL
+    PATH_GSL_INC = ""
+    PATH_GSL_INC = "gsl:"
+    OS_OUT = os.popen('whereis gsl')
+    #OS_OUT = "gsl:"
+    OS_READ = OS_OUT.read()
+    OS_SPLIT = OS_READ.split(" ")
+    for PATH_GSL_INC in OS_SPLIT:
+        if "gsl:" in PATH_GSL_INC:
+            continue
+        if is_gsl_include_okay(PATH_GSL_INC):
+            print(bcolors.OKGREEN+' GSL location found: '+bcolors.ENDC+PATH_GSL_INC)
+            break
+    suggest = True
+    while "gsl:" in PATH_GSL_INC:
+        print(bcolors.FAIL+' GNU-GSL not found!'+bcolors.ENDC)
+        if suggest:
+            print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
+            print(' Type "abort" to terminate the installation.')
+            print(' Alternatively, type the path to the GSL "include" folder, containing "gsl_*.h" files')
+            suggest = False
+        print(' ', end = '')
+        PATH_GSL_INC = input()
+        if PATH_GSL_INC=='abort':
+            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+            return
+
+        if is_gsl_include_okay(PATH_GSL_INC):
+            print(bcolors.OKGREEN+' GSL location valid!'+bcolors.ENDC)
+        else:
+            PATH_GSL_INC = "gsl:"
+
+    return PATH_GSL_INC
+
+
+def load_gsl_lib_path():
+    #path to the lib of GSL
+    PATH_GSL_LIB = ""
+    PATH_GSL_LIB = "libgsl:"
+    OS_OUT = os.popen('whereis libgsl')
+    #OS_OUT = "gsl:"
+    OS_READ = OS_OUT.read()
+    OS_SPLIT = OS_READ.split(" ")
+    for PATH_GSL_LIB in OS_SPLIT:
+        if "libgsl:" in PATH_GSL_LIB:
+            continue
+        PATH_GSL_LIB = get_gsl_lib(PATH_GSL_LIB)
+        if PATH_GSL_LIB!='libgsl:':
+            print(bcolors.OKGREEN+' LIBGSL location found: '+bcolors.ENDC+PATH_GSL_LIB)
+            break
+    suggest = True
+    while "libgsl:" in PATH_GSL_LIB:
+        print(bcolors.FAIL+' LIBGSL not found!'+bcolors.ENDC)
+        if suggest:
+            print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
+            print(' Type "abort" to terminate the installation.')
+            print(' Alternatively, type the path to the GSL "lib" folder, containing "libgsl.so" and/or "libgsl.a" files')
+            suggest = False
+        print(' ', end = '')
+        PATH_GSL_LIB = input()
+        if PATH_GSL_LIB=='abort':
+            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
+            return
+
+        if is_gsl_lib_okay(PATH_GSL_LIB):
+            print(bcolors.OKGREEN+' LIBGSL location valid!'+bcolors.ENDC)
+        else:
+            PATH_GSL_LIB = "libgsl:"
+
+    return PATH_GSL_LIB
+
 
 def add_to_bashrc(OS_CMD):
     #print(subprocess.call(OS_CMD))
@@ -207,150 +362,36 @@ def quick_install(type):
             print(bcolors.OKGREEN+'CATS was successfully removed!'+bcolors.ENDC)
             return
     #root installation (true, if loaded automatically)
-    root_loaded = False;
-    PATH_ROOT = "root:"
-    PATH_ROOT_LIST = []
-    if install_lvl>=1:
-        OS_OUT = os.popen('whereis root')
-        OS_READ = OS_OUT.read()
-        OS_SPLIT = OS_READ.split(" ")
-        for string in OS_SPLIT:
-            string = string.rstrip('\n')
-            if string.endswith('root')==True:
-                PATH_ROOT_LIST.append(string)
-        if len(PATH_ROOT_LIST)==0:
-            root_loaded = False
-            print(bcolors.FAIL+' ROOT installation not found!'+bcolors.ENDC)
-            print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
-            print(' PATH_ROOT = ', end = '')
-            PATH_ROOT = input()
-            if PATH_ROOT=='abort':
-                print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-                return
-            #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
-            #print(OS_CMD)
-            #os.system(OS_CMD)
-            if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
-                PATH_ROOT = "root:"
-            else:
-                root_loaded = True
-                #PATH_ROOT = PATH_ROOT+'/root'
-        #elif len(PATH_ROOT_LIST)==1:
-        #    root_loaded = True
-        #    PATH_ROOT = PATH_ROOT_LIST[0]
-        else:
-            print(bcolors.OKCYAN+' ROOT installations found! '+bcolors.ENDC)
-            print(bcolors.BOLD+bcolors.OKCYAN+'  Please select one from the list:'+bcolors.ENDC)
-            for id in range(len(PATH_ROOT_LIST)):
-                print('  ({:d}): '.format(id)+PATH_ROOT_LIST[id])
-            print('  ({:d}): '.format(len(PATH_ROOT_LIST))+'Manual input')
-            print(' Desired version: ', end = '')
-            WhichVersion = input_number_range(0,len(PATH_ROOT_LIST))
-            if WhichVersion<0:
-                return
-            if WhichVersion==len(PATH_ROOT_LIST):
-                print(' Please provide the path to the "thisroot.sh" of you ROOT installation:')
-                print(' PATH_ROOT = ', end = '')
-                PATH_ROOT = input()
-                if PATH_ROOT=='abort':
-                    print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-                    return
-                #OS_CMD = '. '+PATH_ROOT+'/thisroot.sh'
-                #print(OS_CMD)
-                #os.system(OS_CMD)
-                if not os.path.exists(PATH_ROOT+'/thisroot.sh'):
-                    PATH_ROOT = "root:"
-                else:
-                    root_loaded = True
-            else:
-                PATH_ROOT = PATH_ROOT_LIST[WhichVersion]
-                #remove the name of the executable from the path
-                PATH_ROOT = PATH_ROOT[0:-4]
 
-            root_loaded = True
-        #print('FINAL VERSION: '+PATH_ROOT)
-        #return
-        if root_loaded:
-            if PATH_ROOT[-1]=="/":
-                PATH_ROOT = PATH_ROOT[0:-1]
-            print(bcolors.OKGREEN+' ROOT location found: '+bcolors.ENDC+PATH_ROOT)
-        else:
-            print(bcolors.WARNING+' ROOT found, but is not loaded in the environment'+bcolors.ENDC)
-            print('  Solution (1): "source $PATH_ROOT/thisroot.sh" before using CATS')
-            print('  Solution (2): Add the above command in your ~/.bashrc')
-            bashrc_lines.append('source '+PATH_ROOT+'/thisroot.sh')
-            #print('   Do you want to apply (2) automatically? (y/n) ', end = '')
-            #if yes():
-            #    add_to_bashrc('source '+PATH_ROOT+'/thisroot.sh')
 
-    #ROOT
-        #remove the /bin
-        PATH_ROOT = PATH_ROOT[0:-4]
-
-    #path to the includes of GSL
-    PATH_GSL_INC = ""
-    PATH_GSL_INC = "gsl:"
-    OS_OUT = os.popen('whereis gsl')
-    #OS_OUT = "gsl:"
-    OS_READ = OS_OUT.read()
-    OS_SPLIT = OS_READ.split(" ")
-    for PATH_GSL_INC in OS_SPLIT:
-        if "gsl:" in PATH_GSL_INC:
-            continue
-        if is_gsl_include_okay(PATH_GSL_INC):
-            print(bcolors.OKGREEN+' GSL location found: '+bcolors.ENDC+PATH_GSL_INC)
-            break
-    suggest = True
-    while "gsl:" in PATH_GSL_INC:
-        print(bcolors.FAIL+' GNU-GSL not found!'+bcolors.ENDC)
-        if suggest:
-            print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
-            print(' Type "abort" to terminate the installation.')
-            print(' Alternatively, type the path to the GSL "include" folder, containing "gsl_*.h" files')
-            suggest = False
-        print(' ', end = '')
-        PATH_GSL_INC = input()
-        if PATH_GSL_INC=='abort':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-
-        if is_gsl_include_okay(PATH_GSL_INC):
-            print(bcolors.OKGREEN+' GSL location valid!'+bcolors.ENDC)
-        else:
-            PATH_GSL_INC = "gsl:"
-
-    #path to the lib of GSL
-    PATH_GSL_LIB = ""
-    PATH_GSL_LIB = "libgsl:"
-    OS_OUT = os.popen('whereis libgsl')
-    #OS_OUT = "gsl:"
-    OS_READ = OS_OUT.read()
-    OS_SPLIT = OS_READ.split(" ")
-    for PATH_GSL_LIB in OS_SPLIT:
-        if "libgsl:" in PATH_GSL_LIB:
-            continue
-        PATH_GSL_LIB = get_gsl_lib(PATH_GSL_LIB)
-        if PATH_GSL_LIB!='libgsl:':
-            print(bcolors.OKGREEN+' LIBGSL location found: '+bcolors.ENDC+PATH_GSL_LIB)
-            break
-    suggest = True
-    while "libgsl:" in PATH_GSL_LIB:
-        print(bcolors.FAIL+' LIBGSL not found!'+bcolors.ENDC)
-        if suggest:
-            print(' Suggestion: intall using "sudo apt-get install libgsl-dev"')
-            print(' Type "abort" to terminate the installation.')
-            print(' Alternatively, type the path to the GSL "lib" folder, containing "libgsl.so" and/or "libgsl.a" files')
-            suggest = False
-        print(' ', end = '')
-        PATH_GSL_LIB = input()
-        if PATH_GSL_LIB=='abort':
-            print(bcolors.FAIL+'Installation canceled'+bcolors.ENDC)
-            return
-
-        if is_gsl_lib_okay(PATH_GSL_LIB):
-            print(bcolors.OKGREEN+' LIBGSL location valid!'+bcolors.ENDC)
-        else:
-            PATH_GSL_LIB = "libgsl:"
+    # Check if the configuration file with user-specific paths already exists
+    config_file_path = f"{PATH_CATS_CMAKE}/UserPaths.cmake"
+    if os.path.exists(config_file_path):
+        print(f'Loading existing configuration "{config_file_path}" for user-specific paths. Delete this file to insert the paths manually.')
+        # Load the information inside the file
+        with open(config_file_path, "r") as f:
+            lines = f.readlines()
+            # Parse each line to extract variables
+            config = {}
+            for line in lines:
+                line = line.strip()
+                if line.startswith("set(") and line.endswith(")"):
+                    # Extract variable name and value
+                    inner = line[4:-1]  # remove 'set(' and ')'
+                    if " " in inner:
+                        key, value = inner.split(None, 1)
+                        # Remove quotes if present
+                        value = value.strip('"')
+                        config[key] = value
+        # Now config is a dictionarycs
+        PATH_GSL_INC = config.get("GSL_INCLUDE")
+        PATH_GSL_LIB = config.get("GSL_LIB")
+        PATH_ROOT = config.get("ROOT_PATH")
+    else:
+        # File does not exist, load paths with user interaction
+        PATH_ROOT = load_root_path(install_lvl, bashrc_lines)
+        PATH_GSL_INC = load_gsl_include_path()
+        PATH_GSL_LIB = load_gsl_lib_path()
 
     omp_okay = True
     if install_lvl>=2:
@@ -548,6 +589,19 @@ def quick_install(type):
     print(' Proceed? (y/n) ', end = '')
     if not yes():
         return
+    
+    # Dump user-specific files to a small configuration file
+    config_file_path = f"{PATH_CATS_CMAKE}/UserPaths.cmake"
+    with open(config_file_path, "w") as f:
+        f.write(f'set(GSL_INCLUDE "{PATH_GSL_INC}")\n')
+        f.write(f'set(GSL_LIB "{PATH_GSL_LIB}")\n')
+        f.write(f'set(ROOT_PATH "{PATH_ROOT}")\n')
+
+    # Run tests before installing
+    result = subprocess.run(['bash', 'tests/run_tests.sh'])
+    if result.returncode != 0:
+        print("Your code does not compile.")
+        sys.exit(1)
 
     #os.system('cd install/CMake/')
     os.chdir('./install/CMake/')

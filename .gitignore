@@ -1,4 +1,5 @@
-./install/*
+install/**
+tests/**/build/**
 !./install/bin/cats-config
 !./install/bin/thiscats
 

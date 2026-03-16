@@ -5,6 +5,7 @@
 
 #include "TMath.h"
 #include "TH1D.h"
+#include "TH2F.h"
 
 class TRandom3;
 
