@@ -1077,6 +1077,8 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
     }
     else if (POT == "DG_pip_d0")
     {
+        //this seems to be completely wrong !!!!
+        //wrong sign of f0
         // f0 = 0.118 fm
         // d0 = -0.02 fm
         cPotPars = new CATSparameters(CATSparameters::tPotential, 4, true);
@@ -1085,9 +1087,11 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
         cPotPars->SetParameter(2, -1.105715e+03);
         cPotPars->SetParameter(3, 4.042254e-01);
     }
+    //expected is actually -0.124fm for f0 and 10-20 fm for d0
     else if (POT == "DG_pip_d")
     {
         cPotPars = new CATSparameters(CATSparameters::tPotential, 4, true);
+        //this seems to be completely wrong !!!!
         // f0 = 0.118 fm
         // d0 = 1.90 fm
         cPotPars->SetParameter(0, 5.680787e+01);
@@ -1095,6 +1099,20 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
         cPotPars->SetParameter(2, -3.371110e+02);
         cPotPars->SetParameter(3, 5.692803e-01);
     }
+    else if (POT == "SG_pip_dimi")
+    {
+        cPotPars = new CATSparameters(CATSparameters::tPotential, 2, true);
+        //goal: f0 ~ -(0.13-0.12) and d0~10-20, closer to 19-20
+        cPotPars->SetParameter(0, 4.0e+01);
+        cPotPars->SetParameter(1, 6.0e-01);
+    }
+    else if (POT == "SG_pim_dimi")
+    {
+        cPotPars = new CATSparameters(CATSparameters::tPotential, 2, true);
+        //goal: f0 ~ (0.115-0.125) and d0~10-20, closer to 15-16
+        cPotPars->SetParameter(0, 4.0e+01);
+        cPotPars->SetParameter(1, 6.0e-01);
+    }   
     else if (POT == "DG_pim_d0")
     {
         // f0 = 0.123 fm
@@ -1136,7 +1154,11 @@ void DLM_CommonAnaFunctions::SetUpCats_ppic(CATS &Kitty, const TString &POT, con
     Kitty.SetChannelWeight(0, 1.);
 
     if (cPotPars)
-        Kitty.SetShortRangePotential(0, 0, DoubleGaussSum, *cPotPars);
+        if(POT=="SG_pip_dimi"){
+            Kitty.SetShortRangePotential(0, 0, SingleGauss, *cPotPars);
+        }
+        else
+            Kitty.SetShortRangePotential(0, 0, DoubleGaussSum, *cPotPars);
 
 CLEAN_SetUpCats_ppic:;
     if (cPars)
