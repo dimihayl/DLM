@@ -199,8 +199,12 @@ public:
   //however the overall CPU throughput is optimized in steps of timeout, hence it is not good to go crazy long.
   //also, the GoBabyGo will run for a minimum time set by the timeout.
   //Unless there is a very good reason, do not change the default value!
-  //The time is given in seconds (integer!)
+  //The time is given in seconds (integer!). Overrides SetThreadYieldout
   void SetThreadTimeout(const unsigned& seconds);//done
+  //The threads are synced after each one reaches a certain Yield.
+  //Overrides SetThreadTimeout.
+  //The idea is that this way the code runs a bit slower, but has reproducible output.
+  void SetThreadYieldout(const unsigned long long& yield);//
   //The time after which the task will terminate ragardless of achieved yield
   void SetGlobalTimeout(const unsigned& seconds);//done
   void SetSeed(const unsigned& thread, const unsigned& seed);//done
@@ -395,6 +399,7 @@ unsigned GenerateEventTEMP();
   DLM_Timer* ThreadClock;
   //in seconds
   unsigned Timeout;
+  unsigned long long Yieldout; 
   //if zero, NO timeout
   unsigned GlobalTimeout;
   //

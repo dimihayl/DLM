@@ -232,6 +232,7 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   //30 seconds as a default timeout
   Timeout = 30*10000000;
   GlobalTimeout = -1;
+  Yieldout = 0;
   RanGen = new DLM_Random* [MaxThreads];
   for(unsigned uTh=0; uTh<MaxThreads; uTh++){
     RanGen[uTh] = new DLM_Random(uTh+1);
@@ -583,6 +584,11 @@ void CECA::SetDebugMode(const bool& debugmode){
 }
 void CECA::SetThreadTimeout(const unsigned& seconds){
   Timeout = seconds?seconds:1;//a minimum of 1 second
+  Yieldout = -1;
+}
+void CECA::SetThreadYieldout(const unsigned long long& yield){
+  Yieldout = yield?yield:1;//a minimum of 1
+  Timeout = -1;
 }
 void CECA::SetGlobalTimeout(const unsigned& seconds){
   GlobalTimeout = seconds?seconds:-1;
@@ -617,7 +623,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
     //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
   }
-  while(ExeTime<Timeout);
+  while(ExeTime<Timeout && NumMultiplets<Yieldout);
   if(DebugMode){
     //#pragma omp critical
     //{
