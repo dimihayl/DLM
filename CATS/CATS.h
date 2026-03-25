@@ -728,7 +728,7 @@ protected:
     double* LegPol;
     //the gamow correction factors (Coulomb penetration factor) pre-computed for all momentum bins
     complex<double>* CPF;
-int DEBUG;
+    int DEBUGFLAG;
 };
 
 #endif // CATS_H
