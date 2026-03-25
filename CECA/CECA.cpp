@@ -622,7 +622,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
     //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
   }
-  while(ExeTime<Timeout);
+  while(ExeTime<Timeout && NumMultiplets * NumThreads <= TargetYield);
   if(DebugMode){
     //#pragma omp critical
     //{
