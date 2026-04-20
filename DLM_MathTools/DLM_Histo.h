@@ -484,8 +484,8 @@ public:
     }
 
     Type& GetBinElement(const unsigned& WhichTotBin){
-        if(!Initialized) {InitWarning(); Type elem(0); return elem;}
-        if(WhichTotBin>=TotNumBins) {Type elem(0); return elem;}
+        if(!Initialized) {InitWarning(); return NULL_ELEM;}
+        if(WhichTotBin>=TotNumBins) {return NULL_ELEM;}
         return BinValue[WhichTotBin];
     }
 
@@ -1814,6 +1814,7 @@ protected:
         Initialized=false;
         Dim = 0;
         rangen = NULL;
+        NULL_ELEM = 0;
     }
     void CleanUp(){
 //printf("CleanUp %u dimensions\n",Dim);
@@ -2047,6 +2048,7 @@ protected:
     bool Initialized;
     bool CumUpdated;
     Type INT_ERROR;
+    Type NULL_ELEM;
 
 };
 #endif
