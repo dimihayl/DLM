@@ -4205,6 +4205,88 @@ CLEAN_SetUpCats_pApHaide:;
     CleanUpWfHisto(Kitty, ExternalWF);
 }
 
+void DLM_CommonAnaFunctions::SetUpCats_pSigmaMinus_Haidenbauer(CATS &Kitty, const TString &SOURCE, const int &TYPE, const int &CUTOFF)
+{
+    CATSparameters *cPars = NULL;
+
+    DLM_Histo<complex<double>> ***ExternalWF = NULL;
+    unsigned NumChannels = 7;
+
+    double rad1;
+    double rad2;
+    double w1;
+    double w2;
+    double mu1;
+    double mu2;
+
+    rad1 = 1.2;
+    if (TYPE == 0)
+    {
+        ExternalWF = Init_pSigmaMinus_Haidenbauer("/Users/sartozza/cernbox/CATSFiles/Models_WFs_Theoreticians/Johann/pSigmaMinus/", Kitty, TYPE);
+    }
+
+    if (SOURCE == "Gauss")
+    {
+        cout << "Gaussian source" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 1, true);
+        cPars->SetParameter(0, rad1);
+        Kitty.SetAnaSource(GaussSource, *cPars);
+        Kitty.SetUseAnalyticSource(true);
+    }
+    else if (SOURCE == "SumTwoGauss")
+    {
+        cout << "Sum of two Gaussians (not w_i norm.)" << endl;
+        cPars = new CATSparameters(CATSparameters::tSource, 7, true);
+        cPars->SetParameter(0, 2);
+        cPars->SetParameter(1, w1);
+        cPars->SetParameter(2, mu1);
+        cPars->SetParameter(3, rad1);
+        cPars->SetParameter(4, w2);
+        cPars->SetParameter(5, mu2);
+        cPars->SetParameter(6, rad2);
+        Kitty.SetUseAnalyticSource(true);
+        Kitty.SetAnaSource(StupidGaussSum, *cPars);
+        Kitty.SetAutoNormSource(false);  // MUST ALWAYS BE FALSE!!
+        Kitty.SetNormalizedSource(false); // do not touch the source, set to true so CATS adds (1-λs), if false it changes the distribution
+    }
+    else
+    {
+        printf("\033[1;31mERROR:\033[0m Non-existing source '%s'\n", SOURCE.Data());
+        goto CLEAN_SetUpCats_pSigmaMinus;
+    }
+    Kitty.SetMomentumDependentSource(false);
+    Kitty.SetThetaDependentSource(false);
+    Kitty.SetExcludeFailedBins(false);
+
+    Kitty.SetQ1Q2(-1);/// Coulomb is already included in wfs
+    Kitty.SetPdgId(3112, 2212);
+    Kitty.SetRedMass((Mass_Schminus * Mass_p) / (Mass_Schminus + Mass_p));
+    Kitty.SetNumChannels(NumChannels);
+
+    for (unsigned uCh = 0; uCh < NumChannels; uCh++)
+    {
+        if (ExternalWF)
+        {
+            Kitty.SetExternalWaveFunction(uCh, 0, ExternalWF[0][uCh][0], ExternalWF[1][uCh][0]);
+        }
+        else
+        {
+            printf("\033[1;31mERROR:\033[0m SetUpCats_Lcp says that you should NEVER see this message! BIG BUG!\n");
+            goto CLEAN_SetUpCats_pSigmaMinus;
+        }
+
+    } // end of for
+
+CLEAN_SetUpCats_pSigmaMinus:;
+
+    if (cPars)
+    {
+        delete cPars;
+        cPars = NULL;
+    }
+    CleanUpWfHisto(Kitty, ExternalWF);
+}
+
 DLM_Ck *DLM_CommonAnaFunctions::SetUpLednicky_pL(const unsigned &NumMomBins, const double *MomBins, const TString &POT)
 {
     double p0, p1, p2, p3;

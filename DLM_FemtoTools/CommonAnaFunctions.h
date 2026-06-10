@@ -28,6 +28,8 @@ const double Mass_n = 939.565;
 const double Mass_L = 1115.683;
 const double Mass_S0 = 1192.642;
 const double Mass_Sch = 1189.37;
+const double Mass_Schplus = 1189.37;
+const double Mass_Schminus = 1197.449;
 const double Mass_Xim = 1321.7;
 const double Mass_Xi0 = 1314.86;
 const double Mass_Xim1530 = 1535;
@@ -105,6 +107,8 @@ public:
     void SetUpCats_LKVidana(CATS &Kitty, const TString &SOURCE, const TString &DataSample);
 
     void SetUpCats_Lcp(CATS &Kitty, const TString &SOURCE, const int &TYPE, const int &CUTOFF);
+
+    void SetUpCats_pSigmaMinus_Haidenbauer(CATS &Kitty, const TString &SOURCE, const int &TYPE, const int &CUTOFF);
 
     DLM_Ck* SetUpLednicky_pL(const unsigned& NumMomBins, const double* MomBins,  const TString& POT);
 
