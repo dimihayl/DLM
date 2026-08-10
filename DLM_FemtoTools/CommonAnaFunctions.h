@@ -49,7 +49,17 @@ const double Mass_Lcp = 2286.46;
 const double Mass_Scpp_ex = 2518.41;
 const double Mass_Scp_ex = 2517.4;
 const double Mass_Sc0_ex = 2518.48;
+struct SourceResoVariation
+{
+  double frac1 = 1.0;
+  double frac2 = 1.0;
 
+  double mass1 = 1.0;
+  double mass2 = 1.0;
+
+  double tau1 = 1.0;
+  double tau2 = 1.0;
+};
 class DLM_CommonAnaFunctions{
 
 public:
@@ -164,11 +174,11 @@ public:
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_Kd();
     DLM_CleverMcLevyResoTM* GetCleverMcLevyResoTM_pi_d();
 
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_LK(const int &SourceVar, const SourceResoVariation &Var = SourceResoVariation());
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_SigmaK(const int &SourceVar, const SourceResoVariation &Var = SourceResoVariation());
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_XiPi(const int &SourceVar, const SourceResoVariation &Var = SourceResoVariation());
+    DLM_CleverMcLevyResoTM *GaussCoreRsm_XiEta(const int &SourceVar, const SourceResoVariation &Var = SourceResoVariation());
 
-    DLM_CleverMcLevyResoTM* GaussCoreRsm_LK(const int& SourceVar);
-    DLM_CleverMcLevyResoTM *GaussCoreRsm_SigmaK(const int &SourceVar);
-    DLM_CleverMcLevyResoTM *GaussCoreRsm_XiPi(const int &SourceVar);
-    DLM_CleverMcLevyResoTM *GaussCoreRsm_XiEta(const int &SourceVar);
     DLM_CleverMcLevyResoTM* GaussCoreRsm_pK(const int& SourceVar);
     DLM_CleverMcLevyResoTM* GaussCoreRsm_pp(const int& SourceVar);
 

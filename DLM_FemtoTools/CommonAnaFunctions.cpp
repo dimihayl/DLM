@@ -6985,15 +6985,16 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GetCleverMcLevyResoTM_pi_d()
     return &CleverMcLevyResoTM[8];
 }
 
-DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &SourceVar)
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &SourceVar,
+                                                                const SourceResoVariation &Var)
 {
     DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
     MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
     MagicSource->InitScale(38, 0.15, 2.0);
     MagicSource->InitRad(257 * 2, 0, 64);
     MagicSource->InitType(2);
-    MagicSource->SetUpReso(0, 0.6438);
-    MagicSource->SetUpReso(1, 0.476);
+    MagicSource->SetUpReso(0, 0.6438 * Var.frac1);
+    MagicSource->SetUpReso(1, 0.476 * Var.frac2);
 
     const double k_CutOff = int(int(SourceVar) / 10) * 10.;
     const int SVAR = SourceVar % 10;
@@ -7004,7 +7005,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
         PPid = 0;
         PRid = 1;
         RPid = 10;
-        RPid = 11;
+        RRid = 11;
     }
     // CECA
     else if (SVAR == 1)
@@ -7012,7 +7013,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
         PPid = 100;
         PRid = 101;
         RPid = 110;
-        RPid = 111;
+        RRid = 111;
     }
     else
     {
@@ -7060,9 +7061,9 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
         }
         else if (Type == PRid)
         {
-            Tau1 = 0;
-            Tau2 = 3.66;
-            fM2 = 1054;
+            Tau1 = 0 * Var.tau1;
+            Tau2 = 3.66 * Var.tau2;
+            fM2 = 1054 * Var.mass2;
             if (k_D > k_CutOff)
                 continue;
             RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
@@ -7070,9 +7071,9 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
         }
         else if (Type == PRid)
         {
-            Tau1 = 4.69;
-            Tau2 = 0;
-            fM1 = 1463;
+            Tau1 = 4.69 * Var.tau1;
+            Tau2 = 0 * Var.tau2;
+            fM1 = 1463 * Var.mass1;
             if (k_D > k_CutOff)
                 continue;
             RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
@@ -7080,10 +7081,10 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
         }
         else if (Type == RRid)
         {
-            Tau1 = 4.69;
-            Tau2 = 3.66;
-            fM1 = 1463;
-            fM2 = 1054;
+            Tau1 = 4.69 * Var.tau1;
+            Tau2 = 3.66 * Var.tau2;
+            fM1 = 1463 * Var.mass1;
+            fM2 = 1054 * Var.mass2;
 
             if (k_D > k_CutOff)
                 continue;
@@ -7105,15 +7106,15 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_LK(const int &Sourc
 
 // Crosscheck on effect of CC in LK correlations
 // Assuming same kinematics as ΛΚ but now for Σ we have 0.6265 primordial
-DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &SourceVar)
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &SourceVar, const SourceResoVariation &Var)
 {
     DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
     MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
     MagicSource->InitScale(38, 0.15, 2.0);
     MagicSource->InitRad(257 * 2, 0, 64);
     MagicSource->InitType(2);
-    MagicSource->SetUpReso(0, 0.3735); // Res. contrib. for Σ
-    MagicSource->SetUpReso(1, 0.476);  // Res. contrib. for Κ.
+    MagicSource->SetUpReso(0, 0.3735 * Var.frac1); // Res. contrib. for Σ
+    MagicSource->SetUpReso(1, 0.476 * Var.frac2);  // Res. contrib. for Κ.
 
     const double k_CutOff = int(int(SourceVar) / 10) * 10.;
     const int SVAR = SourceVar % 10;
@@ -7124,7 +7125,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &S
         PPid = 0;
         PRid = 1;
         RPid = 10;
-        RPid = 11;
+        RRid = 11;
     }
     // CECA
     else if (SVAR == 1)
@@ -7132,7 +7133,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &S
         PPid = 100;
         PRid = 101;
         RPid = 110;
-        RPid = 111;
+        RRid = 111;
     }
     else
     {
@@ -7180,9 +7181,9 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &S
         }
         else if (Type == PRid)
         {
-            Tau1 = 0;
-            Tau2 = 3.66;
-            fM2 = 1054;
+            Tau1 = 0. * Var.tau1;
+            Tau2 = 3.66 * Var.tau2;
+            fM2 = 1054 * Var.mass2;
             if (k_D > k_CutOff)
                 continue;
             RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
@@ -7190,9 +7191,9 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &S
         }
         else if (Type == PRid)
         {
-            Tau1 = 4.69;
-            Tau2 = 0;
-            fM1 = 1463;
+            Tau1 = 4.69 * Var.tau1;
+            Tau2 = 0 * Var.tau2;
+            fM1 = 1463 * Var.mass1;
             if (k_D > k_CutOff)
                 continue;
             RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
@@ -7200,10 +7201,10 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &S
         }
         else if (Type == RRid)
         {
-            Tau1 = 4.69;
-            Tau2 = 3.66;
-            fM1 = 1463;
-            fM2 = 1054;
+            Tau1 = 4.69 * Var.tau1;
+            Tau2 = 3.66 * Var.tau2;
+            fM1 = 1463 * Var.mass1;
+            fM2 = 1054 * Var.mass2;
 
             if (k_D > k_CutOff)
                 continue;
@@ -7226,15 +7227,15 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_SigmaK(const int &S
 // Crosscheck on effect of CC in LK correlations
 // Assuming kinematics taken from Dπ analysis, which used Ωπ
 // ctau and Meff given by pions since other particles is assumed primordian
-DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &SourceVar)
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &SourceVar, const SourceResoVariation &Var)
 {
     DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
     MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
     MagicSource->InitScale(38, 0.15, 2.0);
     MagicSource->InitRad(257 * 2, 0, 64);
     MagicSource->InitType(2);
-    MagicSource->SetUpReso(0, 0.0);   // Ξ assumed primary
-    MagicSource->SetUpReso(1, 0.682); // Res. contrib. for π.
+    MagicSource->SetUpReso(0, 0.0 * Var.frac1); // Ξ assumed primary
+    MagicSource->SetUpReso(1, 0.682 * Var.frac2); // Res. contrib. for π.
     MagicSource->InitNumMcIter(1000000);
 
     const double k_CutOff = int(int(SourceVar) / 10) * 10.;
@@ -7246,7 +7247,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &Sou
         PPid = 0;
         PRid = 1;
         RPid = 10;
-        RPid = 11;
+        RRid = 11;
     }
     // CECA
     else if (SVAR == 1)
@@ -7254,7 +7255,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &Sou
         PPid = 100;
         PRid = 101;
         RPid = 110;
-        RPid = 111;
+        RRid = 111;
     }
     else
     {
@@ -7298,9 +7299,9 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &Sou
         T_EposDisto->GetEntry(uEntry);
         if (k_D > k_CutOff)
             continue;
-        Tau1 = 0;
-        Tau2 = 1.5;
-        fM2 = 1124;
+        Tau1 = 0 * Var.tau1;
+        Tau2 = 1.5 * Var.tau2;
+        fM2 = 1124 * Var.mass2;
 
         RanVal2 = RanGen.Exponential(fM2 / (fP2 * Tau2));
         MagicSource->AddBGT_PR(RanVal2, cos(AngleRcP2)); // here put angle between
@@ -7315,15 +7316,15 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiPi(const int &Sou
 // Crosscheck on effect of CC in LK correlations
 // Assuming kinematics taken from pΞ analysis
 // ctau and Meff given by pions since other particles is assumed primordian
-DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &SourceVar)
+DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &SourceVar, const SourceResoVariation &Var)
 {
     DLM_CleverMcLevyResoTM *MagicSource = new DLM_CleverMcLevyResoTM();
     MagicSource->InitStability(1, 2 - 1e-6, 2 + 1e-6);
     MagicSource->InitScale(38, 0.15, 2.0);
     MagicSource->InitRad(257 * 2, 0, 64);
     MagicSource->InitType(2);
-    MagicSource->SetUpReso(0, 0.51); // η with resonances
-    MagicSource->SetUpReso(1, 0.);   // Ξ assumed primary
+    MagicSource->SetUpReso(0, 0.51 * Var.frac1); // η with resonances
+    MagicSource->SetUpReso(1, 0. * Var.frac2);   // Ξ assumed primary
     MagicSource->InitNumMcIter(1000000);
 
     const double k_CutOff = int(int(SourceVar) / 10) * 10.;
@@ -7335,7 +7336,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &So
         PPid = 0;
         PRid = 1;
         RPid = 10;
-        RPid = 11;
+        RRid = 11;
     }
     // CECA
     else if (SVAR == 1)
@@ -7343,7 +7344,7 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &So
         PPid = 100;
         PRid = 101;
         RPid = 110;
-        RPid = 111;
+        RRid = 111;
     }
     else
     {
@@ -7389,9 +7390,9 @@ DLM_CleverMcLevyResoTM *DLM_CommonAnaFunctions::GaussCoreRsm_XiEta(const int &So
         T_EposDisto->GetEntry(uEntry);
         if (k_D > k_CutOff)
             continue;
-        Tau1 = 2.1;
-        Tau2 = 0.;
-        fM1 = 1230;
+        Tau1 = 2.1 * Var.tau1;
+        Tau2 = 0. * Var.tau2;
+        fM1 = 1230 * Var.mass1;
 
         RanVal1 = RanGen.Exponential(fM1 / (fP1 * Tau1));
         MagicSource->AddBGT_RP(RanVal1, cos(AngleRcP1)); // here put angle between
