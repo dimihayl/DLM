@@ -1602,9 +1602,6 @@ void CATS::SetAnaSource(double (*FS)(void*, double*), void* context, const unsig
     AnalyticSource = NULL;
     ForwardedSource = FS;
     //AnaSourcePar = ForwardedSourcePar;
-//printf("AnaSourcePar = ForwardedSourcePar\n");
-//printf(" npar=%u\n",AnaSourcePar->GetNumPars());
-//usleep(1e6);
     SourceContext = context;
     SourceGridReady = false;
     SourceUpdated = false;
@@ -1627,8 +1624,6 @@ void CATS::SetAnaSource(const CatsSource& SOURCE){
 void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const bool& SmallChange){
     //if(!AnaSourcePar && !AnaSourceParArray) return;
     if(!AnaSourcePar) return;
-//printf("SetAnaSource\n");
-//usleep(1e6);
     if(WhichPar>=AnaSourcePar->GetNumPars()){
         if(Notifications>=nWarning) printf("\033[1;33mWARNING:\033[0m The source parameter was not set, as it exceeds the number of allowed parameters.\n");
         return;
@@ -1639,8 +1634,6 @@ void CATS::SetAnaSource(const unsigned& WhichPar, const double& Value, const boo
     //    return;
     //}
     if(AnaSourcePar){
-//printf(" if(AnaSourcePar)\n");
-//usleep(1e6);
         if(AnaSourcePar->GetParameter(WhichPar)==Value) return;
         AnaSourcePar->SetParameter(WhichPar,Value,false);
     }
@@ -2305,9 +2298,11 @@ DEBUGFLAG=-1;
                 WaveFunRad[uMomBin][usCh][usPW][0] = 0;
                 for(unsigned uPoint=1; uPoint<SWFB; uPoint++){
                     WaveFunRad[uMomBin][usCh][usPW][uPoint] = (BufferRad[uPoint]+BufferRad[uPoint-1])*0.5;
+//printf("%i %i %i %i %e\n",uMomBin,usCh,usPW,uPoint,WaveFunRad[uMomBin][usCh][usPW][uPoint]);
                 }
                 //the very last point we simply set as the double distance between the last bin-limit and the last radius value
                 WaveFunRad[uMomBin][usCh][usPW][SWFB] = 2*BufferRad[SWFB-1]-WaveFunRad[uMomBin][usCh][usPW][SWFB-1];
+//printf("%i %i %i %i %e\n",uMomBin,usCh,usPW,SWFB,WaveFunRad[uMomBin][usCh][usPW][SWFB]);
 
             }//if(MomBinConverged[uMomBin] || !ExcludeFailedConvergence)
 
@@ -2867,9 +2862,6 @@ unsigned CATS::LoadDataBuffer(const unsigned& WhichIpBin, CatsDataBuffer* KittyB
         if(RedMomComMeV<MomBin[0] || RedMomComMeV>MomBin[NumMomBins]){
             Selected = false;
         }
-//printf("PairDif->GetParticle(0)->GetPid()=%i\n",PairDif->GetParticle(0).GetPid());
-//printf("PairDif->GetParticle(1)->GetPid()=%i\n",PairDif->GetParticle(1).GetPid());
-//printf("\n");
 //if(Selected) SourceHistoTemp.AddAt(&RelPosCom);
         else if(Selected){
             WhichMomBin = GetMomBin(RedMomComMeV);
@@ -3655,7 +3647,6 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
     unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
 
     unsigned RadBin = GetRadBin(Radius, uMomBin, usCh, usPW);
-
     //a dummy thing that makes us go directly to the else statement below
     if(WfType[usCh][usPW]==wSofia){
         RadBin = -1;
@@ -3687,14 +3678,18 @@ complex<double> CATS::EvalWaveFunctionU(const unsigned& uMomBin, const double& R
         if(Result==1e6 && Notifications>=nWarning)
             printf("\033[1;33mWARNING:\033[0m DeltaRad==0, which might point to a bug! Please contact the developers!\n");
         //printf("hello %i\n",Asymptotic);
-        //usleep(100e3);
+//printf("Result %e, MultFactor %e (r %e)\n",abs(Result),MultFactor,Radius);
+//printf("1 MultFactor %e, Radius %e\n",MultFactor,Radius);
+//usleep(100e3);
         return Result*MultFactor;
     }
     //below the 1st bin ==> assume zero
     else if(!use_sofia_model && RadBin==SWFB+1){
+//printf("2 MultFactor %e, Radius %e\n",MultFactor,Radius);
         return 0;
     }
     else{
+//printf("3 MultFactor %e, Radius %e\n",MultFactor,Radius);
         //if(use_sofia_model)
         //    printf("%f + %f / %f\n",Radius,PhaseShift[uMomBin][usCh][usPW],Momentum);
         //if(uMomBin==5 && usCh==0 && usPW==0){
@@ -3808,6 +3803,10 @@ unsigned CATS::GetBin(const double& Value, const double* Range, const unsigned& 
     if(Value<Range[0]) return NumBins;
     if(Value>Range[NumBins-1]) return NumBins+1;
     while(true){
+        //this was nasty little bug... the absence of it
+        if(BinMod>NumBins){
+            BinMod=NumBins;
+        }
         if(Range[WhichBin]<=Value && Range[WhichBin+1]>=Value){
             return WhichBin;
         }
@@ -3924,7 +3923,6 @@ double CATS::EvaluateTheSource(CATSparameters* Pars) const{
         }
         return 0;
     }
-//printf("test\n");
     return CatsSourceForwarder(SourceContext,Pars->GetParameters());
 }
 double CATS::EvaluateTheSource(const double& Momentum, const double& Radius, const double& CosTheta) const{
@@ -3957,7 +3955,6 @@ double CATS::EvaluateTheSource(const double& Momentum, const double& Radius, con
         }
         return 0;
     }
-//printf("test\n");
     return CatsSourceForwarder(SourceContext,AnaSourcePar->GetParameters());
 }
 

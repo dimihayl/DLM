@@ -92,7 +92,8 @@ private:
     const double kMin;
     const double kMax;
     const unsigned kSteps;
-    double EPS;
+    double EPSconv;
+    double EPSprop;
 
     //the level of agreement (fractional) our 3 evaluation points of the 
     //scattering parameters need to have to accept the solution
@@ -135,5 +136,5 @@ private:
 
 };
 
-
+bool GetScatteringParameters_parabola(CATS*Kitty, double eps_f, double& f, double& fe, double eps_d, double& d, double& de);
 #endif

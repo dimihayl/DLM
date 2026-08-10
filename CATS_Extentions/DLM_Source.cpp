@@ -140,6 +140,42 @@ double ExponentialSource(double* Pars){
     return 4.*Radius*Radius*Size*pow(Radius*Radius+Size*Size,-2.);
 }
 
+//the ExponentialSource is for 1 coordinate, here is the generalization for R in 3D
+//so this is basically the standard Cauchy source as defined in most femto studies.
+double ExponentialSource3D(double* Pars){
+    double& Radius = Pars[1];
+    double& Size = Pars[3];
+    return 4.*Radius*Radius * Size / (Pi*pow(Size*Size+Radius*Radius,2.));
+}
+// Semi-analytical 3D Lévy Source multiplied by 4*pi*r^2
+double LevySrc(double* Pars) {
+    double& r = Pars[1];     // Relative distance (Radius)
+    double& R = Pars[3];     // Lévy scale parameter (Size)
+    double& alpha = Pars[4]; // Lévy stability index (e.g., 1.0 to 2.0)
+
+    if (r == 0) return 0.0;
+
+    // Numerical integration over q
+    double integral = 0.0;
+    double q_max = 40.0 / R; // Cutoff where exp(-(qR)^alpha) becomes negligible
+    const int steps = 400;
+    double dq = q_max / steps;
+
+    for (int i = 0; i < steps; i++) {
+        double q = (i + 0.5) * dq;
+        integral += q * sin(q * r) * exp(-pow(q * R, alpha)) * dq;
+    }
+
+    return (2.0 * r / Pi) * integral;
+}
+double LevySrcTF1(double* x, double* Pars) {
+    double pars[5];
+    pars[1] = *x;
+    pars[3] = Pars[0];
+    pars[4] = Pars[1];
+    return LevySrc(pars);
+}
+
 double DoubleGaussSource(double* Pars){
     //double& Momentum = Pars[0];
     double& Radius = Pars[1];

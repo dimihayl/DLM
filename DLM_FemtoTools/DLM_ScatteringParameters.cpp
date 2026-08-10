@@ -86,7 +86,7 @@ void DLM_PotSp::compute_average(){
     *this /= num_entries;
 }
 
-DLM_ScatteringPars::DLM_ScatteringPars():kMin(0),kMax(80),kSteps(5),EPS(5e-10),eps_f(0.01),eps_d(0.1){
+DLM_ScatteringPars::DLM_ScatteringPars():kMin(0),kMax(80),kSteps(5),EPSconv(5e-10),EPSprop(5e-10),eps_f(0.01),eps_d(0.1){
 
     id_p0 = 0;
     id_p1 = 1;
@@ -304,9 +304,10 @@ void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, dou
     if(!Kitty){
         Kitty = new CATS();
         Kitty->SetMomBins(kSteps,kMin,kMax);
+//printf("%u %f %f\n",kSteps,kMin,kMax);
         Kitty->SetThetaDependentSource(false);
         CATSparameters cPars(CATSparameters::tSource, 1, true);
-        cPars.SetParameter(0, 1.0);
+        cPars.SetParameter(0, 1.5);
         Kitty->SetAnaSource(GaussSource, cPars);
         Kitty->SetUseAnalyticSource(true);
         Kitty->SetMomentumDependentSource(false);
@@ -319,10 +320,12 @@ void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, dou
         Kitty->SetSpin(0, 0);
         Kitty->SetChannelWeight(0, 1.);
         CATSparameters pPars(CATSparameters::tPotential, num_pot_pars, true);
+//printf("num_pot_pars %i\n", num_pot_pars);
         pPars.SetParameters(pot_pars);
         Kitty->SetShortRangePotential(0, 0, potential, pPars);
         Kitty->SetNotifications(CATS::nWarning);
-        Kitty->SetEpsilonProp(EPS);
+        Kitty->SetEpsilonProp(EPSprop);
+        Kitty->SetEpsilonConv(EPSconv);
     }
     if(!rangen){
         rangen = new DLM_Random(0);
@@ -340,17 +343,22 @@ void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, dou
     for(unsigned uIter=0; uIter<NumSamples; uIter++){
         rnd_p0 = rangen->Uniform(min_p0, max_p0);
         rnd_p1 = rangen->Uniform(min_p1, max_p1);
-        //printf("r pars = %f %f (%i %i)\n",rnd_p0,rnd_p1,id_p0,id_p1);
+//rnd_p0 = -104.760878;
+//rnd_p1 = 3.720882;
+//printf("r pars = %f %f (%i %i)\n",rnd_p0,rnd_p1,id_p0,id_p1);
         Kitty->SetShortRangePotential(0, 0, id_p0, rnd_p0);
         Kitty->SetShortRangePotential(0, 0, id_p1, rnd_p1);
+//Kitty->SetNotifications(CATS::nAll);
         Kitty->KillTheCat();
+
+
         double f0,d0;
         double fe0,de0;
         if( GetScatteringParameters(f0,fe0,d0,de0) ){
             DLM_PotSp potsp;
             potsp.set(rnd_p0,rnd_p1,f0,d0);
             dlm_PotSp_Map->AddAt(f0,d0,potsp);
-            //printf("%f %f\n",f0,d0);
+//printf("%f %f\n",f0,d0);
         }
         else{
             uIter--;
@@ -528,3 +536,93 @@ void DLM_ScatteringPars::Load(std::string file_name, bool reset){
         }
     }
 }
+
+
+
+
+
+//kMin(0),kMax(80),kSteps(5),EPS(5e-10),eps_f(0.01),eps_d(0.1)
+//suggested binning: up to 80 MeV, around 5 bins, eps 5e-10
+bool GetScatteringParameters_parabola(CATS*Kitty, double eps_f, double& f, double& fe, double eps_d, double& d, double& de){
+    if(!Kitty) return false;
+    if(!Kitty->CkStatus()) return false;
+
+    double f0 = 0;
+    double fe0 = 0;
+    double d0 = 0;
+    double de0 = 0;
+    double f_val;
+    double d_val;
+    unsigned prm = 0;
+    for(unsigned iKstar=0; iKstar<Kitty->GetNumMomBins(); iKstar++){
+        double ki = Kitty->GetMomentum(iKstar);
+        double gi = ki/(tan(Kitty->GetPhaseShift(iKstar,0,0)));
+        for(unsigned jKstar=iKstar+1; jKstar<Kitty->GetNumMomBins(); jKstar++){
+            double kj = Kitty->GetMomentum(jKstar);
+            double gj = kj/(tan(Kitty->GetPhaseShift(jKstar,0,0)));
+            f_val = (kj*kj-ki*ki)/(gi*kj*kj-gj*ki*ki) * hbarc;
+            d_val = 2.*(gj-gi)/(kj*kj-ki*ki) * hbarc;
+            f0 += f_val;
+            fe0 += f_val*f_val;
+            d0 += d_val;
+            de0 += d_val*d_val;
+            prm++;
+        }
+    }
+    f0 /= double(prm);
+    d0 /= double(prm);
+    fe0 /= double(prm); 
+    de0 /= double(prm); 
+    if(fe0-f0*f0<=0) {fe0 = 0;}
+    else {fe0 = sqrt(fe0-f0*f0);}
+    if(de0-d0*d0<=0) {de0 = 0;}
+    else {de0 = sqrt(de0-d0*d0);}
+
+
+    f = 0;
+    fe = 0;
+    d = 0;
+    de = 0;
+    prm = 0;
+    for(unsigned iKstar=0; iKstar<Kitty->GetNumMomBins(); iKstar++){
+        double ki = Kitty->GetMomentum(iKstar);
+        double gi = ki/(tan(Kitty->GetPhaseShift(iKstar,0,0)));
+        //printf("ki, gi = %f %f\n",ki,gi);
+        for(unsigned jKstar=iKstar+1; jKstar<Kitty->GetNumMomBins(); jKstar++){
+            double kj = Kitty->GetMomentum(jKstar);
+            double gj = kj/(tan(Kitty->GetPhaseShift(jKstar,0,0)));
+            f_val = (kj*kj-ki*ki)/(gi*kj*kj-gj*ki*ki) * hbarc;
+            d_val = 2.*(gj-gi)/(kj*kj-ki*ki) * hbarc;
+            //printf("  errors %.3e %.3e\n",fabs(f_val-f0)/fe0, fabs(d_val-d0)/de0);
+            if(fabs(f_val-f0)/fe0<1 && fabs(d_val-d0)/de0<1){
+                //printf(" !!!! \n");
+                f += f_val;
+                fe += f_val*f_val;
+                d += d_val;
+                de += d_val*d_val;
+                prm++;
+            }
+        }
+    }
+
+
+    f /= double(prm);
+    d /= double(prm);
+    fe /= double(prm); 
+    de /= double(prm); 
+    if(fe-f*f<=0) {fe = 0;}
+    else {fe = sqrt(fe-f*f);}
+    if(de-d*d<=0) {de = 0;}
+    else {de = sqrt(de-d*d);}
+
+    if(fabs(f)>=1 && fabs(fe/f)>eps_f) return false;    
+    if(fabs(f)<1 && fabs(fe)>eps_f) return false;
+
+    if(fabs(d)>=1 && fabs(de/d)>eps_d) return false;    
+    if(fabs(d)<1 && fabs(de)>eps_d) return false;
+
+    return true;
+}
+
+
+

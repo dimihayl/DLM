@@ -1180,7 +1180,10 @@ void DLM_CommonAnaFunctions::SetUpCats_pipi(CATS &Kitty, const TString &SOURCE, 
 
     Kitty.SetThetaDependentSource(false);
 
-    if (SOURCE == "Gauss")
+    if(SOURCE == "NULL" || SOURCE == ""){
+
+    }
+    else if (SOURCE == "Gauss")
     {
         cPars = new CATSparameters(CATSparameters::tSource, 1, true);
         cPars->SetParameter(0, 1.2);
@@ -1365,7 +1368,7 @@ void DLM_CommonAnaFunctions::SetUpCats_pipi(CATS &Kitty, const TString &SOURCE, 
                 CleverMcLevyResoTM[4].AddBGT_PR(RanVal1, -cos(AngleRcP2));
                 CleverMcLevyResoTM[4].AddBGT_RP(RanVal1, cos(AngleRcP2));
             }
-            printf("%u/%u = %f\n", NumOmega, NumPart, double(NumOmega) / double(NumPart));
+            //printf("%u/%u = %f\n", NumOmega, NumPart, double(NumOmega) / double(NumPart));
             delete F_EposDisto_p_pReso;
 
             TFile *F_EposDisto_pReso_pReso = new TFile(CatsFilesFolder[0] + "/Source/EposAngularDist/ForMax_piReso_piReso_withOmega.root");
@@ -7959,9 +7962,15 @@ double Get_reff_TF1(TH1F *hsource, TF1 *&fsource, const float lambda, const floa
     double lowerlimit;
     double upperlimit;
     GetCentralInterval(*hfit4325, CEI, lowerlimit, upperlimit, true);
-
+    
     fsource = new TF1("fit4325", "[0]*4.*TMath::Pi()*x*x*pow(4.*TMath::Pi()*[1]*[1],-1.5)*exp(-(x*x)/(4.*[1]*[1]))+1.-[0]", lowerlimit, upperlimit);
-    fsource->FixParameter(0, lambda);
+    if(lambda<0){
+        fsource->SetParameter(0, 0.5);
+        fsource->SetParLimits(0, 0.0, 1.0);
+    }
+    else{
+        fsource->FixParameter(0, lambda);
+    }
     fsource->SetParameter(1, hfit4325->GetMean() / 2.3);
     fsource->SetParLimits(1, hfit4325->GetMean() / 10., hfit4325->GetMean() * 2.);
 
@@ -7972,6 +7981,45 @@ double Get_reff_TF1(TH1F *hsource, TF1 *&fsource, const float lambda, const floa
 
     return fsource->GetParameter(1);
 }
+
+
+double Get_reff_cauchy(TH1F *hsource, const float lambda, const float CEI)
+{
+    TF1 *fit_temp;
+    double result = Get_reff_cauchy_TF1(hsource, fit_temp, lambda, CEI);
+    delete fit_temp;
+    return result;
+}
+double Get_reff_cauchy_TF1(TH1F *hsource, TF1 *&fsource, const float lambda, const float CEI)
+{
+    TH1F *hfit4326 = (TH1F *)hsource->Clone("hfit4326");
+    hfit4326->Scale(1. / hfit4326->Integral(), "width");
+
+    double lowerlimit;
+    double upperlimit;
+    GetCentralInterval(*hfit4326, CEI, lowerlimit, upperlimit, true);
+
+    fsource = new TF1("hfit4326", "[0]*4.*x*x * [1] / (TMath::Pi()*pow([1]*[1]+x*x,2.))+1.-[0]", lowerlimit, upperlimit);
+
+    if(lambda<0){
+        fsource->SetParameter(0, 0.5);
+        fsource->SetParLimits(0, 0.0, 1.0);
+    }
+    else{
+        fsource->FixParameter(0, lambda);
+    }
+    fsource->SetParameter(1, hfit4326->GetMean() / 2.3);
+    fsource->SetParLimits(1, hfit4326->GetMean() / 10., hfit4326->GetMean() * 2.);
+
+    hfit4326->Fit(fsource, "Q, S, N, R, M");
+
+    // fsource = hfit4326;
+    delete hfit4326;
+
+    return fsource->GetParameter(1);
+}
+
+
 
 double GetRcore(DLM_CleverMcLevyResoTM &MagicSource, const double &reff)
 {

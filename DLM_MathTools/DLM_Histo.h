@@ -505,6 +505,16 @@ public:
             BinIdPerAxis[isDim] = divresult.quot;
         }
     }
+    void GetBinAxisCenters(const unsigned& WhichTotBin, double* BinAxisCenter){
+        if(!Initialized) {InitWarning(); return;}
+        unsigned* BinId = new unsigned [Dim];
+        GetBinCoordinates(WhichTotBin, BinId);
+        for(unsigned short sDim=0; sDim<Dim; sDim++){
+            BinAxisCenter[sDim] = BinCenter[sDim][BinId[sDim]];
+        }
+        delete [] BinId;
+    }
+
     bool Copy(const DLM_Histo& other){
         //if(!Initialized) {InitWarning(); return false;}
         return operator=(other);
@@ -1685,6 +1695,8 @@ public:
         Result/=Value;
         return Result;
     }
+
+
 
     //write to a binary file of format
     bool QuickWrite(const char* FileName, bool Overwrite=false){

@@ -31,6 +31,10 @@ double CauchySource(double* Pars);
 double CauchySourceTheta(double* Pars);
 double CauchySource_v2(double* Pars);
 double ExponentialSource(double* Pars);
+double ExponentialSource3D(double* Pars);
+//Gemini implementation
+double LevySrc(double* Pars);
+double LevySrcTF1(double* x, double* Pars);
 
 double DoubleGaussSource(double* Pars);
 double NormDoubleGaussSource(double* Pars);

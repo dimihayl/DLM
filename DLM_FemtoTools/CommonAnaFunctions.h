@@ -268,6 +268,8 @@ void RootFile_DlmCk(const TString& RootFileName, const TString& GraphName, CATS*
 void RootFile_DlmSource(const TString& RootFileName, const TString& GraphName, CATS* Kitty, const unsigned& NumBins, const double& rMin, const double& rMax, const double& lambda=1, const bool& FourPi=true);
 double Get_reff(TH1F* hsource, const float lambda=1, const float CEI=0.9);
 double Get_reff_TF1(TH1F* hsource, TF1*& fsource, const float lambda=1, const float CEI=0.9);
+double Get_reff_cauchy(TH1F* hsource, const float lambda=1, const float CEI=0.9);
+double Get_reff_cauchy_TF1(TH1F* hsource, TF1*& fsource, const float lambda=1, const float CEI=0.9);
 double GetRcore(DLM_CleverMcLevyResoTM& MagicSource, const double& reff);
 double GetReff(DLM_CleverMcLevyResoTM& MagicSource, const double& rcore);
 //take a value for the mean source and convert it into the r_eff value
