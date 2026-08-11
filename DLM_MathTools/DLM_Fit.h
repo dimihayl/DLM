@@ -234,6 +234,7 @@ public:
 
   void SetParameter(const unsigned ipar, const float value);
   void SetParLimits(const unsigned ipar, const float value_min, const float value_max);
+  void FixParameter(const unsigned ipar, const float value);
   //void SetParLogScale(const bool yesno);
   //how many evaluation step we will do +/- the default.
   //by default this is 5. The total number of iterations is 1 + par_st*2

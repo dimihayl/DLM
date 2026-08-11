@@ -1105,6 +1105,11 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
       ParMax->at(ipar) = value_max;
     }
   }
+  void DLM_SA_Fit::FixParameter(const unsigned ipar, const float value){
+    SetParLimits(ipar, value, value);
+  }
+
+
   //void SetParLogScale(const bool yesno);
   //how many evaluation step we will do +/- the default.
   //by default this is 5. The total number of iterations is 1 + par_st*2
@@ -1291,8 +1296,11 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
 
     //check the number of grid pts
     unsigned TotNumGridPts = 1;
+    std::vector<bool> fixed_par(N_Pars);
     for(unsigned ipar=0; ipar<N_Pars; ipar++){
-      TotNumGridPts *= (2*ParSteps->at(ipar) + 1);  
+      fixed_par.at(ipar) = ParMax->at(ipar)==ParMin->at(ipar);
+      if(fixed_par.at(ipar)==true) ParSteps->at(ipar) = 0;
+      else TotNumGridPts *= (2*ParSteps->at(ipar) + 1);  
     }
     if(TotNumGridPts>max_n_grid_pts){
       printf("\033[1;31mERROR:\033[0m DLM_SA_Fit::GoBabyGo found way too many grid pts. Cannot proceed. Reduce the points using SetParSteps\n");
@@ -1304,11 +1312,19 @@ bool DLM_Fit::DEBUG_PrepareForWalk(){
     }   
 
     num_free_fit_pars = 0;
+    
+    std::vector<int> free_fit_pars;
     for(unsigned ipar=0; ipar<N_Pars; ipar++){
-      if(ParMax->at(ipar)-ParMin->at(ipar)>0){
+      if(fixed_par.at(ipar)==false){
         num_free_fit_pars++;
+        free_fit_pars.push_back(ipar);
       }
     }
+    if(num_free_fit_pars==0){
+      printf("\033[1;33mWARNING:\033[0m DLM_SA_Fit::GoBabyGo has zero fit parameters, nothing was done\n");
+      return false;      
+    }
+
     //create the actual chi2 grid
     //it is kept as a 1D vector, where the indexing can be evaluated
     del_chi2_grid();
@@ -1371,7 +1387,16 @@ printf("iref = %u/%u\n",iref,num_refinements);
         chi2_grid[isol] = new DLM_Histo<float>();
         chi2_grid[isol]->SetUp(N_Pars);
         for(unsigned ipar=0; ipar<N_Pars; ipar++){
-          chi2_grid[isol]->SetUp(ipar, 2*ParSteps->at(ipar)+1, ParLimMin[isol].at(ipar),ParLimMax[isol].at(ipar));
+          if(fixed_par.at(ipar)==false){
+            chi2_grid[isol]->SetUp(ipar, 2*ParSteps->at(ipar)+1, ParLimMin[isol].at(ipar),ParLimMax[isol].at(ipar));
+          }
+          else{
+            double small_eps = (ParLimMax[isol].at(ipar) + ParLimMin[isol].at(ipar))*0.5;
+            small_eps *= 1e-4;
+            small_eps = fabs(small_eps);
+            if( small_eps<1e-32 ) small_eps = 1e-32;
+            chi2_grid[isol]->SetUp(ipar, 1, ParLimMin[isol].at(ipar)-small_eps,ParLimMax[isol].at(ipar)+small_eps);
+          }
         }
         chi2_grid[isol]->Initialize();
         chi2_grid[isol]->SetBinContentAll(-1);
@@ -1403,7 +1428,14 @@ printf("iref = %u/%u\n",iref,num_refinements);
               
               while(chi2_grid[isol]->GetBinContent(irnd_next)!=-1){
                 chi2_grid[isol]->GetBinCoordinates(irnd_next, which_bin);
-                rnd_dim = rangen->Integer(N_Pars);
+                
+                rnd_dim = 0;
+                //rnd_dim = rangen->Integer(N_Pars);
+                if(num_free_fit_pars>1){
+                  rnd_dim = free_fit_pars.at(rangen->Integer(num_free_fit_pars));
+                }
+                
+
                 //if this is the first/last bin, only one way to go
                      if(which_bin[rnd_dim]==0) rnd_dir = 1;
                 else if(which_bin[rnd_dim]==chi2_grid[isol]->GetNbins(rnd_dim)-1) rnd_dir = -1;
