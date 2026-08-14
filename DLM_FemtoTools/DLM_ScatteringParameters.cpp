@@ -286,11 +286,21 @@ bool DLM_ScatteringPars::GetScatteringParameters(double& f, double& fe, double& 
     if(de-d*d<=0) {de = 0;}
     else {de = sqrt(de-d*d);}
 
+    last_f = 0;
+    last_fe = 0;
+    last_d = 0;
+    last_de = 0;
+
     if(fabs(f)>=1 && fabs(fe/f)>eps_f) return false;    
     if(fabs(f)<1 && fabs(fe)>eps_f) return false;
 
     if(fabs(d)>=1 && fabs(de/d)>eps_d) return false;    
     if(fabs(d)<1 && fabs(de)>eps_d) return false;
+
+    last_f = f;
+    last_fe = fe;
+    last_d = d;
+    last_de = de;
 
     if(f<target_f[0] || f>target_f[1]) return false;
     if(d<target_d[0] || d>target_d[1]) return false;
@@ -298,9 +308,7 @@ bool DLM_ScatteringPars::GetScatteringParameters(double& f, double& fe, double& 
     return true;
 }
 
-
-//completely random sampling within the limits of the potential parameters
-void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, double max_p0, double min_p1, double max_p1){
+void DLM_ScatteringPars::Initialize(){
     if(!Kitty){
         Kitty = new CATS();
         Kitty->SetMomBins(kSteps,kMin,kMax);
@@ -326,7 +334,13 @@ void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, dou
         Kitty->SetNotifications(CATS::nWarning);
         Kitty->SetEpsilonProp(EPSprop);
         Kitty->SetEpsilonConv(EPSconv);
+        Kitty->KillTheCat();
     }
+}
+
+//completely random sampling within the limits of the potential parameters
+void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, double max_p0, double min_p1, double max_p1){
+    Initialize();
     if(!rangen){
         rangen = new DLM_Random(0);
     }
@@ -340,9 +354,18 @@ void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, dou
 
     double rnd_p0;
     double rnd_p1;
+    if(min_p0==max_p0 && min_p1==max_p1){
+        NumSamples = 1;
+    }
     for(unsigned uIter=0; uIter<NumSamples; uIter++){
-        rnd_p0 = rangen->Uniform(min_p0, max_p0);
-        rnd_p1 = rangen->Uniform(min_p1, max_p1);
+        if(min_p0==max_p0 && min_p1==max_p1){
+            rnd_p0 = min_p0;
+            rnd_p1 = min_p1;
+        }
+        else{
+            rnd_p0 = rangen->Uniform(min_p0, max_p0);
+            rnd_p1 = rangen->Uniform(min_p1, max_p1);
+        }
 //rnd_p0 = -104.760878;
 //rnd_p1 = 3.720882;
 //printf("r pars = %f %f (%i %i)\n",rnd_p0,rnd_p1,id_p0,id_p1);
@@ -359,6 +382,9 @@ void DLM_ScatteringPars::SampleSomeStuff(unsigned NumSamples, double min_p0, dou
             potsp.set(rnd_p0,rnd_p1,f0,d0);
             dlm_PotSp_Map->AddAt(f0,d0,potsp);
 //printf("%f %f\n",f0,d0);
+        }
+        else if(min_p0==max_p0 && min_p1==max_p1){
+            //continue;
         }
         else{
             uIter--;
@@ -404,6 +430,18 @@ void DLM_ScatteringPars::TargetedScan(unsigned NumSamples, float target_fraction
             samples++;
         }    
     }
+}
+
+void DLM_ScatteringPars::TestParameters(std::vector<double> pot_pars_, double& f, double& fe, double& d, double& de){
+    if(dlm_PotSp_AvgMap){
+        delete dlm_PotSp_AvgMap;
+        dlm_PotSp_AvgMap = NULL;
+    }
+    SampleSomeStuff(1, pot_pars_[0], pot_pars_[0], pot_pars_[1], pot_pars_[1]);
+    f = last_f;
+    fe = last_fe;
+    d = last_d;
+    de = last_de;
 }
 
 std::vector<double> DLM_ScatteringPars::GetPotPars(double f0, double d0){
@@ -538,8 +576,86 @@ void DLM_ScatteringPars::Load(std::string file_name, bool reset){
 }
 
 
+/*
+CATS* cat0_sp_direct = NULL;
+CatsPotential pot_sp_direct;
+DLM_ScatteringPars* dlm_sp_direct = NULL;
+bool GetScatteringParameters_direct(CATS*Kitty, unsigned short usCh, double& f, double& fe, double& d, double& de){
+    if(!Kitty) return 0;
+    if(cat0_sp_direct!=Kitty){
+        cat0_sp_direct=NULL;
+    }
+
+    std::vector<double> pot_pars;
+    if(!cat0_sp_direct){
+        cat0_sp_direct = Kitty;
+        pot_sp_direct = Kitty->GetThePotentialFunction(usCh, 0);
+        if(dlm_sp_direct){delete dlm_sp_direct; dlm_sp_direct=NULL;}
+        dlm_sp_direct = new DLM_ScatteringPars();
 
 
+        dlm_sp_direct->SetRedMass(Kitty->GetRedMass());
+
+        std::vector<double> pot_pars_pp;
+        for(unsigned uPar=0; uPar<Kitty->GetNumPotPars(usCh,0); uPar++){
+            pot_pars_pp.push_back(Kitty->GetPotPar(usCh,0,uPar));
+        }
+
+        dlm_sp_direct->SetPotFun(pot_sp_direct,0,1);
+        dlm_sp_direct->SetPotPar(pot_pars_pp);
+
+        dlm_sp_direct->SetTarget_f(-50,50);
+        dlm_sp_direct->SetSlGrid(100);
+        dlm_sp_direct->SetTarget_d(-50,50); 
+        dlm_sp_direct->SetErGrid(100);
+
+    }
+    
+    for(unsigned uPar=0; uPar<Kitty->GetNumPotPars(usCh,0); uPar++){
+        pot_pars.push_back(Kitty->GetPotPar(usCh, 0, uPar));
+    }
+
+    dlm_sp_direct->TestParameters(pot_pars, f, fe, d, de);
+    //f=0;
+    //fe=0;
+    //d=0;
+    //de=0;
+    return !(f==0 && fe==0 && d==0 && de==0);
+}
+*/
+
+//no coulomb cat, with a dummy source, to be used only for extraction of scattering pars
+CATS* GetOptimizedCatForScattering(CATS& Kitty, unsigned usCh, unsigned n_kstar, double min_kstar, double max_kstar){
+    const double EPSprop = 5e-10;
+    const double EPSconv = 5e-10;
+    CATS* temp_cat = new CATS();
+    temp_cat->SetMomBins(n_kstar, min_kstar, max_kstar);
+    temp_cat->SetThetaDependentSource(false);
+    CATSparameters cPars(CATSparameters::tSource, 1, true);
+    cPars.SetParameter(0, 1.5);
+    temp_cat->SetAnaSource(GaussSource, cPars);
+    temp_cat->SetUseAnalyticSource(true);
+    temp_cat->SetMomentumDependentSource(false);
+    temp_cat->SetExcludeFailedBins(false);
+    temp_cat->SetQ1Q2(0);
+    temp_cat->SetQuantumStatistics(false);
+    temp_cat->SetNumChannels(1);
+    temp_cat->SetRedMass(Kitty.GetRedMass());
+    temp_cat->SetNumPW(0, 1);
+    temp_cat->SetSpin(0, 0);
+    temp_cat->SetChannelWeight(0, 1.);
+    CATSparameters pPars(CATSparameters::tPotential, Kitty.GetNumPotPars(usCh, 0), true);
+    temp_cat->SetShortRangePotential(0, 0, Kitty.GetThePotentialFunction(usCh, 0), pPars);
+    for(unsigned uPar=0; uPar<Kitty.GetNumPotPars(usCh, 0); uPar++){
+        temp_cat->SetShortRangePotential(0, 0, uPar, Kitty.GetPotPar(usCh,0,uPar));
+    }
+    temp_cat->SetNotifications(CATS::nWarning);
+    temp_cat->SetEpsilonProp(EPSprop);
+    temp_cat->SetEpsilonConv(EPSconv);
+    temp_cat->KillTheCat();    
+
+    return temp_cat;
+}
 
 //kMin(0),kMax(80),kSteps(5),EPS(5e-10),eps_f(0.01),eps_d(0.1)
 //suggested binning: up to 80 MeV, around 5 bins, eps 5e-10

@@ -37,6 +37,8 @@ CATS::CATS():
     StartRad = 0.005*FmToNu;
     NumGridPts = 0;
     EpsilonProp = 5e-6;
+    SuperFineProp = 1;
+    SuperFineMom = 0;
     EpsilonConv = 5e-6;
     MaxRad = 32.*FmToNu;
     MaxRho = 16;
@@ -851,6 +853,21 @@ void CATS::SetEpsilonProp(const double& epsp){
 }
 double CATS::GetEpsilonProp() const{
     return EpsilonProp;
+}
+
+void CATS::SetSuperFineProp(const double& mom_limit, const double& factor){
+    if(SuperFineProp==fabs(factor) && SuperFineMom==mom_limit) return;
+    
+    SuperFineProp = fabs(1./(factor+1e-64));
+    SuperFineMom = mom_limit;
+    ComputedWaveFunction = false;
+    ComputedCorrFunction = false;    
+}
+double CATS::GetSuperFineProp() const{
+    return SuperFineProp;
+}
+double CATS::GetSuperFineLimit() const{
+    return SuperFineMom;
 }
 
 void CATS::SetEpsilonConv(const double& epsc){
@@ -1953,6 +1970,7 @@ void CATS::ComputeWaveFunction(){
         double Momentum;
         //the momentum is taken from the center of the bin
         Momentum = GetMomentum(uMomBin);
+        double EpsilonPropEff = EpsilonProp * (Momentum<SuperFineMom?SuperFineProp:1);
         //Momentum = 0.5*(MomBin[uMomBin]+MomBin[uMomBin+1]);
 
         //perform the numerical computation
@@ -1983,8 +2001,8 @@ void CATS::ComputeWaveFunction(){
             double MinDeltaRad;
 
             PropagatingFunction(PropFunWithoutSI[0], PropFunVal[0], StartRad, Momentum, usPW, usCh);
-            MinDeltaRad = sqrt(fabs(EpsilonProp/(PropFunVal[0]+1e-64)));
-            MaxDeltaRad = sqrt(EpsilonProp/(Momentum*Momentum));
+            MinDeltaRad = sqrt(fabs(EpsilonPropEff/(PropFunVal[0]+1e-64)));
+            MaxDeltaRad = sqrt(EpsilonPropEff/(Momentum*Momentum));
 
             if(MinDeltaRad>MaxDeltaRad) MinDeltaRad=MaxDeltaRad;
 
@@ -2106,7 +2124,7 @@ else{
 }
                 PropagatingFunction(PropFunWithoutSI[kNew], PropFunVal[kNew], PosRad[kNew], Momentum, usPW, usCh);
 
-                DeltaRad2[kNew] = EpsilonProp/(fabs(PropFunVal[kNew])+1e-64);
+                DeltaRad2[kNew] = EpsilonPropEff/(fabs(PropFunVal[kNew])+1e-64);
                 DeltaRad[kNew] = sqrt(DeltaRad2[kNew]);
                 if(DeltaRad[kNew]<MinDeltaRad){
                     DeltaRad[kNew]=MinDeltaRad;
@@ -2354,7 +2372,7 @@ DEBUGFLAG=-1;
         else if(WfType[usCh][usPW]==wSquareWell){
           double& sw_depth = Sw_Pars[usCh][usPW][0];
           double& sw_width = Sw_Pars[usCh][usPW][1];
-          double DeltaRad = EpsilonProp*50.;
+          double DeltaRad = EpsilonPropEff*50.;
           SavedWaveFunBins[uMomBin][usCh][usPW] = ceil(sw_width/DeltaRad);
           unsigned& SWFB = SavedWaveFunBins[uMomBin][usCh][usPW];
 
@@ -4026,6 +4044,31 @@ double CATS::EvaluateCoulombPotential(const double& Radius) const{
     }
     return CoulombPotential(Radius*FmToNu);
 }
+
+CatsPotential CATS::GetThePotentialFunction(const unsigned short& usCh, const unsigned short& usPW){
+    if(!ShortRangePotential){
+        return 0;
+    }
+    if(usCh>=NumCh){
+        if(Notifications>=nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetThePotentialFunction(...)\n");
+        return 0;
+    }
+    if(usPW>=NumPW[usCh]){
+        if(Notifications>=nError)
+            printf("\033[1;31mERROR:\033[0m Bad input in CATS::GetThePotentialFunction(...)\n");
+        return 0;
+    }
+    if(!ShortRangePotential[usCh]){
+        return 0;
+    }
+    if(!ShortRangePotential[usCh][usPW]){
+        return 0;
+    }
+    return ShortRangePotential[usCh][usPW];
+}
+
+
 unsigned CATS::GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const{
     if(usCh>=NumCh){
         if(Notifications>=nError)

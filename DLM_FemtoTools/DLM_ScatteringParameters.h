@@ -73,6 +73,7 @@ public:
     //we sample target_fraction of the time by trying to sample around pot pars that already 
     //provided a (f,d) combo within the desired limits. The remaining 1-target_fraction we sample with RandomScan
     void TargetedScan(unsigned NumSamples, float target_fraction = 0.8);
+    void TestParameters(std::vector<double> pot_pars_, double& f, double& fe, double& d, double& de);
 
     std::vector<double> GetPotPars(double f0, double d0);
 
@@ -86,6 +87,8 @@ public:
     //no automatic loading available yet
     void SaveSettings(std::string file_name, bool Overwrite=false);
     void Load(std::string file_name, bool reset = false);
+
+    
 
 private:
 
@@ -128,13 +131,24 @@ private:
     double* pot_pars;
     unsigned num_pot_pars;
 
-    bool GetScatteringParameters(double& f, double& fe, double& d, double& de);
+    double last_f;
+    double last_fe;
+    double last_d;
+    double last_de;
+
+    
     void Reset();
     void SampleSomeStuff(unsigned NumSamples, double min_p0, double max_p0, double min_p1, double max_p1);
     
-
+    void Initialize();
+    bool GetScatteringParameters(double& f, double& fe, double& d, double& de);
 
 };
 
+
+//bool GetScatteringParameters_direct(CATS*Kitty, unsigned short usCh, double& f, double& fe, double& d, double& de);
+
+//delete the CATS object
+CATS* GetOptimizedCatForScattering(CATS& Kitty, unsigned usCh=0, unsigned n_kstar=5, double min_kstar=0, double max_kstar=80);
 bool GetScatteringParameters_parabola(CATS*Kitty, double eps_f, double& f, double& fe, double eps_d, double& d, double& de);
 #endif

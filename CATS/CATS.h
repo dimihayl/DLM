@@ -108,6 +108,13 @@ public:
     void SetEpsilonProp(const double& epsp);
     double GetEpsilonProp() const;
 
+    //sometimes there are numerical artifacts at low momenta.
+    //here we can force cats to use finer EpsilonProp below mom_limit,
+    //by decreasing it by the given factor (typically 10 - 1e3 would be sufficient, but depends on EpsilonProp)
+    void SetSuperFineProp(const double& mom_limit, const double& factor);
+    double GetSuperFineProp() const;    
+    double GetSuperFineLimit() const;    
+
     void SetEpsilonConv(const double& epsc);
     double GetEpsilonConv() const;
 
@@ -282,6 +289,8 @@ public:
     unsigned GetNumSourcePars() const;
     double EvaluateThePotential(const unsigned short& usCh, const unsigned short& usPW, const double& Momentum, const double& Radius) const;
     double EvaluateCoulombPotential(const double& Radius) const;
+    CatsPotential GetThePotentialFunction(const unsigned short& usCh, const unsigned short& usPW);
+
     unsigned GetNumPotPars(const unsigned short& usCh, const unsigned short& usPW) const;
     CATSelder* GetTheElder(const double& Momentum);
     //convert fm to 1/MeV
@@ -467,6 +476,8 @@ protected:
     //between numerical and machine precision. It is recommended to keep this value between 1e-4 and 1e-9. The default value is 5e-6
     //for the case of wSquareWell, 50 x EpsilonProp = dr (e.g. 1e-7 is 1e-3 fm, or 1000 steps in 1 fm)
     double EpsilonProp;
+    double SuperFineProp;
+    double SuperFineMom;
     //determines the criteria for a convergence. It is the threshold value for the relative difference between
     //the propagating function with or without potential. Similarly as for EpsilonProp it is assumed that the perfect value
     //should be around 1e-7. By default CATS uses EpsilonConv = 5e-6
