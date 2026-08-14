@@ -626,8 +626,8 @@ bool GetScatteringParameters_direct(CATS*Kitty, unsigned short usCh, double& f, 
 
 //no coulomb cat, with a dummy source, to be used only for extraction of scattering pars
 CATS* GetOptimizedCatForScattering(CATS& Kitty, unsigned usCh, unsigned n_kstar, double min_kstar, double max_kstar){
-    const double EPSprop = 5e-10;
-    const double EPSconv = 5e-10;
+    const double EPSprop = 1e-9;
+    const double EPSconv = 1e-9;
     CATS* temp_cat = new CATS();
     temp_cat->SetMomBins(n_kstar, min_kstar, max_kstar);
     temp_cat->SetThetaDependentSource(false);
@@ -652,6 +652,7 @@ CATS* GetOptimizedCatForScattering(CATS& Kitty, unsigned usCh, unsigned n_kstar,
     temp_cat->SetNotifications(CATS::nWarning);
     temp_cat->SetEpsilonProp(EPSprop);
     temp_cat->SetEpsilonConv(EPSconv);
+    temp_cat->SetSuperFineProp(0.5*max_kstar,10);
     temp_cat->KillTheCat();    
 
     return temp_cat;
