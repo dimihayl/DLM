@@ -23,6 +23,8 @@ double ZeroPotential(double* Radius);
 double SingleGauss(double* Pars);
 double SingleGaussDynamic(double* Pars);
 double DoubleGaussSum(double* Pars);
+//similar to double gauss, but the position (mu) of the two Gaussians is free to be non-zero
+double DoubleFloatingGaussSum(double* Pars);
 //V0*exp(-r^2/β0^2)+V1*exp(-r^2/β1^2)+V2*exp(-r^2/β2^2)
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2
 double TripleGaussSum(double* Pars);
@@ -36,10 +38,17 @@ double RepulsiveCore(double* Pars);
 
 double Gaussian(double* Pars);
 double Yukawa(double* Pars);
+double YukawaFemto(double* Pars);
 double YukawaRepCore(double* Pars);
 double YukawaGaussCore(double* Pars);
 double YukawaDimiCore(double* Pars);
 double YukawaDimiSmooth(double* Pars);
+//a modified Yukawa to remove the singularity + Gaussian repulsive core
+//we have a total of 5 parameters:
+//two for the Yukawa, 1 for the Damping, and 2 for the core
+//amplitude [no units], range,   range              amplitude [MeV] range, ranges in fm
+double YukawaFemtoDampedCore(double* Pars);
+double YukawaFemtoDampedCoreCompact(double* Pars);
 
 double ScreenedCoulomb(double* Pars);
 

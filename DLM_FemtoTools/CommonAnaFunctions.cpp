@@ -589,7 +589,8 @@ void DLM_CommonAnaFunctions::SetUpCats_pp(CATS &Kitty, const TString &POT, const
     else if (POT == "Norfolk")
     {
         // printf("SetUpNorfolk...\n");
-        SetUpNorfolk("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/NorfolkPotential/OriginalCode/Fine/");
+        //SetUpNorfolk("/home/dmihaylov/Dudek_Ubuntu/Work/Kclus/GeneralFemtoStuff/NorfolkPotential/OriginalCode/Fine/");
+        SetUpNorfolk(CatsFilesFolder[0] + "/Interaction/pp/Norfolk_Stefano/Fine/");
         // printf("SetUpNorfolk!\n");
         cPotPars1S0 = new CATSparameters(CATSparameters::tPotential, 3, true);
         cPotPars3P0 = new CATSparameters(CATSparameters::tPotential, 3, true);
@@ -7866,7 +7867,7 @@ DLM_Histo<double> *ConvertThetaAngleHisto(const TString &FileName, const TString
     // printf("Initialize...\n");
     CummDistr.Initialize();
     // printf("Ended...\n");
-    CummDistr.SetBinContent(unsigned(0), Projection->GetBinContent(1));
+    CummDistr.SetBinContent(+0U, Projection->GetBinContent(1));
     for (unsigned uBin = 1; uBin < NumBins; uBin++)
     {
         CummDistr.SetBinContent(uBin, CummDistr.GetBinContent(uBin - 1) + Projection->GetBinContent(uBin + 1));

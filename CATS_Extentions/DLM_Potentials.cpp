@@ -45,6 +45,14 @@ double DoubleGaussSum(double* Pars){
     return Pars[2]*exp(-pow(Pars[0]/Pars[3],2))+Pars[4]*exp(-pow(Pars[0]/Pars[5],2));
 }
 
+//amplitude = V; range = mu; position = R
+//[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=R0; [5]=V1; [6]=μ1; [7]=R1;
+double DoubleFloatingGaussSum(double* Pars){
+    return Pars[2]*exp(-pow((Pars[0]-Pars[4])/Pars[3],2))+Pars[5]*exp(-pow((Pars[0]-Pars[7])/Pars[6],2));
+}
+
+
+
 //V0*exp(-r^2/β0^2)+V1*exp(-r^2/β1^2)+V2*exp(-r^2/β2^2)
 //[0] - r; [1] = k; [2]=V0; [3]=μ0; [4]=V1; [5]=μ1; [6]=V2; [7]=μ2
 double TripleGaussSum(double* Pars){
@@ -107,7 +115,14 @@ double Yukawa(double* Pars) {
   // this function returns a Yukawa-type potential as A/r exp(-alpha r)
   return Pars[2] / (Pars[0] / NuToFm) * exp(-Pars[3] * Pars[0] / NuToFm);
 }
-
+double YukawaFemto(double* Pars) {
+  // Pars[0] Radius in fm
+  // Pars[1] Momentum in MeV/c
+  // Pars[2] A is dimensionless
+  // Pars[3] range in fm
+  // this function returns a Yukawa-type potential as A/r exp(-alpha r)
+  return Pars[2] / (Pars[0] / NuToFm) * exp(-Pars[0] / Pars[3]);
+}
 
 
 //[4] strength, [5] range and [6] slope of the repulsive core
@@ -150,6 +165,28 @@ double YukawaDimiSmooth(double* Pars) {
   double RC = RC_A/(1.+exp((r-RC_R)/RC_S));
   double Yuk = -A/(r+dr)/FmToNu*exp(-r/R);
   return Yuk+RC;
+}
+
+//[2,3] YukawaFemto (amplitude and range)
+//[4] range of the damping, a smaller number modifies the yukawa at smaller distances
+//[5,6] a normal Gaussian repulsive core of amplitude [5] and range [6]
+//probably [4] and [6] are often good to be identical
+double YukawaFemtoDampedCore(double* Pars){
+    double& rstar = Pars[0];
+    double& kstar = Pars[1];
+    double YKW = YukawaFemto(Pars);
+    double DMP = pow(1. - exp(-rstar/Pars[4]),2.);
+    double RPC = Pars[5]*exp(-pow(rstar/Pars[6],2.));
+    return YKW*DMP+RPC;
+}
+//same as above , but one less parameter as [4]=[6]
+double YukawaFemtoDampedCoreCompact(double* Pars){
+    double& rstar = Pars[0];
+    double& kstar = Pars[1];
+    double YKW = YukawaFemto(Pars);
+    double DMP = pow(1. - exp(-rstar/Pars[4]),2.);
+    double RPC = Pars[5]*exp(-pow(rstar/Pars[4],2.));
+    return YKW*DMP+RPC;
 }
 
 //double last_tmp = 0;
