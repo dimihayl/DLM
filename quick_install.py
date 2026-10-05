@@ -616,6 +616,20 @@ def quick_install():
         return
     if os.system('make -j'+str(multiprocessing.cpu_count())):
         print(bcolors.FAIL+'"make" failed'+bcolors.ENDC)
+        #remove the /bin/root
+        SYS_ROOT = os.popen('which root').read().strip()[0:-9]
+        if install_lvl>=1 and SYS_ROOT and SYS_ROOT!=PATH_ROOT:
+            print(bcolors.WARNING+'WARNING: Required ROOT version and available one are different:'+bcolors.ENDC)
+            print(' Configured ROOT: '+PATH_ROOT)
+            print(' Installed ROOT:  '+SYS_ROOT)
+            print(' Update to the installed ROOT and try again? (y/n) ', end = '')
+            if yes():
+                with open(config_file_path, "w") as f:
+                    f.write(f'set(GSL_INCLUDE "{PATH_GSL_INC}")\n')
+                    f.write(f'set(GSL_LIB "{PATH_GSL_LIB}")\n')
+                    f.write(f'set(ROOT_PATH "{SYS_ROOT}")\n')
+                os.chdir(SCRIPT_PATH)
+                quick_install()
         return
     if os.system('make install'):
         print(bcolors.FAIL+'"make install" failed'+bcolors.ENDC)
