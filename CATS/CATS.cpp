@@ -3741,8 +3741,9 @@ double CATS::EffectiveFunction(const unsigned& uMomBin, const double& Radius, co
             //the integration of Pl itself results in 1/(2l+1), so this should be fine as it is
             Result = double(2*usPW+1)*pow(abs(Result),2);
             TotalResult += abs(Result);
-            //convergence criteria
-            if(usPW>=NumPW[usCh] && abs(OldResult)<1e-7 && abs(Result)<1e-8) break;
+            //convergence criteria. The partial waves die out only for l > rho = k*r: below that, F_l ~ sin(rho - l*pi/2)
+            //and consecutive (even) terms can vanish together near rho = n*pi, which would stop the sum too early
+            if(usPW>=NumPW[usCh] && usPW>Radius*Momentum && abs(OldResult)<1e-7 && abs(Result)<1e-8) break;
             OldResult = Result;
         }
     }
