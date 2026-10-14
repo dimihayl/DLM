@@ -321,7 +321,7 @@ void CatsLorentzVector::Print(){
   printf("(E,px,py,pz) = (%.2e, %.2e, %.2e, %.2e)\n",FourMomentum[0],FourMomentum[1],FourMomentum[2],FourMomentum[3]);
 }
 
-CatsLorentzVector const CatsLorentzVector::operator+(const CatsLorentzVector& other){
+CatsLorentzVector const CatsLorentzVector::operator+(const CatsLorentzVector& other) const {
     CatsLorentzVector RESULT;
     RESULT.FourSpace[0]=FourSpace[0]+other.FourSpace[0];
     RESULT.FourSpace[1]=FourSpace[1]+other.FourSpace[1];
@@ -338,7 +338,7 @@ CatsLorentzVector const CatsLorentzVector::operator+(const CatsLorentzVector& ot
     return RESULT;
 }
 
-CatsLorentzVector const CatsLorentzVector::operator-(const CatsLorentzVector& other){
+CatsLorentzVector const CatsLorentzVector::operator-(const CatsLorentzVector& other) const {
     CatsLorentzVector RESULT;
     RESULT.FourSpace[0]=FourSpace[0]-other.FourSpace[0];
     RESULT.FourSpace[1]=FourSpace[1]-other.FourSpace[1];

@@ -13,7 +13,35 @@
 #include "omp.h"
 #include <unistd.h>
 #include <thread>
+#include <array>
+#include <iomanip>
 
+void FillOrigin(std::map<std::string, unsigned> &origins, CecaParticle* particles, int size) {
+    LOG(DEBUG, "Filling the origin of the particles");
+
+    std::string key = "";
+    for (int iPart = 0; iPart < size; iPart++) {
+        LOG(DEBUG, "iPart: " << iPart << " useful: " << particles[iPart].IsUseful());
+        if (!particles[iPart].IsUseful()) {
+            LOG(DEBUG, "not useful");
+            return;
+        }
+
+        key += particles[iPart].IsUsefulPrimordial() ? "p" : "s";
+    }
+    
+    origins.at(key)++;
+    LOG(DEBUG, "Incremented '" << key << "' to " << origins.at(key));
+}
+
+std::map<std::string, eMtMethod> mTMethodFromString = {
+  {"kSimple", kSimple},
+  {"kHarmonic", kHarmonic},
+  {"kTripleHarmonic", kTripleHarmonic},
+  {"k4VectorAverage", k4VectorAverage},
+};
+
+auto dot =[](std::array<double, 3> v1, std::array<double, 3> v2){return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];};
 
 CecaParticle::CecaParticle(){
   cats = new CatsParticle();
@@ -27,6 +55,75 @@ CecaParticle::CecaParticle(const CecaParticle &other){
   //printf("copy\n");
   CecaParticle();
   *this=other;
+}
+
+double ComputeMtSimple(CatsLorentzVector* p1, CatsLorentzVector* p2, CatsLorentzVector* p3) {
+    // Generalization of the usual formula for pp
+    double m1 = p1->Mag();
+    double m2 = p2->Mag();
+    double m3 = p3->Mag();
+
+    double M = (m1 + m2 + m3) / 3;
+    double px = (p1->GetPx() + p2->GetPx() + p3->GetPx()) / 3;
+    double py = (p1->GetPy() + p2->GetPy() + p3->GetPy()) / 3;
+
+    double kt2 = px * px + py * py;
+    return sqrt(M * M + kt2);
+}
+
+double ComputeMtHarmonic(CatsLorentzVector* p1, CatsLorentzVector* p2, CatsLorentzVector* p3) {
+    // Use harmonic average of masses
+    double m1 = p1->Mag();
+    double m2 = p2->Mag();
+    double m3 = p3->Mag();
+
+    double M = 1. / (1. / m1 + 1. / m2 + 1. / m3);
+    double px = (p1->GetPx() + p2->GetPx() + p3->GetPx()) / 3;
+    double py = (p1->GetPy() + p2->GetPy() + p3->GetPy()) / 3;
+
+    double kt2 = px * px + py * py;
+    return sqrt(M * M + kt2);
+}
+
+double ComputeMtTripleHarmonic(CatsLorentzVector* p1, CatsLorentzVector* p2, CatsLorentzVector* p3) {
+    // Use harmonic average of masses and multiply by 3 to ensure M = m for m1 = m2 = m3
+    double m1 = p1->Mag();
+    double m2 = p2->Mag();
+    double m3 = p3->Mag();
+
+    double M = 3. / (1. / m1 + 1. / m2 + 1. / m3);
+    double px = (p1->GetPx() + p2->GetPx() + p3->GetPx()) / 3;
+    double py = (p1->GetPy() + p2->GetPy() + p3->GetPy()) / 3;
+
+    double kt2 = px * px + py * py;
+    return sqrt(M * M + kt2);
+}
+
+double ComputeMt4VectorAverage(CatsLorentzVector* p1, CatsLorentzVector* p2, CatsLorentzVector* p3) {
+    double E = p1->GetE() + p2->GetE() + p3->GetE();
+    double pz = p1->GetPz() + p2->GetPz() + p3->GetPz();
+
+    return sqrt(E * E - pz * pz) / 3;
+}
+
+double CECA::ComputeMt(CatsLorentzVector* p1, CatsLorentzVector* p2, CatsLorentzVector* p3) {
+  if (CECA::GetMtMethod() == kSimple) {
+    return ComputeMtSimple(p1, p2, p3);
+  }
+  
+  if (CECA::GetMtMethod() == kHarmonic) {
+    return ComputeMtHarmonic(p1, p2, p3);
+  }
+  
+  if (CECA::GetMtMethod() == kTripleHarmonic) {
+    return ComputeMtTripleHarmonic(p1, p2, p3);
+  }
+  
+  if (CECA::GetMtMethod() == k4VectorAverage) {
+    return ComputeMt4VectorAverage(p1, p2, p3);
+  }
+  
+  throw std::runtime_error("The chosen method for computing mT is not implemented");
 }
 CecaParticle::~CecaParticle(){
   //printf("del %p %p\n",cats,this);
@@ -139,10 +236,13 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   TargetYield = 100000;
   AchievedYield = 0;
   FemtoLimit = 200;
+  FemtoLimit3B = 800;
   UpperLimit = 300;
   EMULT = 0;
   SrcCnv = 1;
   DebugMode = false;
+  mTMethod = k4VectorAverage;
+  arbitraryMass = -1;
   exp_file_name = "";
   exp_file_flag = 0;
   //CLV.clear();
@@ -160,6 +260,17 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   Ghetto_NumRadBins = 1024;
   Ghetto_RadMin = 0;
   Ghetto_RadMax = 128;
+
+  // 3B femto
+  dlmR12R312 = NULL;
+  dlmMtSimpleVs4VectorAverage = NULL;
+  dlmPhiVsRho = NULL;
+  dlmRhoVsMt = NULL;
+  dlmFemtoR12R312 = NULL;
+  dlmFemtoPhiVsRho = NULL;
+  dlmFemtoMtSimpleVs4VectorAverage = NULL;
+  dlmFemtoMtSimpleVs4VectorAverage = NULL;
+  dlmFemtoRhoVsMt = NULL;
 
   Ghetto_rstar = NULL;
   Ghetto_rcore = NULL;
@@ -233,15 +344,14 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   //30 seconds as a default timeout
   Timeout = 30*10000000;
   GlobalTimeout = -1;
-  Yieldout = 0;
   RanGen = new DLM_Random* [MaxThreads];
   for(unsigned uTh=0; uTh<MaxThreads; uTh++){
     RanGen[uTh] = new DLM_Random(uTh+1);
   }
   //NumSystVars = 1;
   ListOfParticles = list_of_particles;
-  if (ListOfParticles.size() < 2) {
-    LOG(FATAL, "At least 2 particles are required in the list_of_particles");
+  if (ListOfParticles.size() < 2 || ListOfParticles.size() > 3) {
+    LOG(FATAL, "Only 2 or 3 particles are supported in the list_of_particles");
   }
 
   for(std::string& particle : ListOfParticles){
@@ -261,6 +371,21 @@ CECA::~CECA(){
   //CLV.clear();
 
   ///////////////////////////////////////////////
+  if(dlmR12R312){delete dlmR12R312; dlmR12R312=NULL;}
+  if(dlmMtSimpleVs4VectorAverage){delete dlmMtSimpleVs4VectorAverage; dlmMtSimpleVs4VectorAverage=NULL;}
+  if(dlmPhiVsRho){delete dlmPhiVsRho; dlmPhiVsRho=NULL;}
+  if(dlmRhoVsMt){delete dlmRhoVsMt; dlmRhoVsMt=NULL;}
+  if(dlmFemtoR12R312){delete dlmFemtoR12R312; dlmFemtoR12R312=NULL;}
+  if(dlmFemtoPhiVsRho){delete dlmFemtoPhiVsRho; dlmFemtoPhiVsRho=NULL;}
+    if(!dlmFemtoPairsMt.empty()) {
+    for (auto& [_, ptr] : dlmFemtoPairsMt) {
+        delete ptr;
+    }
+    dlmFemtoPairsMt.clear();
+  }
+  if(dlmFemtoMtSimpleVs4VectorAverage){delete dlmFemtoMtSimpleVs4VectorAverage; dlmFemtoMtSimpleVs4VectorAverage=NULL;}
+  if(dlmFemtoRhoVsMt){delete dlmFemtoRhoVsMt; dlmFemtoRhoVsMt=NULL;}
+
   if(Ghetto_rstar){delete Ghetto_rstar; Ghetto_rstar=NULL;}
   if(Ghetto_rcore){delete Ghetto_rcore; Ghetto_rcore=NULL;}
   if(GhettOld_rstar){delete GhettOld_rstar; GhettOld_rstar=NULL;}
@@ -564,6 +689,11 @@ void CECA::SetFemtoRegion(const float& femto, const float& info){
   FemtoLimit = femto;
   UpperLimit = info;
 }
+
+void CECA::SetFemtoRegion3B(const float& value){
+  FemtoLimit3B = value;
+}
+
 double CECA::GetFemtoLimit(){
   return FemtoLimit;
 }
@@ -571,7 +701,14 @@ double CECA::GetFemtoLimit(){
 void CECA::SetEventMult(const unsigned short& emult){
   EMULT = emult;
 }
+void CECA::SetMtMethod(std::string method){
+  if (!mTMethodFromString.count(method)) LOG(FATAL, "Unknown mT method: " << method);
+  mTMethod = mTMethodFromString.at(method);
+}
 
+eMtMethod CECA::GetMtMethod(){
+  return mTMethod;
+}
 //void CECA::SetSystVars(const unsigned& howmany){
 //  if(!howmany) NumSystVars = 1;
 //  else NumSystVars = howmany;
@@ -589,11 +726,6 @@ void CECA::SetDebugMode(const bool& debugmode){
 }
 void CECA::SetThreadTimeout(const unsigned& seconds){
   Timeout = seconds?seconds:1;//a minimum of 1 second
-  Yieldout = -1;
-}
-void CECA::SetThreadYieldout(const unsigned long long& yield){
-  Yieldout = yield?yield:1;//a minimum of 1
-  Timeout = -1;
 }
 void CECA::SetGlobalTimeout(const unsigned& seconds){
   GlobalTimeout = seconds?seconds:-1;
@@ -628,7 +760,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
     //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
   }
-  while(ExeTime<Timeout && NumMultiplets<Yieldout);
+  while(ExeTime<Timeout && NumMultiplets * NumThreads <= TargetYield);
   if(DebugMode){
     //#pragma omp critical
     //{
@@ -657,9 +789,13 @@ void CECA::GoBabyGo(const unsigned& num_threads){
     LOG(FATAL, "CECA is not ready: event multiplicity is smaller than the n. of particles in list_of_particles");
   }
 
+  if (arbitraryMass < 0 && ListOfParticles.size() == 3) {
+    LOG(FATAL, "CECA is not ready: arbitrary mass is negative: did you set it?");
+  }
+
   GhettoInit();
   if(!Database.QA()){
-      return;
+    LOG(FATAL, "Particle database QA did not pass");
   }
   bool DynamicThreads;
   if(num_threads==0){
@@ -834,6 +970,7 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
         Primordial.push_back(new CecaParticle());
 
         TreParticle* tre = Database.GetRandomParticle(RanGen[ThId]);
+        LOG(DEBUG, "Selected primordial: " << tre->GetName());
         Primordial.back()->SetTrepni(tre);
 
         //check if we need this guy, i.e. is it, or one of its daughters,
@@ -865,6 +1002,7 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
 
         //the particle will NOT be used
         if(Useless_particle){
+          LOG(DEBUG, "Rejecting particle as it is neither primordial nor decay product of interest");
           delete Primordial.back();
           Primordial.pop_back();
         }
@@ -924,6 +1062,7 @@ unsigned CECA::GenerateEvent(const unsigned& ThId){
     }//the inifinite while loop
 
 
+    LOG(DEBUG, "Looping over " << Primordial.size() << " primordial particles");
     for(CecaParticle* primordial : Primordial){
       //--- SAMPLE THE MOMENTUM ---//
       double axisValues[3];
@@ -1144,6 +1283,7 @@ FragCorr = 1;
           primordial->Decay()->GetDaughterMasses(),
           PropagateMother);
 
+        LOG(DEBUG, "Processing a resonance");
         for(unsigned char nd=0; nd<primordial->Decay()->GetNumDaughters(); nd++){
           if(ParticleInList(primordial->Decay()->GetDaughter(nd))){
             Primary.push_back(new CecaParticle());
@@ -1173,6 +1313,7 @@ FragCorr = 1;
       }
       else{
         Primary.push_back(new CecaParticle());
+        LOG(DEBUG, "Adding a new primordial particle");
         *Primary.back() = *primordial;
         if(!Primary.back()->WithinAcceptance()){
           delete Primary.back();
@@ -1204,12 +1345,16 @@ FragCorr = 1;
 
     }//iteration over all primordials
 
-
+    LOG(DEBUG, "Generated the following particles:");
+    for (const auto& part : Primary) {
+      LOG(DEBUG, " - useful primordial: " << part->IsUsefulPrimordial() << " - useful product: " << part->IsUsefulProduct());
+    }
     //BUILD THE MULTIPLETS, EVALUATE THEIR NUMBER AND RETURN THE CORRECT VALUE
     //the array position of each particle, which is to be used to build the multiplet
     //the length SDIM represents the number of particles in each multiplet
     //e.g. 5 particles, SDIM=3 has to build all permutations: 012,013,014,023,024,034,123,124,134,234
     std::vector<std::vector<unsigned>> Permutations = BinomialPermutations(Primary.size(),SDIM);
+    LOG(DEBUG, "primaries: " << Primary.size() << "  perms: " << Permutations.size() << "  source dim: " << int(SDIM));
     //the pid is a single permutation, e.g. {0,1,2}
     unsigned FemtoPermutations = 0;
     for(std::vector<unsigned> pid : Permutations){
@@ -1228,6 +1373,45 @@ FragCorr = 1;
       */
 /////////////////////////////
 
+      #pragma omp critical
+      {
+        auto clv1 = ((CatsLorentzVector *)Primary.at(pid[0])->Cats());
+        auto clv2 = ((CatsLorentzVector *)Primary.at(pid[1])->Cats());
+
+        p1 = TLorentzVector(clv1->GetPx(), clv1->GetPy(), clv1->GetPz(), clv1->GetE());
+        p2 = TLorentzVector(clv2->GetPx(), clv2->GetPy(), clv2->GetPz(), clv2->GetE());
+        p3 = TLorentzVector(std::nan(""), std::nan(""), std::nan(""), std::nan(""));
+      
+        x1 = TLorentzVector(clv1->GetX(), clv1->GetY(), clv1->GetZ(), clv1->GetT());
+        x2 = TLorentzVector(clv2->GetX(), clv2->GetY(), clv2->GetZ(), clv2->GetT());
+        x3 = TLorentzVector(std::nan(""), std::nan(""), std::nan(""), std::nan(""));
+
+        p1_mother = TLorentzVector(std::nan(""), std::nan(""), std::nan(""), std::nan(""));        
+        p2_mother = TLorentzVector(std::nan(""), std::nan(""), std::nan(""), std::nan(""));        
+        p3_mother = TLorentzVector(std::nan(""), std::nan(""), std::nan(""), std::nan(""));
+
+        auto clv1_mother = ((CatsLorentzVector *)Primary.at(pid[0])->Mother());
+        if(clv1_mother) {
+          p1_mother = TLorentzVector(clv1_mother->GetPx(), clv1_mother->GetPy(), clv1_mother->GetPz(), clv1_mother->GetE());        
+        }
+      
+        auto clv2_mother = ((CatsLorentzVector *)Primary.at(pid[1])->Mother());
+        if(clv2_mother) {
+          p2_mother = TLorentzVector(clv2_mother->GetPx(), clv2_mother->GetPy(), clv2_mother->GetPz(), clv2_mother->GetE());        
+        }
+
+        if (SDIM == 3) {
+          auto clv3 = ((CatsLorentzVector *)Primary.at(pid[2])->Cats());
+          p3 = TLorentzVector(clv3->GetPx(), clv3->GetPy(), clv3->GetPz(), clv3->GetE());
+          x3 = TLorentzVector(clv3->GetX(), clv3->GetY(), clv3->GetZ(), clv3->GetT());
+
+          auto clv3_mother = ((CatsLorentzVector *)Primary.at(pid[2])->Mother());
+          if(clv3_mother) {
+            p3_mother = TLorentzVector(clv3_mother->GetPx(), clv3_mother->GetPy(), clv3_mother->GetPz(), clv3_mother->GetE());        
+          }
+        }
+        tEvents->Fill();
+      }
 
 //GHETTO: make multiplets and simply drop the output for the source as a function of rstar, no kstar, no shit
 //this so that you can show something next FemTUM
@@ -1241,6 +1425,12 @@ FragCorr = 1;
         //printf(" %u",ID);
         //printf("ud = %u\n",ud);
         boost_v = boost_v+*(Primary.at(ID)->Cats());//
+
+        auto part = Primary.at(ID)->Cats();
+        double px = part->GetPx();
+        double py = part->GetPy();
+        double pz = part->GetPz();
+        LOG(DEBUG, "Calculating boost components. pid: " << ID << "  momentum: (" << px << ", " << py << ", " << pz << ")");
         prt_cm[ud] = *Primary.at(ID);
         prt_lab[ud] = *Primary.at(ID); 
         //prt_cm[ud].SetCats(Primary.at(ID)->Cats());
@@ -1250,6 +1440,7 @@ FragCorr = 1;
         ud++;
       }
       //printf("\n");
+      LOG(DEBUG, "Boost components: (" << boost_v.GetPx() << ", " << boost_v.GetPy() << ", " << boost_v.GetPz() << ")");
 
       //the starting time of the interaction
       //given by the last particle to form
@@ -1280,6 +1471,17 @@ FragCorr = 1;
           }
         }
       }
+
+      double pxx = 0;
+      double pyy = 0;
+      double pzz = 0;
+      for (int iPart = 0; iPart < SDIM; iPart++) {
+        pxx += prt_cm[iPart].Cats()->GetPx();
+        pyy += prt_cm[iPart].Cats()->GetPy();
+        pzz += prt_cm[iPart].Cats()->GetPz();
+      }
+
+      LOG(DEBUG, "Total momentum in CM: px: " << pxx << "  py: " << pyy << "  pz: " << pzz);
 
       CatsLorentzVector cm_sumQA;
       for(unsigned char ud=0; ud<SDIM; ud++){
@@ -1318,188 +1520,94 @@ FragCorr = 1;
         double m2 = prt_cm[1].Cats()->GetMass();
         double m3 = prt_cm[2].Cats()->GetMass();
         double mtot = m1 + m2 + m3;
-        //reduced mass 12, as in the notes
-        //note, that in c++ we will have actally 01
-        double mu12 = m1*m2/(m1+m2);
-        double alpha_m = 4*m3*m3/pow(m3+m1,2.) + 4*m3*m3/pow(m3+m2,2.) + 4;
-        //double beta_m = 4*m3*mtot/(m1+m2)*(m2/pow(m2+m3,2.)-m1/pow(m1+m3,2.));
-        //double gamma_m = 4*pow(mtot/(m1+m2),2.)*(pow(m1/(m1+m3),2.)+pow(m2/(m2+m3),2.));
-        double mu3_12 = m3*(m1+m2)/mtot;
-        //arbitrary mass. For identical particles this definition
-        //works out to 3x mass of the particle
-        //this is the definition that leads to Q==Q3
-        double Malpha = mu12*alpha_m / 6.;
-        
-        //CatsLorentzVector clv12 = *prt_cm[0].Cats() - *prt_cm[1].Cats();
+        double mu12 = m1*m2/(m1+m2); // Reduced mass of particles 1 and 2
+        double mu3_12 = m3*(m1+m2)/mtot; // Reduced mass of particle 3 wrt 1 and 2
 
-        std::vector<double> v_r1 = {prt_cm[0].Cats()->GetX(), prt_cm[0].Cats()->GetY(), prt_cm[0].Cats()->GetZ()};
-        std::vector<double> v_r2 = {prt_cm[1].Cats()->GetX(), prt_cm[1].Cats()->GetY(), prt_cm[1].Cats()->GetZ()};
-        std::vector<double> v_r3 = {prt_cm[2].Cats()->GetX(), prt_cm[2].Cats()->GetY(), prt_cm[2].Cats()->GetZ()};
-        //the pCM is zero, but clearcly not the rCM. The def below I got from ChatGPT
-        std::vector<double> v_rCM;
-        
+        // Based on Eq. 1.80 of 3B notes
+        double alpha = 4 * m3 * m3 / pow(m1 + m3, 2. ) + 4 * m3 * m3 / pow(m2 + m3, 2.) + 4;
+        double beta = 4 * m3 * mtot / (m1 + m2) * (m2 / pow(m2 + m3, 2) - m1 / pow(m1 + m3, 2));
+        double gamma = 4 * mtot * mtot / pow(m1 + m2, 2) *  (m1 * m1 / pow(m1 + m3, 2) + m2 * m2 / pow(m2 + m3, 2));
 
-        std::vector<double> v_p1 = {prt_cm[0].Cats()->GetPx(), prt_cm[0].Cats()->GetPy(), prt_cm[0].Cats()->GetPz()};
-        std::vector<double> v_p2 = {prt_cm[1].Cats()->GetPx(), prt_cm[1].Cats()->GetPy(), prt_cm[1].Cats()->GetPz()};
-        std::vector<double> v_p3 = {prt_cm[2].Cats()->GetPx(), prt_cm[2].Cats()->GetPy(), prt_cm[2].Cats()->GetPz()};
+        LOG(DEBUG, "Masses: m1 " << m1 << "  m2: " << m2 << "  m3: " << m3 << "  arbitrary mass: " << arbitraryMass);
+  
+        std::array<double, 3> v_r1 = {prt_cm[0].Cats()->GetX(), prt_cm[0].Cats()->GetY(), prt_cm[0].Cats()->GetZ()};
+        std::array<double, 3> v_r2 = {prt_cm[1].Cats()->GetX(), prt_cm[1].Cats()->GetY(), prt_cm[1].Cats()->GetZ()};
+        std::array<double, 3> v_r3 = {prt_cm[2].Cats()->GetX(), prt_cm[2].Cats()->GetY(), prt_cm[2].Cats()->GetZ()};
 
-        std::vector<double> v_r12;
-        std::vector<double> v_k12;
-        for(unsigned uv=0; uv<3; uv++){
-          v_rCM.push_back((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
-        }
-        //subtract the CM
-        for(unsigned uv=0; uv<3; uv++){
-          v_r1[uv] -= v_rCM[uv];
-          v_r2[uv] -= v_rCM[uv];
-          v_r3[uv] -= v_rCM[uv];
-        }
-        for(unsigned uv=0; uv<3; uv++){
-          v_r12.push_back(v_r1[uv]-v_r2[uv]);
-          v_k12.push_back((m2*v_p1[uv]-m1*v_p2[uv])/(m1+m2));
-          //v_rCM.push_back((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
+        // Computation of Jacobi coordinates
+        std::array<double, 3> v_rCM;
+        std::array<double, 3> v_r12;
+        std::array<double, 3> v_r3_12;
+        for (int i = 0; i < 3; i++) {
+          v_rCM[i] = (m1 * v_r1[i] + m2 * v_r2[i] + m3 * v_r3[i]) / mtot;
+          v_r12[i] = v_r1[i] - v_r2[i];
+          v_r3_12[i] = -m1 / (m1+m2) * v_r1[i] - m2 / (m1 + m2) * v_r2[i] + v_r3[i];
         }
 
-        for(unsigned uv=0; uv<3; uv++){
-          v_rCM[uv] = ((m1*v_r1[uv]+m2*v_r2[uv]+m3*v_r3[uv])/mtot);
+        // Compute hyper-radius
+        double r12_squared = dot(v_r12, v_r12);
+        double r3_12_squared = dot(v_r3_12, v_r3_12);
+        double hyp_rad = sqrt((mu12 * r12_squared + mu3_12 * r3_12_squared) / arbitraryMass);
+        double hyp_angle = atan2(sqrt(mu3_12 * r3_12_squared), sqrt(mu12 * r12_squared));
+
+        std::array<double, 4> v_p1 = {prt_cm[0].Cats()->GetE(), prt_cm[0].Cats()->GetPx(), prt_cm[0].Cats()->GetPy(), prt_cm[0].Cats()->GetPz()};
+        std::array<double, 4> v_p2 = {prt_cm[1].Cats()->GetE(), prt_cm[1].Cats()->GetPx(), prt_cm[1].Cats()->GetPy(), prt_cm[1].Cats()->GetPz()};
+        std::array<double, 4> v_p3 = {prt_cm[2].Cats()->GetE(), prt_cm[2].Cats()->GetPx(), prt_cm[2].Cats()->GetPy(), prt_cm[2].Cats()->GetPz()};
+
+        // Computation of conjugated momenta of Jacobi coordinates
+        std::array<double, 3> v_k12;
+        std::array<double, 3> v_k3_12; 
+        for(unsigned uv=1; uv<4; uv++){
+          v_k12[uv - 1] = (m2 * v_p1[uv] - m1 * v_p2[uv]) / (m1+m2);
+          v_k3_12[uv - 1] = ((m1 + m2) * v_p3[uv] - m3 * (v_p1[uv] + v_p2[uv])) / (m1 + m2 + m3);
         }
 
-        //printf("v_rCM = %.3f %.3f %.3f\n", v_rCM[0], v_rCM[1], v_rCM[2]);
-        //printf("mu12/Malpha = %.3f; mu3_12/Malpha = %.3f; Malpha = %.3f\n",mu12/Malpha, mu3_12/Malpha, Malpha);
+        auto clv1 = (CatsLorentzVector *)prt_lab[0].Cats();
+        auto clv2 = (CatsLorentzVector *)prt_lab[1].Cats();
+        auto clv3 = (CatsLorentzVector *)prt_lab[2].Cats();
 
+        double mT = ComputeMt(clv1, clv2, clv3);
 
+        LOG(DEBUG, "mT original: " << boost_v.GetMt() / 3 << "  mT new: " << mT);
 
+        LOG(DEBUG, "p1 components: (" << v_p1[0] << ", " << v_p1[1] << ", " << v_p1[2] << ", " << v_p1[3] << ")");
+        LOG(DEBUG, "p2 components: (" << v_p2[0] << ", " << v_p2[1] << ", " << v_p2[2] << ", " << v_p2[3] << ")");
+        LOG(DEBUG, "p3 components: (" << v_p3[0] << ", " << v_p3[1] << ", " << v_p3[2] << ", " << v_p3[3] << ")");
+        LOG(DEBUG, "Boost components: (" << boost_v.GetPx() << ", " << boost_v.GetPy() << ", " << boost_v.GetPz() << ") --> mT: " << mT);
 
-        std::vector<double> v_r3_12; 
-        std::vector<double> v_k3_12; 
-        for(unsigned uv=0; uv<3; uv++){
-          v_r3_12.push_back(v_r3[uv]-m1/(m1+m2)*v_r1[uv]-m2/(m1+m2)*v_r2[uv]);
-          v_k3_12.push_back(((m1+m2)*v_p3[uv]-m3*(v_p1[uv]+v_p2[uv]))/(m1+m2+m3));
-        }
-        //hyperradius
-        std::vector<double> v_rho;
-        std::vector<double> v_Q3;
-        for(unsigned uv=0; uv<3; uv++){
-          v_rho.push_back(sqrt(mu12/Malpha)*v_r12[uv]);
-          v_Q3.push_back(sqrt(Malpha/mu12)*v_k12[uv]);
-        }
-        for(unsigned uv=3; uv<6; uv++){
-          v_rho.push_back(sqrt(mu3_12/Malpha)*v_r3_12[uv-3]);
-          v_Q3.push_back(sqrt(Malpha/mu3_12)*v_k3_12[uv-3]);  
-        }
+        // Based on Eq. 1.15 of 3B notes
+        double Q = sqrt(arbitraryMass / mu12 * dot(v_k12, v_k12) + arbitraryMass / mu3_12 * dot(v_k3_12, v_k3_12));
 
-        //chat gpt style
-        double rho_val = 0;
-        for (size_t i = 0; i < 3; ++i) {
-          rho_val += m1 * pow(v_r1[i] - v_rCM[i], 2);
-          rho_val += m2 * pow(v_r2[i] - v_rCM[i], 2);
-          rho_val += m3 * pow(v_r3[i] - v_rCM[i], 2);
-         }      
-         rho_val = sqrt(rho_val/mtot);  
-            
-        //double r12 = 0;
-        //for(unsigned uv=0; uv<3; uv++) r12 += pow(v_r1.at(uv) - v_r2.at(uv), 2.);
-        //r12 = sqrt(r12);
-
-        //double r3_12 = 0;
-        //for(unsigned uv=0; uv<3; uv++){
-        //  r3_12 += pow(v_r3.at(uv) - (m1*v_r1.at(uv)+m2*v_r2.at(uv))/(m1+m2), 2.);
-        //}
-        //r3_12 = sqrt(r3_12);
-
-        //double k12 = 0;
-        //for(unsigned uv=0; uv<3; uv++) k12 += pow(m2*v_p1.at(uv) - m1*v_p2.at(uv), 2.);
-        //k12 = sqrt(k12)/(m1+m2);
-
-        //double k3_12 = 0;
-        //for(unsigned uv=0; uv<3; uv++){
-        //  k3_12 += pow((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)), 2.);
-        //}
-        //k3_12 = sqrt(k3_12)/mtot;
-
-        //double dot_k12_k3_12 = 0;
-        //for(unsigned uv=0; uv<3; uv++){
-        //  dot_k12_k3_12 += (m2*v_p1.at(uv) - m1*v_p2.at(uv))/(m1+m2) * ((m1+m2)*v_p3.at(uv)-m3*(v_p1.at(uv)+v_p2.at(uv)))/mtot;
-        //}
-
-        //double hyp_rad = sqrt(mu12/Malpha*r12*r12 + mu3_12/Malpha*r3_12*r3_12);
-        //double Q3 = sqrt(alpha_m*k12*k12 + 2*beta_m*dot_k12_k3_12 + gamma_m*k3_12*k3_12);
-        double hyp_rad = 0;
-        double Q3 = 0;
-        //averaged per particle
-        double mT = boost_v.GetMt()/3.;
-        for(unsigned uv=0; uv<6; uv++){
-          hyp_rad+=v_rho[uv]*v_rho[uv];
-          Q3+=v_Q3[uv]*v_Q3[uv];
-        }
-        hyp_rad = sqrt(hyp_rad);
-        Q3 = sqrt(Q3);
-        if(Q3<1000){
-          //if(hyp_rad<0.1){
-            //printf("hyp_rad, rho_val, ratio, Q3, mT = %.3f %.3f %.3f %.3f %.3f\n",hyp_rad,rho_val,rho_val/hyp_rad,Q3,mT);
-
-              //printf("CM: %f %f %f\n", v_rCM[0], v_rCM[1], v_rCM[2]);
-              //printf("  %f %f %f\n", v_r1[0], v_r1[1], v_r1[2]);
-              //printf("  %f %f %f\n", v_r2[0], v_r2[1], v_r2[2]);
-              //printf("  %f %f %f\n", v_r3[0], v_r3[1], v_r3[2]);
-
-          //}
-
-        }
-
-        if(Q3<FemtoLimit){
-          FemtoPermutations++;
-        }
+        // Based on Eq. 1.79 of 3B notes
+        double Q3 = sqrt(alpha * dot(v_k12, v_k12) + 2 * beta * dot(v_k12, v_k3_12) + gamma * dot(v_k3_12, v_k3_12));
+        LOG(DEBUG, "Q: " << Q << "  Q3: " << Q3);
 
         #pragma omp critical
         {
-        //Ghetto_kstar_rstar->Fill(Q3,rho_val);
-        //Ghetto_kstar_rstar_mT->Fill(Q3,rho_val,mT);
-        int NumPrims = 0;
-        NumPrims += prt_cm[0].IsUsefulProduct();
-        NumPrims += prt_cm[1].IsUsefulProduct();
-        NumPrims += prt_cm[2].IsUsefulProduct();
-        static int counter_3 = 0;
-        //if(NumPrims==3){
-          Ghetto_kstar_rstar->Fill(Q3,hyp_rad);
-          Ghetto_kstar_rstar_mT->Fill(Q3,hyp_rad,mT);
-          counter_3++;
-        //}
-        static int counter_3f = 0;
-        if(Q3<FemtoLimit){
-          //GhettoFemto_mT_rstar->Fill(mT,rho_val);
-          GhettoFemto_mT_rstar->Fill(mT,hyp_rad);
-          counter_3f++;
+        Ghetto_kstar_rstar->Fill(Q3,hyp_rad);
+        Ghetto_kstar_rstar_mT->Fill(Q3,hyp_rad,mT);
+        LOG(DEBUG, "Triplet: Q: " << std::setprecision(2) << Q
+          << "  hyp_rad: " << std::setprecision(2) << hyp_rad
+          << "  mT: " << std::setprecision(2) << mT);
+
+        dlmMtSimpleVs4VectorAverage->Fill(ComputeMt4VectorAverage(clv1, clv2, clv3), ComputeMtSimple(clv1, clv2, clv3));
+
+        dlmR12R312->Fill(sqrt(r12_squared), sqrt(r3_12_squared));
+        dlmPhiVsRho->Fill(hyp_rad, hyp_angle);
+        dlmRhoVsMt->Fill(mT,hyp_rad);
+
+        if(Q3<FemtoLimit3B){
+          FillOrigin(femtoParticleOrigin, prt_cm, SDIM);
+
+          FemtoPermutations++;
+          LOG(DEBUG, "Triplet inside femto region: Q3 < " << FemtoLimit3B);
+          dlmFemtoR12R312->Fill(sqrt(r12_squared), sqrt(r3_12_squared));
+          dlmFemtoMtSimpleVs4VectorAverage->Fill(ComputeMt4VectorAverage(clv1, clv2, clv3), ComputeMtSimple(clv1, clv2, clv3));
+          dlmFemtoPhiVsRho->Fill(hyp_rad, hyp_angle);
+          dlmFemtoRhoVsMt->Fill(mT,hyp_rad);
         }
-        //if(counter_3%10==0)
-        //  printf("%i %i\n",counter_3,counter_3f);
         }
-        
-/*
-        if(Q3<500){
-        printf("Malpha = %f\n",Malpha);
-        printf("k12 = %.0f; Q3 = %.0f; HR = %.2f\n", k12, Q3, hyp_rad);
-
-        CatsLorentzVector cm_rel_12 = *prt_cm[1].Cats()-*prt_cm[0].Cats();
-        double kstar12 = 0.5*cm_rel_12.GetP();
-        double rstar12 = cm_rel_12.GetR();
-
-        CatsLorentzVector cm_rel_13 = *prt_cm[2].Cats()-*prt_cm[0].Cats();
-        double kstar13 = 0.5*cm_rel_13.GetP();
-        double rstar13 = cm_rel_13.GetR();
-
-        CatsLorentzVector cm_rel_23 = *prt_cm[2].Cats()-*prt_cm[1].Cats();
-        double kstar23 = 0.5*cm_rel_23.GetP();
-        double rstar23 = cm_rel_23.GetR();        
-        printf("12: kstar = %.0f; rstar = %.2f\n", kstar12, rstar12);
-        printf("13: kstar = %.0f; rstar = %.2f\n", kstar13, rstar13);
-        printf("23: kstar = %.0f; rstar = %.2f\n", kstar23, rstar23);
-        double mean_r = (rstar12+rstar13+rstar23)/3.;
-        printf("HR ghetto/true = %.3f\n",(mean_r/sqrt(3.))/hyp_rad);
-
-        }
-*/
-
+        LOG(DEBUG, "End of 3B calculation");
       }
 
 
@@ -1840,8 +1948,9 @@ if(exp_file_flag){
   fclose(file_ptr);
 }
 
-
 FemtoPermutations++;
+dlmFemtoPairsMt[12]->Fill(mT);
+FillOrigin(femtoParticleOrigin, prt_cm, SDIM);
 }//femto particles
 
 //if(kstar>150 && kstar<250){
@@ -2457,6 +2566,118 @@ if(!prim1&&false){
 }
 
 void CECA::GhettoInit(){
+  tEvents = new TTree("tEvents", "");
+
+  tEvents->Branch("x1", &x1);
+  tEvents->Branch("x2", &x2);
+  tEvents->Branch("x3", &x3);
+
+  tEvents->Branch("p1", &p1);
+  tEvents->Branch("p2", &p2);
+  tEvents->Branch("p3", &p3);
+
+  tEvents->Branch("p1_mother", &p1_mother);
+  tEvents->Branch("p2_mother", &p2_mother);
+  tEvents->Branch("p3_mother", &p3_mother);
+
+  // p: primary, s: secondary (from resonance)
+  if (SDIM == 2) {
+      femtoParticleOrigin = {
+        {"pp", 0},
+        {"ps", 0},
+        {"sp", 0},
+        {"ss", 0},
+      };
+  } else if (SDIM ==  3) {
+      femtoParticleOrigin = {
+        {"ppp", 0},
+        {"pps", 0},
+        {"psp", 0},
+        {"pss", 0},
+        {"spp", 0},
+        {"sps", 0},
+        {"ssp", 0},
+        {"sss", 0},
+      };
+  }
+
+  // 3B histograms
+  if(dlmR12R312) delete dlmR12R312;
+  dlmR12R312 = new DLM_Histo<float>();
+  dlmR12R312->SetUp(2);
+  dlmR12R312->SetUp(0, 200, 0, 20);
+  dlmR12R312->SetUp(1, 200, 0, 20);
+  dlmR12R312->Initialize();
+  
+  if(dlmMtSimpleVs4VectorAverage) delete dlmMtSimpleVs4VectorAverage;
+  dlmMtSimpleVs4VectorAverage = new DLM_Histo<float>();
+  dlmMtSimpleVs4VectorAverage->SetUp(2);
+  dlmMtSimpleVs4VectorAverage->SetUp(0, 200, 0, 5000);
+  dlmMtSimpleVs4VectorAverage->SetUp(1, 200, 0, 5000);
+  dlmMtSimpleVs4VectorAverage->Initialize();
+  
+  if(dlmPhiVsRho) delete dlmPhiVsRho;
+  dlmPhiVsRho = new DLM_Histo<float>();
+  dlmPhiVsRho->SetUp(2);
+  dlmPhiVsRho->SetUp(0, 200, 0, 20);
+  dlmPhiVsRho->SetUp(1, 200, 0, M_PI / 2);
+  dlmPhiVsRho->Initialize();
+
+  if(dlmRhoVsMt) delete dlmRhoVsMt;
+  dlmRhoVsMt = new DLM_Histo<float>();
+  dlmRhoVsMt->SetUp(2);
+  if(Ghetto_MtBins){
+    dlmRhoVsMt->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    dlmRhoVsMt->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+  dlmRhoVsMt->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  dlmRhoVsMt->Initialize();
+
+  if(dlmFemtoR12R312) delete dlmFemtoR12R312;
+  dlmFemtoR12R312 = new DLM_Histo<float>();
+  dlmFemtoR12R312->SetUp(2);
+  dlmFemtoR12R312->SetUp(0, 200, 0, 20);
+  dlmFemtoR12R312->SetUp(1, 200, 0, 20);
+  dlmFemtoR12R312->Initialize();
+
+  if(dlmFemtoMtSimpleVs4VectorAverage) delete dlmFemtoMtSimpleVs4VectorAverage;
+  dlmFemtoMtSimpleVs4VectorAverage = new DLM_Histo<float>();
+  dlmFemtoMtSimpleVs4VectorAverage->SetUp(2);
+  dlmFemtoMtSimpleVs4VectorAverage->SetUp(0, 200, 0, 5000);
+  dlmFemtoMtSimpleVs4VectorAverage->SetUp(1, 200, 0, 5000);
+  dlmFemtoMtSimpleVs4VectorAverage->Initialize();
+
+  if(dlmFemtoPhiVsRho) delete dlmFemtoPhiVsRho;
+  dlmFemtoPhiVsRho = new DLM_Histo<float>();
+  dlmFemtoPhiVsRho->SetUp(2);
+  dlmFemtoPhiVsRho->SetUp(0, 200, 0, 20);
+  dlmFemtoPhiVsRho->SetUp(1, 200, 0, M_PI / 2);
+  dlmFemtoPhiVsRho->Initialize();
+
+  if(dlmFemtoRhoVsMt) delete dlmFemtoRhoVsMt;
+  dlmFemtoRhoVsMt = new DLM_Histo<float>();
+  dlmFemtoRhoVsMt->SetUp(2);
+  if(Ghetto_MtBins){
+    dlmFemtoRhoVsMt->SetUp(0,Ghetto_NumMtBins,Ghetto_MtBins);
+  }
+  else{
+    dlmFemtoRhoVsMt->SetUp(0,Ghetto_NumMtBins,Ghetto_MtMin,Ghetto_MtMax);
+  }
+  dlmFemtoRhoVsMt->SetUp(1,Ghetto_NumRadBins,Ghetto_RadMin,Ghetto_RadMax);
+  dlmFemtoRhoVsMt->Initialize();
+
+  if(!dlmFemtoPairsMt.empty()) {
+    for (auto& [_, ptr] : dlmFemtoPairsMt) {
+        delete ptr;
+    }
+    dlmFemtoPairsMt.clear();
+  }
+  dlmFemtoPairsMt[12] = new DLM_Histo<float>();
+  dlmFemtoPairsMt[12]->SetUp(1);
+  dlmFemtoPairsMt[12]->SetUp(0, 500, 0, 5000);
+  dlmFemtoPairsMt[12]->Initialize();
 
   if(Ghetto_RP_AngleRcP1) delete Ghetto_RP_AngleRcP1;
   Ghetto_RP_AngleRcP1 = new DLM_Histo<float>();

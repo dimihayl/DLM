@@ -3,9 +3,22 @@
 #ifndef CECA_H
 #define CECA_H
 
+#include "TTree.h"
+#include "TLorentzVector.h"
+
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <map>
+
+enum eMtMethod {
+  kSimple = 1, // 
+  kHarmonic,
+  kTripleHarmonic,
+  k4VectorAverage,
+};
+
+extern std::map<std::string, eMtMethod> mTMethodFromString;
 
 template <class Type> class DLM_Histo;
 class CatsLorentzVector;
@@ -66,6 +79,8 @@ public:
   CECA(const TREPNI& database, const std::vector<std::string>& list_of_particles);
   //CECA(const TREPNI& database);
   ~CECA();
+
+  double ComputeMt(CatsLorentzVector* p1, CatsLorentzVector* p2, CatsLorentzVector* p3);
 
   //the width (X), alpha factor (Levy) related to the displacement source
   //the displ. is relative to the "perfect" collision point
@@ -134,6 +149,7 @@ public:
   //info the upper limit until which information is still saved
   //N.B. the corresponding Q3 etc is automatically evaluated, here its only k*!
   void SetFemtoRegion(const float& femto, const float& info=0);//done
+  void SetFemtoRegion3B(const float& femto);
   double GetFemtoLimit();
   //higher number should make for less CPU time
   //questions about accuracy though, so far no effect seen
@@ -141,6 +157,9 @@ public:
   //give the correct Dim-body source. Usefull parameter to QA
   //if zero, than by default this is set to Dim*Dim
   void SetEventMult(const unsigned short& emult=0);//done
+  void SetMtMethod(std::string method);
+  eMtMethod GetMtMethod();
+  TTree* GetEvents() const { return tEvents; };
 
   //flag==0 -> no export
   //else -> we always write out //kstar, rstar, mT
@@ -199,18 +218,15 @@ public:
   //however the overall CPU throughput is optimized in steps of timeout, hence it is not good to go crazy long.
   //also, the GoBabyGo will run for a minimum time set by the timeout.
   //Unless there is a very good reason, do not change the default value!
-  //The time is given in seconds (integer!). Overrides SetThreadYieldout
+  //The time is given in seconds (integer!)
   void SetThreadTimeout(const unsigned& seconds);//done
-  //The threads are synced after each one reaches a certain Yield.
-  //Overrides SetThreadTimeout.
-  //The idea is that this way the code runs a bit slower, but has reproducible output.
-  void SetThreadYieldout(const unsigned long long& yield);//
   //The time after which the task will terminate ragardless of achieved yield
   void SetGlobalTimeout(const unsigned& seconds);//done
   void SetSeed(const unsigned& thread, const unsigned& seed);//done
   //void SetThreadTimeout(const unsigned& seconds);
   //true by default. Within a multiplet it propagates the particles until
   //they all have the same tau component
+  void SetArbitraryMass(double mass) {this->arbitraryMass = mass; };
   void EqualizeFsiTime(const bool& yesno);//done
 
   //if num_threads=0, we will dynamically adjust based on efficiency
@@ -219,6 +235,18 @@ public:
 
   void GhettoTest1(const unsigned NumPairs, const float r_SP, const float p_SP);
   //CatsParticle* GhettoDecay(CatsParticle& particle, const float mass1, const float mass2);
+
+  std::map<std::string, unsigned> GetFemtoParticleOrigin() const { return this->femtoParticleOrigin; };
+
+  DLM_Histo<float>* GetR12R312() const { return this->dlmR12R312; };
+  DLM_Histo<float>* GetMtSimpleVs4VectorAverage() const { return this->dlmMtSimpleVs4VectorAverage; };
+  DLM_Histo<float>* GetPhiVsRho() const { return this->dlmPhiVsRho; };
+  DLM_Histo<float>* GetRhoVsMt() const { return this->dlmRhoVsMt; };
+  DLM_Histo<float>* GetFemtoR12R312() const { return this->dlmFemtoR12R312; };
+  DLM_Histo<float>* GetFemtoMtSimpleVs4VectorAverage() const { return this->dlmFemtoMtSimpleVs4VectorAverage; };
+  DLM_Histo<float>* GetFemtoPhiVsRho() const { return this->dlmFemtoPhiVsRho; };
+  DLM_Histo<float>* GetFemtoRhoVsMt() const { return this->dlmFemtoRhoVsMt; };
+  std::map<int, DLM_Histo<float>*> GetFemtoPairsMt() const { return this->dlmFemtoPairsMt; };
 
   unsigned Ghetto_NumMtBins;
   double Ghetto_MtMin;
@@ -309,6 +337,7 @@ public:
   //pp / pr / rp / rr
   unsigned GhettoFemtoPrimReso[4];
   unsigned GhettoPrimReso[4];
+  std::map<std::string, unsigned> femtoParticleOrigin;
   //unsigned GhettoSpPrim[2];
 
 
@@ -356,11 +385,15 @@ private:
   unsigned long long AchievedYield;
   char SrcCnv;
   bool DebugMode;
+  eMtMethod mTMethod; // How to compute the mT. Currently only for triplets
+  double arbitraryMass; // Used for 3B calculations
   DLM_Random** RanGen;
 
   //the k* (MeV) below which a FemtoPair is concidered such
   //N.B. for more particles QN = sqrt(N*kstarlimit)
   float FemtoLimit;
+  //the Q3 (MeV) below which a FemtoTriplet is concidered such
+  float FemtoLimit3B;
   //the upper limit refers to the femto limit, and information about
   //all particle pairs is still saved, e.g. for systematics
   float UpperLimit;
@@ -399,10 +432,37 @@ unsigned GenerateEventTEMP();
   DLM_Timer* ThreadClock;
   //in seconds
   unsigned Timeout;
-  unsigned long long Yieldout; 
   //if zero, NO timeout
   unsigned GlobalTimeout;
   //
+
+  // Histograms specific to 3B femto
+  DLM_Histo<float>* dlmR12R312; // 2D hist. with Jacobi coordinates
+  DLM_Histo<float>* dlmMtSimpleVs4VectorAverage; // Transverse mass of the triplet
+  DLM_Histo<float>* dlmPhiVsRho; // 2D hist. with hyper-spherical coordinates
+  DLM_Histo<float>* dlmRhoVsMt; // 2D hist. with hyper-spherical coordinates
+
+  // 3B femto histograms filled only for triplets in the femto region (Q3 < thr)
+  DLM_Histo<float>* dlmFemtoPhiVsRho;
+  std::map<int, DLM_Histo<float>*> dlmFemtoPairsMt; // The integer represents the pair combination: 13 -> (part1, part3)
+
+  DLM_Histo<float>* dlmFemtoR12R312;
+  DLM_Histo<float>* dlmFemtoMtSimpleVs4VectorAverage;
+  DLM_Histo<float>* dlmFemtoRhoVsMt;
+
+  TLorentzVector p1;
+  TLorentzVector p2;
+  TLorentzVector p3;
+
+  TLorentzVector x1;
+  TLorentzVector x2;
+  TLorentzVector x3;
+
+  TLorentzVector p1_mother;
+  TLorentzVector p2_mother;
+  TLorentzVector p3_mother;
+
+  TTree* tEvents;
 
   void GhettoInit();
 
