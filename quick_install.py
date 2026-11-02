@@ -391,6 +391,24 @@ def quick_install():
         PATH_GSL_INC = config.get("GSL_INCLUDE")
         PATH_GSL_LIB = config.get("GSL_LIB")
         PATH_ROOT = config.get("ROOT_PATH")
+
+        if not PATH_GSL_INC:
+            print(bcolors.FAIL+'PATH_GSL_INC path could not be loaded from the cached paths. Run the following command and try again.'+bcolors.ENDC)
+            print(bcolors.FAIL+f'   rm {PATH_CATS_CMAKE}/UserPaths.cmake'+bcolors.ENDC)
+            print(bcolors.FAIL+f'Installation aborted!'+bcolors.ENDC)
+            sys.exit(1)
+
+        if not PATH_GSL_LIB:
+            print(bcolors.FAIL+'PATH_GSL_LIB path could not be loaded from the cached paths. Run the following command and try again.'+bcolors.ENDC)
+            print(bcolors.FAIL+f'   rm {PATH_CATS_CMAKE}/UserPaths.cmake'+bcolors.ENDC)
+            print(bcolors.FAIL+f'Installation aborted!'+bcolors.ENDC)
+            sys.exit(1)
+
+        if not PATH_ROOT:
+            print(bcolors.FAIL+'PATH_ROOT path could not be loaded from the cached paths. Run the following command and try again.'+bcolors.ENDC)
+            print(bcolors.FAIL+f'   rm {PATH_CATS_CMAKE}/UserPaths.cmake'+bcolors.ENDC)
+            print(bcolors.FAIL+f'Installation aborted!'+bcolors.ENDC)
+            sys.exit(1)
     else:
         # File does not exist, load paths with user interaction
         PATH_ROOT = load_root_path(install_lvl, bashrc_lines)
