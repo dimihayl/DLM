@@ -230,8 +230,9 @@ CECA::CECA(const TREPNI& database,const std::vector<std::string>& list_of_partic
   GhettoFemtoPrimReso[3]=0;
 
   ThreadClock = new DLM_Timer [MaxThreads];
-  //30 seconds as a default timeout
-  Timeout = 30*10000000;
+  //0 seconds as a default timeout. This implies auto condition based on yield
+  Timeout = 0;
+  //Timeout = 30*10000000;
   GlobalTimeout = -1;
   Yieldout = 0;
   RanGen = new DLM_Random* [MaxThreads];
@@ -588,12 +589,25 @@ void CECA::SetDebugMode(const bool& debugmode){
   DebugMode = debugmode;
 }
 void CECA::SetThreadTimeout(const unsigned& seconds){
-  Timeout = seconds?seconds:1;//a minimum of 1 second
-  Yieldout = -1;
+  if(seconds==0){
+    Timeout = 0;
+    Yieldout = 0;
+  }
+  else{
+    Timeout = seconds;//a minimum of 1 second
+    Yieldout = -1;
+  }
+
 }
 void CECA::SetThreadYieldout(const unsigned long long& yield){
-  Yieldout = yield?yield:1;//a minimum of 1
-  Timeout = -1;
+  if(yield==0){
+    Timeout = 0;
+    Yieldout = 0;
+  }
+  else{
+    Yieldout = yield;//a minimum of 1
+    Timeout = -1;
+  }
 }
 void CECA::SetGlobalTimeout(const unsigned& seconds){
   GlobalTimeout = seconds?seconds:-1;
@@ -621,6 +635,10 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
     //}
   }
 
+  unsigned local_yieldout = Yieldout;
+  if(!Yieldout && !Timeout){
+    local_yieldout = TargetYield / NumThreads;
+  }
 
   do{
     NumMultiplets += GenerateEvent(ThId);
@@ -628,7 +646,7 @@ unsigned CECA::GoSingleCore(const unsigned& ThId){
     //printf("ExeTime = %u\n",ExeTime);
     DebugCounter++;
   }
-  while(ExeTime<Timeout && NumMultiplets<Yieldout);
+  while( ExeTime<Timeout && NumMultiplets<=local_yieldout );
   if(DebugMode){
     //#pragma omp critical
     //{
@@ -716,6 +734,7 @@ void CECA::GoBabyGo(const unsigned& num_threads){
   DLM_Timer GlobalClock;
   GlobalClock.Start();
   AchievedYield = 0;
+
   //const unsigned TargetPerSyst = TargetYield / NumSystVars;
   //unsigned AchievedSystYield = 0;
   //we iterate until we have our target yield

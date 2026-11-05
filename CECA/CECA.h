@@ -200,6 +200,7 @@ public:
   //also, the GoBabyGo will run for a minimum time set by the timeout.
   //Unless there is a very good reason, do not change the default value!
   //The time is given in seconds (integer!). Overrides SetThreadYieldout
+  //if Timeout or Yieldout are set to zero -> auto condition based on yield
   void SetThreadTimeout(const unsigned& seconds);//done
   //The threads are synced after each one reaches a certain Yield.
   //Overrides SetThreadTimeout.
