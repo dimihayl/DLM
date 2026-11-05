@@ -590,6 +590,14 @@ struct KdpPars { // This structure is named "myDataType"
     }
     return true;
   }
+  bool operator==(const KdpPars& other) const{
+    for(short sn=0; sn<NumDistos; sn++){
+      if(mean[sn]!=other.mean[sn]) return false;
+      if(stdv[sn]!=other.stdv[sn]) return false;
+      if(wght[sn]!=other.wght[sn]) return false;
+    }
+    return true;
+  }
   bool operator!=(const double& value) const{
     return !(operator==(value));
   }

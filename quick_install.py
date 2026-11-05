@@ -436,7 +436,7 @@ def quick_install():
     print('--------------------')
     print(bcolors.BOLD+'Setup the installation folder'+bcolors.ENDC)
 
-    OnlyHeader = ['CATSconstants','DLM_Sort','DLM_Histo', 'DLM_Logger']
+    OnlyHeader = ['CATSconstants','DLM_Sort','DLM_Histo','DLM_Histo_OLD', 'DLM_Logger']
 
     IncDir = []
     IncDir.append('CATS')
@@ -461,7 +461,7 @@ def quick_install():
             if install_lvl>=2:
                 IncFile[dir].extend(['DLM_OmpTools'])
         if dir=='DLM_MathTools':
-            IncFile[dir] = ['DLM_Histo','DLM_Integration','DLM_Random','DLM_Bessel','DLM_MathFunctions','DLM_Fit','DLM_RootFinder']
+            IncFile[dir] = ['DLM_Histo','DLM_Histo_OLD','DLM_Integration','DLM_Random','DLM_Bessel','DLM_MathFunctions','DLM_Fit','DLM_RootFinder']
             if install_lvl>=1:
                 IncFile[dir].extend(['DLM_Unfold'])
         if dir=='DLM_RootTools':

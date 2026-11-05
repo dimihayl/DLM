@@ -73,6 +73,19 @@ bool DLM_PotSp::operator=(const double& value){
     p1_max = -1e64;
     return true;
 }
+bool DLM_PotSp::operator==(const DLM_PotSp& other){
+    if(p0!=other.p0) return false;
+    if(p1!=other.p1) return false;
+    if(f!=other.f) return false;
+    if(d!=other.d) return false;
+    if(num_entries!=other.num_entries) return false;
+    if(p0_min!=other.p0_min) return false;
+    if(p0_max!=other.p0_max) return false;
+    if(p1_min!=other.p1_min) return false;
+    if(p1_max!=other.p1_max) return false;
+    return true;
+}
+
 DLM_PotSp DLM_PotSp::operator*(const double& value){
     DLM_PotSp Result;
     Result.p0 = p0 * value;

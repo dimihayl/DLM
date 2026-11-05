@@ -1557,6 +1557,9 @@ double UsmaniPotentialCats(double* Pars){
     else printf ("wrong polarization\n");
     return v;
 }
+
+
+
 double UsmaniFit(double* Pars){
     double& r = Pars[0];
     double& Spin = Pars[2];
@@ -1579,6 +1582,32 @@ double UsmaniFit(double* Pars){
 //pars[3,4,5] (1,2,3) are the values related to the repulsive core
 //pars[6,7] (4,5) are related to the rest of the potential (V4)
 //pars[8,9] (6,7) related to the pion exchange part
+//[10] = (0 or eps), if 0 => s-wave. if non zero it has to be below 0.5 and we assume we work in p-wave
+//for what eps is see https://journals.aps.org/prc/pdf/10.1103/PhysRevC.29.684
+double UsmaniFitAll_sp(double* Pars){
+    double& r = Pars[0];
+    double& Spin = Pars[2];
+    //in comment -> default values
+    double& wc = Pars[3];//2137
+    double& rng = Pars[4];//0.5
+    double& slp = Pars[5];//0.2
+    double& vbar = Pars[6];//6.2
+    double& vsigma = Pars[7];//0.25
+    double x=r*Pars[8];//0.7
+    double& cutoff = Pars[9];//2.0 fm, an arbitrary cut-off parameter that influences the convergence rate
+    double& eps = Pars[10];//0 for s-wave, 0.25 for p-wave
+    double vc = wc/(1+exp((r-rng)/slp));
+    double tpi = (1.0+3.0/x+3.0/(x*x)) * (exp(-x)/x) * pow(1.-exp(-cutoff*r*r),2.);
+    double v = 0.;
+    if (Spin == 0) v = vc - (vbar + 0.75*vsigma)*tpi*tpi;//Usmani singlet
+    else if (Spin == 1)  v = vc - (vbar - 0.25*vsigma)*tpi*tpi;//Usmani triplet
+    else printf ("wrong polarization\n");
+    if(eps!=0){
+        v *= (1.-2*eps);
+    }
+    return v;
+}
+
 double UsmaniFitAll(double* Pars){
     double& r = Pars[0];
     double& Spin = Pars[2];

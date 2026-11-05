@@ -30,6 +30,7 @@ struct DLM_PotSp{
 
     bool operator=(const DLM_PotSp& other);
     bool operator=(const double& value);
+    bool operator==(const DLM_PotSp& other);
     DLM_PotSp operator*(const double& value);
     void compute_average();
 };
